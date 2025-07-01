@@ -1,0 +1,31 @@
+{
+  "name": "@chorenzo/engine",
+  "version": "0.1.0",
+  "description": "Open-source CLI engine that automates your engineering workflow with AI-powered workspace analysis and recipe application",
+  "main": "dist/main.js",
+  "type": "module",
+  "bin": {
+    "chorenzo": "dist/main.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cli",
+    "automation",
+    "devtools",
+    "ai",
+    "typescript",
+    "eslint",
+    "cicd",
+    "github-actions",
+    "code-quality",
+    "developer-experience",
+    "workflow",
+    "recipes",
+    "engineering-automation",
+    "claude-ai"
+  ],
+  "author": "",
+  "license": "Apache-2.0"
+}

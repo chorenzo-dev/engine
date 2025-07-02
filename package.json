@@ -8,7 +8,9 @@
     "chorenzo": "dist/main.js"
   },
   "scripts": {
-    "build": "tsc && cp -r src/prompts dist/",
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "build": "tsup",
     "typecheck": "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -33,7 +35,9 @@
   "devDependencies": {
     "@types/node": "^24.0.8",
     "@types/react": "^19.1.8",
-    "esbuild": "^0.25.5",
+    "esbuild-plugin-copy": "^2.1.1",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.3",
     "typescript": "^5.8.3"
   },
   "dependencies": {

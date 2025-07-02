@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { loadGitIgnorePatternsForDir, isIgnored } from './validation.js';
+import { loadGitIgnorePatternsForDir, isIgnored } from './validation';
 
 const lockFiles = new Set([
   'package-lock.json',

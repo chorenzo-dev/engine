@@ -15,6 +15,7 @@
     "sourceMap": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
+    "jsx": "react-jsx",
     "types": ["node"]
   },
   "include": ["src/**/*"],

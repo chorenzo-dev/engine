@@ -24,7 +24,6 @@ program
       console.log('\n📊 Building file tree...\n');
       const fileTree = await buildFileTree(gitRoot, undefined, 3);
       
-      // Test loading and rendering the prompt
       const promptTemplate = loadPrompt('analyze_workspace');
       const prompt = renderPrompt(promptTemplate, {
         workspace_root: gitRoot,

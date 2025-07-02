@@ -6,7 +6,8 @@ const program = new Command();
 program
   .name('chorenzo')
   .version('0.1.0')
-  .description('Open-source CLI engine for workspace analysis and automation');
+  .description('Open-source CLI engine for workspace analysis and automation')
+  .showHelpAfterError();
 
 program
   .command('analyze')
@@ -31,4 +32,4 @@ program
     }
   });
 
-program.parse(process.argv);
+program.parse();

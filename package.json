@@ -42,6 +42,7 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.38",
+    "commander": "^14.0.0",
     "ink": "^6.0.1",
     "react": "^19.1.0"
   }

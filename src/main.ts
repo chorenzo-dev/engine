@@ -1,5 +1,7 @@
 import { Command } from 'commander';
-import { performAnalysis } from './commands/analyze';
+import { render } from 'ink';
+import React from 'react';
+import { Shell } from './components/Shell';
 
 const program = new Command();
 
@@ -12,24 +14,16 @@ program
 program
   .command('analyze')
   .description('Analyze your workspace structure and provide insights')
-  .action(async () => {
-    try {
-      console.log('🔍 Analyzing workspace...\n');
-      
-      const result = await performAnalysis();
-      
-      console.log('\n✅ Analysis complete!');
-      console.log(JSON.stringify(result, null, 2));
-      
-      if (result.metadata) {
-        console.log(`\n💰 Cost: $${result.metadata.cost_usd.toFixed(4)}`);
-        console.log(`🔄 Turns: ${result.metadata.turns}`);
-      }
-      
-    } catch (error) {
-      console.error('\n❌ Error:', error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    }
+  .option('--no-progress', 'Disable progress UI')
+  .action(async (options) => {
+    render(
+      React.createElement(Shell, {
+        command: 'analyze',
+        options: {
+          progress: options.progress
+        }
+      })
+    );
   });
 
 program.parse();

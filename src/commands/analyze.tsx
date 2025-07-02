@@ -13,20 +13,23 @@ interface AnalysisResult {
   };
 }
 
-export async function performAnalysis(): Promise<AnalysisResult> {
+export type ProgressCallback = (step: string) => void;
+
+export async function performAnalysis(onProgress?: ProgressCallback): Promise<AnalysisResult> {
+  onProgress?.('Finding git repository...');
   const workspaceRoot = await findGitRoot().catch(() => process.cwd());
   
-  await getProjectIdentifier().catch((error) => {
-    console.warn(`Warning: ${error.message}`);
-  });
-
+  onProgress?.('Building file tree...');
   const filesStructureSummary = await buildFileTree(workspaceRoot);
+  
+  onProgress?.('Loading analysis prompt...');
   const promptTemplate = loadPrompt('analyze_workspace');
   const prompt = renderPrompt(promptTemplate, {
     workspace_root: workspaceRoot,
     files_structure_summary: filesStructureSummary
   });
 
+  onProgress?.('Analyzing workspace with Claude...');
   let sdkResultMetadata: SDKMessage | null = null;
   let analysis = null;
 

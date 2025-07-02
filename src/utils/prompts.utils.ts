@@ -2,11 +2,13 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const PROMPTS_DIR = __dirname.endsWith('dist') 
+  ? join(__dirname, 'prompts')
+  : join(__dirname, '..', 'prompts');
 
 export function loadPrompt(promptName: string): string {
-  const promptPath = join(__dirname, '..', 'prompts', `${promptName}.md`);
+  const promptPath = join(PROMPTS_DIR, `${promptName}.md`);
   try {
     return readFileSync(promptPath, 'utf-8');
   } catch (error) {

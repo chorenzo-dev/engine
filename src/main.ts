@@ -1,8 +1,7 @@
-#!/usr/bin/env node
 import { Command } from 'commander';
-import { findGitRoot } from './utils/git.utils.js';
-import { buildFileTree } from './utils/file-tree.utils.js';
-import { loadPrompt, renderPrompt } from './utils/prompts.utils.js';
+import { findGitRoot } from './utils/git.utils';
+import { buildFileTree } from './utils/file-tree.utils';
+import { loadPrompt, renderPrompt } from './utils/prompts.utils';
 
 const program = new Command();
 
@@ -39,4 +38,4 @@ program
     }
   });
 
-program.parse();
+program.parse(process.argv);

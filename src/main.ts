@@ -1,7 +1,5 @@
 import { Command } from 'commander';
-import { findGitRoot } from './utils/git.utils';
-import { buildFileTree } from './utils/file-tree.utils';
-import { loadPrompt, renderPrompt } from './utils/prompts.utils';
+import { performAnalysis } from './commands/analyze';
 
 const program = new Command();
 
@@ -15,25 +13,20 @@ program
   .description('Analyze your workspace structure and provide insights')
   .action(async () => {
     try {
-      console.log('🔍 Analyzing workspace...');
+      console.log('🔍 Analyzing workspace...\n');
       
-      const gitRoot = await findGitRoot();
-      console.log(`📁 Found git repository at: ${gitRoot}`);
+      const result = await performAnalysis();
       
-      console.log('\n📊 Building file tree...\n');
-      const fileTree = await buildFileTree(gitRoot, undefined, 3);
+      console.log('\n✅ Analysis complete!');
+      console.log(JSON.stringify(result, null, 2));
       
-      const promptTemplate = loadPrompt('analyze_workspace');
-      const prompt = renderPrompt(promptTemplate, {
-        workspace_root: gitRoot,
-        files_structure_summary: fileTree
-      });
-      
-      console.log('✅ Prompt loaded successfully!');
-      console.log(`📄 Prompt length: ${prompt.length} characters`);
+      if (result.metadata) {
+        console.log(`\n💰 Cost: $${result.metadata.cost_usd.toFixed(4)}`);
+        console.log(`🔄 Turns: ${result.metadata.turns}`);
+      }
       
     } catch (error) {
-      console.error('❌ Error:', error instanceof Error ? error.message : String(error));
+      console.error('\n❌ Error:', error instanceof Error ? error.message : String(error));
       process.exit(1);
     }
   });

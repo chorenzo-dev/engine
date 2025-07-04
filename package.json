@@ -33,7 +33,7 @@
   "author": "",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@types/node": "^24.0.8",
+    "@types/node": "^24.0.10",
     "@types/react": "^19.1.8",
     "esbuild-plugin-copy": "^2.1.1",
     "tsup": "^8.5.0",
@@ -44,6 +44,8 @@
     "@anthropic-ai/claude-code": "^1.0.38",
     "commander": "^14.0.0",
     "ink": "^6.0.1",
-    "react": "^19.1.0"
+    "react": "^19.1.0",
+    "simple-git": "^3.28.0",
+    "yaml": "^2.8.0"
   }
 }

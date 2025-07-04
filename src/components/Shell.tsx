@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { AnalysisProgress } from './AnalysisProgress';
+import { InitProgress } from './InitProgress';
 import { performAnalysis } from '../commands/analyze';
+import { performInit } from '../commands/init';
 
 interface ShellProps {
-  command: 'analyze';
+  command: 'analyze' | 'init';
   options: {
     progress?: boolean;
+    reset?: boolean;
   };
 }
 
@@ -31,7 +34,21 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       };
       runSimpleAnalysis();
     }
-  }, [command, options.progress, isComplete, error]);
+
+    if (command === 'init' && options.progress === false && !isComplete && !error) {
+      const runSimpleInit = async () => {
+        try {
+          await performInit({ reset: options.reset }, (step) => {
+            setSimpleStep(step);
+          });
+          setIsComplete(true);
+        } catch (err) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      };
+      runSimpleInit();
+    }
+  }, [command, options.progress, options.reset, isComplete, error]);
 
   if (command === 'analyze') {
     if (options.progress === false) {
@@ -92,6 +109,60 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       <AnalysisProgress
         onComplete={(result) => {
           setResult(result);
+          setIsComplete(true);
+        }}
+        onError={(error) => {
+          setError(error);
+        }}
+      />
+    );
+  }
+
+  if (command === 'init') {
+    if (options.progress === false) {
+      if (error) {
+        return (
+          <Box flexDirection="column">
+            <Text color="red">❌ Error: {error.message}</Text>
+          </Box>
+        );
+      }
+
+      if (isComplete) {
+        return (
+          <Box flexDirection="column">
+            <Text color="green">✅ Initialization complete!</Text>
+          </Box>
+        );
+      }
+
+      return (
+        <Box flexDirection="column">
+          <Text color="blue">🔧 {simpleStep || 'Initializing workspace...'}</Text>
+        </Box>
+      );
+    }
+
+    if (error) {
+      return (
+        <Box flexDirection="column">
+          <Text color="red">❌ Error: {error.message}</Text>
+        </Box>
+      );
+    }
+
+    if (isComplete) {
+      return (
+        <Box flexDirection="column">
+          <Text color="green">✅ Initialization complete!</Text>
+        </Box>
+      );
+    }
+
+    return (
+      <InitProgress
+        options={{ reset: options.reset }}
+        onComplete={() => {
           setIsComplete(true);
         }}
         onError={(error) => {

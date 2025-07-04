@@ -26,4 +26,21 @@ program
     );
   });
 
+program
+  .command('init')
+  .description('Initialize chorenzo workspace with recipe libraries')
+  .option('--reset', 'Reset and reinitialize the workspace')
+  .option('--no-progress', 'Disable progress UI')
+  .action(async (options) => {
+    render(
+      React.createElement(Shell, {
+        command: 'init',
+        options: {
+          reset: options.reset,
+          progress: options.progress
+        }
+      })
+    );
+  });
+
 program.parse();

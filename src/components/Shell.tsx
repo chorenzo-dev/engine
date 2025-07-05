@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { AnalysisProgress } from './AnalysisProgress';
-import { InitProgress } from './InitProgress';
+import { InitWithAnalysis } from './InitWithAnalysis';
 import { performAnalysis } from '../commands/analyze';
 import { performInit } from '../commands/init';
 
@@ -10,6 +10,8 @@ interface ShellProps {
   options: {
     progress?: boolean;
     reset?: boolean;
+    noAnalyze?: boolean;
+    yes?: boolean;
   };
 }
 
@@ -20,7 +22,12 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   const [simpleStep, setSimpleStep] = useState<string>('');
 
   useEffect(() => {
-    if (command === 'analyze' && options.progress === false && !isComplete && !error) {
+    if (
+      command === 'analyze' &&
+      options.progress === false &&
+      !isComplete &&
+      !error
+    ) {
       const runSimpleAnalysis = async () => {
         try {
           const analysisResult = await performAnalysis((step) => {
@@ -35,7 +42,12 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       runSimpleAnalysis();
     }
 
-    if (command === 'init' && options.progress === false && !isComplete && !error) {
+    if (
+      command === 'init' &&
+      options.progress === false &&
+      !isComplete &&
+      !error
+    ) {
       const runSimpleInit = async () => {
         try {
           await performInit({ reset: options.reset }, (step) => {
@@ -67,7 +79,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
             <Text>{JSON.stringify(result.analysis, null, 2)}</Text>
             {result.metadata && (
               <>
-                <Text color="yellow">💰 Cost: ${result.metadata.cost_usd.toFixed(4)}</Text>
+                <Text color="yellow">
+                  💰 Cost: ${result.metadata.cost_usd.toFixed(4)}
+                </Text>
                 <Text color="cyan">🔄 Turns: {result.metadata.turns}</Text>
               </>
             )}
@@ -97,7 +111,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           <Text>{JSON.stringify(result.analysis, null, 2)}</Text>
           {result.metadata && (
             <>
-              <Text color="yellow">💰 Cost: ${result.metadata.cost_usd.toFixed(4)}</Text>
+              <Text color="yellow">
+                💰 Cost: ${result.metadata.cost_usd.toFixed(4)}
+              </Text>
               <Text color="cyan">🔄 Turns: {result.metadata.turns}</Text>
             </>
           )}
@@ -132,14 +148,40 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         return (
           <Box flexDirection="column">
             <Text color="green">✅ Initialization complete!</Text>
+            {result && result.analysis && (
+              <>
+                <Text color="green">✅ Analysis complete!</Text>
+                <Text>{JSON.stringify(result.analysis, null, 2)}</Text>
+                {result.metadata && (
+                  <>
+                    <Text color="yellow">
+                      💰 Cost: ${result.metadata.cost_usd.toFixed(4)}
+                    </Text>
+                    <Text color="cyan">🔄 Turns: {result.metadata.turns}</Text>
+                  </>
+                )}
+              </>
+            )}
           </Box>
         );
       }
 
       return (
-        <Box flexDirection="column">
-          <Text color="blue">🔧 {simpleStep || 'Initializing workspace...'}</Text>
-        </Box>
+        <InitWithAnalysis
+          options={{
+            reset: options.reset,
+            noAnalyze: options.noAnalyze,
+            yes: options.yes,
+            progress: options.progress,
+          }}
+          onComplete={(result) => {
+            setResult(result);
+            setIsComplete(true);
+          }}
+          onError={(error) => {
+            setError(error);
+          }}
+        />
       );
     }
 
@@ -155,14 +197,34 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       return (
         <Box flexDirection="column">
           <Text color="green">✅ Initialization complete!</Text>
+          {result && result.analysis && (
+            <>
+              <Text color="green">✅ Analysis complete!</Text>
+              <Text>{JSON.stringify(result.analysis, null, 2)}</Text>
+              {result.metadata && (
+                <>
+                  <Text color="yellow">
+                    💰 Cost: ${result.metadata.cost_usd.toFixed(4)}
+                  </Text>
+                  <Text color="cyan">🔄 Turns: {result.metadata.turns}</Text>
+                </>
+              )}
+            </>
+          )}
         </Box>
       );
     }
 
     return (
-      <InitProgress
-        options={{ reset: options.reset }}
-        onComplete={() => {
+      <InitWithAnalysis
+        options={{
+          reset: options.reset,
+          noAnalyze: options.noAnalyze,
+          yes: options.yes,
+          progress: options.progress,
+        }}
+        onComplete={(result) => {
+          setResult(result);
           setIsComplete(true);
         }}
         onError={(error) => {

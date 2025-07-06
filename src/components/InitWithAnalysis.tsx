@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { performInit } from '../commands/init';
 import { performAnalysis } from '../commands/analyze';
+import { AnalysisDisplay } from './AnalysisDisplay';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -202,14 +203,7 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
       return (
         <Box flexDirection="column">
           <Text color="green">✅ Initialization complete!</Text>
-          <Text color="green">✅ Analysis complete!</Text>
-          <Text>{JSON.stringify(analysisResult.analysis, null, 2)}</Text>
-          {analysisResult.metadata && (
-            <>
-              <Text color="yellow">💰 Cost: ${analysisResult.metadata.cost_usd.toFixed(4)}</Text>
-              <Text color="cyan">🔄 Turns: {analysisResult.metadata.turns}</Text>
-            </>
-          )}
+          <AnalysisDisplay result={analysisResult} />
         </Box>
       );
     }

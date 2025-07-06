@@ -1,29 +1,43 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { FormatAnalysis } from '../utils/formatAnalysis';
-import { WorkspaceAnalysis } from '../types/analysis';
+import { AnalysisResult } from '../commands/analyze';
 
 interface AnalysisDisplayProps {
-  analysis: WorkspaceAnalysis;
-  metadata?: {
-    cost_usd: number;
-    turns: number;
-  };
+  result: AnalysisResult;
 }
 
-export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ analysis, metadata }) => {
+export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result }) => {
+  if (!result.analysis) {
+    return (
+      <Box flexDirection="column">
+        <Text color="red">❌ No analysis data available</Text>
+      </Box>
+    );
+  }
+
   return (
     <Box flexDirection="column">
       <Text color="green">✅ Analysis complete!</Text>
       <Box marginTop={1}>
-        <FormatAnalysis analysis={analysis} />
+        <FormatAnalysis analysis={result.analysis} />
       </Box>
-      {metadata && (
+      {result.metadata && (
         <>
           <Text color="yellow">
-            💰 Cost: ${metadata.cost_usd.toFixed(4)}
+            💰 Cost: ${result.metadata.costUsd.toFixed(4)}
           </Text>
-          <Text color="cyan">🔄 Turns: {metadata.turns}</Text>
+          <Text color="cyan">🔄 Turns: {result.metadata.turns}</Text>
+        </>
+      )}
+      {result.unrecognizedFrameworks && result.unrecognizedFrameworks.length > 0 && (
+        <>
+          <Text color="yellow">
+            ⚠️  Unrecognized frameworks: {result.unrecognizedFrameworks.join(', ')}
+          </Text>
+          <Text color="gray">
+            Please consider submitting an issue at https://github.com/chorenzo-dev/engine/issues to add support for these frameworks.
+          </Text>
         </>
       )}
     </Box>

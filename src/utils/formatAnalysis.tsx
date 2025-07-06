@@ -20,7 +20,8 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({ anal
             <Text>{index === projects.length - 1 ? '└─' : '├─'} {project.path}</Text>
             <Box flexDirection="column" marginLeft={3}>
               <Text>├─ Type: {formatProjectType(project.type)}</Text>
-              <Text>└─ Language: {capitalize(project.language)}</Text>
+              <Text>├─ Language: {capitalize(project.language)}</Text>
+              <Text>└─ Framework: {project.framework ? capitalize(project.framework) : 'None'}</Text>
             </Box>
           </Box>
         ))}
@@ -33,6 +34,7 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({ anal
         <Text color="blue" bold>📁 Project Analysis</Text>
         <Text>Type: {formatProjectType(project.type)}</Text>
         <Text>Language: {capitalize(project.language)}</Text>
+        <Text>Framework: {project.framework ? capitalize(project.framework) : 'None'}</Text>
         <Text>Package Manager: {getPackageManager(project)}</Text>
         <Box marginTop={1} />
       </Box>

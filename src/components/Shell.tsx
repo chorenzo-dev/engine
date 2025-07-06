@@ -74,7 +74,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       }
 
       if (isComplete && result) {
-        return <AnalysisDisplay analysis={result.analysis} metadata={result.metadata} />;
+        return <AnalysisDisplay result={result} />;
       }
 
       return (
@@ -93,7 +93,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     }
 
     if (isComplete && result) {
-      return <AnalysisDisplay analysis={result.analysis} metadata={result.metadata} />;
+      return <AnalysisDisplay result={result} />;
     }
 
     return (
@@ -125,7 +125,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
             <Text color="green">✅ Initialization complete!</Text>
             {result && result.analysis && (
               <Box marginTop={1}>
-                <AnalysisDisplay analysis={result.analysis} metadata={result.metadata} />
+                <AnalysisDisplay result={result} />
               </Box>
             )}
           </Box>
@@ -165,7 +165,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           <Text color="green">✅ Initialization complete!</Text>
           {result && result.analysis && (
             <Box marginTop={1}>
-              <AnalysisDisplay analysis={result.analysis} metadata={result.metadata} />
+              <AnalysisDisplay result={result} />
             </Box>
           )}
         </Box>

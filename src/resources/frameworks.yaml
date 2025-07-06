@@ -1,0 +1,189 @@
+javascript:
+  api_server:
+    - adonisjs
+    - express
+    - fastify
+    - feathers
+    - hapi
+    - koa
+    - loopback
+    - nestjs
+    - restify
+  backend_service:
+    - agenda
+    - bee-queue
+    - bree
+    - bull
+    - bullmq
+  cli_tool:
+    - cac
+    - commander
+    - gluegun
+    - inquirer
+    - meow
+    - oclif
+    - yargs
+  desktop_app:
+    - electron
+    - neutralinojs
+    - tauri
+  mobile_app:
+    - expo
+    - ionic
+    - react-native
+  web_app:
+    - nextjs
+    - nuxtjs
+    - qwik-city
+    - redwoodjs
+    - remix
+    - solidstart
+    - sveltekit
+
+python:
+  api_server:
+    - bottle
+    - django
+    - falcon
+    - fastapi
+    - flask
+    - pyramid
+    - sanic
+    - starlette
+    - tornado
+  backend_service:
+    - apscheduler
+    - celery
+    - dramatiq
+    - huey
+    - rq
+  cli_tool:
+    - click
+    - docopt
+    - fire
+    - typer
+  desktop_app:
+    - kivy
+    - pyside
+    - pyqt
+    - tkinter
+    - wxpython
+  web_app:
+    - django
+    - flask
+    - pyramid
+
+rust:
+  api_server:
+    - actix-web
+    - axum
+    - poem
+    - rocket
+    - salvo
+    - warp
+  cli_tool:
+    - argh
+    - clap
+    - gumdrop
+  desktop_app:
+    - gtk-rs
+    - iced
+    - tauri
+
+go:
+  api_server:
+    - chi
+    - echo
+    - fiber
+    - gin
+    - mux
+  backend_service:
+    - asynq
+    - machinery
+  cli_tool:
+    - cobra
+    - urfave-cli
+
+java:
+  api_server:
+    - dropwizard
+    - jakarta-ee
+    - jersey
+    - micronaut
+    - quarkus
+    - spring-boot
+    - vertx
+  backend_service:
+    - apache-camel
+    - quartz
+    - spring-batch
+  desktop_app:
+    - javafx
+    - swing
+    - swt
+  web_app:
+    - jakarta-ee
+    - micronaut
+    - quarkus
+    - spring-boot
+    - spring-mvc
+    - vertx
+
+csharp:
+  api_server:
+    - aspnet-core
+  desktop_app:
+    - avalonia
+    - maui
+    - winforms
+    - wpf
+  mobile_app:
+    - maui
+    - xamarin
+  web_app:
+    - aspnet-core
+    - blazor
+
+ruby:
+  api_server:
+    - grape
+    - rails
+    - roda
+    - sinatra
+  backend_service:
+    - delayed-job
+    - resque
+    - sidekiq
+  cli_tool:
+    - commander
+    - gli
+    - thor
+  web_app:
+    - hanami
+    - padrino
+    - rails
+    - sinatra
+
+php:
+  api_server:
+    - api-platform
+    - laravel
+    - lumen
+    - slim
+    - symfony
+  web_app:
+    - cakephp
+    - codeigniter
+    - laravel
+    - phalcon
+    - symfony
+    - yii2
+
+dart:
+  api_server:
+    - shelf
+  mobile_app:
+    - flutter
+  web_app:
+    - angulardart
+    - flutter

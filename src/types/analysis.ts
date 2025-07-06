@@ -4,6 +4,7 @@ export interface ProjectAnalysis {
   path: string;
   language: string;
   type: ProjectType;
+  framework?: string;
   dependencies: string[];
   hasPackageManager: boolean;
   ecosystem?: string;

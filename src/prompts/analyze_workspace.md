@@ -42,6 +42,10 @@ IMPORTANT: Do NOT use ```json``` markdown blocks. Return raw JSON only.
 - **mobile_app**: Mobile applications for phones/tablets. Examples: react-native, flutter, native iOS/Android projects
 - **unknown**: Cannot determine project type from available information
 
+## Framework Detection:
+For each project, identify the main framework used (if any). Set to null if no specific framework is used.
+Examples: commander (CLI), react (web), express (API), django (web), flutter (mobile), electron (desktop)
+
 CRITICAL: Your response must be ONLY this JSON structure with no other text. Do NOT wrap in markdown code blocks or add any explanations:
 {
 "is_monorepo": boolean,
@@ -53,6 +57,7 @@ CRITICAL: Your response must be ONLY this JSON structure with no other text. Do 
 "path": string,
 "language": string,
 "type": "cli_tool" | "web_app" | "api_server" | "backend_service" | "library" | "script" | "infrastructure" | "desktop_app" | "mobile_app" | "unknown",
+"framework": string | null,
 "dependencies": string[],
 "has_package_manager": boolean,
 "ecosystem": string | null

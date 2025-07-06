@@ -2,15 +2,29 @@ import { query, type SDKMessage } from '@anthropic-ai/claude-code';
 import { findGitRoot, getProjectIdentifier } from '../utils/git.utils';
 import { buildFileTree } from '../utils/file-tree.utils';
 import { loadPrompt, renderPrompt } from '../utils/prompts.utils';
+import { WorkspaceAnalysis } from '../types/analysis';
 
 interface AnalysisResult {
-  analysis: any;
+  analysis: WorkspaceAnalysis | null;
   metadata?: {
     type: string;
     subtype: string;
     cost_usd: number;
     turns: number;
   };
+}
+
+function snakeToCamelCase<T>(obj: unknown): T {
+  if (Array.isArray(obj)) {
+    return obj.map(snakeToCamelCase) as T;
+  } else if (obj !== null && typeof obj === 'object') {
+    return Object.keys(obj).reduce((result, key) => {
+      const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      (result as any)[camelKey] = snakeToCamelCase((obj as any)[key]);
+      return result;
+    }, {} as T);
+  }
+  return obj as T;
 }
 
 export type ProgressCallback = (step: string) => void;
@@ -52,7 +66,7 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
   }
 
   return {
-    analysis,
+    analysis: analysis ? snakeToCamelCase(analysis) : null,
     metadata: sdkResultMetadata ? {
       type: sdkResultMetadata.type,
       subtype: sdkResultMetadata.subtype,

@@ -4,6 +4,7 @@ import { AnalysisProgress } from './AnalysisProgress';
 import { InitWithAnalysis } from './InitWithAnalysis';
 import { performAnalysis } from '../commands/analyze';
 import { performInit } from '../commands/init';
+import { FormatAnalysis } from '../utils/formatAnalysis';
 
 interface ShellProps {
   command: 'analyze' | 'init';
@@ -76,7 +77,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         return (
           <Box flexDirection="column">
             <Text color="green">✅ Analysis complete!</Text>
-            <Text>{JSON.stringify(result.analysis, null, 2)}</Text>
+            <Box marginTop={1}>
+              <FormatAnalysis analysis={result.analysis} />
+            </Box>
             {result.metadata && (
               <>
                 <Text color="yellow">
@@ -108,7 +111,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       return (
         <Box flexDirection="column">
           <Text color="green">✅ Analysis complete!</Text>
-          <Text>{JSON.stringify(result.analysis, null, 2)}</Text>
+          <Box marginTop={1}>
+            <FormatAnalysis analysis={result.analysis} />
+          </Box>
           {result.metadata && (
             <>
               <Text color="yellow">
@@ -151,7 +156,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
             {result && result.analysis && (
               <>
                 <Text color="green">✅ Analysis complete!</Text>
-                <Text>{JSON.stringify(result.analysis, null, 2)}</Text>
+                <Box marginTop={1}>
+              <FormatAnalysis analysis={result.analysis} />
+            </Box>
                 {result.metadata && (
                   <>
                     <Text color="yellow">
@@ -200,7 +207,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           {result && result.analysis && (
             <>
               <Text color="green">✅ Analysis complete!</Text>
-              <Text>{JSON.stringify(result.analysis, null, 2)}</Text>
+              <Box marginTop={1}>
+              <FormatAnalysis analysis={result.analysis} />
+            </Box>
               {result.metadata && (
                 <>
                   <Text color="yellow">

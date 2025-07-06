@@ -125,7 +125,7 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
   const writeAnalysisFile = async (result: any) => {
     const analysisPath = path.join(process.cwd(), '.chorenzo', 'analysis.json');
     fs.mkdirSync(path.dirname(analysisPath), { recursive: true });
-    fs.writeFileSync(analysisPath, JSON.stringify(result, null, 2));
+    fs.writeFileSync(analysisPath, JSON.stringify(result.analysis, null, 2));
   };
 
   const updateGitignore = async () => {

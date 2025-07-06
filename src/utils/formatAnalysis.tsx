@@ -19,6 +19,7 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({ anal
           <Box key={project.path} flexDirection="column">
             <Text>{index === projects.length - 1 ? '└─' : '├─'} {project.path}</Text>
             <Box flexDirection="column" marginLeft={3}>
+              <Text>├─ Type: {formatProjectType(project.type)}</Text>
               <Text>└─ Language: {capitalize(project.language)}</Text>
             </Box>
           </Box>
@@ -30,6 +31,7 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({ anal
     return (
       <Box flexDirection="column">
         <Text color="blue" bold>📁 Project Analysis</Text>
+        <Text>Type: {formatProjectType(project.type)}</Text>
         <Text>Language: {capitalize(project.language)}</Text>
         <Text>Package Manager: {getPackageManager(project)}</Text>
         <Box marginTop={1} />
@@ -40,6 +42,22 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({ anal
 
 function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function formatProjectType(type: ProjectAnalysis['type']): string {
+  const typeMap: Record<ProjectAnalysis['type'], string> = {
+    cli_tool: 'CLI Tool',
+    web_app: 'Web App',
+    api_server: 'API Server',
+    backend_service: 'Backend Service',
+    library: 'Library/Package',
+    script: 'Script',
+    infrastructure: 'Infrastructure',
+    desktop_app: 'Desktop App',
+    mobile_app: 'Mobile App',
+    unknown: 'Unknown',
+  };
+  return typeMap[type];
 }
 
 function getPackageManager(project: ProjectAnalysis): string {

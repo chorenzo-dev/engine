@@ -25,9 +25,24 @@ You have a MAXIMUM of 2 tool rounds. Use them wisely - batch ALL file reads in t
 TASKS:
 1. Find and read all configuration files (any package managers)
 2. Determine ecosystems and dependencies from actual config content
-3. Return ONLY valid JSON - no explanations, no markdown blocks, no additional text
+3. Detect project type based on dependencies and file structure
+4. Return ONLY valid JSON - no explanations, no markdown blocks, no additional text
 
-CRITICAL: Your response must be ONLY this JSON structure with no other text:
+IMPORTANT: Do NOT use ```json``` markdown blocks. Return raw JSON only.
+
+## Project Type Detection Rules:
+- **cli_tool**: Command-line applications that users interact with via terminal. Examples: commander (JS), click (Python), clap (Rust), cobra (Go)
+- **web_app**: Frontend applications served to browsers. Examples: react/next (JS), django (Python), rails (Ruby), laravel (PHP)
+- **api_server**: HTTP services providing REST/GraphQL APIs. Examples: express (JS), fastapi (Python), gin (Go), spring-boot (Java)
+- **backend_service**: Background processors for queues, cron jobs, data processing. Examples: bull (JS), celery (Python), sidekiq (Ruby)
+- **library**: Reusable code packages published to registries. Examples: npm packages, pip packages, cargo crates, maven artifacts
+- **script**: Simple automation or utility scripts. Examples: build scripts, deployment scripts, data migration scripts
+- **infrastructure**: Infrastructure-as-code and deployment configurations. Examples: terraform, kubernetes manifests, docker-compose
+- **desktop_app**: Native desktop applications. Examples: electron (JS), tkinter (Python), javafx (Java), wpf (C#)
+- **mobile_app**: Mobile applications for phones/tablets. Examples: react-native, flutter, native iOS/Android projects
+- **unknown**: Cannot determine project type from available information
+
+CRITICAL: Your response must be ONLY this JSON structure with no other text. Do NOT wrap in markdown code blocks or add any explanations:
 {
 "is_monorepo": boolean,
 "has_workspace_package_manager": boolean,
@@ -37,6 +52,7 @@ CRITICAL: Your response must be ONLY this JSON structure with no other text:
 {
 "path": string,
 "language": string,
+"type": "cli_tool" | "web_app" | "api_server" | "backend_service" | "library" | "script" | "infrastructure" | "desktop_app" | "mobile_app" | "unknown",
 "dependencies": string[],
 "has_package_manager": boolean,
 "ecosystem": string | null

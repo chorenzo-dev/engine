@@ -3,6 +3,8 @@ import { findGitRoot, getProjectIdentifier } from '../utils/git.utils';
 import { buildFileTree } from '../utils/file-tree.utils';
 import { loadPrompt, renderPrompt } from '../utils/prompts.utils';
 import { WorkspaceAnalysis } from '../types/analysis';
+import * as fs from 'fs';
+import * as path from 'path';
 
 interface AnalysisResult {
   analysis: WorkspaceAnalysis | null;
@@ -65,8 +67,8 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
     }
   }
 
-  return {
-    analysis: analysis ? snakeToCamelCase(analysis) : null,
+  const result = {
+    analysis: analysis ? snakeToCamelCase<WorkspaceAnalysis>(analysis) : null,
     metadata: sdkResultMetadata ? {
       type: sdkResultMetadata.type,
       subtype: sdkResultMetadata.subtype,
@@ -74,4 +76,12 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
       turns: sdkResultMetadata.num_turns || 0
     } : undefined
   };
+
+  if (result.analysis) {
+    const analysisPath = path.join(process.cwd(), '.chorenzo', 'analysis.json');
+    fs.mkdirSync(path.dirname(analysisPath), { recursive: true });
+    fs.writeFileSync(analysisPath, JSON.stringify(result.analysis, null, 2));
+  }
+
+  return result;
 }

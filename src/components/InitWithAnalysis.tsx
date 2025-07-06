@@ -98,7 +98,6 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
           setAnalysisResult(result);
           
           await Promise.all([
-            writeAnalysisFile(result),
             updateGitignore(),
             updateGlobalState()
           ]);
@@ -122,11 +121,6 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
     }
   }, [phase, analysisStartTime]);
 
-  const writeAnalysisFile = async (result: any) => {
-    const analysisPath = path.join(process.cwd(), '.chorenzo', 'analysis.json');
-    fs.mkdirSync(path.dirname(analysisPath), { recursive: true });
-    fs.writeFileSync(analysisPath, JSON.stringify(result.analysis, null, 2));
-  };
 
   const updateGitignore = async () => {
     const gitignorePath = path.join(process.cwd(), '.gitignore');

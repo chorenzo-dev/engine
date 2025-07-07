@@ -3,7 +3,7 @@ import { findGitRoot, getProjectIdentifier } from '../utils/git.utils';
 import { buildFileTree } from '../utils/file-tree.utils';
 import { loadPrompt, renderPrompt } from '../utils/prompts.utils';
 import { WorkspaceAnalysis } from '../types/analysis';
-import { validateFrameworks, createFrameworkClarificationPrompt } from '../utils/framework-validation';
+import { validateFrameworks } from '../utils/framework-validation';
 import { readJson, writeJson } from '../utils/json.utils';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -36,32 +36,6 @@ function snakeToCamelCase<T>(obj: unknown): T {
 
 export type ProgressCallback = (step: string) => void;
 
-async function clarifyFrameworks(
-  sessionId: string,
-  clarificationPrompt: string,
-  onProgress?: ProgressCallback
-): Promise<{ success: boolean; cost: number; turns: number }> {
-  let cost = 0;
-  let turns = 0;
-  let success = false;
-
-  for await (const message of query({
-    prompt: clarificationPrompt,
-    options: {
-      resume: sessionId,
-      allowedTools: ['Read', 'Edit'],
-      permissionMode: 'bypassPermissions',
-    },
-  })) {
-    if (message.type === 'result') {
-      if (message.total_cost_usd) cost = message.total_cost_usd;
-      if (message.num_turns) turns = message.num_turns;
-      success = message.subtype === 'success';
-    }
-  }
-
-  return { success, cost, turns };
-}
 
 export async function performAnalysis(onProgress?: ProgressCallback): Promise<AnalysisResult> {
   onProgress?.('Finding git repository...');
@@ -80,7 +54,6 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
   onProgress?.('Analyzing workspace with Claude...');
   let sdkResultMetadata: SDKMessage | null = null;
   let analysis = null;
-  let sessionId: string | undefined;
 
   for await (const message of query({
     prompt,
@@ -91,9 +64,6 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
       permissionMode: 'bypassPermissions',
     },
   })) {
-    if (message.session_id) {
-      sessionId = message.session_id;
-    }
     if (message.type === 'result') {
       sdkResultMetadata = message;
       if (message.subtype === 'success' && 'result' in message) {
@@ -110,37 +80,17 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
 
   if (finalAnalysis) {
     onProgress?.('Validating frameworks...');
-    const { validatedAnalysis, ambiguousFrameworks } = await validateFrameworks(finalAnalysis);
-    
-    if (ambiguousFrameworks.length > 0 && sessionId) {
-      onProgress?.('Clarifying ambiguous frameworks...');
-      const clarificationPrompt = createFrameworkClarificationPrompt(ambiguousFrameworks);
-      
-      const { success, cost, turns } = await clarifyFrameworks(sessionId, clarificationPrompt, onProgress);
-      totalCost += cost;
-      totalTurns += turns;
-      
-      if (success) {
-        try {
-          const updatedAnalysis = await readJson<WorkspaceAnalysis>(ANALYSIS_PATH);
-          const { validatedAnalysis: revalidated, ambiguousFrameworks: stillAmbiguous } = await validateFrameworks(updatedAnalysis);
-          
-          if (stillAmbiguous.length === 0) {
-            finalAnalysis = revalidated;
-          } else {
-            unrecognizedFrameworks = stillAmbiguous.map(f => f.originalFramework);
-            onProgress?.(`Warning: ${stillAmbiguous.length} frameworks still unrecognized after clarification`);
-            finalAnalysis = revalidated;
-          }
-        } catch (error) {
-          onProgress?.('Warning: Could not read updated analysis file');
-          finalAnalysis = validatedAnalysis;
-        }
-      } else {
-        finalAnalysis = validatedAnalysis;
-      }
-    } else {
+    try {
+      const { validatedAnalysis, unrecognizedFrameworks: unrecognized } = await validateFrameworks(finalAnalysis);
       finalAnalysis = validatedAnalysis;
+      unrecognizedFrameworks = unrecognized;
+      
+      if (unrecognizedFrameworks.length > 0) {
+        onProgress?.(`Warning: ${unrecognizedFrameworks.length} frameworks not recognized: ${unrecognizedFrameworks.join(', ')}`);
+      }
+    } catch (error) {
+      console.error('Framework validation error:', error);
+      onProgress?.('Warning: Framework validation failed');
     }
   }
 

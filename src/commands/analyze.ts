@@ -17,6 +17,7 @@ export interface AnalysisResult {
     subtype: string;
     costUsd: number;
     turns: number;
+    durationSeconds: number;
   };
   unrecognizedFrameworks?: string[];
 }
@@ -38,6 +39,8 @@ export type ProgressCallback = (step: string) => void;
 
 
 export async function performAnalysis(onProgress?: ProgressCallback): Promise<AnalysisResult> {
+  const startTime = Date.now();
+  
   onProgress?.('Finding git repository...');
   const workspaceRoot = await findGitRoot().catch(() => process.cwd());
   
@@ -94,13 +97,16 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
     }
   }
 
+  const durationSeconds = (Date.now() - startTime) / 1000;
+  
   const result: AnalysisResult = {
     analysis: finalAnalysis,
     metadata: sdkResultMetadata ? {
       type: sdkResultMetadata.type,
       subtype: sdkResultMetadata.subtype,
       costUsd: totalCost,
-      turns: totalTurns
+      turns: totalTurns,
+      durationSeconds
     } : undefined,
     unrecognizedFrameworks: unrecognizedFrameworks.length > 0 ? unrecognizedFrameworks : undefined
   };

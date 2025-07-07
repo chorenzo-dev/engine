@@ -28,6 +28,7 @@ export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result }) => {
             💰 Cost: ${result.metadata.costUsd.toFixed(4)}
           </Text>
           <Text color="cyan">🔄 Turns: {result.metadata.turns}</Text>
+          <Text color="magenta">⏱️  Duration: {result.metadata.durationSeconds.toFixed(1)}s</Text>
         </>
       )}
       {result.unrecognizedFrameworks && result.unrecognizedFrameworks.length > 0 && (

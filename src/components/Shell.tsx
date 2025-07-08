@@ -4,15 +4,17 @@ import { AnalysisProgress } from './AnalysisProgress';
 import { InitWithAnalysis } from './InitWithAnalysis';
 import { performAnalysis } from '../commands/analyze';
 import { performInit } from '../commands/init';
+import { performRecipesValidate, type ValidationCallback, type ValidationResult } from '../commands/recipes';
 import { AnalysisDisplay } from './AnalysisDisplay';
 
 interface ShellProps {
-  command: 'analyze' | 'init';
+  command: 'analyze' | 'init' | 'recipes-validate';
   options: {
     progress?: boolean;
     reset?: boolean;
     noAnalyze?: boolean;
     yes?: boolean;
+    target?: string;
   };
 }
 
@@ -21,6 +23,8 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   const [error, setError] = useState<Error | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [simpleStep, setSimpleStep] = useState<string>('');
+  const [validationMessages, setValidationMessages] = useState<string[]>([]);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
 
   useEffect(() => {
     if (
@@ -61,7 +65,54 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       };
       runSimpleInit();
     }
-  }, [command, options.progress, options.reset, isComplete, error]);
+
+    if (
+      command === 'recipes-validate' &&
+      !isComplete &&
+      !error
+    ) {
+      if (!options.target) {
+        setError(new Error('Target parameter is required'));
+        return;
+      }
+      
+      const runRecipesValidate = async () => {
+        try {
+          const handleValidation: ValidationCallback = (type, message) => {
+            let formattedMessage: string;
+            switch (type) {
+              case 'success':
+                formattedMessage = `✅ ${message}`;
+                break;
+              case 'error':
+                formattedMessage = `❌ ${message}`;
+                break;
+              case 'warning':
+                formattedMessage = `⚠️  ${message}`;
+                break;
+              case 'info':
+                formattedMessage = `📊 ${message}`;
+                break;
+            }
+            setValidationMessages(prev => [...prev, formattedMessage]);
+          };
+          
+          const result = await performRecipesValidate({
+            target: options.target!,
+            progress: options.progress
+          }, (step) => {
+            setSimpleStep(step);
+          }, handleValidation);
+          
+          setValidationResult(result);
+          setIsComplete(true);
+        } catch (err) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      };
+      runRecipesValidate();
+    }
+  }, [command, options.progress, options.reset, options.target, isComplete, error]);
 
   if (command === 'analyze') {
     if (options.progress === false) {
@@ -188,6 +239,50 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           setError(error);
         }}
       />
+    );
+  }
+
+  if (command === 'recipes-validate') {
+    if (error) {
+      return (
+        <Box flexDirection="column">
+          <Text color="red">❌ Error: {error.message}</Text>
+        </Box>
+      );
+    }
+
+    if (isComplete && validationResult) {
+      return (
+        <Box flexDirection="column">
+          {validationResult.messages.map((msg, index) => {
+            let icon = '';
+            switch (msg.type) {
+              case 'success': icon = '✅'; break;
+              case 'error': icon = '❌'; break;
+              case 'warning': icon = '⚠️ '; break;
+              case 'info': icon = '📊'; break;
+            }
+            return <Text key={index}>{`${icon} ${msg.text}`}</Text>;
+          })}
+          {validationResult.summary && (
+            <Box marginTop={1} flexDirection="column">
+              <Text>📊 Summary:</Text>
+              <Text>{`  Valid recipes: ${validationResult.summary.valid}/${validationResult.summary.total}`}</Text>
+              <Text>{`  Total errors: ${validationResult.summary.totalErrors}`}</Text>
+              <Text>{`  Total warnings: ${validationResult.summary.totalWarnings}`}</Text>
+            </Box>
+          )}
+          <Box marginTop={1}>
+            <Text color="green">✅ Recipe validation complete!</Text>
+          </Box>
+        </Box>
+      );
+    }
+
+    return (
+      <Box flexDirection="column">
+        <Text color="blue">🔍 {simpleStep || 'Validating recipe...'}</Text>
+      </Box>
     );
   }
 

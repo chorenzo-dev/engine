@@ -48,4 +48,24 @@ program
     );
   });
 
+const recipesCommand = program
+  .command('recipes')
+  .description('Manage and validate recipes');
+
+recipesCommand
+  .command('validate <target>')
+  .description('Validate a recipe, recipe folder, library, or git repository')
+  .option('--no-progress', 'Disable progress UI')
+  .action(async (target, options) => {
+    render(
+      React.createElement(Shell, {
+        command: 'recipes-validate',
+        options: {
+          target,
+          progress: options.progress
+        }
+      })
+    );
+  });
+
 program.parse();

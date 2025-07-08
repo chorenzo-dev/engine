@@ -120,7 +120,7 @@ async function parseFixFiles(fixesDir: string, metadata: RecipeMetadata): Promis
 
   for (const ecosystem of metadata.ecosystems) {
     for (const variant of ecosystem.variants) {
-      const fixPath = path.join(fixesDir, variant.fix_prompt);
+      const fixPath = path.join(path.dirname(fixesDir), variant.fix_prompt);
       if (fs.existsSync(fixPath)) {
         const content = fs.readFileSync(fixPath, 'utf-8');
         fixFiles.set(variant.fix_prompt, content);
@@ -168,7 +168,8 @@ function validateMetadata(metadata: any, metadataPath: string): void {
     }
   }
 
-  const recipeName = path.basename(path.dirname(metadataPath));
+  const recipeDir = path.dirname(metadataPath);
+  const recipeName = path.basename(recipeDir);
   if (metadata.id !== recipeName) {
     throw new Error(`Recipe ID '${metadata.id}' must match directory name '${recipeName}'`);
   }
@@ -240,7 +241,7 @@ export function validateRecipe(recipe: Recipe): RecipeValidationResult {
   const warnings: RecipeValidationError[] = [];
 
   try {
-    validateMetadata(recipe.metadata, recipe.path);
+    validateMetadata(recipe.metadata, path.join(recipe.path, 'metadata.yaml'));
   } catch (error) {
     errors.push({
       type: 'metadata',

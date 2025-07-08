@@ -4,6 +4,7 @@ import { AnalysisProgress } from './AnalysisProgress';
 import { InitWithAnalysis } from './InitWithAnalysis';
 import { performAnalysis } from '../commands/analyze';
 import { performInit } from '../commands/init';
+import { AnalysisDisplay } from './AnalysisDisplay';
 
 interface ShellProps {
   command: 'analyze' | 'init';
@@ -73,20 +74,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       }
 
       if (isComplete && result) {
-        return (
-          <Box flexDirection="column">
-            <Text color="green">✅ Analysis complete!</Text>
-            <Text>{JSON.stringify(result.analysis, null, 2)}</Text>
-            {result.metadata && (
-              <>
-                <Text color="yellow">
-                  💰 Cost: ${result.metadata.cost_usd.toFixed(4)}
-                </Text>
-                <Text color="cyan">🔄 Turns: {result.metadata.turns}</Text>
-              </>
-            )}
-          </Box>
-        );
+        return <AnalysisDisplay result={result} />;
       }
 
       return (
@@ -105,20 +93,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     }
 
     if (isComplete && result) {
-      return (
-        <Box flexDirection="column">
-          <Text color="green">✅ Analysis complete!</Text>
-          <Text>{JSON.stringify(result.analysis, null, 2)}</Text>
-          {result.metadata && (
-            <>
-              <Text color="yellow">
-                💰 Cost: ${result.metadata.cost_usd.toFixed(4)}
-              </Text>
-              <Text color="cyan">🔄 Turns: {result.metadata.turns}</Text>
-            </>
-          )}
-        </Box>
-      );
+      return <AnalysisDisplay result={result} />;
     }
 
     return (
@@ -149,18 +124,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           <Box flexDirection="column">
             <Text color="green">✅ Initialization complete!</Text>
             {result && result.analysis && (
-              <>
-                <Text color="green">✅ Analysis complete!</Text>
-                <Text>{JSON.stringify(result.analysis, null, 2)}</Text>
-                {result.metadata && (
-                  <>
-                    <Text color="yellow">
-                      💰 Cost: ${result.metadata.cost_usd.toFixed(4)}
-                    </Text>
-                    <Text color="cyan">🔄 Turns: {result.metadata.turns}</Text>
-                  </>
-                )}
-              </>
+              <Box marginTop={1}>
+                <AnalysisDisplay result={result} />
+              </Box>
             )}
           </Box>
         );
@@ -198,18 +164,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         <Box flexDirection="column">
           <Text color="green">✅ Initialization complete!</Text>
           {result && result.analysis && (
-            <>
-              <Text color="green">✅ Analysis complete!</Text>
-              <Text>{JSON.stringify(result.analysis, null, 2)}</Text>
-              {result.metadata && (
-                <>
-                  <Text color="yellow">
-                    💰 Cost: ${result.metadata.cost_usd.toFixed(4)}
-                  </Text>
-                  <Text color="cyan">🔄 Turns: {result.metadata.turns}</Text>
-                </>
-              )}
-            </>
+            <Box marginTop={1}>
+              <AnalysisDisplay result={result} />
+            </Box>
           )}
         </Box>
       );

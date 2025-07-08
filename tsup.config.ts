@@ -18,6 +18,10 @@ export default defineConfig({
         {
           from: ['./src/prompts/**/*'],
           to: ['./prompts'],
+        },
+        {
+          from: ['./src/resources/**/*'],
+          to: ['./resources'],
         }
       ]
     })

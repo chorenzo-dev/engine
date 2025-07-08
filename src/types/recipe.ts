@@ -1,3 +1,5 @@
+import { parseRecipeFromDirectory, parseRecipeLibraryFromDirectory, validateRecipe } from '../utils/recipe.utils';
+
 export interface RecipeVariant {
   id: string;
   fix_prompt: string;
@@ -51,11 +53,11 @@ export class Recipe {
   ) {}
 
   static async fromDirectory(recipePath: string): Promise<Recipe> {
-    throw new Error('Not implemented');
+    return parseRecipeFromDirectory(recipePath);
   }
 
   validate(): RecipeValidationResult {
-    throw new Error('Not implemented');
+    return validateRecipe(this);
   }
 
   getId(): string {
@@ -104,7 +106,7 @@ export class RecipeLibrary {
   ) {}
 
   static async fromDirectory(libraryPath: string): Promise<RecipeLibrary> {
-    throw new Error('Not implemented');
+    return parseRecipeLibraryFromDirectory(libraryPath);
   }
 
   findRecipeById(id: string): Recipe | undefined {

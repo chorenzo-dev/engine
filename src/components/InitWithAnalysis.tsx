@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text, useInput, useStdin } from 'ink';
 import { performInit } from '../commands/init';
 import { performAnalysis } from '../commands/analyze';
 import { AnalysisDisplay } from './AnalysisDisplay';
@@ -38,6 +38,9 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
   const [showLongRunningMessage, setShowLongRunningMessage] = useState(false);
   const [analysisAborted, setAnalysisAborted] = useState(false);
   const [userResponse, setUserResponse] = useState<string>('');
+  const { isRawModeSupported } = useStdin();
+
+  const shouldUseInput = options.progress !== false && isRawModeSupported;
 
   useInput((input, key) => {
     if (phase === 'confirm') {
@@ -61,7 +64,7 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
       setPhase('complete');
       onComplete();
     }
-  });
+  }, { isActive: shouldUseInput });
 
   useEffect(() => {
     if (phase === 'init' && !initComplete) {
@@ -75,7 +78,8 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
           if (options.noAnalyze) {
             setPhase('complete');
             onComplete();
-          } else if (options.yes) {
+          } else if (options.yes || !shouldUseInput) {
+            // Auto-proceed with analysis if yes flag is set or in non-interactive mode
             setPhase('analysis');
             setAnalysisStartTime(Date.now());
           } else {
@@ -87,7 +91,7 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
       };
       runInit();
     }
-  }, [phase, initComplete, options.reset, options.noAnalyze, options.yes, onComplete, onError]);
+  }, [phase, initComplete, options.reset, options.noAnalyze, options.yes, shouldUseInput, onComplete, onError]);
 
   useEffect(() => {
     if (phase === 'analysis' && !analysisAborted) {

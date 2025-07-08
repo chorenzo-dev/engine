@@ -116,8 +116,55 @@ function detectInputType(target: string): InputType {
   return InputType.RecipeName;
 }
 
+async function findRecipeByName(recipeName: string): Promise<string[]> {
+  const recipePaths: string[] = [];
+  
+  async function searchDirectory(dir: string): Promise<void> {
+    if (!fs.existsSync(dir)) {
+      return;
+    }
+    
+    const entries = fs.readdirSync(dir);
+    
+    for (const entry of entries) {
+      const entryPath = path.join(dir, entry);
+      const stat = fs.statSync(entryPath);
+      
+      if (stat.isDirectory()) {
+        if (entry === recipeName) {
+          const metadataPath = path.join(entryPath, 'metadata.yaml');
+          if (fs.existsSync(metadataPath)) {
+            recipePaths.push(entryPath);
+          }
+        } else {
+          await searchDirectory(entryPath);
+        }
+      }
+    }
+  }
+  
+  await searchDirectory(RECIPES_DIR);
+  return recipePaths;
+}
+
 async function validateRecipeByName(recipeName: string, options: RecipesOptions, onProgress?: ProgressCallback, onValidation?: ValidationCallback): Promise<ValidationResult> {
-  throw new RecipesError('Recipe name validation not implemented yet', 'NOT_IMPLEMENTED');
+  onProgress?.(`Searching for recipe: ${recipeName}`);
+  
+  const foundPaths = await findRecipeByName(recipeName);
+  
+  if (foundPaths.length === 0) {
+    throw new RecipesError(`Recipe '${recipeName}' not found in ~/.chorenzo/recipes`, 'RECIPE_NOT_FOUND');
+  }
+  
+  if (foundPaths.length > 1) {
+    const pathsList = foundPaths.map(p => `  - ${p}`).join('\n');
+    throw new RecipesError(
+      `Multiple recipes named '${recipeName}' found:\n${pathsList}\nPlease specify the full path.`,
+      'MULTIPLE_RECIPES_FOUND'
+    );
+  }
+  
+  return validateRecipeFolder(foundPaths[0], options, onProgress, onValidation);
 }
 
 async function validateRecipeFolder(recipePath: string, options: RecipesOptions, onProgress?: ProgressCallback, onValidation?: ValidationCallback): Promise<ValidationResult> {

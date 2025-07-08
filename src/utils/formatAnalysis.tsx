@@ -21,7 +21,8 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({ anal
             <Box flexDirection="column" marginLeft={3}>
               <Text>├─ Type: {formatProjectType(project.type)}</Text>
               <Text>├─ Language: {capitalize(project.language)}</Text>
-              <Text>└─ Framework: {project.framework ? capitalize(project.framework) : 'None'}</Text>
+              <Text>├─ Framework: {project.framework ? capitalize(project.framework) : 'None'}</Text>
+              <Text>└─ Docker: {project.dockerized ? 'Yes' : 'No'}</Text>
             </Box>
           </Box>
         ))}
@@ -35,6 +36,7 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({ anal
         <Text>Type: {formatProjectType(project.type)}</Text>
         <Text>Language: {capitalize(project.language)}</Text>
         <Text>Framework: {project.framework ? capitalize(project.framework) : 'None'}</Text>
+        <Text>Docker: {project.dockerized ? 'Yes' : 'No'}</Text>
         <Text>Package Manager: {getPackageManager(project)}</Text>
         <Box marginTop={1} />
       </Box>

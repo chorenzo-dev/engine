@@ -8,6 +8,7 @@ export interface ProjectAnalysis {
   dependencies: string[];
   hasPackageManager: boolean;
   ecosystem?: string;
+  dockerized?: boolean;
 }
 
 export interface WorkspaceAnalysis {

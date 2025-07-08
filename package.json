@@ -37,9 +37,14 @@
   "author": "",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@jest/globals": "^30.0.4",
+    "@types/jest": "^30.0.0",
     "@types/node": "^24.0.10",
     "@types/react": "^19.1.8",
     "esbuild-plugin-copy": "^2.1.1",
+    "jest": "^30.0.4",
+    "memfs": "^4.17.2",
+    "ts-jest": "^29.4.0",
     "tsup": "^8.5.0",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"

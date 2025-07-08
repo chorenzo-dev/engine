@@ -50,12 +50,29 @@ program
 
 const recipesCommand = program
   .command('recipes')
-  .description('Manage and validate recipes');
+  .description('Manage and validate Chorenzo recipes')
+  .addHelpText('after', `
+Examples:
+  $ chorenzo recipes validate code-formatting              # Validate by recipe name
+  $ chorenzo recipes validate ./my-recipe                  # Validate local recipe folder
+  $ chorenzo recipes validate ~/.chorenzo/recipes/core     # Validate entire library
+  $ chorenzo recipes validate https://github.com/user/chorenzo-recipes.git
+`);
 
 recipesCommand
   .command('validate <target>')
-  .description('Validate a recipe, recipe folder, library, or git repository')
+  .description('Validate recipes by name, path, library, or git repository')
   .option('--no-progress', 'Disable progress UI')
+  .addHelpText('after', `
+Arguments:
+  target    Recipe name, local path, or git URL
+
+Examples:
+  $ chorenzo recipes validate code-formatting
+  $ chorenzo recipes validate ~/my-recipes/custom-recipe
+  $ chorenzo recipes validate ~/.chorenzo/recipes/core
+  $ chorenzo recipes validate https://github.com/chorenzo-dev/recipes-core.git
+`)
   .action(async (target, options) => {
     render(
       React.createElement(Shell, {

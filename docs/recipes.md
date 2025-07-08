@@ -107,18 +107,28 @@ See `code_quality/code_formatting/` for a complete example implementing code for
 
 ## Recipe Validation
 
-Use the `chorenzo recipes validate` command to validate recipes:
+Use the `chorenzo recipes validate` command to validate recipes. The command automatically detects the input type and validates accordingly:
 
 ```bash
-# Validate a specific recipe by name
-chorenzo recipes validate <recipe-name>
+# Validate by recipe name (searches ~/.chorenzo/recipes)
+chorenzo recipes validate code-formatting
 
-# Validate a local recipe file
-chorenzo recipes validate --file /path/to/recipe
+# Validate a local recipe folder
+chorenzo recipes validate ./my-recipe
+chorenzo recipes validate ~/my-recipes/custom-recipe
 
-# Validate all recipes in a local library
-chorenzo recipes validate --library /path/to/library
+# Validate an entire recipe library
+chorenzo recipes validate ~/.chorenzo/recipes/core
+chorenzo recipes validate ./my-recipes-library
 
-# Validate recipes from a GitHub repository
-chorenzo recipes validate --repo https://github.com/owner/repo
+# Validate recipes from a git repository
+chorenzo recipes validate https://github.com/chorenzo-dev/recipes-core.git
 ```
+
+### Validation Features
+
+- **Smart Detection**: Automatically detects recipe names, local paths, libraries, and git URLs
+- **Recipe Discovery**: Finds recipes by name across all libraries in ~/.chorenzo/recipes
+- **Conflict Resolution**: Shows clear errors when multiple recipes have the same name
+- **Comprehensive Validation**: Validates metadata structure, required files, and recipe integrity
+- **Detailed Reporting**: Shows validation results with errors, warnings, and summary statistics

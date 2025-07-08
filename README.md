@@ -28,7 +28,23 @@ npx @chorenzo/engine analyze
 npx @chorenzo/engine analyze --no-progress
 ```
 
-### Recipes
+### Recipes Command
+
+Validate and manage Chorenzo recipes:
+
+```bash
+# Validate a recipe by name
+npx @chorenzo/engine recipes validate code-formatting
+
+# Validate a local recipe folder
+npx @chorenzo/engine recipes validate ./my-recipe
+
+# Validate an entire recipe library
+npx @chorenzo/engine recipes validate ~/.chorenzo/recipes/core
+
+# Validate recipes from a git repository
+npx @chorenzo/engine recipes validate https://github.com/chorenzo-dev/recipes-core.git
+```
 
 Chorenzo uses atomic, composable automation recipes to handle workspace setup and configuration. See our [recipes documentation](docs/recipes.md) for detailed information about creating and using recipes.
 

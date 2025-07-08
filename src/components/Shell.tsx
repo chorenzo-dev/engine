@@ -268,8 +268,12 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
             <Box marginTop={1} flexDirection="column">
               <Text>📊 Summary:</Text>
               <Text>{`  Valid recipes: ${validationResult.summary.valid}/${validationResult.summary.total}`}</Text>
-              <Text>{`  Total errors: ${validationResult.summary.totalErrors}`}</Text>
-              <Text>{`  Total warnings: ${validationResult.summary.totalWarnings}`}</Text>
+              {validationResult.summary.totalErrors > 0 && (
+                <Text>{`  Total errors: ${validationResult.summary.totalErrors}`}</Text>
+              )}
+              {validationResult.summary.totalWarnings > 0 && (
+                <Text>{`  Total warnings: ${validationResult.summary.totalWarnings}`}</Text>
+              )}
             </Box>
           )}
           <Box marginTop={1}>

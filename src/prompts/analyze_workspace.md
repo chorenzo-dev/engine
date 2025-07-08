@@ -49,6 +49,9 @@ Examples: commander (CLI), react (web), express (API), django (web), flutter (mo
 ## Docker Detection:
 For each project, check if a Dockerfile exists. Set dockerized to true if present, false otherwise.
 
+## CI/CD Detection:
+For each project, detect which CI/CD system is being used. Set to "none" if no CI/CD configuration found.
+
 CRITICAL: Your response must be ONLY this JSON structure with no other text. Do NOT wrap in markdown code blocks or add any explanations:
 {
 "is_monorepo": boolean,
@@ -62,6 +65,7 @@ CRITICAL: Your response must be ONLY this JSON structure with no other text. Do 
 "type": "cli_tool" | "web_app" | "api_server" | "backend_service" | "library" | "script" | "infrastructure" | "desktop_app" | "mobile_app" | "unknown",
 "framework": string | null,
 "dockerized": boolean,
+"ci_cd": "github_actions" | "gitlab_ci" | "circleci" | "jenkins" | "travis_ci" | "azure_devops" | "bitbucket_pipelines" | "teamcity" | "bamboo" | "codeship" | "drone" | "buildkite" | "semaphore" | "appveyor" | "none",
 "dependencies": string[],
 "has_package_manager": boolean,
 "ecosystem": string | null

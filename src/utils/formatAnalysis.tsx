@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, Box } from 'ink';
-import { WorkspaceAnalysis, ProjectAnalysis } from '../types/analysis';
+import { WorkspaceAnalysis, ProjectAnalysis, CiCdSystem } from '../types/analysis';
 
 export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({ analysis }) => {
   const { isMonorepo, workspaceEcosystem, projects } = analysis;
@@ -22,7 +22,8 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({ anal
               <Text>├─ Type: {formatProjectType(project.type)}</Text>
               <Text>├─ Language: {capitalize(project.language)}</Text>
               <Text>├─ Framework: {project.framework ? capitalize(project.framework) : 'None'}</Text>
-              <Text>└─ Docker: {project.dockerized ? 'Yes' : 'No'}</Text>
+              <Text>├─ Docker: {project.dockerized ? 'Yes' : 'No'}</Text>
+              <Text>└─ CI/CD: {formatCiCd(project.ciCd)}</Text>
             </Box>
           </Box>
         ))}
@@ -37,6 +38,7 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({ anal
         <Text>Language: {capitalize(project.language)}</Text>
         <Text>Framework: {project.framework ? capitalize(project.framework) : 'None'}</Text>
         <Text>Docker: {project.dockerized ? 'Yes' : 'No'}</Text>
+        <Text>CI/CD: {formatCiCd(project.ciCd)}</Text>
         <Text>Package Manager: {getPackageManager(project)}</Text>
         <Box marginTop={1} />
       </Box>
@@ -68,4 +70,21 @@ function getPackageManager(project: ProjectAnalysis): string {
   if (!project.hasPackageManager) return 'None';
   if (project.ecosystem === 'javascript') return 'npm/yarn/pnpm';
   return project.ecosystem || 'Unknown';
+}
+
+function formatCiCd(ciCd?: CiCdSystem): string {
+  if (!ciCd || ciCd === 'none') return 'None';
+  
+  return ciCd
+    .split('_')
+    .map(word => {
+      const specialCases: Record<string, string> = {
+        'ci': 'CI',
+        'cd': 'CD',
+        'devops': 'DevOps'
+      };
+      
+      return specialCases[word] || word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(' ');
 }

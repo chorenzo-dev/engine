@@ -79,7 +79,6 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
             setPhase('complete');
             onComplete();
           } else if (options.yes || !shouldUseInput) {
-            // Auto-proceed with analysis if yes flag is set or in non-interactive mode
             setPhase('analysis');
             setAnalysisStartTime(Date.now());
           } else {

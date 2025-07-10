@@ -43,25 +43,8 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       runSimpleAnalysis();
     }
 
-    if (
-      command === 'init' &&
-      options.progress === false &&
-      !isComplete &&
-      !error
-    ) {
-      const runSimpleInit = async () => {
-        try {
-          await performInit({ reset: options.reset }, (step) => {
-            setSimpleStep(step);
-          });
-          setIsComplete(true);
-        } catch (err) {
-          setError(err instanceof Error ? err : new Error(String(err)));
-        }
-      };
-      runSimpleInit();
-    }
-  }, [command, options.progress, options.reset, isComplete, error]);
+    // Removed this - we should use InitWithAnalysis component instead
+  }, [command, options.progress, options.reset, options.noAnalyze, isComplete, error]);
 
   if (command === 'analyze') {
     if (options.progress === false) {

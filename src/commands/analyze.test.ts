@@ -44,9 +44,9 @@ describe('Analyze Command Integration Tests', () => {
   });
 
   it('should analyze express workspace using fixture', async () => {
-    const expressFixture = setupFixture('simple-express', testDir, { addGitRepo: true });
+    setupFixture('simple-express', testDir, { addGitRepo: true });
 
-    const mockAnalysis: WorkspaceAnalysis = {
+    const expectedAnalysis: WorkspaceAnalysis = {
       isMonorepo: false,
       hasWorkspacePackageManager: false,
       workspaceEcosystem: 'javascript',
@@ -92,7 +92,7 @@ describe('Analyze Command Integration Tests', () => {
     const mockProgress = jest.fn();
     const result = await performAnalysis(mockProgress);
 
-    expect(result.analysis).toEqual(mockAnalysis);
+    expect(result.analysis).toEqual(expectedAnalysis);
     expect(result.metadata).toEqual({
       type: 'result',
       subtype: 'success',
@@ -110,28 +110,12 @@ describe('Analyze Command Integration Tests', () => {
 
     expect(mockWriteJson).toHaveBeenCalledWith(
       path.join(testDir, '.chorenzo', 'analysis.json'),
-      mockAnalysis
+      result.analysis
     );
   });
 
   it('should handle unrecognized frameworks', async () => {
     setupFixture('simple-express', testDir, { addGitRepo: true });
-    const mockAnalysis: WorkspaceAnalysis = {
-      isMonorepo: false,
-      hasWorkspacePackageManager: false,
-      workspaceEcosystem: 'javascript',
-      projects: [{
-        path: '.',
-        language: 'javascript',
-        type: 'web_app',
-        framework: 'unknown-framework',
-        dependencies: ['unknown-framework'],
-        hasPackageManager: true,
-        ecosystem: 'npm',
-        dockerized: false,
-        ciCd: 'none'
-      }]
-    };
 
     mockQuery.mockImplementation(async function* () {
       yield {

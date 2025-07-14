@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import type { WorkspaceAnalysis } from '../types/analysis';
+import { setupFixture, type TestFixture } from '../test-utils/fixture-loader';
 
 const mockQuery = jest.fn<() => AsyncGenerator<any, void, unknown>>();
 const mockWriteJson = jest.fn<(path: string, data: any) => Promise<void>>();
@@ -29,22 +30,6 @@ describe('Analyze Command Integration Tests', () => {
     testDir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'analyze-test-'));
     process.chdir(testDir);
     
-    fs.mkdirSync(path.join(testDir, '.git'));
-    
-    fs.mkdirSync(path.join(testDir, 'src'), { recursive: true });
-    fs.mkdirSync(path.join(testDir, 'src', 'components'), { recursive: true });
-    fs.writeFileSync(path.join(testDir, 'src', 'index.js'), '// index.js');
-    fs.writeFileSync(path.join(testDir, 'src', 'components', 'App.js'), '// App.js');
-    fs.writeFileSync(path.join(testDir, 'package.json'), JSON.stringify({
-      name: 'test-project',
-      dependencies: {
-        next: '^13.0.0',
-        react: '^18.0.0',
-        'react-dom': '^18.0.0'
-      }
-    }, null, 2));
-    fs.writeFileSync(path.join(testDir, 'README.md'), '# Test Project');
-    
     const analyzeModule = await import('./analyze');
     performAnalysis = analyzeModule.performAnalysis;
   });
@@ -58,7 +43,9 @@ describe('Analyze Command Integration Tests', () => {
     jest.restoreAllMocks();
   });
 
-  it('should analyze workspace and save results', async () => {
+  it('should analyze express workspace using fixture', async () => {
+    const expressFixture = setupFixture('simple-express', testDir, { addGitRepo: true });
+
     const mockAnalysis: WorkspaceAnalysis = {
       isMonorepo: false,
       hasWorkspacePackageManager: false,
@@ -66,9 +53,9 @@ describe('Analyze Command Integration Tests', () => {
       projects: [{
         path: '.',
         language: 'javascript',
-        type: 'web_app',
-        framework: 'nextjs',
-        dependencies: ['next', 'react', 'react-dom'],
+        type: 'api_server',
+        framework: 'express',
+        dependencies: ['express', 'dotenv'],
         hasPackageManager: true,
         ecosystem: 'npm',
         dockerized: false,
@@ -87,9 +74,9 @@ describe('Analyze Command Integration Tests', () => {
           projects: [{
             path: '.',
             language: 'javascript',
-            type: 'web_app',
-            framework: 'nextjs',
-            dependencies: ['next', 'react', 'react-dom'],
+            type: 'api_server',
+            framework: 'express',
+            dependencies: ['express', 'dotenv'],
             has_package_manager: true,
             ecosystem: 'npm',
             dockerized: false,
@@ -128,6 +115,7 @@ describe('Analyze Command Integration Tests', () => {
   });
 
   it('should handle unrecognized frameworks', async () => {
+    setupFixture('simple-express', testDir, { addGitRepo: true });
     const mockAnalysis: WorkspaceAnalysis = {
       isMonorepo: false,
       hasWorkspacePackageManager: false,
@@ -179,6 +167,7 @@ describe('Analyze Command Integration Tests', () => {
   });
 
   it('should handle Claude API failures', async () => {
+    setupFixture('simple-express', testDir, { addGitRepo: true });
     mockQuery.mockImplementation(async function* () {
       yield {
         type: 'result',
@@ -196,6 +185,7 @@ describe('Analyze Command Integration Tests', () => {
   });
 
   it('should handle git repository not found', async () => {
+    setupFixture('simple-express', testDir, { addGitRepo: true });
     fs.rmSync(path.join(testDir, '.git'), { recursive: true, force: true });
 
     mockQuery.mockImplementation(async function* () {
@@ -285,6 +275,7 @@ describe('Analyze Command Integration Tests', () => {
   });
 
   it('should convert snake_case to camelCase in analysis results', async () => {
+    setupFixture('simple-express', testDir, { addGitRepo: true });
     mockQuery.mockImplementation(async function* () {
       yield {
         type: 'result',

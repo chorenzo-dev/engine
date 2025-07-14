@@ -60,3 +60,25 @@ export function getAvailableFixtures(): string[] {
     return stat.isDirectory();
   });
 }
+
+export interface SetupFixtureOptions {
+  addGitRepo?: boolean;
+}
+
+export function setupFixture(fixtureName: string, targetDir: string, options: SetupFixtureOptions = {}): TestFixture {
+  const { addGitRepo = false } = options;
+  
+  const fixture = loadTestFixture(fixtureName);
+  
+  if (addGitRepo && !fs.existsSync(path.join(targetDir, '.git'))) {
+    fs.mkdirSync(path.join(targetDir, '.git'));
+  }
+  
+  for (const [filePath, content] of fixture.files) {
+    const fullPath = path.join(targetDir, filePath);
+    fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+    fs.writeFileSync(fullPath, content);
+  }
+  
+  return fixture;
+}

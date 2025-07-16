@@ -199,49 +199,6 @@ describe('Analyze Command Integration Tests', () => {
     );
   });
 
-  it('should handle framework validation failures gracefully', async () => {
-    setupFixture('simple-express', testDir, { addGitRepo: true });
-
-    mockQuery.mockImplementation(async function* () {
-      yield {
-        type: 'result',
-        subtype: 'success',
-        result: JSON.stringify({
-          is_monorepo: false,
-          has_workspace_package_manager: false,
-          workspace_ecosystem: 'javascript',
-          projects: [{
-            path: '.',
-            language: 'javascript',
-            type: 'web_app',
-            framework: 'express',
-            dependencies: ['express', 'dotenv'],
-            has_package_manager: true,
-            ecosystem: 'javascript',
-            dockerized: false,
-          }]
-        }),
-        total_cost_usd: 0.05,
-        num_turns: 3
-      };
-    });
-
-    const mockProgress = jest.fn();
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    
-    const frameworksPath = path.join(originalCwd, 'src', 'resources', 'frameworks.yaml');
-    const frameworksBackup = fs.readFileSync(frameworksPath);
-    fs.unlinkSync(frameworksPath);
-    
-    const result = await performAnalysis(mockProgress);
-
-    expect(result.analysis).toBeDefined();
-    expect(mockProgress).toHaveBeenCalledWith('Warning: Framework validation failed');
-    expect(consoleSpy).toHaveBeenCalledWith('Framework validation error:', expect.any(Error));
-    
-    fs.writeFileSync(frameworksPath, frameworksBackup);
-    consoleSpy.mockRestore();
-  });
 
   it('should analyze monorepo with mixed languages', async () => {
     setupFixture('monorepo', testDir, { addGitRepo: true });

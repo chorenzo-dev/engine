@@ -199,22 +199,8 @@ describe('Analyze Command Integration Tests', () => {
     );
   });
 
-  it.skip('should handle framework validation failures gracefully', async () => {
-    const mockAnalysis: WorkspaceAnalysis = {
-      isMonorepo: false,
-      hasWorkspacePackageManager: false,
-      workspaceEcosystem: 'javascript',
-      projects: [{
-        path: '.',
-        language: 'javascript',
-        type: 'web_app',
-        framework: 'nextjs',
-        dependencies: ['next', 'react', 'react-dom'],
-        hasPackageManager: true,
-        ecosystem: 'javascript',
-        dockerized: false,
-      }]
-    };
+  it('should handle framework validation failures gracefully', async () => {
+    setupFixture('simple-express', testDir, { addGitRepo: true });
 
     mockQuery.mockImplementation(async function* () {
       yield {
@@ -228,8 +214,8 @@ describe('Analyze Command Integration Tests', () => {
             path: '.',
             language: 'javascript',
             type: 'web_app',
-            framework: 'nextjs',
-            dependencies: ['next', 'react', 'react-dom'],
+            framework: 'express',
+            dependencies: ['express', 'dotenv'],
             has_package_manager: true,
             ecosystem: 'javascript',
             dockerized: false,
@@ -240,16 +226,20 @@ describe('Analyze Command Integration Tests', () => {
       };
     });
 
-
     const mockProgress = jest.fn();
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     
+    const frameworksPath = path.join(originalCwd, 'src', 'resources', 'frameworks.yaml');
+    const frameworksBackup = fs.readFileSync(frameworksPath);
+    fs.unlinkSync(frameworksPath);
+    
     const result = await performAnalysis(mockProgress);
 
-    expect(result.analysis).toEqual(mockAnalysis);
+    expect(result.analysis).toBeDefined();
     expect(mockProgress).toHaveBeenCalledWith('Warning: Framework validation failed');
     expect(consoleSpy).toHaveBeenCalledWith('Framework validation error:', expect.any(Error));
     
+    fs.writeFileSync(frameworksPath, frameworksBackup);
     consoleSpy.mockRestore();
   });
 

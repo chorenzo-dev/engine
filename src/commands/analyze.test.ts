@@ -57,9 +57,8 @@ describe('Analyze Command Integration Tests', () => {
         framework: 'express',
         dependencies: ['express', 'dotenv'],
         hasPackageManager: true,
-        ecosystem: 'npm',
+        ecosystem: 'javascript',
         dockerized: false,
-        ciCd: 'none'
       }]
     };
 
@@ -78,9 +77,8 @@ describe('Analyze Command Integration Tests', () => {
             framework: 'express',
             dependencies: ['express', 'dotenv'],
             has_package_manager: true,
-            ecosystem: 'npm',
+            ecosystem: 'javascript',
             dockerized: false,
-            ci_cd: 'none'
           }]
         }),
         total_cost_usd: 0.05,
@@ -132,9 +130,8 @@ describe('Analyze Command Integration Tests', () => {
             framework: 'unknown-framework',
             dependencies: ['unknown-framework'],
             has_package_manager: true,
-            ecosystem: 'npm',
+            ecosystem: 'javascript',
             dockerized: false,
-            ci_cd: 'none'
           }]
         }),
         total_cost_usd: 0.05,
@@ -214,9 +211,8 @@ describe('Analyze Command Integration Tests', () => {
         framework: 'nextjs',
         dependencies: ['next', 'react', 'react-dom'],
         hasPackageManager: true,
-        ecosystem: 'npm',
+        ecosystem: 'javascript',
         dockerized: false,
-        ciCd: 'none'
       }]
     };
 
@@ -235,9 +231,8 @@ describe('Analyze Command Integration Tests', () => {
             framework: 'nextjs',
             dependencies: ['next', 'react', 'react-dom'],
             has_package_manager: true,
-            ecosystem: 'npm',
+            ecosystem: 'javascript',
             dockerized: false,
-            ci_cd: 'none'
           }]
         }),
         total_cost_usd: 0.05,
@@ -265,6 +260,7 @@ describe('Analyze Command Integration Tests', () => {
       isMonorepo: true,
       hasWorkspacePackageManager: true,
       workspaceEcosystem: 'javascript',
+      ciCd: 'github_actions',
       projects: [
         {
           path: 'apps/web-app',
@@ -273,9 +269,8 @@ describe('Analyze Command Integration Tests', () => {
           framework: 'nextjs',
           dependencies: ['next', 'react', 'react-dom', '@monorepo/shared-lib'],
           hasPackageManager: true,
-          ecosystem: 'npm',
+          ecosystem: 'javascript',
           dockerized: false,
-          ciCd: 'github_actions'
         },
         {
           path: 'apps/api-service',
@@ -284,9 +279,8 @@ describe('Analyze Command Integration Tests', () => {
           framework: 'fastapi',
           dependencies: ['fastapi', 'uvicorn', 'pydantic'],
           hasPackageManager: true,
-          ecosystem: 'pip',
+          ecosystem: 'python',
           dockerized: false,
-          ciCd: 'github_actions'
         },
         {
           path: 'apps/shared-lib',
@@ -294,9 +288,8 @@ describe('Analyze Command Integration Tests', () => {
           type: 'library',
           dependencies: ['react'],
           hasPackageManager: true,
-          ecosystem: 'npm',
+          ecosystem: 'javascript',
           dockerized: false,
-          ciCd: 'github_actions'
         }
       ]
     };
@@ -309,6 +302,7 @@ describe('Analyze Command Integration Tests', () => {
           is_monorepo: true,
           has_workspace_package_manager: true,
           workspace_ecosystem: 'javascript',
+          ci_cd: 'github_actions',
           projects: [
             {
               path: 'apps/web-app',
@@ -317,9 +311,8 @@ describe('Analyze Command Integration Tests', () => {
               framework: 'nextjs',
               dependencies: ['next', 'react', 'react-dom', '@monorepo/shared-lib'],
               has_package_manager: true,
-              ecosystem: 'npm',
+              ecosystem: 'javascript',
               dockerized: false,
-              ci_cd: 'github_actions'
             },
             {
               path: 'apps/api-service',
@@ -328,9 +321,8 @@ describe('Analyze Command Integration Tests', () => {
               framework: 'fastapi',
               dependencies: ['fastapi', 'uvicorn', 'pydantic'],
               has_package_manager: true,
-              ecosystem: 'pip',
+              ecosystem: 'python',
               dockerized: false,
-              ci_cd: 'github_actions'
             },
             {
               path: 'apps/shared-lib',
@@ -338,9 +330,8 @@ describe('Analyze Command Integration Tests', () => {
               type: 'library',
               dependencies: ['react'],
               has_package_manager: true,
-              ecosystem: 'npm',
+              ecosystem: 'javascript',
               dockerized: false,
-              ci_cd: 'github_actions'
             }
           ]
         }),
@@ -384,6 +375,7 @@ describe('Analyze Command Integration Tests', () => {
           has_workspace_package_manager: true,
           workspace_ecosystem: 'typescript',
           workspace_dependencies: ['typescript', 'next'],
+          ci_cd: 'github_actions',
           projects: [{
             path: '.',
             language: 'typescript',
@@ -391,9 +383,8 @@ describe('Analyze Command Integration Tests', () => {
             framework: 'nextjs',
             dependencies: ['next', 'react'],
             has_package_manager: true,
-            ecosystem: 'npm',
+            ecosystem: 'javascript',
             dockerized: true,
-            ci_cd: 'github_actions'
           }]
         }),
         total_cost_usd: 0.06,
@@ -409,6 +400,7 @@ describe('Analyze Command Integration Tests', () => {
       hasWorkspacePackageManager: true,
       workspaceEcosystem: 'typescript',
       workspaceDependencies: ['typescript', 'next'],
+      ciCd: 'github_actions',
       projects: [{
         path: '.',
         language: 'typescript',
@@ -416,9 +408,8 @@ describe('Analyze Command Integration Tests', () => {
         framework: 'nextjs',
         dependencies: ['next', 'react'],
         hasPackageManager: true,
-        ecosystem: 'npm',
+        ecosystem: 'javascript',
         dockerized: true,
-        ciCd: 'github_actions'
       }]
     });
   });

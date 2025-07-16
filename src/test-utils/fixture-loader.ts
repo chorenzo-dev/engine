@@ -7,7 +7,6 @@ export interface TestFixture {
   name: string;
   path: string;
   files: Map<string, string>;
-  packageJson: Record<string, unknown> | null;
 }
 
 export function loadTestFixture(fixtureName: string): TestFixture {
@@ -37,16 +36,10 @@ export function loadTestFixture(fixtureName: string): TestFixture {
   
   loadFilesRecursively(fixturePath);
   
-  const packageJsonPath = path.join(fixturePath, 'package.json');
-  const packageJson = fs.existsSync(packageJsonPath) 
-    ? JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')) as Record<string, unknown>
-    : null;
-  
   return {
     name: fixtureName,
     path: fixturePath,
-    files,
-    packageJson
+    files
   };
 }
 
@@ -69,16 +62,18 @@ export function setupFixture(fixtureName: string, targetDir: string, options: Se
   const { addGitRepo = false } = options;
   
   const fixture = loadTestFixture(fixtureName);
+  const fixtureWithGit = { ...fixture };
   
-  if (addGitRepo && !fs.existsSync(path.join(targetDir, '.git'))) {
-    fs.mkdirSync(path.join(targetDir, '.git'));
+  if (addGitRepo) {
+    fixtureWithGit.files = new Map(fixture.files);
+    fixtureWithGit.files.set('.git/.gitkeep', '');
   }
   
-  for (const [filePath, content] of fixture.files) {
+  for (const [filePath, content] of fixtureWithGit.files) {
     const fullPath = path.join(targetDir, filePath);
     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
     fs.writeFileSync(fullPath, content);
   }
   
-  return fixture;
+  return fixtureWithGit;
 }

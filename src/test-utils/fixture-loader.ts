@@ -58,7 +58,7 @@ export interface SetupFixtureOptions {
   addGitRepo?: boolean;
 }
 
-export function setupFixture(fixtureName: string, targetDir: string, options: SetupFixtureOptions = {}): TestFixture {
+export function setupFixture(fixtureName: string, options: SetupFixtureOptions = {}): TestFixture {
   const { addGitRepo = false } = options;
   
   const fixture = loadTestFixture(fixtureName);
@@ -67,12 +67,6 @@ export function setupFixture(fixtureName: string, targetDir: string, options: Se
   if (addGitRepo) {
     fixtureWithGit.files = new Map(fixture.files);
     fixtureWithGit.files.set('.git/.gitkeep', '');
-  }
-  
-  for (const [filePath, content] of fixtureWithGit.files) {
-    const fullPath = path.join(targetDir, filePath);
-    fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-    fs.writeFileSync(fullPath, content);
   }
   
   return fixtureWithGit;

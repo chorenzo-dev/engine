@@ -1,9 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import type { WorkspaceAnalysis } from '../types/analysis';
-import { setupFixture, type TestFixture } from '../test-utils/fixture-loader';
+import { setupFixture } from '../test-utils/fixture-loader';
 
 const mockQuery = jest.fn<() => AsyncGenerator<any, void, unknown>>();
 const mockWriteJson = jest.fn<(path: string, data: any) => Promise<void>>();
@@ -18,33 +16,23 @@ jest.unstable_mockModule('../utils/json.utils', () => ({
 }));
 
 describe('Analyze Command Integration Tests', () => {
-  let testDir: string;
-  let originalCwd: string;
   let performAnalysis: (progress?: (message: string) => void) => Promise<{ analysis: WorkspaceAnalysis | null; metadata?: any; unrecognizedFrameworks?: string[] }>;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
     
-    originalCwd = process.cwd();
-    testDir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'analyze-test-'));
-    process.chdir(testDir);
-    
     const analyzeModule = await import('./analyze');
     performAnalysis = analyzeModule.performAnalysis;
   });
 
   afterEach(() => {
-    process.chdir(originalCwd);
-    if (fs.existsSync(testDir)) {
-      fs.rmSync(testDir, { recursive: true, force: true });
-    }
     jest.resetModules();
     jest.restoreAllMocks();
   });
 
   it('should analyze express workspace using fixture', async () => {
-    setupFixture('simple-express', testDir, { addGitRepo: true });
+    setupFixture('simple-express', { addGitRepo: true });
 
     const expectedAnalysis: WorkspaceAnalysis = {
       isMonorepo: false,
@@ -107,13 +95,13 @@ describe('Analyze Command Integration Tests', () => {
     expect(mockProgress).toHaveBeenCalledWith('Validating frameworks...');
 
     expect(mockWriteJson).toHaveBeenCalledWith(
-      path.join(testDir, '.chorenzo', 'analysis.json'),
+      path.join(process.cwd(), '.chorenzo', 'analysis.json'),
       result.analysis
     );
   });
 
   it('should handle unrecognized frameworks', async () => {
-    setupFixture('simple-express', testDir, { addGitRepo: true });
+    setupFixture('simple-express', { addGitRepo: true });
 
     mockQuery.mockImplementation(async function* () {
       yield {
@@ -148,7 +136,7 @@ describe('Analyze Command Integration Tests', () => {
   });
 
   it('should handle Claude API failures', async () => {
-    setupFixture('simple-express', testDir, { addGitRepo: true });
+    setupFixture('simple-express', { addGitRepo: true });
     mockQuery.mockImplementation(async function* () {
       yield {
         type: 'result',
@@ -166,8 +154,7 @@ describe('Analyze Command Integration Tests', () => {
   });
 
   it('should handle git repository not found', async () => {
-    setupFixture('simple-express', testDir, { addGitRepo: true });
-    fs.rmSync(path.join(testDir, '.git'), { recursive: true, force: true });
+    setupFixture('simple-express');
 
     mockQuery.mockImplementation(async function* () {
       yield {
@@ -194,14 +181,14 @@ describe('Analyze Command Integration Tests', () => {
 
     expect(result.analysis).toBeDefined();
     expect(mockWriteJson).toHaveBeenCalledWith(
-      path.join(testDir, '.chorenzo', 'analysis.json'),
+      path.join(process.cwd(), '.chorenzo', 'analysis.json'),
       expect.any(Object)
     );
   });
 
 
   it('should analyze monorepo with mixed languages', async () => {
-    setupFixture('monorepo', testDir, { addGitRepo: true });
+    setupFixture('monorepo', { addGitRepo: true });
 
     const expectedAnalysis: WorkspaceAnalysis = {
       isMonorepo: true,
@@ -307,12 +294,12 @@ describe('Analyze Command Integration Tests', () => {
     expect(mockProgress).toHaveBeenCalledWith('Validating frameworks...');
 
     expect(mockWriteJson).toHaveBeenCalledWith(
-      path.join(testDir, '.chorenzo', 'analysis.json'),
+      path.join(process.cwd(), '.chorenzo', 'analysis.json'),
       result.analysis
     );
   });
   it('should convert snake_case to camelCase in analysis results', async () => {
-    setupFixture('simple-express', testDir, { addGitRepo: true });
+    setupFixture('simple-express', { addGitRepo: true });
     mockQuery.mockImplementation(async function* () {
       yield {
         type: 'result',

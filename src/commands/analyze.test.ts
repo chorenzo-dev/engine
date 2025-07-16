@@ -258,6 +258,121 @@ describe('Analyze Command Integration Tests', () => {
     consoleSpy.mockRestore();
   });
 
+  it('should analyze monorepo with mixed languages', async () => {
+    setupFixture('monorepo', testDir, { addGitRepo: true });
+
+    const expectedAnalysis: WorkspaceAnalysis = {
+      isMonorepo: true,
+      hasWorkspacePackageManager: true,
+      workspaceEcosystem: 'javascript',
+      projects: [
+        {
+          path: 'apps/web-app',
+          language: 'typescript',
+          type: 'web_app',
+          framework: 'nextjs',
+          dependencies: ['next', 'react', 'react-dom', '@monorepo/shared-lib'],
+          hasPackageManager: true,
+          ecosystem: 'npm',
+          dockerized: false,
+          ciCd: 'github_actions'
+        },
+        {
+          path: 'apps/api-service',
+          language: 'python',
+          type: 'api_server',
+          framework: 'fastapi',
+          dependencies: ['fastapi', 'uvicorn', 'pydantic'],
+          hasPackageManager: true,
+          ecosystem: 'pip',
+          dockerized: false,
+          ciCd: 'github_actions'
+        },
+        {
+          path: 'apps/shared-lib',
+          language: 'typescript',
+          type: 'library',
+          dependencies: ['react'],
+          hasPackageManager: true,
+          ecosystem: 'npm',
+          dockerized: false,
+          ciCd: 'github_actions'
+        }
+      ]
+    };
+
+    mockQuery.mockImplementation(async function* () {
+      yield {
+        type: 'result',
+        subtype: 'success',
+        result: JSON.stringify({
+          is_monorepo: true,
+          has_workspace_package_manager: true,
+          workspace_ecosystem: 'javascript',
+          projects: [
+            {
+              path: 'apps/web-app',
+              language: 'typescript',
+              type: 'web_app',
+              framework: 'nextjs',
+              dependencies: ['next', 'react', 'react-dom', '@monorepo/shared-lib'],
+              has_package_manager: true,
+              ecosystem: 'npm',
+              dockerized: false,
+              ci_cd: 'github_actions'
+            },
+            {
+              path: 'apps/api-service',
+              language: 'python',
+              type: 'api_server',
+              framework: 'fastapi',
+              dependencies: ['fastapi', 'uvicorn', 'pydantic'],
+              has_package_manager: true,
+              ecosystem: 'pip',
+              dockerized: false,
+              ci_cd: 'github_actions'
+            },
+            {
+              path: 'apps/shared-lib',
+              language: 'typescript',
+              type: 'library',
+              dependencies: ['react'],
+              has_package_manager: true,
+              ecosystem: 'npm',
+              dockerized: false,
+              ci_cd: 'github_actions'
+            }
+          ]
+        }),
+        total_cost_usd: 0.08,
+        num_turns: 4
+      };
+    });
+
+    const mockProgress = jest.fn();
+    const result = await performAnalysis(mockProgress);
+
+    expect(result.analysis).toEqual(expectedAnalysis);
+    expect(result.metadata).toEqual({
+      type: 'result',
+      subtype: 'success',
+      costUsd: 0.08,
+      turns: 4,
+      durationSeconds: expect.any(Number)
+    });
+    expect(result.unrecognizedFrameworks).toBeUndefined();
+
+    expect(mockProgress).toHaveBeenCalledWith('Finding git repository...');
+    expect(mockProgress).toHaveBeenCalledWith('Building file tree...');
+    expect(mockProgress).toHaveBeenCalledWith('Loading analysis prompt...');
+    expect(mockProgress).toHaveBeenCalledWith('Analyzing workspace with Claude...');
+    expect(mockProgress).toHaveBeenCalledWith('Validating frameworks...');
+
+    expect(mockWriteJson).toHaveBeenCalledWith(
+      path.join(testDir, '.chorenzo', 'analysis.json'),
+      result.analysis
+    );
+  });
   it('should convert snake_case to camelCase in analysis results', async () => {
     setupFixture('simple-express', testDir, { addGitRepo: true });
     mockQuery.mockImplementation(async function* () {

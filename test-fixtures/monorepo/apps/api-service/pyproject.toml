@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "api-service"
+version = "1.0.0"
+description = "FastAPI service for monorepo example"
+authors = ["Developer <dev@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = "^0.104.0"
+uvicorn = {extras = ["standard"], version = "^0.24.0"}
+pydantic = "^2.4.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

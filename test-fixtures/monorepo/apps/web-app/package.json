@@ -1,0 +1,21 @@
+{
+  "name": "@monorepo/web-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "^13.5.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@monorepo/shared-lib": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "typescript": "^5.0.0"
+  }
+}

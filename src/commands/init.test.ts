@@ -2,64 +2,90 @@ import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { mockGitOperations } from '../test-utils';
 import type { Config, State } from './init';
 
-jest.mock('../utils/git-operations.utils');
+const mockHomedir = jest.fn<() => string>(() => '/test/home');
+const mockMkdirSync = jest.fn<(path: string, options?: any) => void>();
+const mockExistsSync = jest.fn<(path: string) => boolean>();
+const mockRmSync = jest.fn<(path: string, options?: any) => void>();
+const mockUnlinkSync = jest.fn<(path: string) => void>();
+const mockWriteYaml = jest.fn<(path: string, data: any) => Promise<void>>();
+const mockReadYaml = jest.fn<(path: string) => Promise<any>>();
+const mockCheckGitAvailable = jest.fn<() => Promise<void>>();
+const mockCloneRepository = jest.fn<(repo: string, path: string, ref: string) => Promise<void>>();
 
-const mockHomedir = jest.fn(() => '/tmp/test-home');
-const mockTmpdir = jest.fn(() => (jest.requireActual('os') as typeof import('os')).tmpdir());
-
-jest.mock('os', () => ({
+jest.unstable_mockModule('os', () => ({
   homedir: mockHomedir,
-  tmpdir: mockTmpdir
+  tmpdir: jest.fn(() => '/tmp'),
 }));
 
+jest.unstable_mockModule('fs', () => ({
+  mkdirSync: mockMkdirSync,
+  existsSync: mockExistsSync,
+  rmSync: mockRmSync,
+  unlinkSync: mockUnlinkSync,
+}));
+
+jest.unstable_mockModule('../utils/yaml.utils', () => ({
+  writeYaml: mockWriteYaml,
+  readYaml: mockReadYaml,
+  YamlError: class YamlError extends Error {
+    constructor(message: string, public readonly code: string) {
+      super(message);
+      this.name = 'YamlError';
+    }
+  }
+}));
+
+jest.unstable_mockModule('../utils/git-operations.utils', () => ({
+  checkGitAvailable: mockCheckGitAvailable,
+  cloneRepository: mockCloneRepository,
+  GitError: class GitError extends Error {
+    constructor(message: string, public readonly code: string) {
+      super(message);
+      this.name = 'GitError';
+    }
+  }
+}));
+
+
 describe('Init Command Integration Tests', () => {
-  let testHomeDir: string;
   let performInit: typeof import('./init').performInit;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     
-    const realTmpdir = (jest.requireActual('os') as typeof os).tmpdir();
-    testHomeDir = fs.mkdtempSync(path.join(realTmpdir, 'chorenzo-test-'));
-    
-    mockHomedir.mockReturnValue(testHomeDir);
-    mockTmpdir.mockReturnValue(realTmpdir);
-    
-    mockGitOperations();
+    mockHomedir.mockImplementation(() => '/test/home');
+    mockMkdirSync.mockImplementation(() => undefined);
+    mockExistsSync.mockImplementation(() => false);
+    mockRmSync.mockImplementation(() => undefined);
+    mockUnlinkSync.mockImplementation(() => undefined);
+    mockWriteYaml.mockImplementation(() => Promise.resolve(undefined));
+    mockReadYaml.mockImplementation(() => Promise.resolve({
+      libraries: {
+        core: {
+          repo: 'https://github.com/chorenzo-dev/recipes-core.git',
+          ref: 'main'
+        }
+      }
+    }));
+    mockCheckGitAvailable.mockImplementation(() => Promise.resolve(undefined));
+    mockCloneRepository.mockImplementation(() => Promise.resolve(undefined));
     
     const initModule = await import('./init');
     performInit = initModule.performInit;
   });
 
-  afterEach(() => {
-    if (fs.existsSync(testHomeDir)) {
-      fs.rmSync(testHomeDir, { recursive: true, force: true });
-    }
-  });
-
   it('should create chorenzo directory structure', async () => {
     await performInit({});
     
-    const chorenzoDir = path.join(testHomeDir, '.chorenzo');
-    const recipesDir = path.join(chorenzoDir, 'recipes');
-    
-    expect(fs.existsSync(chorenzoDir)).toBe(true);
-    expect(fs.existsSync(recipesDir)).toBe(true);
+    expect(mockMkdirSync).toHaveBeenCalledWith('/test/home/.chorenzo/recipes', { recursive: true });
   });
 
   it('should create config.yaml with default configuration', async () => {
     await performInit({});
     
-    const configPath = path.join(testHomeDir, '.chorenzo', 'config.yaml');
-    expect(fs.existsSync(configPath)).toBe(true);
-    
-    const yamlUtils = await import('../utils/yaml.utils');
-    const config = await yamlUtils.readYaml(configPath) as Config;
-    
-    expect(config).toEqual({
+    expect(mockWriteYaml).toHaveBeenCalledWith('/test/home/.chorenzo/config.yaml', {
       libraries: {
         core: {
           repo: 'https://github.com/chorenzo-dev/recipes-core.git',
@@ -72,102 +98,79 @@ describe('Init Command Integration Tests', () => {
   it('should create state.yaml with default state', async () => {
     await performInit({});
     
-    const statePath = path.join(testHomeDir, '.chorenzo', 'state.yaml');
-    expect(fs.existsSync(statePath)).toBe(true);
-    
-    const yamlUtils = await import('../utils/yaml.utils');
-    const state = await yamlUtils.readYaml(statePath) as State;
-    
-    expect(state).toEqual({
+    expect(mockWriteYaml).toHaveBeenCalledWith('/test/home/.chorenzo/state.yaml', {
       last_checked: '1970-01-01T00:00:00Z'
     });
   });
 
   it('should not overwrite existing config files', async () => {
-    const chorenzoDir = path.join(testHomeDir, '.chorenzo');
-    const configPath = path.join(chorenzoDir, 'config.yaml');
-    const statePath = path.join(chorenzoDir, 'state.yaml');
-    
-    fs.mkdirSync(chorenzoDir, { recursive: true });
-    
-    const customConfig = { libraries: { custom: { repo: 'test', ref: 'test' } } };
-    const customState = { last_checked: '2023-01-01T00:00:00Z' };
-    
-    const yamlUtils = await import('../utils/yaml.utils');
-    await yamlUtils.writeYaml(configPath, customConfig);
-    await yamlUtils.writeYaml(statePath, customState);
+    mockExistsSync.mockImplementation((filePath: string) => {
+      return filePath.includes('config.yaml') || filePath.includes('state.yaml');
+    });
     
     await performInit({});
     
-    const resultConfig = await yamlUtils.readYaml(configPath) as Config;
-    const resultState = await yamlUtils.readYaml(statePath) as State;
-    
-    expect(resultConfig).toEqual(customConfig);
-    expect(resultState).toEqual(customState);
+    expect(mockWriteYaml).toHaveBeenCalledTimes(0);
   });
 
   it('should reset workspace when reset option is provided', async () => {
-    const chorenzoDir = path.join(testHomeDir, '.chorenzo');
-    const recipesDir = path.join(chorenzoDir, 'recipes');
-    const configPath = path.join(chorenzoDir, 'config.yaml');
-    const statePath = path.join(chorenzoDir, 'state.yaml');
+    let unlinkCalls = 0;
+    mockExistsSync.mockImplementation((filePath: string) => {
+      if (filePath.includes('recipes')) return true;
+      if (filePath.includes('config.yaml') || filePath.includes('state.yaml')) {
+        return unlinkCalls < 2;
+      }
+      return false;
+    });
     
-    fs.mkdirSync(recipesDir, { recursive: true });
-    fs.writeFileSync(path.join(recipesDir, 'existing-lib'), 'content');
-    fs.writeFileSync(configPath, 'existing config');
-    fs.writeFileSync(statePath, 'existing state');
+    mockUnlinkSync.mockImplementation(() => {
+      unlinkCalls++;
+    });
     
     await performInit({ reset: true });
     
-    expect(fs.existsSync(path.join(recipesDir, 'existing-lib'))).toBe(false);
-    expect(fs.existsSync(configPath)).toBe(true);
-    expect(fs.existsSync(statePath)).toBe(true);
-    
-    const yamlUtils = await import('../utils/yaml.utils');
-    const config = await yamlUtils.readYaml(configPath) as Config;
-    expect(config.libraries.core).toBeDefined();
+    expect(mockRmSync).toHaveBeenCalledWith('/test/home/.chorenzo/recipes', { recursive: true, force: true });
+    expect(mockUnlinkSync).toHaveBeenCalledWith('/test/home/.chorenzo/config.yaml');
+    expect(mockUnlinkSync).toHaveBeenCalledWith('/test/home/.chorenzo/state.yaml');
+    expect(mockWriteYaml).toHaveBeenCalledWith('/test/home/.chorenzo/config.yaml', expect.any(Object));
+    expect(mockWriteYaml).toHaveBeenCalledWith('/test/home/.chorenzo/state.yaml', expect.any(Object));
   });
 
   it('should skip cloning if library directory already exists', async () => {
-    const recipesDir = path.join(testHomeDir, '.chorenzo', 'recipes');
-    const coreDir = path.join(recipesDir, 'core');
-    
-    fs.mkdirSync(coreDir, { recursive: true });
-    fs.writeFileSync(path.join(coreDir, 'existing-file'), 'content');
+    mockExistsSync.mockImplementation((filePath: string) => {
+      return filePath.includes('/core');
+    });
     
     const mockProgress = jest.fn();
     await performInit({}, mockProgress);
     
     expect(mockProgress).toHaveBeenCalledWith('Skipping core (already exists)');
-    expect(fs.existsSync(path.join(coreDir, 'existing-file'))).toBe(true);
+    expect(mockCloneRepository).not.toHaveBeenCalled();
   });
 
   it('should handle git clone failures gracefully', async () => {
-    const gitOps = await import('../utils/git-operations.utils');
-    jest.mocked(gitOps.cloneRepository).mockRejectedValue(new Error('Network error'));
+    mockCloneRepository.mockImplementation(() => Promise.reject(new Error('Network error')));
     
     const mockProgress = jest.fn();
     await performInit({}, mockProgress);
     
-    expect(mockProgress).toHaveBeenCalledWith(expect.stringContaining('Warning: Failed to clone core after retry'));
-    
-    const configPath = path.join(testHomeDir, '.chorenzo', 'config.yaml');
-    expect(fs.existsSync(configPath)).toBe(true);
+    expect(mockProgress).toHaveBeenCalledWith('Warning: Failed to clone core after retry, skipping...');
+    expect(mockWriteYaml).toHaveBeenCalledWith('/test/home/.chorenzo/config.yaml', expect.any(Object));
   });
 
   it('should handle running init twice without errors', async () => {
-    // First init
     await performInit({});
     
-    const coreDir = path.join(testHomeDir, '.chorenzo', 'recipes', 'core');
-    fs.mkdirSync(coreDir, { recursive: true });
+    jest.clearAllMocks();
+    mockExistsSync.mockImplementation((filePath: string) => {
+      return filePath.includes('/core') || filePath.includes('config.yaml') || filePath.includes('state.yaml');
+    });
     
-    // Second init - should skip existing library
     const mockProgress = jest.fn();
     await expect(performInit({}, mockProgress)).resolves.not.toThrow();
     
     expect(mockProgress).toHaveBeenCalledWith('Skipping core (already exists)');
-    expect(mockProgress).not.toHaveBeenCalledWith(expect.stringContaining('Error'));
-    expect(mockProgress).not.toHaveBeenCalledWith(expect.stringContaining('fatal'));
+    expect(mockWriteYaml).not.toHaveBeenCalled();
+    expect(mockCloneRepository).not.toHaveBeenCalled();
   });
 });

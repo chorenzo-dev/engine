@@ -347,4 +347,79 @@ describe('Analyze Command Integration Tests', () => {
       }]
     });
   });
+
+  it('should handle invalid JSON response from Claude', async () => {
+    setupFixture('simple-express', { addGitRepo: true });
+    
+    mockQuery.mockImplementation(async function* () {
+      yield {
+        type: 'result',
+        subtype: 'success',
+        result: 'not valid json at all',
+        total_cost_usd: 0.05,
+        num_turns: 3
+      };
+    });
+
+    const mockProgress = jest.fn();
+    const result = await performAnalysis(mockProgress);
+    
+    expect(result.analysis).toBeNull();
+    expect(result.metadata?.subtype).toBe('error');
+    expect(result.metadata?.error).toContain('Invalid JSON response');
+    expect(mockWriteJson).not.toHaveBeenCalled();
+  });
+
+  it('should handle partial response missing required fields', async () => {
+    setupFixture('simple-express', { addGitRepo: true });
+    
+    mockQuery.mockImplementation(async function* () {
+      yield {
+        type: 'result',
+        subtype: 'success',
+        result: JSON.stringify({
+          projects: [{
+            path: '.',
+            language: 'javascript'
+          }]
+        }),
+        total_cost_usd: 0.05,
+        num_turns: 3
+      };
+    });
+
+    const mockProgress = jest.fn();
+    const result = await performAnalysis(mockProgress);
+
+    expect(result.analysis).toBeNull();
+    expect(result.metadata?.subtype).toBe('error');
+    expect(result.metadata?.error).toContain('missing required fields');
+    expect(mockWriteJson).not.toHaveBeenCalled();
+  });
+
+  it('should handle empty workspace with no code files', async () => {
+    setupFixture('simple-express', { addGitRepo: true });
+    
+    mockQuery.mockImplementation(async function* () {
+      yield {
+        type: 'result',
+        subtype: 'success',
+        result: JSON.stringify({
+          is_monorepo: false,
+          has_workspace_package_manager: false,
+          projects: []
+        }),
+        total_cost_usd: 0.03,
+        num_turns: 2
+      };
+    });
+
+    const mockProgress = jest.fn();
+    const result = await performAnalysis(mockProgress);
+
+    expect(result.analysis).toBeNull();
+    expect(result.metadata?.subtype).toBe('error');
+    expect(result.metadata?.error).toContain('No projects found in workspace');
+    expect(mockWriteJson).not.toHaveBeenCalled();
+  });
 });

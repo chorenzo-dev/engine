@@ -18,6 +18,7 @@ export interface AnalysisResult {
     costUsd: number;
     turns: number;
     durationSeconds: number;
+    error?: string;
   };
   unrecognizedFrameworks?: string[];
 }
@@ -57,6 +58,7 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
   onProgress?.('Analyzing workspace with Claude...');
   let sdkResultMetadata: SDKMessage | null = null;
   let analysis = null;
+  let errorMessage: string | undefined;
 
   for await (const message of query({
     prompt,
@@ -70,30 +72,62 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
     if (message.type === 'result') {
       sdkResultMetadata = message;
       if (message.subtype === 'success' && 'result' in message) {
-        analysis = JSON.parse(message.result);
+        try {
+          analysis = JSON.parse(message.result);
+        } catch (error) {
+          console.error('Failed to parse Claude response as JSON:', error);
+          errorMessage = `Invalid JSON response: ${error instanceof Error ? error.message : String(error)}`;
+          analysis = null;
+        }
       }
       break;
     }
   }
 
   let finalAnalysis = analysis ? snakeToCamelCase<WorkspaceAnalysis>(analysis) : null;
-  let totalCost = sdkResultMetadata?.total_cost_usd || 0;
-  let totalTurns = sdkResultMetadata?.num_turns || 0;
+  let totalCost = 0;
+  let totalTurns = 0;
+  let subtype = 'error';
+  
+  if (sdkResultMetadata?.type === 'result') {
+    if ('total_cost_usd' in sdkResultMetadata) {
+      totalCost = sdkResultMetadata.total_cost_usd;
+    }
+    if ('num_turns' in sdkResultMetadata) {
+      totalTurns = sdkResultMetadata.num_turns;
+    }
+    if ('subtype' in sdkResultMetadata) {
+      subtype = sdkResultMetadata.subtype;
+    }
+  }
+  
   let unrecognizedFrameworks: string[] = [];
 
-  if (finalAnalysis) {
-    onProgress?.('Validating frameworks...');
-    try {
-      const { validatedAnalysis, unrecognizedFrameworks: unrecognized } = await validateFrameworks(finalAnalysis);
-      finalAnalysis = validatedAnalysis;
-      unrecognizedFrameworks = unrecognized;
-      
-      if (unrecognizedFrameworks.length > 0) {
-        onProgress?.(`Warning: ${unrecognizedFrameworks.length} frameworks not recognized: ${unrecognizedFrameworks.join(', ')}`);
+  if (finalAnalysis && !errorMessage) {
+    if (finalAnalysis.isMonorepo === undefined || finalAnalysis.projects === undefined) {
+      console.error('Invalid analysis response: missing required fields');
+      errorMessage = 'Invalid analysis response: missing required fields (isMonorepo or projects)';
+      subtype = 'error';
+      finalAnalysis = null;
+    } else if (finalAnalysis.projects.length === 0) {
+      console.error('No projects found in workspace');
+      errorMessage = 'No projects found in workspace';
+      subtype = 'error';
+      finalAnalysis = null;
+    } else {
+      onProgress?.('Validating frameworks...');
+      try {
+        const { validatedAnalysis, unrecognizedFrameworks: unrecognized } = await validateFrameworks(finalAnalysis);
+        finalAnalysis = validatedAnalysis;
+        unrecognizedFrameworks = unrecognized;
+        
+        if (unrecognizedFrameworks.length > 0) {
+          onProgress?.(`Warning: ${unrecognizedFrameworks.length} frameworks not recognized: ${unrecognizedFrameworks.join(', ')}`);
+        }
+      } catch (error) {
+        console.error('Framework validation error:', error);
+        onProgress?.('Warning: Framework validation failed');
       }
-    } catch (error) {
-      console.error('Framework validation error:', error);
-      onProgress?.('Warning: Framework validation failed');
     }
   }
 
@@ -101,13 +135,14 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
   
   const result: AnalysisResult = {
     analysis: finalAnalysis,
-    metadata: sdkResultMetadata ? {
-      type: sdkResultMetadata.type,
-      subtype: sdkResultMetadata.subtype,
+    metadata: {
+      type: 'result',
+      subtype: errorMessage ? 'error' : subtype,
       costUsd: totalCost,
       turns: totalTurns,
-      durationSeconds
-    } : undefined,
+      durationSeconds,
+      ...(errorMessage ? { error: errorMessage } : {})
+    },
     unrecognizedFrameworks: unrecognizedFrameworks.length > 0 ? unrecognizedFrameworks : undefined
   };
 

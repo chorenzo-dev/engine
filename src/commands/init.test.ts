@@ -173,4 +173,52 @@ describe('Init Command Integration Tests', () => {
     expect(mockWriteYaml).not.toHaveBeenCalled();
     expect(mockCloneRepository).not.toHaveBeenCalled();
   });
+
+  it('should handle corrupted workspace state and recreate missing components', async () => {
+    mockExistsSync.mockImplementation((filePath: string) => {
+      if (filePath.includes('config.yaml')) return true;
+      if (filePath.includes('state.yaml')) return false;
+      if (filePath.includes('/core')) return false;
+      return false;
+    });
+    
+    const mockProgress = jest.fn();
+    await performInit({}, mockProgress);
+    
+    expect(mockMkdirSync).toHaveBeenCalledWith('/test/home/.chorenzo/recipes', { recursive: true });
+    expect(mockWriteYaml).toHaveBeenCalledWith('/test/home/.chorenzo/state.yaml', expect.any(Object));
+    expect(mockWriteYaml).not.toHaveBeenCalledWith('/test/home/.chorenzo/config.yaml', expect.any(Object));
+    expect(mockCloneRepository).toHaveBeenCalled();
+    expect(mockProgress).toHaveBeenCalledWith('Creating directory structure...');
+    expect(mockProgress).toHaveBeenCalledWith('Setting up configuration files...');
+  });
+
+  it('should handle permission errors during directory creation', async () => {
+    mockMkdirSync.mockImplementation(() => {
+      throw new Error('EACCES: permission denied');
+    });
+    
+    await expect(performInit({})).rejects.toThrow('EACCES: permission denied');
+  });
+
+  it('should handle invalid config YAML file', async () => {
+    mockExistsSync.mockImplementation((filePath: string) => {
+      return filePath.includes('config.yaml');
+    });
+    
+    const YamlError = (await import('../utils/yaml.utils')).YamlError;
+    mockReadYaml.mockImplementation(() => {
+      throw new YamlError('Invalid YAML syntax', 'YAML_PARSE_ERROR');
+    });
+    
+    await expect(performInit({})).rejects.toThrow('Invalid YAML syntax');
+  });
+
+  it('should handle writeYaml failures', async () => {
+    mockWriteYaml.mockImplementation(() => {
+      throw new Error('ENOSPC: no space left on device');
+    });
+    
+    await expect(performInit({})).rejects.toThrow('ENOSPC: no space left on device');
+  });
 });

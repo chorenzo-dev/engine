@@ -23,10 +23,21 @@ You have a MAXIMUM of 2 tool rounds. Use them wisely - batch ALL file reads in t
 - Determine ecosystem based on the package manager type
 
 TASKS:
-1. Find and read all configuration files (any package managers)
+1. Find and read all configuration files (any package managers) for ACTUAL projects only
 2. Determine ecosystems and dependencies from actual config content
 3. Detect project type based on dependencies and file structure
 4. Return ONLY valid JSON - no explanations, no markdown blocks, no additional text
+
+## CRITICAL: Project vs Test Data Distinction
+Only analyze ACTUAL projects, not test data, examples, or fixtures:
+- **EXCLUDE**: test-fixtures/, examples/, sample/, templates/, demos/, __tests__/, spec/, test/
+- **EXCLUDE**: Any directory that appears to contain example/test code rather than production code
+- **INCLUDE**: Only directories that represent actual working projects or applications
+- **ROOT PROJECT**: Always analyze the root directory if it has a package manager config file
+
+Look for indicators that distinguish real projects from test data:
+- Real projects: Have meaningful dependencies, proper structure, production-ready code
+- Test data: Minimal configs, example code, fixture data, sample applications
 
 IMPORTANT: Do NOT use ```json``` markdown blocks. Return raw JSON only.
 
@@ -43,8 +54,28 @@ IMPORTANT: Do NOT use ```json``` markdown blocks. Return raw JSON only.
 - **unknown**: Cannot determine project type from available information
 
 ## Framework Detection:
-For each project, identify the main framework used (if any). Set to null if no specific framework is used.
-Examples: commander (CLI), react (web), express (API), django (web), flutter (mobile), electron (desktop)
+For each project, identify the PRIMARY framework that defines the project's architecture and runtime environment. Consider project type context and dependency relationships:
+
+**General Principle:**
+Look for the main architectural framework that provides the application structure, routing, and runtime environment. Examples across ecosystems:
+- **Web Apps**: nextjs (JS), django (Python), rails (Ruby), laravel (PHP), spring-boot (Java)
+- **API Servers**: express (JS), fastapi (Python), gin (Go), rails (Ruby), aspnet-core (C#)
+- **CLI Tools**: commander (JS), click (Python), clap (Rust), cobra (Go)
+
+**Context-Aware Detection:**
+When multiple frameworks could apply, prioritize the one that defines the project's primary architecture:
+- UI libraries (react, vue, angular) are NEVER the main framework - they are rendering libraries
+- Build tools, bundlers, and utilities are NOT frameworks
+- Look for frameworks that provide application structure, not just UI components
+- For vanilla apps without architectural frameworks, set to null
+
+**Common Mistakes to Avoid:**
+- Don't list UI/component libraries as frameworks (react, vue, angular, etc.)
+- Don't list utility libraries, build tools, or testing frameworks
+- Don't list databases, ORMs, or data access layers
+- Focus on what provides the application's core architecture and runtime
+
+Set framework to null if no clear architectural framework is identified.
 
 ## Docker Detection:
 For each project, check if a Dockerfile exists. Set dockerized to true if present, false otherwise.

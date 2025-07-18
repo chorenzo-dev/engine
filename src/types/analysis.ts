@@ -2,6 +2,8 @@ export type ProjectType = 'cli_tool' | 'web_app' | 'api_server' | 'backend_servi
 
 export type CiCdSystem = 'github_actions' | 'gitlab_ci' | 'circleci' | 'jenkins' | 'travis_ci' | 'azure_devops' | 'bitbucket_pipelines' | 'teamcity' | 'bamboo' | 'codeship' | 'drone' | 'buildkite' | 'semaphore' | 'appveyor' | 'none';
 
+export type Ecosystem = 'javascript' | 'typescript' | 'python' | 'java' | 'csharp' | 'go' | 'rust' | 'ruby' | 'php' | 'swift' | 'kotlin' | 'dart' | 'elixir' | 'scala' | 'clojure' | 'haskell' | 'c' | 'cpp' | 'unknown';
+
 export interface ProjectAnalysis {
   path: string;
   language: string;
@@ -9,15 +11,15 @@ export interface ProjectAnalysis {
   framework?: string;
   dependencies: string[];
   hasPackageManager: boolean;
-  ecosystem?: string;
+  ecosystem?: Ecosystem;
   dockerized?: boolean;
-  ciCd?: CiCdSystem;
 }
 
 export interface WorkspaceAnalysis {
   isMonorepo: boolean;
   hasWorkspacePackageManager: boolean;
-  workspaceEcosystem?: string;
+  workspaceEcosystem?: Ecosystem;
   workspaceDependencies?: string[];
   projects: ProjectAnalysis[];
+  ciCd?: CiCdSystem;
 }

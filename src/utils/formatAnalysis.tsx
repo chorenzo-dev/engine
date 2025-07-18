@@ -3,7 +3,7 @@ import { Text, Box } from 'ink';
 import { WorkspaceAnalysis, ProjectAnalysis, CiCdSystem } from '../types/analysis';
 
 export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({ analysis }) => {
-  const { isMonorepo, workspaceEcosystem, projects } = analysis;
+  const { isMonorepo, workspaceEcosystem, projects, ciCd } = analysis;
 
   if (isMonorepo) {
     return (
@@ -23,7 +23,7 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({ anal
               <Text>├─ Language: {capitalize(project.language)}</Text>
               <Text>├─ Framework: {project.framework ? capitalize(project.framework) : 'None'}</Text>
               <Text>├─ Docker: {project.dockerized ? 'Yes' : 'No'}</Text>
-              <Text>└─ CI/CD: {formatCiCd(project.ciCd)}</Text>
+              <Text>└─ CI/CD: {formatCiCd(ciCd)}</Text>
             </Box>
           </Box>
         ))}
@@ -38,7 +38,7 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({ anal
         <Text>Language: {capitalize(project.language)}</Text>
         <Text>Framework: {project.framework ? capitalize(project.framework) : 'None'}</Text>
         <Text>Docker: {project.dockerized ? 'Yes' : 'No'}</Text>
-        <Text>CI/CD: {formatCiCd(project.ciCd)}</Text>
+        <Text>CI/CD: {formatCiCd(ciCd)}</Text>
         <Text>Package Manager: {getPackageManager(project)}</Text>
         <Box marginTop={1} />
       </Box>

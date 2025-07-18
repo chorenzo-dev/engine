@@ -25,7 +25,7 @@ program
         command: 'init',
         options: {
           reset: options.reset,
-          noAnalyze: options.noAnalyze || options.A,
+          noAnalyze: !options.analyze || options.A,
           yes: options.yes,
           progress: options.progress
         }

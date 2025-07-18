@@ -48,25 +48,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     }
 
     if (
-      command === 'init' &&
-      options.progress === false &&
-      !isComplete &&
-      !error
-    ) {
-      const runSimpleInit = async () => {
-        try {
-          await performInit({ reset: options.reset }, (step) => {
-            setSimpleStep(step);
-          });
-          setIsComplete(true);
-        } catch (err) {
-          setError(err instanceof Error ? err : new Error(String(err)));
-        }
-      };
-      runSimpleInit();
-    }
-
-    if (
       command === 'recipes-validate' &&
       !isComplete &&
       !error

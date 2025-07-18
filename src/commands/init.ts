@@ -5,10 +5,86 @@ import { checkGitAvailable, cloneRepository, GitError } from '../utils/git-opera
 import { retry } from '../utils/retry.utils';
 import { readYaml, writeYaml, YamlError } from '../utils/yaml.utils';
 
-const CHORENZO_DIR = path.join(os.homedir(), '.chorenzo');
-const CONFIG_PATH = path.join(CHORENZO_DIR, 'config.yaml');
-const STATE_PATH = path.join(CHORENZO_DIR, 'state.yaml');
-const RECIPES_DIR = path.join(CHORENZO_DIR, 'recipes');
+class ChorenzoConfig {
+  get dir(): string {
+    return path.join(os.homedir(), '.chorenzo');
+  }
+
+  get configPath(): string {
+    return path.join(this.dir, 'config.yaml');
+  }
+
+  get statePath(): string {
+    return path.join(this.dir, 'state.yaml');
+  }
+
+  get recipesDir(): string {
+    return path.join(this.dir, 'recipes');
+  }
+
+  createRecipesDir(): void {
+    fs.mkdirSync(this.recipesDir, { recursive: true });
+  }
+
+  configExists(): boolean {
+    return fs.existsSync(this.configPath);
+  }
+
+  async writeDefaultConfig(): Promise<void> {
+    const defaultConfig: Config = {
+      libraries: {
+        core: {
+          repo: 'https://github.com/chorenzo-dev/recipes-core.git',
+          ref: 'main'
+        }
+      }
+    };
+    await writeYaml(this.configPath, defaultConfig);
+  }
+
+  async readConfig(): Promise<Config> {
+    return await readYaml<Config>(this.configPath);
+  }
+
+  stateExists(): boolean {
+    return fs.existsSync(this.statePath);
+  }
+
+  async writeDefaultState(): Promise<void> {
+    const defaultState: State = {
+      last_checked: '1970-01-01T00:00:00Z'
+    };
+    await writeYaml(this.statePath, defaultState);
+  }
+
+  removeRecipesDir(): void {
+    if (fs.existsSync(this.recipesDir)) {
+      fs.rmSync(this.recipesDir, { recursive: true, force: true });
+    }
+  }
+
+  removeConfigFile(): void {
+    if (fs.existsSync(this.configPath)) {
+      fs.unlinkSync(this.configPath);
+    }
+  }
+
+  removeStateFile(): void {
+    if (fs.existsSync(this.statePath)) {
+      fs.unlinkSync(this.statePath);
+    }
+  }
+
+  getLibraryPath(libName: string): string {
+    return path.join(this.recipesDir, libName);
+  }
+
+  libraryExists(libName: string): boolean {
+    return fs.existsSync(this.getLibraryPath(libName));
+  }
+}
+
+const chorenzoConfig = new ChorenzoConfig();
 
 export interface InitOptions {
   reset?: boolean;
@@ -70,47 +146,28 @@ export async function performInit(options: InitOptions = {}, onProgress?: Progre
 }
 
 async function resetWorkspace(): Promise<void> {
-  if (fs.existsSync(RECIPES_DIR)) {
-    fs.rmSync(RECIPES_DIR, { recursive: true, force: true });
-  }
-
-  if (fs.existsSync(CONFIG_PATH)) {
-    fs.unlinkSync(CONFIG_PATH);
-  }
-
-  if (fs.existsSync(STATE_PATH)) {
-    fs.unlinkSync(STATE_PATH);
-  }
+  chorenzoConfig.removeRecipesDir();
+  chorenzoConfig.removeConfigFile();
+  chorenzoConfig.removeStateFile();
 }
 
 async function createDirectoryStructure(): Promise<void> {
-  fs.mkdirSync(RECIPES_DIR, { recursive: true });
+  chorenzoConfig.createRecipesDir();
 }
 
 async function setupConfigFiles(): Promise<void> {
-  if (!fs.existsSync(CONFIG_PATH)) {
-    const defaultConfig: Config = {
-      libraries: {
-        core: {
-          repo: 'https://github.com/chorenzo-dev/recipes-core.git',
-          ref: 'main'
-        }
-      }
-    };
-    await writeYaml(CONFIG_PATH, defaultConfig);
+  if (!chorenzoConfig.configExists()) {
+    await chorenzoConfig.writeDefaultConfig();
   }
 
-  if (!fs.existsSync(STATE_PATH)) {
-    const defaultState: State = {
-      last_checked: '1970-01-01T00:00:00Z'
-    };
-    await writeYaml(STATE_PATH, defaultState);
+  if (!chorenzoConfig.stateExists()) {
+    await chorenzoConfig.writeDefaultState();
   }
 }
 
 async function readConfig(): Promise<Config> {
   try {
-    const config = await readYaml<Config>(CONFIG_PATH);
+    const config = await chorenzoConfig.readConfig();
     
     if (!config.libraries || typeof config.libraries !== 'object') {
       throw new InitError('Invalid config.yaml: missing or invalid libraries section', 'INVALID_CONFIG');
@@ -138,12 +195,12 @@ async function cloneLibraries(config: Config, onProgress?: ProgressCallback): Pr
   await checkGitAvailable();
 
   for (const [libName, libConfig] of Object.entries(config.libraries)) {
-    const libPath = path.join(RECIPES_DIR, libName);
-    
-    if (fs.existsSync(libPath)) {
+    if (chorenzoConfig.libraryExists(libName)) {
       onProgress?.(`Skipping ${libName} (already exists)`);
       continue;
     }
+
+    const libPath = chorenzoConfig.getLibraryPath(libName);
 
     onProgress?.(`Cloning ${libName} from ${libConfig.repo}...`);
     
@@ -160,7 +217,6 @@ async function cloneLibraries(config: Config, onProgress?: ProgressCallback): Pr
       onProgress?.(`Successfully cloned ${libName}`);
     } catch (error) {
       onProgress?.(`Warning: Failed to clone ${libName} after retry, skipping...`);
-      console.warn(`Failed to clone library ${libName}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }

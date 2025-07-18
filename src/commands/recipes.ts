@@ -2,6 +2,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { parseRecipeFromDirectory, parseRecipeLibraryFromDirectory } from '../utils/recipe.utils';
+import { cloneRepository } from '../utils/git-operations.utils';
+import { normalizeRepoIdentifier } from '../utils/git.utils';
 
 const CHORENZO_DIR = path.join(os.homedir(), '.chorenzo');
 const RECIPES_DIR = path.join(CHORENZO_DIR, 'recipes');
@@ -36,9 +38,17 @@ export interface ValidationSummary {
   totalWarnings: number;
 }
 
+export interface ValidationContext {
+  inputType: InputType;
+  target: string;
+  resolvedPath?: string;
+  recipesValidated?: string[];
+}
+
 export interface ValidationResult {
   messages: ValidationMessage[];
   summary?: ValidationSummary;
+  context: ValidationContext;
 }
 
 export class RecipesError extends Error {
@@ -65,15 +75,21 @@ export async function performRecipesValidate(options: ValidateOptions, onProgres
   try {
     const inputType = detectInputType(resolvedTarget);
     
+    const baseContext = {
+      inputType,
+      target: options.target,
+      resolvedPath: resolvedTarget
+    };
+    
     switch (inputType) {
       case InputType.RecipeName:
-        return await validateRecipeByName(resolvedTarget, options, onProgress, handleValidation);
+        return await validateRecipeByName(resolvedTarget, options, baseContext, onProgress, handleValidation);
       case InputType.RecipeFolder:
-        return await validateRecipeFolder(resolvedTarget, options, onProgress, handleValidation);
+        return await validateRecipeFolder(resolvedTarget, options, baseContext, onProgress, handleValidation);
       case InputType.Library:
-        return await validateLibrary(resolvedTarget, options, onProgress, handleValidation);
+        return await validateLibrary(resolvedTarget, options, baseContext, onProgress, handleValidation);
       case InputType.GitUrl:
-        return await validateGitRepository(resolvedTarget, options, onProgress, handleValidation);
+        return await validateGitRepository(resolvedTarget, options, baseContext, onProgress, handleValidation);
       default:
         throw new RecipesError(`Unknown input type for: ${options.target}`, 'UNKNOWN_INPUT_TYPE');
     }
@@ -116,6 +132,7 @@ function detectInputType(target: string): InputType {
   return InputType.RecipeName;
 }
 
+
 async function findRecipeByName(recipeName: string): Promise<string[]> {
   const recipePaths: string[] = [];
   
@@ -147,7 +164,7 @@ async function findRecipeByName(recipeName: string): Promise<string[]> {
   return recipePaths;
 }
 
-async function validateRecipeByName(recipeName: string, options: RecipesOptions, onProgress?: ProgressCallback, onValidation?: ValidationCallback): Promise<ValidationResult> {
+async function validateRecipeByName(recipeName: string, options: RecipesOptions, context: Omit<ValidationContext, 'recipesValidated'>, onProgress?: ProgressCallback, onValidation?: ValidationCallback): Promise<ValidationResult> {
   onProgress?.(`Searching for recipe: ${recipeName}`);
   
   const foundPaths = await findRecipeByName(recipeName);
@@ -164,10 +181,10 @@ async function validateRecipeByName(recipeName: string, options: RecipesOptions,
     );
   }
   
-  return validateRecipeFolder(foundPaths[0], options, onProgress, onValidation);
+  return validateRecipeFolder(foundPaths[0], options, context, onProgress, onValidation);
 }
 
-async function validateRecipeFolder(recipePath: string, options: RecipesOptions, onProgress?: ProgressCallback, onValidation?: ValidationCallback): Promise<ValidationResult> {
+async function validateRecipeFolder(recipePath: string, options: RecipesOptions, context: Omit<ValidationContext, 'recipesValidated'>, onProgress?: ProgressCallback, onValidation?: ValidationCallback): Promise<ValidationResult> {
   onProgress?.(`Validating recipe folder: ${recipePath}`);
   
   try {
@@ -204,7 +221,13 @@ async function validateRecipeFolder(recipePath: string, options: RecipesOptions,
       }
     }
     
-    return { messages };
+    return { 
+      messages,
+      context: {
+        ...context,
+        recipesValidated: [recipe.getId()]
+      }
+    };
   } catch (error) {
     throw new RecipesError(
       `Failed to validate recipe folder: ${error instanceof Error ? error.message : String(error)}`,
@@ -213,7 +236,7 @@ async function validateRecipeFolder(recipePath: string, options: RecipesOptions,
   }
 }
 
-async function validateLibrary(libraryPath: string, options: RecipesOptions, onProgress?: ProgressCallback, onValidation?: ValidationCallback): Promise<ValidationResult> {
+async function validateLibrary(libraryPath: string, options: RecipesOptions, context: Omit<ValidationContext, 'recipesValidated'>, onProgress?: ProgressCallback, onValidation?: ValidationCallback): Promise<ValidationResult> {
   onProgress?.(`This will validate all recipes in the library: ${libraryPath}`);
   onProgress?.('This may take some time for large libraries.');
   
@@ -265,7 +288,16 @@ async function validateLibrary(libraryPath: string, options: RecipesOptions, onP
       totalWarnings
     };
     
-    return { messages, summary };
+    const validatedRecipeIds = Array.from(results.keys());
+    
+    return { 
+      messages, 
+      summary,
+      context: {
+        ...context,
+        recipesValidated: validatedRecipeIds
+      }
+    };
   } catch (error) {
     throw new RecipesError(
       `Failed to validate library: ${error instanceof Error ? error.message : String(error)}`,
@@ -274,9 +306,36 @@ async function validateLibrary(libraryPath: string, options: RecipesOptions, onP
   }
 }
 
-async function validateGitRepository(gitUrl: string, options: RecipesOptions, onProgress?: ProgressCallback, onValidation?: ValidationCallback): Promise<ValidationResult> {
+async function validateGitRepository(gitUrl: string, options: RecipesOptions, context: Omit<ValidationContext, 'recipesValidated'>, onProgress?: ProgressCallback, onValidation?: ValidationCallback): Promise<ValidationResult> {
   onProgress?.(`This will clone and validate recipes from: ${gitUrl}`);
   onProgress?.('This will create a temporary directory and may take some time.');
   
-  throw new RecipesError('Git repository validation not implemented yet', 'NOT_IMPLEMENTED');
+  const repoName = normalizeRepoIdentifier(gitUrl).replace(/[\/\\]/g, '-');
+  const tempDir = path.join(os.tmpdir(), `chorenzo-recipes-${repoName}-${Date.now()}`);
+  
+  try {
+    onProgress?.('Cloning repository...');
+    await cloneRepository(gitUrl, tempDir, 'main');
+    
+    onProgress?.('Validating cloned recipes...');
+    const result = await validateLibrary(tempDir, options, context, onProgress, onValidation);
+    
+    return result;
+  } catch (error) {
+    if (error instanceof RecipesError) {
+      throw error;
+    }
+    throw new RecipesError(
+      `Failed to validate git repository: ${error instanceof Error ? error.message : String(error)}`,
+      'GIT_VALIDATION_FAILED'
+    );
+  } finally {
+    try {
+      if (fs.existsSync(tempDir)) {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+    } catch (cleanupError) {
+      onProgress?.('Warning: Failed to clean up temporary directory');
+    }
+  }
 }

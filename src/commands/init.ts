@@ -217,7 +217,6 @@ async function cloneLibraries(config: Config, onProgress?: ProgressCallback): Pr
       onProgress?.(`Successfully cloned ${libName}`);
     } catch (error) {
       onProgress?.(`Warning: Failed to clone ${libName} after retry, skipping...`);
-      console.warn(`Failed to clone library ${libName}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }

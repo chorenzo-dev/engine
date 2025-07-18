@@ -75,7 +75,6 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
         try {
           analysis = JSON.parse(message.result);
         } catch (error) {
-          console.error('Failed to parse Claude response as JSON:', error);
           errorMessage = `Invalid JSON response: ${error instanceof Error ? error.message : String(error)}`;
           analysis = null;
         }
@@ -105,12 +104,10 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
 
   if (finalAnalysis && !errorMessage) {
     if (finalAnalysis.isMonorepo === undefined || finalAnalysis.projects === undefined) {
-      console.error('Invalid analysis response: missing required fields');
       errorMessage = 'Invalid analysis response: missing required fields (isMonorepo or projects)';
       subtype = 'error';
       finalAnalysis = null;
     } else if (finalAnalysis.projects.length === 0) {
-      console.error('No projects found in workspace');
       errorMessage = 'No projects found in workspace';
       subtype = 'error';
       finalAnalysis = null;
@@ -125,7 +122,6 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
           onProgress?.(`Warning: ${unrecognizedFrameworks.length} frameworks not recognized: ${unrecognizedFrameworks.join(', ')}`);
         }
       } catch (error) {
-        console.error('Framework validation error:', error);
         onProgress?.('Warning: Framework validation failed');
       }
     }

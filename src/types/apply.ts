@@ -1,5 +1,6 @@
 import { Recipe, RecipeDependency } from './recipe';
 import { WorkspaceAnalysis, ProjectAnalysis } from './analysis';
+import { OperationMetadata } from './common';
 
 export interface ApplyOptions {
   recipe: string;
@@ -37,7 +38,7 @@ export interface PlanGenerationContext {
   analysis: WorkspaceAnalysis;
 }
 
-export interface PlanResult {
+export interface ApplyRecipePlan {
   projectPath: string;
   recipeId: string;
   variant: string;
@@ -45,7 +46,10 @@ export interface PlanResult {
   planPath: string;
   success: boolean;
   error?: string;
+  costUsd: number;
 }
+
+export interface PlanResult extends ApplyRecipePlan {}
 
 export interface ExecutionResult {
   projectPath: string;
@@ -54,9 +58,10 @@ export interface ExecutionResult {
   outputs?: Record<string, string | boolean>;
   error?: string;
   logPath?: string;
+  costUsd: number;
 }
 
-export interface ApplyResult {
+export interface ApplyRecipeResult {
   recipe: Recipe;
   dependencyCheck: DependencyValidationResult;
   planResults: PlanResult[];
@@ -68,7 +73,10 @@ export interface ApplyResult {
     failedProjects: number;
     skippedProjects: number;
   };
+  metadata: OperationMetadata;
 }
+
+export interface ApplyResult extends ApplyRecipeResult {}
 
 export class ApplyError extends Error {
   constructor(message: string, public readonly code: string) {

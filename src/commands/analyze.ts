@@ -3,6 +3,7 @@ import { findGitRoot, getProjectIdentifier } from '../utils/git.utils';
 import { buildFileTree } from '../utils/file-tree.utils';
 import { loadPrompt, renderPrompt } from '../utils/prompts.utils';
 import { WorkspaceAnalysis } from '../types/analysis';
+import { OperationMetadata } from '../types/common';
 import { validateFrameworks } from '../utils/framework-validation';
 import { readJson, writeJson } from '../utils/json.utils';
 import * as fs from 'fs';
@@ -12,14 +13,7 @@ const ANALYSIS_PATH = path.join(process.cwd(), '.chorenzo', 'analysis.json');
 
 export interface AnalysisResult {
   analysis: WorkspaceAnalysis | null;
-  metadata?: {
-    type: string;
-    subtype: string;
-    costUsd: number;
-    turns: number;
-    durationSeconds: number;
-    error?: string;
-  };
+  metadata?: OperationMetadata;
   unrecognizedFrameworks?: string[];
 }
 

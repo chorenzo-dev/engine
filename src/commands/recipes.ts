@@ -10,7 +10,7 @@ import { readJson, writeJson } from '../utils/json.utils';
 import { readYaml, parseYaml } from '../utils/yaml.utils';
 import { loadPrompt, renderPrompt } from '../utils/prompts.utils';
 import { workspaceConfig } from '../utils/workspace-config.utils';
-import { ApplyOptions, ApplyResult, ApplyError, RecipeState, StateEntry, DependencyValidationResult, PlanResult, ExecutionResult, ApplyProgressCallback, ApplyValidationCallback } from '../types/apply';
+import { ApplyOptions, ApplyRecipeResult, ApplyError, RecipeState, StateEntry, DependencyValidationResult, ApplyRecipePlan, PlanResult, ExecutionResult, ApplyProgressCallback, ApplyValidationCallback } from '../types/apply';
 import { Recipe, RecipeDependency } from '../types/recipe';
 import { WorkspaceAnalysis, ProjectAnalysis } from '../types/analysis';
 
@@ -353,7 +353,11 @@ export async function performRecipesApply(
   options: ApplyOptions,
   onProgress?: ApplyProgressCallback,
   onValidation?: ApplyValidationCallback
-): Promise<ApplyResult> {
+): Promise<ApplyRecipeResult> {
+  const startTime = new Date();
+  const startTimeIso = startTime.toISOString();
+  let totalCostUsd = 0;
+  
   try {
     onProgress?.('Loading recipe...');
     const recipe = await loadRecipe(options.recipe);
@@ -393,6 +397,10 @@ export async function performRecipesApply(
       const variant = options.variant || recipe.getDefaultVariant(project.ecosystem || 'unknown') || 'default';
       const planResult = await generatePlan(recipe, project, variant, analysis);
       
+      if (planResult.costUsd) {
+        totalCostUsd += planResult.costUsd;
+      }
+      
       if (!planResult.success) {
         throw new ApplyError(
           `Failed to generate plan for ${project.path}: ${planResult.error}`,
@@ -408,6 +416,9 @@ export async function performRecipesApply(
     const executionResults: ExecutionResult[] = [];
     for (const planResult of planResults) {
       const executionResult = await executePlan(planResult);
+      
+      totalCostUsd += executionResult.costUsd;
+      
       executionResults.push(executionResult);
       
       if (executionResult.success) {
@@ -419,6 +430,10 @@ export async function performRecipesApply(
         onValidation?.('error', `Failed to apply to ${executionResult.projectPath}: ${executionResult.error}`);
       }
     }
+
+    const endTime = new Date();
+    const endTimeIso = endTime.toISOString();
+    const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
 
     const summary = {
       totalProjects: planResults.length,
@@ -433,7 +448,15 @@ export async function performRecipesApply(
       planResults,
       executionResults,
       stateUpdated: executionResults.some(e => e.success && e.outputs),
-      summary
+      summary,
+      metadata: {
+        durationSeconds,
+        costUsd: totalCostUsd,
+        startTime: startTimeIso,
+        endTime: endTimeIso,
+        type: 'result',
+        subtype: 'success'
+      }
     };
 
   } catch (error) {
@@ -590,7 +613,8 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
         planContent: '',
         planPath,
         success: false,
-        error: `Recipe '${recipe.getId()}' does not support ecosystem '${project.ecosystem}'`
+        error: `Recipe '${recipe.getId()}' does not support ecosystem '${project.ecosystem}'`,
+        costUsd: 0
       };
     }
 
@@ -603,7 +627,8 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
         planContent: '',
         planPath,
         success: false,
-        error: `Variant '${variant}' not found for ecosystem '${project.ecosystem}'`
+        error: `Variant '${variant}' not found for ecosystem '${project.ecosystem}'`,
+        costUsd: 0
       };
     }
 
@@ -631,6 +656,7 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
 
     let planContent = '';
     let errorMessage: string | undefined;
+    let planCost = 0;
 
     for await (const message of query({
       prompt,
@@ -641,6 +667,9 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
       },
     })) {
       if (message.type === 'result') {
+        if ('total_cost_usd' in message) {
+          planCost = message.total_cost_usd;
+        }
         if (message.subtype === 'success' && 'result' in message) {
           planContent = message.result;
         } else {
@@ -658,7 +687,8 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
         planContent: '',
         planPath,
         success: false,
-        error: errorMessage
+        error: errorMessage,
+        costUsd: planCost
       };
     }
 
@@ -670,7 +700,8 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
         planContent: '',
         planPath,
         success: false,
-        error: 'Plan generation returned empty content'
+        error: 'Plan generation returned empty content',
+        costUsd: planCost
       };
     }
 
@@ -683,7 +714,8 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
       variant,
       planContent,
       planPath,
-      success: true
+      success: true,
+      costUsd: planCost
     };
 
   } catch (error) {
@@ -694,18 +726,20 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
       planContent: '',
       planPath,
       success: false,
-      error: `Plan generation failed: ${error instanceof Error ? error.message : String(error)}`
+      error: `Plan generation failed: ${error instanceof Error ? error.message : String(error)}`,
+      costUsd: 0
     };
   }
 }
 
-async function executePlan(planResult: PlanResult): Promise<ExecutionResult> {
-  if (!planResult.success) {
+async function executePlan(plan: ApplyRecipePlan): Promise<ExecutionResult> {
+  if (!plan.success) {
     return {
-      projectPath: planResult.projectPath,
-      recipeId: planResult.recipeId,
+      projectPath: plan.projectPath,
+      recipeId: plan.recipeId,
       success: false,
-      error: planResult.error || 'Plan generation failed'
+      error: plan.error || 'Plan generation failed',
+      costUsd: plan.costUsd
     };
   }
 
@@ -714,12 +748,13 @@ async function executePlan(planResult: PlanResult): Promise<ExecutionResult> {
   try {
     const promptTemplate = loadPrompt('execute_plan');
     const executionPrompt = renderPrompt(promptTemplate, {
-      plan_content: planResult.planContent
+      plan_content: plan.planContent
     });
 
     let executionLog = '';
     let errorMessage: string | undefined;
     let success = false;
+    let executionCost = 0;
 
     for await (const message of query({
       prompt: executionPrompt,
@@ -730,6 +765,9 @@ async function executePlan(planResult: PlanResult): Promise<ExecutionResult> {
       },
     })) {
       if (message.type === 'result') {
+        if ('total_cost_usd' in message) {
+          executionCost = message.total_cost_usd;
+        }
         if (message.subtype === 'success' && 'result' in message) {
           executionLog = message.result;
           success = true;
@@ -746,31 +784,33 @@ async function executePlan(planResult: PlanResult): Promise<ExecutionResult> {
 
     fs.mkdirSync(path.dirname(logPath), { recursive: true });
     fs.writeFileSync(logPath, `Plan Execution Log - ${new Date().toISOString()}\n` +
-      `Recipe: ${planResult.recipeId}\n` +
-      `Project: ${planResult.projectPath}\n` +
-      `Variant: ${planResult.variant}\n\n` +
-      `--- PLAN ---\n${planResult.planContent}\n\n` +
+      `Recipe: ${plan.recipeId}\n` +
+      `Project: ${plan.projectPath}\n` +
+      `Variant: ${plan.variant}\n\n` +
+      `--- PLAN ---\n${plan.planContent}\n\n` +
       `--- EXECUTION LOG ---\n${executionLog}\n\n` +
       (errorMessage ? `--- ERROR ---\n${errorMessage}\n` : ''), 'utf8');
 
     if (!success || errorMessage) {
       return {
-        projectPath: planResult.projectPath,
-        recipeId: planResult.recipeId,
+        projectPath: plan.projectPath,
+        recipeId: plan.recipeId,
         success: false,
         error: errorMessage || 'Execution failed',
-        logPath
+        logPath,
+        costUsd: executionCost
       };
     }
 
-    const outputs = extractPlanOutputs(planResult.planContent);
+    const outputs = extractPlanOutputs(plan.planContent);
 
     return {
-      projectPath: planResult.projectPath,
-      recipeId: planResult.recipeId,
+      projectPath: plan.projectPath,
+      recipeId: plan.recipeId,
       success: true,
       outputs,
-      logPath
+      logPath,
+      costUsd: executionCost
     };
 
   } catch (error) {
@@ -779,19 +819,20 @@ async function executePlan(planResult: PlanResult): Promise<ExecutionResult> {
     try {
       fs.mkdirSync(path.dirname(logPath), { recursive: true });
       fs.writeFileSync(logPath, `Plan Execution Error - ${new Date().toISOString()}\n` +
-        `Recipe: ${planResult.recipeId}\n` +
-        `Project: ${planResult.projectPath}\n` +
+        `Recipe: ${plan.recipeId}\n` +
+        `Project: ${plan.projectPath}\n` +
         `Error: ${errorMsg}\n`, 'utf8');
     } catch (logError) {
       console.error('Failed to write error log:', logError);
     }
 
     return {
-      projectPath: planResult.projectPath,
-      recipeId: planResult.recipeId,
+      projectPath: plan.projectPath,
+      recipeId: plan.recipeId,
       success: false,
       error: errorMsg,
-      logPath
+      logPath,
+      costUsd: 0
     };
   }
 }

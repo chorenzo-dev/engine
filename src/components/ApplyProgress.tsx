@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Text, Box } from 'ink';
 import { performRecipesApply } from '../commands/recipes';
-import { ApplyOptions, ApplyResult } from '../types/apply';
+import { ApplyOptions, ApplyRecipeResult } from '../types/apply';
 
 interface ApplyProgressProps {
   options: ApplyOptions;
-  onComplete: (result: ApplyResult) => void;
+  onComplete: (result: ApplyRecipeResult) => void;
   onError: (error: Error) => void;
 }
 

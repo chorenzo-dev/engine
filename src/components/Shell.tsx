@@ -6,9 +6,9 @@ import { ApplyProgress } from './ApplyProgress';
 import { ApplyDisplay } from './ApplyDisplay';
 import { performAnalysis } from '../commands/analyze';
 import { performInit } from '../commands/init';
-import { performRecipesValidate, type ValidationCallback, type ValidationResult } from '../commands/recipes';
+import { performRecipesValidate, performRecipesApply, type ValidationCallback, type ValidationResult } from '../commands/recipes';
 import { AnalysisDisplay } from './AnalysisDisplay';
-import { ApplyOptions, ApplyResult } from '../types/apply';
+import { ApplyOptions, ApplyRecipeResult } from '../types/apply';
 
 interface ShellProps {
   command: 'analyze' | 'init' | 'recipes-validate' | 'recipes-apply';
@@ -99,7 +99,39 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       };
       runRecipesValidate();
     }
-  }, [command, options.progress, options.reset, options.target, isComplete, error]);
+
+    if (
+      command === 'recipes-apply' &&
+      options.progress === false &&
+      !isComplete &&
+      !error
+    ) {
+      if (!options.recipe) {
+        setError(new Error('Recipe parameter is required'));
+        return;
+      }
+      
+      const runRecipesApply = async () => {
+        try {
+          const applyResult = await performRecipesApply({
+            recipe: options.recipe!,
+            variant: options.variant,
+            project: options.project,
+            yes: options.yes,
+            progress: options.progress
+          }, (step) => {
+            setSimpleStep(step);
+          });
+          
+          setResult(applyResult);
+          setIsComplete(true);
+        } catch (err) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      };
+      runRecipesApply();
+    }
+  }, [command, options.progress, options.reset, options.target, options.recipe, options.variant, options.project, options.yes, isComplete, error]);
 
   if (command === 'analyze') {
     if (options.progress === false) {
@@ -286,6 +318,26 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       );
     }
 
+    if (options.progress === false) {
+      if (error) {
+        return (
+          <Box flexDirection="column">
+            <Text color="red">❌ Error: {error.message}</Text>
+          </Box>
+        );
+      }
+
+      if (isComplete && result) {
+        return <ApplyDisplay result={result as ApplyRecipeResult} />;
+      }
+
+      return (
+        <Box flexDirection="column">
+          <Text color="blue">🔧 {simpleStep || 'Applying recipe...'}</Text>
+        </Box>
+      );
+    }
+
     if (error) {
       return (
         <Box flexDirection="column">
@@ -295,7 +347,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     }
 
     if (isComplete && result) {
-      return <ApplyDisplay result={result as ApplyResult} />;
+      return <ApplyDisplay result={result as ApplyRecipeResult} />;
     }
 
     const applyOptions: ApplyOptions = {

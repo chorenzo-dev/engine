@@ -1,13 +1,13 @@
 import React from 'react';
 import { Text, Box } from 'ink';
-import { ApplyResult } from '../types/apply';
+import { ApplyRecipeResult } from '../types/apply';
 
 interface ApplyDisplayProps {
-  result: ApplyResult;
+  result: ApplyRecipeResult;
 }
 
 export const ApplyDisplay: React.FC<ApplyDisplayProps> = ({ result }) => {
-  const { recipe, summary, executionResults, stateUpdated } = result;
+  const { recipe, summary, executionResults, stateUpdated, metadata } = result;
 
   return (
     <Box flexDirection="column">
@@ -27,6 +27,14 @@ export const ApplyDisplay: React.FC<ApplyDisplayProps> = ({ result }) => {
         {summary.skippedProjects > 0 && (
           <Text color="yellow">  • Skipped: {summary.skippedProjects}</Text>
         )}
+      </Box>
+
+      <Box flexDirection="column" marginBottom={1}>
+        <Text bold>Performance:</Text>
+        <Text>  • Duration: {metadata.durationSeconds.toFixed(1)}s</Text>
+        <Text>  • Cost: ${metadata.costUsd.toFixed(4)} USD</Text>
+        {metadata.startTime && <Text dimColor>  • Started: {new Date(metadata.startTime).toLocaleTimeString()}</Text>}
+        {metadata.endTime && <Text dimColor>  • Finished: {new Date(metadata.endTime).toLocaleTimeString()}</Text>}
       </Box>
 
       {executionResults.length > 0 && (

@@ -709,6 +709,22 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
     let planCost = 0;
 
     logger.info({ event: 'claude_query_started' }, 'Starting Claude query for plan generation');
+    
+    let messageCount = 0;
+    let toolUsageCount = 0;
+    const queryStartTime = Date.now();
+    
+    const progressInterval = setInterval(() => {
+      const elapsed = ((Date.now() - queryStartTime) / 1000).toFixed(1);
+      logger.info({
+        event: 'plan_generation_progress',
+        elapsed,
+        messageCount,
+        toolUsageCount
+      }, `Plan generation progress: ${elapsed}s elapsed, ${messageCount} messages, ${toolUsageCount} tool calls`);
+    }, 10000);
+    
+    try {
     for await (const message of query({
       prompt,
       options: {
@@ -717,8 +733,122 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
         permissionMode: 'bypassPermissions',
       },
     })) {
-      logger.debug({ messageType: message.type }, 'Received Claude message');
+      messageCount++;
+      
+      if (message.type === 'system' && message.subtype === 'init') {
+        logger.info({
+          event: 'claude_system_init',
+          sessionId: message.session_id,
+          model: message.model,
+          tools: message.tools,
+          permissionMode: message.permissionMode,
+          cwd: message.cwd
+        }, 'Claude system initialized');
+      }
+      
+      else if (message.type === 'assistant') {
+        const content = message.message?.content;
+        let toolUses = [];
+        let textContent = '';
+        
+        if (Array.isArray(content)) {
+          for (const block of content) {
+            if (typeof block === 'object' && block !== null) {
+              if ('type' in block && block.type === 'tool_use') {
+                toolUses.push({
+                  name: block.name,
+                  id: block.id,
+                  input: typeof block.input === 'object' ? JSON.stringify(block.input).substring(0, 300) : block.input
+                });
+              } else if ('type' in block && block.type === 'text') {
+                textContent = block.text?.substring(0, 200) || '';
+              }
+            }
+          }
+        } else if (typeof content === 'string') {
+          textContent = content.substring(0, 200);
+        }
+        
+        logger.debug({
+          event: 'claude_assistant_message',
+          sessionId: message.session_id,
+          textContent,
+          toolUses,
+          toolCount: toolUses.length
+        }, `Claude assistant response${toolUses.length > 0 ? ` with ${toolUses.length} tool calls` : ''}`);
+        
+        for (const tool of toolUses) {
+          toolUsageCount++;
+          logger.info({
+            event: 'claude_tool_use',
+            sessionId: message.session_id,
+            toolName: tool.name,
+            toolId: tool.id,
+            toolInput: tool.input
+          }, `Claude calling tool: ${tool.name}`);
+        }
+      }
+      
+      else if (message.type === 'user') {
+        const content = message.message?.content;
+        let toolResults = [];
+        let textContent = '';
+        
+        if (Array.isArray(content)) {
+          for (const block of content) {
+            if (typeof block === 'object' && block !== null) {
+              if ('type' in block && block.type === 'tool_result') {
+                toolResults.push({
+                  tool_use_id: block.tool_use_id,
+                  content: typeof block.content === 'string' ? block.content.substring(0, 300) : 'non-string content',
+                  is_error: block.is_error || false
+                });
+              } else if ('type' in block && block.type === 'text') {
+                textContent = block.text?.substring(0, 200) || '';
+              }
+            }
+          }
+        } else if (typeof content === 'string') {
+          textContent = content.substring(0, 200);
+        }
+        
+        logger.debug({
+          event: 'claude_user_message', 
+          sessionId: message.session_id,
+          textContent,
+          toolResults,
+          toolCount: toolResults.length
+        }, `Claude user message${toolResults.length > 0 ? ` with ${toolResults.length} tool results` : ''}`);
+        
+        for (const result of toolResults) {
+          logger.info({
+            event: 'claude_tool_result',
+            sessionId: message.session_id,
+            toolUseId: result.tool_use_id,
+            isError: result.is_error,
+            resultPreview: result.content
+          }, `Tool result${result.is_error ? ' (ERROR)' : ''}: ${result.content.substring(0, 100)}`);
+        }
+      }
+      
+      else {
+        logger.debug({ 
+          event: 'claude_message',
+          messageType: message.type,
+          sessionId: 'session_id' in message ? message.session_id : undefined
+        }, `Received Claude message: ${message.type}`);
+      }
+      
       if (message.type === 'result') {
+        logger.info({
+          event: 'claude_query_result',
+          subtype: message.subtype,
+          duration_ms: message.duration_ms,
+          duration_api_ms: message.duration_api_ms,
+          num_turns: message.num_turns,
+          sessionId: message.session_id
+        }, 'Claude query completed');
+        
         if ('total_cost_usd' in message) {
           planCost = message.total_cost_usd;
           logger.info({ cost: planCost }, `Plan generation cost: $${planCost}`);
@@ -733,11 +863,15 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
           errorMessage = 'Plan generation failed';
           logger.error({
             event: 'plan_generation_failed',
-            subtype: message.subtype
+            subtype: message.subtype,
+            error: 'error' in message ? message.error : undefined
           }, 'Plan generation failed');
         }
         break;
       }
+    }
+    } finally {
+      clearInterval(progressInterval);
     }
 
     if (errorMessage) {
@@ -852,6 +986,21 @@ async function executePlan(plan: ApplyRecipePlan): Promise<ExecutionResult> {
 
     logger.info({ event: 'claude_execution_started' }, 'Starting Claude query for plan execution');
     const queryStartTime = Date.now();
+    
+    let messageCount = 0;
+    let toolUsageCount = 0;
+    
+    const progressInterval = setInterval(() => {
+      const elapsed = ((Date.now() - queryStartTime) / 1000).toFixed(1);
+      logger.info({
+        event: 'plan_execution_progress',
+        elapsed,
+        messageCount,
+        toolUsageCount
+      }, `Plan execution progress: ${elapsed}s elapsed, ${messageCount} messages, ${toolUsageCount} tool calls`);
+    }, 10000);
+    
+    try {
     for await (const message of query({
       prompt: executionPrompt,
       options: {
@@ -860,40 +1009,165 @@ async function executePlan(plan: ApplyRecipePlan): Promise<ExecutionResult> {
         permissionMode: 'bypassPermissions',
       },
     })) {
+      messageCount++;
       const elapsed = ((Date.now() - queryStartTime) / 1000).toFixed(1);
       
-      // Log all message types for detailed tracking
-      logger.debug({ 
-        messageType: message.type, 
-        elapsed,
-        messageData: JSON.stringify(message).substring(0, 200)
-      }, `Received Claude message: ${message.type}`);
+      if (message.type === 'system' && message.subtype === 'init') {
+        logger.info({
+          event: 'claude_execution_system_init',
+          sessionId: message.session_id,
+          model: message.model,
+          tools: message.tools,
+          permissionMode: message.permissionMode,
+          cwd: message.cwd,
+          elapsed
+        }, 'Claude execution system initialized');
+      }
+      
+      else if (message.type === 'assistant') {
+        const content = message.message?.content;
+        let toolUses = [];
+        let textContent = '';
+        
+        if (Array.isArray(content)) {
+          for (const block of content) {
+            if (typeof block === 'object' && block !== null) {
+              if ('type' in block && block.type === 'tool_use') {
+                toolUses.push({
+                  name: block.name,
+                  id: block.id,
+                  input: typeof block.input === 'object' ? JSON.stringify(block.input).substring(0, 300) : block.input
+                });
+              } else if ('type' in block && block.type === 'text') {
+                textContent = block.text?.substring(0, 200) || '';
+              }
+            }
+          }
+        } else if (typeof content === 'string') {
+          textContent = content.substring(0, 200);
+        }
+        
+        logger.debug({
+          event: 'claude_execution_assistant_message',
+          sessionId: message.session_id,
+          textContent,
+          toolUses,
+          toolCount: toolUses.length,
+          elapsed
+        }, `Claude execution assistant response${toolUses.length > 0 ? ` with ${toolUses.length} tool calls` : ''}`);
+        
+        for (const tool of toolUses) {
+          toolUsageCount++;
+          logger.info({
+            event: 'claude_execution_tool_use',
+            sessionId: message.session_id,
+            toolName: tool.name,
+            toolId: tool.id,
+            toolInput: tool.input,
+            elapsed
+          }, `Claude execution calling tool: ${tool.name}`);
+        }
+      }
+      
+      else if (message.type === 'user') {
+        const content = message.message?.content;
+        let toolResults = [];
+        let textContent = '';
+        
+        if (Array.isArray(content)) {
+          for (const block of content) {
+            if (typeof block === 'object' && block !== null) {
+              if ('type' in block && block.type === 'tool_result') {
+                toolResults.push({
+                  tool_use_id: block.tool_use_id,
+                  content: typeof block.content === 'string' ? block.content.substring(0, 300) : 'non-string content',
+                  is_error: block.is_error || false
+                });
+              } else if ('type' in block && block.type === 'text') {
+                textContent = block.text?.substring(0, 200) || '';
+              }
+            }
+          }
+        } else if (typeof content === 'string') {
+          textContent = content.substring(0, 200);
+        }
+        
+        logger.debug({
+          event: 'claude_execution_user_message', 
+          sessionId: message.session_id,
+          textContent,
+          toolResults,
+          toolCount: toolResults.length,
+          elapsed
+        }, `Claude execution user message${toolResults.length > 0 ? ` with ${toolResults.length} tool results` : ''}`);
+        
+        for (const result of toolResults) {
+          logger.info({
+            event: 'claude_execution_tool_result',
+            sessionId: message.session_id,
+            toolUseId: result.tool_use_id,
+            isError: result.is_error,
+            resultPreview: result.content,
+            elapsed
+          }, `Execution tool result${result.is_error ? ' (ERROR)' : ''}: ${result.content.substring(0, 100)}`);
+        }
+      }
+      
+      else {
+        logger.debug({ 
+          event: 'claude_execution_message',
+          messageType: message.type,
+          sessionId: 'session_id' in message ? message.session_id : undefined,
+          elapsed
+        }, `Received Claude execution message: ${message.type}`);
+      }
       
       if (message.type === 'result') {
+        logger.info({
+          event: 'claude_execution_result',
+          subtype: message.subtype,
+          duration_ms: message.duration_ms,
+          duration_api_ms: message.duration_api_ms,
+          num_turns: message.num_turns,
+          sessionId: message.session_id,
+          elapsed
+        }, 'Claude execution completed');
+        
         if ('total_cost_usd' in message) {
           executionCost = message.total_cost_usd;
-          console.log(`💰 Execution cost: $${executionCost}`);
+          logger.info({ cost: executionCost, elapsed }, `Execution cost: $${executionCost}`);
         }
         if (message.subtype === 'success' && 'result' in message) {
           executionLog = message.result;
           success = true;
-          console.log(`✅ Execution completed successfully (${executionLog.length} chars)`);
+          logger.info({ 
+            event: 'execution_success',
+            resultLength: executionLog.length,
+            elapsed 
+          }, `Execution completed successfully (${executionLog.length} chars)`);
         } else {
           errorMessage = 'Plan execution failed';
           success = false;
           if ('error' in message) {
             errorMessage = `Plan execution failed: ${message.error}`;
           }
-          console.log(`❌ Execution failed: ${message.subtype}`);
+          logger.error({
+            event: 'execution_failed',
+            subtype: message.subtype,
+            error: 'error' in message ? message.error : undefined,
+            elapsed
+          }, `Execution failed: ${message.subtype}`);
         }
         break;
       }
     }
+    } finally {
+      clearInterval(progressInterval);
+    }
     
     const totalElapsed = ((Date.now() - queryStartTime) / 1000).toFixed(1);
-    console.log(`⏱️ Claude query completed in ${totalElapsed}s`);
+    logger.info({ event: 'claude_execution_completed', elapsed: totalElapsed }, `Claude execution query completed in ${totalElapsed}s`);
 
-    // Update log with final results
     fs.appendFileSync(logPath, `\n--- EXECUTION COMPLETED - ${new Date().toISOString()} ---\n` +
       `Success: ${success}\n` +
       `Cost: $${executionCost}\n` +

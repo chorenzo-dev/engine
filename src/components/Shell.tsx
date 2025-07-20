@@ -2,19 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { AnalysisProgress } from './AnalysisProgress';
 import { InitWithAnalysis } from './InitWithAnalysis';
+import { ApplyProgress } from './ApplyProgress';
+import { ApplyDisplay } from './ApplyDisplay';
 import { performAnalysis } from '../commands/analyze';
 import { performInit } from '../commands/init';
 import { performRecipesValidate, type ValidationCallback, type ValidationResult } from '../commands/recipes';
 import { AnalysisDisplay } from './AnalysisDisplay';
+import { ApplyOptions, ApplyResult } from '../types/apply';
 
 interface ShellProps {
-  command: 'analyze' | 'init' | 'recipes-validate';
+  command: 'analyze' | 'init' | 'recipes-validate' | 'recipes-apply';
   options: {
     progress?: boolean;
     reset?: boolean;
     noAnalyze?: boolean;
     yes?: boolean;
     target?: string;
+    recipe?: string;
+    variant?: string;
+    project?: string;
   };
 }
 
@@ -268,6 +274,49 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       <Box flexDirection="column">
         <Text color="blue">🔍 {simpleStep || 'Validating recipe...'}</Text>
       </Box>
+    );
+  }
+
+  if (command === 'recipes-apply') {
+    if (!options.recipe) {
+      return (
+        <Box flexDirection="column">
+          <Text color="red">❌ Error: Recipe parameter is required</Text>
+        </Box>
+      );
+    }
+
+    if (error) {
+      return (
+        <Box flexDirection="column">
+          <Text color="red">❌ Error: {error.message}</Text>
+        </Box>
+      );
+    }
+
+    if (isComplete && result) {
+      return <ApplyDisplay result={result as ApplyResult} />;
+    }
+
+    const applyOptions: ApplyOptions = {
+      recipe: options.recipe,
+      variant: options.variant,
+      project: options.project,
+      yes: options.yes,
+      progress: options.progress
+    };
+
+    return (
+      <ApplyProgress
+        options={applyOptions}
+        onComplete={(applyResult) => {
+          setResult(applyResult);
+          setIsComplete(true);
+        }}
+        onError={(error) => {
+          setError(error);
+        }}
+      />
     );
   }
 

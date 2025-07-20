@@ -10,6 +10,7 @@ import { readJson, writeJson } from '../utils/json.utils';
 import { readYaml, parseYaml } from '../utils/yaml.utils';
 import { loadPrompt, renderPrompt } from '../utils/prompts.utils';
 import { workspaceConfig } from '../utils/workspace-config.utils';
+import { createApplyLogger, getApplyLogger, closeApplyLogger } from '../utils/logger.utils';
 import { ApplyOptions, ApplyRecipeResult, ApplyError, RecipeState, StateEntry, DependencyValidationResult, ApplyRecipePlan, PlanResult, ExecutionResult, ApplyProgressCallback, ApplyValidationCallback } from '../types/apply';
 import { Recipe, RecipeDependency } from '../types/recipe';
 import { WorkspaceAnalysis, ProjectAnalysis } from '../types/analysis';
@@ -362,6 +363,8 @@ export async function performRecipesApply(
     onProgress?.('Loading recipe...');
     const recipe = await loadRecipe(options.recipe);
     
+    await createApplyLogger(recipe.getId(), options.project || 'workspace');
+    
     onProgress?.('Validating recipe structure...');
     const validationResult = recipe.validate();
     if (!validationResult.valid) {
@@ -418,7 +421,6 @@ export async function performRecipesApply(
       const executionResult = await executePlan(planResult);
       
       totalCostUsd += executionResult.costUsd;
-      
       executionResults.push(executionResult);
       
       if (executionResult.success) {
@@ -439,8 +441,18 @@ export async function performRecipesApply(
       totalProjects: planResults.length,
       successfulProjects: executionResults.filter(e => e.success).length,
       failedProjects: executionResults.filter(e => !e.success).length,
-      skippedProjects: 0 // No skipped projects since we fail fast on plan generation
+      skippedProjects: 0
     };
+
+    const logger = getApplyLogger();
+    logger.info({
+      event: 'apply_completed',
+      duration: durationSeconds,
+      totalCost: totalCostUsd,
+      summary
+    }, 'Recipe application completed');
+    
+    closeApplyLogger();
 
     return {
       recipe,
@@ -460,6 +472,18 @@ export async function performRecipesApply(
     };
 
   } catch (error) {
+    try {
+      const logger = getApplyLogger();
+      logger.error({
+        event: 'apply_error',
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      }, 'Recipe application failed');
+      closeApplyLogger();
+    } catch (loggerError) {
+
+    }
+    
     if (error instanceof ApplyError) {
       throw error;
     }
@@ -602,10 +626,24 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
   const projectPath = project.path === '.' ? 'workspace' : project.path;
   const planPath = await workspaceConfig.getPlanPath(project.path, recipe.getId());
   const workspaceRoot = await workspaceConfig.getWorkspaceRoot();
+  
+  const logger = getApplyLogger();
+  logger.info({
+    event: 'plan_generation_started',
+    recipe: recipe.getId(),
+    project: project.path,
+    variant,
+    planPath
+  }, 'Starting plan generation');
 
   try {
     const ecosystem = recipe.getEcosystems().find(eco => eco.id === project.ecosystem);
     if (!ecosystem) {
+      logger.warn({
+        event: 'ecosystem_not_supported',
+        ecosystem: project.ecosystem,
+        recipe: recipe.getId()
+      }, `Recipe does not support ecosystem: ${project.ecosystem}`);
       return {
         projectPath,
         recipeId: recipe.getId(),
@@ -618,8 +656,14 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
       };
     }
 
+    logger.debug({ ecosystem: ecosystem.id }, 'Found matching ecosystem');
     const variantObj = ecosystem.variants.find(v => v.id === variant);
     if (!variantObj) {
+      logger.warn({
+        event: 'variant_not_found',
+        variant,
+        ecosystem: ecosystem.id
+      }, `Variant not found: ${variant}`);
       return {
         projectPath,
         recipeId: recipe.getId(),
@@ -632,10 +676,16 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
       };
     }
 
+    logger.debug({ variant }, 'Found matching variant');
     const promptTemplate = loadPrompt('generate_plan');
     const providesYaml = recipe.getProvides()
       .map(key => `    ${key}: true`)
       .join('\n');
+    
+    logger.debug({
+      event: 'prompt_template_loaded',
+      provides: recipe.getProvides()
+    }, 'Loaded prompt template and built context');
     
     const prompt = renderPrompt(promptTemplate, {
       project_path: project.path,
@@ -658,6 +708,7 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
     let errorMessage: string | undefined;
     let planCost = 0;
 
+    logger.info({ event: 'claude_query_started' }, 'Starting Claude query for plan generation');
     for await (const message of query({
       prompt,
       options: {
@@ -666,20 +717,31 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
         permissionMode: 'bypassPermissions',
       },
     })) {
+      logger.debug({ messageType: message.type }, 'Received Claude message');
       if (message.type === 'result') {
         if ('total_cost_usd' in message) {
           planCost = message.total_cost_usd;
+          logger.info({ cost: planCost }, `Plan generation cost: $${planCost}`);
         }
         if (message.subtype === 'success' && 'result' in message) {
           planContent = message.result;
+          logger.info({
+            event: 'plan_generated',
+            contentLength: planContent.length
+          }, 'Plan generated successfully');
         } else {
           errorMessage = 'Plan generation failed';
+          logger.error({
+            event: 'plan_generation_failed',
+            subtype: message.subtype
+          }, 'Plan generation failed');
         }
         break;
       }
     }
 
     if (errorMessage) {
+      logger.error({ error: errorMessage }, 'Plan generation failed');
       return {
         projectPath,
         recipeId: recipe.getId(),
@@ -693,6 +755,7 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
     }
 
     if (!planContent || planContent.trim() === '') {
+      logger.error({ event: 'empty_plan' }, 'Plan generation returned empty content');
       return {
         projectPath,
         recipeId: recipe.getId(),
@@ -707,8 +770,9 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
 
     fs.mkdirSync(path.dirname(planPath), { recursive: true });
     fs.writeFileSync(planPath, planContent, 'utf8');
+    logger.info({ planPath }, 'Plan written to filesystem');
 
-    return {
+    const result = {
       projectPath,
       recipeId: recipe.getId(),
       variant,
@@ -717,8 +781,17 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
       success: true,
       costUsd: planCost
     };
+    logger.info({
+      event: 'plan_generation_completed',
+      cost: planCost
+    }, 'Plan generation completed successfully');
+    return result;
 
   } catch (error) {
+    logger.error({
+      event: 'plan_generation_error',
+      error: error instanceof Error ? error.message : String(error)
+    }, 'Plan generation caught error');
     return {
       projectPath,
       recipeId: recipe.getId(),
@@ -733,7 +806,15 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
 }
 
 async function executePlan(plan: ApplyRecipePlan): Promise<ExecutionResult> {
+  const logger = getApplyLogger();
+  logger.info({
+    event: 'plan_execution_started',
+    project: plan.projectPath,
+    recipe: plan.recipeId
+  }, 'Starting plan execution');
+  
   if (!plan.success) {
+    logger.warn({ event: 'plan_not_successful' }, 'Plan was not successful, skipping execution');
     return {
       projectPath: plan.projectPath,
       recipeId: plan.recipeId,
@@ -750,12 +831,27 @@ async function executePlan(plan: ApplyRecipePlan): Promise<ExecutionResult> {
     const executionPrompt = renderPrompt(promptTemplate, {
       plan_content: plan.planContent
     });
+    
+    logger.debug({
+      event: 'execution_prompt_prepared',
+      promptLength: executionPrompt.length
+    }, 'Execution prompt prepared');
+    
+    logger.info({
+      event: 'plan_details',
+      recipe: plan.recipeId,
+      project: plan.projectPath,
+      variant: plan.variant,
+      planContentLength: plan.planContent.length
+    }, 'Executing plan');
 
     let executionLog = '';
     let errorMessage: string | undefined;
     let success = false;
     let executionCost = 0;
 
+    logger.info({ event: 'claude_execution_started' }, 'Starting Claude query for plan execution');
+    const queryStartTime = Date.now();
     for await (const message of query({
       prompt: executionPrompt,
       options: {
@@ -764,34 +860,49 @@ async function executePlan(plan: ApplyRecipePlan): Promise<ExecutionResult> {
         permissionMode: 'bypassPermissions',
       },
     })) {
+      const elapsed = ((Date.now() - queryStartTime) / 1000).toFixed(1);
+      
+      // Log all message types for detailed tracking
+      logger.debug({ 
+        messageType: message.type, 
+        elapsed,
+        messageData: JSON.stringify(message).substring(0, 200)
+      }, `Received Claude message: ${message.type}`);
+      
       if (message.type === 'result') {
         if ('total_cost_usd' in message) {
           executionCost = message.total_cost_usd;
+          console.log(`💰 Execution cost: $${executionCost}`);
         }
         if (message.subtype === 'success' && 'result' in message) {
           executionLog = message.result;
           success = true;
+          console.log(`✅ Execution completed successfully (${executionLog.length} chars)`);
         } else {
           errorMessage = 'Plan execution failed';
           success = false;
           if ('error' in message) {
             errorMessage = `Plan execution failed: ${message.error}`;
           }
+          console.log(`❌ Execution failed: ${message.subtype}`);
         }
         break;
       }
     }
+    
+    const totalElapsed = ((Date.now() - queryStartTime) / 1000).toFixed(1);
+    console.log(`⏱️ Claude query completed in ${totalElapsed}s`);
 
-    fs.mkdirSync(path.dirname(logPath), { recursive: true });
-    fs.writeFileSync(logPath, `Plan Execution Log - ${new Date().toISOString()}\n` +
-      `Recipe: ${plan.recipeId}\n` +
-      `Project: ${plan.projectPath}\n` +
-      `Variant: ${plan.variant}\n\n` +
-      `--- PLAN ---\n${plan.planContent}\n\n` +
+    // Update log with final results
+    fs.appendFileSync(logPath, `\n--- EXECUTION COMPLETED - ${new Date().toISOString()} ---\n` +
+      `Success: ${success}\n` +
+      `Cost: $${executionCost}\n` +
       `--- EXECUTION LOG ---\n${executionLog}\n\n` +
       (errorMessage ? `--- ERROR ---\n${errorMessage}\n` : ''), 'utf8');
+    console.log(`📝 Final log updated`);
 
     if (!success || errorMessage) {
+      console.log(`❌ Execution failed, returning error result`);
       return {
         projectPath: plan.projectPath,
         recipeId: plan.recipeId,
@@ -802,9 +913,11 @@ async function executePlan(plan: ApplyRecipePlan): Promise<ExecutionResult> {
       };
     }
 
+    console.log(`📤 Extracting plan outputs...`);
     const outputs = extractPlanOutputs(plan.planContent);
+    console.log(`📊 Extracted outputs:`, outputs);
 
-    return {
+    const result = {
       projectPath: plan.projectPath,
       recipeId: plan.recipeId,
       success: true,
@@ -812,9 +925,12 @@ async function executePlan(plan: ApplyRecipePlan): Promise<ExecutionResult> {
       logPath,
       costUsd: executionCost
     };
+    console.log(`🎉 executePlan completed successfully`);
+    return result;
 
   } catch (error) {
     const errorMsg = `Execution failed: ${error instanceof Error ? error.message : String(error)}`;
+    console.log(`💥 executePlan caught error:`, error);
     
     try {
       fs.mkdirSync(path.dirname(logPath), { recursive: true });
@@ -822,8 +938,9 @@ async function executePlan(plan: ApplyRecipePlan): Promise<ExecutionResult> {
         `Recipe: ${plan.recipeId}\n` +
         `Project: ${plan.projectPath}\n` +
         `Error: ${errorMsg}\n`, 'utf8');
+      console.log(`📝 Error log written`);
     } catch (logError) {
-      console.error('Failed to write error log:', logError);
+      console.error('❌ Failed to write error log:', logError);
     }
 
     return {

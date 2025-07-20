@@ -20,6 +20,8 @@ const mockCloneRepository = jest.fn();
 const mockRmSync = jest.fn();
 const mockMkdirSync = jest.fn();
 const mockWriteFileSync = jest.fn();
+const mockAppendFileSync = jest.fn();
+const mockCreateWriteStream = jest.fn();
 
 jest.unstable_mockModule('os', () => ({
   homedir: mockHomedir,
@@ -34,6 +36,8 @@ jest.unstable_mockModule('fs', () => ({
   rmSync: mockRmSync,
   mkdirSync: mockMkdirSync,
   writeFileSync: mockWriteFileSync,
+  appendFileSync: mockAppendFileSync,
+  createWriteStream: mockCreateWriteStream,
 }));
 
 jest.unstable_mockModule('../utils/yaml.utils', () => ({
@@ -81,6 +85,13 @@ describe('Recipes Command Integration Tests', () => {
       }
       return '';
     });
+    mockCreateWriteStream.mockImplementation(() => ({
+      write: jest.fn(),
+      end: jest.fn(),
+      on: jest.fn(),
+      once: jest.fn(),
+      emit: jest.fn()
+    }));
     mockReadYaml.mockImplementation(() => Promise.resolve({
       id: 'test-recipe',
       category: 'test',

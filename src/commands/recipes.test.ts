@@ -371,6 +371,75 @@ describe('Recipes Command Integration Tests', () => {
     
     await expect(performRecipesValidate(options)).rejects.toThrow('Missing prompt.md in recipe');
     });
+
+    it('should warn about non-kebab-case recipe ID', async () => {
+      const options = { target: '/path/to/snake_case_recipe' };
+      
+      mockExistsSync.mockImplementation(() => true);
+      mockStatSync.mockImplementation(() => ({
+        isDirectory: () => true,
+        isFile: () => false,
+      } as fs.Stats));
+      mockReaddirSync.mockImplementation(() => []);
+      mockReadFileSync.mockImplementation((filePath) => {
+        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        return '';
+      });
+      
+      mockReadYaml.mockResolvedValue({
+        id: 'snake_case_recipe',
+        category: 'test',
+        summary: 'Test recipe',
+        ecosystems: [{
+          id: 'javascript',
+          default_variant: 'basic',
+          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
+        }],
+        provides: ['test_feature'],
+        requires: []
+      });
+      
+      const result = await performRecipesValidate(options);
+      
+      expect(result.messages.some(msg => 
+        msg.type === 'warning' && msg.text.includes('Recipe ID should use kebab-case (lowercase letters, numbers, and hyphens only)')
+      )).toBe(true);
+    });
+
+    it('should warn about non-kebab-case recipe category', async () => {
+      const options = { target: '/path/to/test-recipe' };
+      
+      mockExistsSync.mockImplementation(() => true);
+      mockStatSync.mockImplementation(() => ({
+        isDirectory: () => true,
+        isFile: () => false,
+      } as fs.Stats));
+      mockReaddirSync.mockImplementation(() => []);
+      mockReadFileSync.mockImplementation((filePath) => {
+        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        return '';
+      });
+      
+      mockReadYaml.mockResolvedValue({
+        id: 'test-recipe',
+        category: 'BadCategory',
+        summary: 'Test recipe',
+        ecosystems: [{
+          id: 'javascript',
+          default_variant: 'basic',
+          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
+        }],
+        provides: ['test_feature'],
+        requires: []
+      });
+      
+      const result = await performRecipesValidate(options);
+      
+      expect(result.messages.some(msg => 
+        msg.type === 'warning' && msg.text.includes('Recipe category should use kebab-case (lowercase letters, numbers, and hyphens only)')
+      )).toBe(true);
+    });
+
   });
 
   describe('Apply Command Integration', () => {

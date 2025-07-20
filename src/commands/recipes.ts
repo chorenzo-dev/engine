@@ -636,8 +636,7 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
       prompt,
       options: {
         model: 'sonnet',
-        maxTurns: 5,
-        allowedTools: ['Read', 'LS', 'Glob', 'Grep'],
+        allowedTools: ['Bash', 'Read', 'Write', 'Edit', 'MultiEdit', 'LS', 'Glob', 'Grep'],
         permissionMode: 'bypassPermissions',
       },
     })) {
@@ -726,7 +725,6 @@ async function executePlan(planResult: PlanResult): Promise<ExecutionResult> {
       prompt: executionPrompt,
       options: {
         model: 'sonnet',
-        maxTurns: 10,
         allowedTools: ['Bash', 'Read', 'Write', 'Edit', 'MultiEdit', 'LS', 'Glob', 'Grep'],
         permissionMode: 'bypassPermissions',
       },

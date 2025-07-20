@@ -11,8 +11,12 @@ const mockStatSync = jest.fn<(path: string) => fs.Stats>();
 const mockReaddirSync = jest.fn<(path: string) => string[]>();
 const mockReadFileSync = jest.fn<(path: string, encoding?: string) => string>();
 const mockReadYaml = jest.fn<(path: string) => Promise<any>>();
+const mockParseYaml = jest.fn<(content: string) => any>();
+const mockQuery = jest.fn();
 const mockCloneRepository = jest.fn();
 const mockRmSync = jest.fn();
+const mockMkdirSync = jest.fn();
+const mockWriteFileSync = jest.fn();
 
 jest.unstable_mockModule('os', () => ({
   homedir: mockHomedir,
@@ -25,10 +29,17 @@ jest.unstable_mockModule('fs', () => ({
   readdirSync: mockReaddirSync,
   readFileSync: mockReadFileSync,
   rmSync: mockRmSync,
+  mkdirSync: mockMkdirSync,
+  writeFileSync: mockWriteFileSync,
 }));
 
 jest.unstable_mockModule('../utils/yaml.utils', () => ({
   readYaml: mockReadYaml,
+  parseYaml: mockParseYaml,
+}));
+
+jest.unstable_mockModule('@anthropic-ai/claude-code', () => ({
+  query: mockQuery,
 }));
 
 jest.unstable_mockModule('../utils/git-operations.utils', () => ({

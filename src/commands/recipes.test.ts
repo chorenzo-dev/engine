@@ -1486,5 +1486,77 @@ describe('Recipes Command Integration Tests', () => {
         progress: false
       })).rejects.toThrow('Failed to read state file');
     });
+
+    it('should handle empty plan generation', async () => {
+      mockExistsSync.mockImplementation((path) => {
+        if (path.includes('analysis.json')) return true;
+        if (path.includes('.chorenzo/recipes')) return true;
+        if (path.includes('test-recipe')) return true;
+        if (path.includes('metadata.yaml')) return true;
+        if (path.includes('prompt.md')) return true;
+        return true;
+      });
+
+      mockStatSync.mockImplementation(() => ({
+        isDirectory: () => true,
+        isFile: () => false,
+      } as fs.Stats));
+
+      mockReaddirSync.mockImplementation((dirPath) => {
+        if (dirPath.includes('.chorenzo/recipes')) {
+          return ['test-recipe'];
+        }
+        return [];
+      });
+
+      mockReadFileSync.mockImplementation((filePath) => {
+        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        return '';
+      });
+
+      mockReadJson.mockImplementation((path) => {
+        if (path.includes('analysis.json')) {
+          return Promise.resolve({
+            isMonorepo: false,
+            hasWorkspacePackageManager: false,
+            projects: [{
+              path: '.',
+              language: 'javascript',
+              ecosystem: 'javascript',
+              type: 'web_app',
+              dependencies: [],
+              hasPackageManager: true
+            }]
+          });
+        }
+        return Promise.resolve({});
+      });
+
+      mockReadYaml.mockResolvedValue({
+        id: 'test-recipe',
+        category: 'test',
+        summary: 'Test recipe',
+        ecosystems: [{
+          id: 'javascript',
+          default_variant: 'basic',
+          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
+        }],
+        provides: ['test_feature.exists'],
+        requires: []
+      });
+
+      mockQuery.mockImplementation(async function* () {
+        yield {
+          type: 'result',
+          subtype: 'success',
+          result: ''
+        };
+      });
+
+      await expect(performRecipesApply({
+        recipe: 'test-recipe',
+        progress: false
+      })).rejects.toThrow('Plan generation returned empty content');
+    });
   });
 });

@@ -663,6 +663,18 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
       };
     }
 
+    if (!planContent || planContent.trim() === '') {
+      return {
+        projectPath,
+        recipeId: recipe.getId(),
+        variant,
+        planContent: '',
+        planPath,
+        success: false,
+        error: 'Plan generation returned empty content'
+      };
+    }
+
     fs.mkdirSync(path.dirname(planPath), { recursive: true });
     fs.writeFileSync(planPath, planContent, 'utf8');
 
@@ -726,6 +738,9 @@ async function executePlan(planResult: PlanResult): Promise<ExecutionResult> {
         } else {
           errorMessage = 'Plan execution failed';
           success = false;
+          if ('error' in message) {
+            errorMessage = `Plan execution failed: ${message.error}`;
+          }
         }
         break;
       }

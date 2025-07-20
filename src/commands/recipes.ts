@@ -510,7 +510,7 @@ async function readCurrentState(): Promise<RecipeState> {
 
   try {
     const rawState = await readJson(statePath);
-    return rawState || {};
+    return rawState as RecipeState || {};
   } catch (error) {
     throw new ApplyError(`Failed to read state file: ${error instanceof Error ? error.message : String(error)}`, 'STATE_READ_FAILED');
   }
@@ -618,9 +618,9 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
       project_language: project.language,
       project_framework: project.framework || 'none',
       project_dependencies: project.dependencies.join(', '),
-      project_ecosystem: project.ecosystem,
+      project_ecosystem: project.ecosystem || 'unknown',
       workspace_root: workspaceRoot,
-      is_monorepo: analysis.isMonorepo,
+      is_monorepo: analysis.isMonorepo.toString(),
       package_manager: project.hasPackageManager ? 'detected' : 'none',
       recipe_id: recipe.getId(),
       recipe_summary: recipe.getSummary(),
@@ -644,8 +644,8 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
       if (message.type === 'result') {
         if (message.subtype === 'success' && 'result' in message) {
           planContent = message.result;
-        } else if (message.subtype === 'error') {
-          errorMessage = 'error' in message ? message.error : 'Unknown error occurred';
+        } else {
+          errorMessage = 'Plan generation failed';
         }
         break;
       }
@@ -723,8 +723,8 @@ async function executePlan(planResult: PlanResult): Promise<ExecutionResult> {
         if (message.subtype === 'success' && 'result' in message) {
           executionLog = message.result;
           success = true;
-        } else if (message.subtype === 'error') {
-          errorMessage = 'error' in message ? message.error : 'Unknown error occurred';
+        } else {
+          errorMessage = 'Plan execution failed';
           success = false;
         }
         break;

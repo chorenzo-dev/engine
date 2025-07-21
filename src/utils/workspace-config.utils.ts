@@ -55,8 +55,13 @@ export class WorkspaceConfig {
 
   async getLogPath(): Promise<string> {
     const logsDir = await this.getLogsDir();
+    return path.join(logsDir, 'chorenzo.log');
+  }
+
+  async getArchivedLogPath(): Promise<string> {
+    const logsDir = await this.getLogsDir();
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    return path.join(logsDir, `${timestamp}.log`);
+    return path.join(logsDir, `chorenzo-${timestamp}.log`);
   }
 
   async ensureChorenzoDir(): Promise<void> {

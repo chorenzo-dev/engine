@@ -4,29 +4,49 @@ import * as path from 'path';
 import { workspaceConfig } from './workspace-config.utils';
 
 let applyLogger: pino.Logger | null = null;
+const MAX_LOG_SIZE_MB = 10;
+
+async function rotateLogIfNeeded(logPath: string): Promise<void> {
+  if (!fs.existsSync(logPath)) {
+    return;
+  }
+  
+  const stats = fs.statSync(logPath);
+  const fileSizeMB = stats.size / (1024 * 1024);
+  
+  if (fileSizeMB > MAX_LOG_SIZE_MB) {
+    const archivedPath = await workspaceConfig.getArchivedLogPath();
+    fs.renameSync(logPath, archivedPath);
+  }
+}
 
 export async function createApplyLogger(recipeId: string, projectPath: string): Promise<pino.Logger> {
   const logPath = await workspaceConfig.getLogPath();
   
-  // Ensure log directory exists
   fs.mkdirSync(path.dirname(logPath), { recursive: true });
   
-  const logStream = fs.createWriteStream(logPath, { flags: 'w' });
+  await rotateLogIfNeeded(logPath);
   
+  const logStream = pino.transport({
+    target: 'pino-pretty',
+    options: {
+      destination: logPath,
+      colorize: false,
+      translateTime: 'yyyy-mm-dd HH:MM:ss',
+      ignore: 'pid,hostname',
+      append: true
+    }
+  });
+
   applyLogger = pino({
-    level: 'debug',
-    timestamp: pino.stdTimeFunctions.isoTime,
-    formatters: {
-      level: (label) => ({ level: label }),
-    },
+    level: 'info'
   }, logStream);
 
   applyLogger.info({
     event: 'apply_started',
     recipe: recipeId,
-    project: projectPath,
-    timestamp: new Date().toISOString()
-  }, 'Recipe application started');
+    project: projectPath
+  }, `Recipe application started: ${recipeId} → ${projectPath}`);
 
   return applyLogger;
 }

@@ -29,13 +29,15 @@ export const ApplyDisplay: React.FC<ApplyDisplayProps> = ({ result }) => {
         )}
       </Box>
 
-      <Box flexDirection="column" marginBottom={1}>
-        <Text bold>Performance:</Text>
-        <Text>  • Duration: {metadata.durationSeconds.toFixed(1)}s</Text>
-        <Text>  • Cost: ${metadata.costUsd.toFixed(4)} USD</Text>
-        {metadata.startTime && <Text dimColor>  • Started: {new Date(metadata.startTime).toLocaleTimeString()}</Text>}
-        {metadata.endTime && <Text dimColor>  • Finished: {new Date(metadata.endTime).toLocaleTimeString()}</Text>}
-      </Box>
+      {metadata && (
+        <Box flexDirection="column" marginBottom={1}>
+          <Text bold>Performance:</Text>
+          <Text>  • Duration: {metadata.durationSeconds.toFixed(1)}s</Text>
+          <Text>  • Cost: ${metadata.costUsd.toFixed(4)} USD</Text>
+          {metadata.startTime && <Text dimColor>  • Started: {new Date(metadata.startTime).toLocaleTimeString()}</Text>}
+          {metadata.endTime && <Text dimColor>  • Finished: {new Date(metadata.endTime).toLocaleTimeString()}</Text>}
+        </Box>
+      )}
 
       {executionResults.length > 0 && (
         <Box flexDirection="column" marginBottom={1}>

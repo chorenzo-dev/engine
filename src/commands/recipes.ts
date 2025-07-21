@@ -532,8 +532,12 @@ async function ensureAnalysisData(): Promise<WorkspaceAnalysis> {
       return await readJson(analysisPath);
     } catch (error) {
       // Analysis file exists but is corrupted or unreadable
-      console.warn(`Failed to read analysis file: ${error instanceof Error ? error.message : String(error)}`);
-      console.warn('Regenerating analysis...');
+      const logger = getApplyLogger();
+      logger.warn({ 
+        event: 'analysis_file_read_failed',
+        error: error instanceof Error ? error.message : String(error) 
+      }, `Failed to read analysis file`);
+      logger.info({ event: 'regenerating_analysis' }, 'Regenerating analysis');
     }
   }
   
@@ -1173,10 +1177,10 @@ async function executePlan(plan: ApplyRecipePlan): Promise<ExecutionResult> {
       `Cost: $${executionCost}\n` +
       `--- EXECUTION LOG ---\n${executionLog}\n\n` +
       (errorMessage ? `--- ERROR ---\n${errorMessage}\n` : ''), 'utf8');
-    console.log(`📝 Final log updated`);
+    logger.info({ event: 'execution_log_updated' }, 'Final log updated');
 
     if (!success || errorMessage) {
-      console.log(`❌ Execution failed, returning error result`);
+      logger.error({ event: 'execution_failed', error: errorMessage }, 'Execution failed, returning error result');
       return {
         projectPath: plan.projectPath,
         recipeId: plan.recipeId,
@@ -1187,9 +1191,13 @@ async function executePlan(plan: ApplyRecipePlan): Promise<ExecutionResult> {
       };
     }
 
-    console.log(`📤 Extracting plan outputs...`);
+    logger.info({ event: 'extracting_plan_outputs' }, 'Extracting plan outputs');
     const outputs = extractPlanOutputs(plan.planContent);
-    console.log(`📊 Extracted outputs:`, outputs);
+    logger.info({ 
+      event: 'plan_outputs_extracted', 
+      outputCount: Object.keys(outputs).length,
+      outputs 
+    }, `Extracted ${Object.keys(outputs).length} outputs from plan`);
 
     const result = {
       projectPath: plan.projectPath,
@@ -1199,12 +1207,18 @@ async function executePlan(plan: ApplyRecipePlan): Promise<ExecutionResult> {
       logPath,
       costUsd: executionCost
     };
-    console.log(`🎉 executePlan completed successfully`);
+    logger.info({ 
+      event: 'execution_completed_successfully',
+      outputCount: Object.keys(outputs).length 
+    }, 'Plan execution completed successfully');
     return result;
 
   } catch (error) {
     const errorMsg = `Execution failed: ${error instanceof Error ? error.message : String(error)}`;
-    console.log(`💥 executePlan caught error:`, error);
+    logger.error({ 
+      event: 'execution_error',
+      error: error instanceof Error ? error.message : String(error) 
+    }, 'Plan execution caught error');
     
     try {
       fs.mkdirSync(path.dirname(logPath), { recursive: true });
@@ -1212,9 +1226,12 @@ async function executePlan(plan: ApplyRecipePlan): Promise<ExecutionResult> {
         `Recipe: ${plan.recipeId}\n` +
         `Project: ${plan.projectPath}\n` +
         `Error: ${errorMsg}\n`, 'utf8');
-      console.log(`📝 Error log written`);
+      logger.info({ event: 'error_log_written', logPath }, 'Error log written');
     } catch (logError) {
-      console.error('❌ Failed to write error log:', logError);
+      logger.error({ 
+        event: 'error_log_write_failed',
+        error: logError instanceof Error ? logError.message : String(logError) 
+      }, 'Failed to write error log');
     }
 
     return {
@@ -1244,7 +1261,11 @@ function extractPlanOutputs(planContent: string): Record<string, string | boolea
     
     return {};
   } catch (error) {
-    console.error('Failed to parse plan outputs:', error);
+    const logger = getApplyLogger();
+    logger.error({ 
+      event: 'plan_output_parse_failed',
+      error: error instanceof Error ? error.message : String(error) 
+    }, 'Failed to parse plan outputs');
     return {};
   }
 }

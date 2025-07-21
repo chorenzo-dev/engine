@@ -17,19 +17,18 @@ Based on the above recipe instructions, create a detailed execution plan.
 IMPORTANT: Structure your response as a YAML document with the following format:
 
 ```yaml
-plan:
-  title: "chorenzo plan: {{ recipe_id }} · {{ recipe_variant }}"
-  steps:
-    - type: "step_type"
-      description: "What this step accomplishes"
-      commands:
-        - "command to execute"
-      files:
-        - path: "file/path"
-          content: |
-            file content here
-  outputs:
-    {{ recipe_provides }}
+title: "chorenzo plan: {{ recipe_id }} · {{ recipe_variant }}"
+steps:
+  - type: "step_type"
+    description: "What this step accomplishes"
+    commands:
+      - "command to execute"
+    files:
+      - path: "file/path"
+        content: |
+          file content here
+outputs:
+  {{ recipe_provides }}
 ```
 
 Step types can include: install, configure, create, update, verify, etc.

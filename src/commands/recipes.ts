@@ -1255,7 +1255,7 @@ function extractPlanOutputs(planContent: string): Record<string, string | boolea
     const planYaml = yamlMatch[1];
     const plan = parseYaml(planYaml);
     
-    if (plan && plan.outputs && typeof plan.outputs === 'object') {
+    if (plan?.outputs && typeof plan.outputs === 'object') {
       return plan.outputs;
     }
     

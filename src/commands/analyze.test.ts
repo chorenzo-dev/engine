@@ -1,4 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest,
+} from '@jest/globals';
 import * as path from 'path';
 import type { WorkspaceAnalysis } from '../types/analysis';
 import { setupFixture } from '../test-utils/fixture-loader';
@@ -7,21 +14,25 @@ const mockQuery = jest.fn<() => AsyncGenerator<any, void, unknown>>();
 const mockWriteJson = jest.fn<(path: string, data: any) => Promise<void>>();
 
 jest.unstable_mockModule('@anthropic-ai/claude-code', () => ({
-  query: mockQuery
+  query: mockQuery,
 }));
 
 jest.unstable_mockModule('../utils/json.utils', () => ({
   writeJson: mockWriteJson,
-  readJson: jest.fn<() => Promise<any>>()
+  readJson: jest.fn<() => Promise<any>>(),
 }));
 
 describe('Analyze Command Integration Tests', () => {
-  let performAnalysis: (progress?: (message: string) => void) => Promise<{ analysis: WorkspaceAnalysis | null; metadata?: any; unrecognizedFrameworks?: string[] }>;
+  let performAnalysis: (progress?: (message: string) => void) => Promise<{
+    analysis: WorkspaceAnalysis | null;
+    metadata?: any;
+    unrecognizedFrameworks?: string[];
+  }>;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
-    
+
     const analyzeModule = await import('./analyze');
     performAnalysis = analyzeModule.performAnalysis;
   });
@@ -38,16 +49,18 @@ describe('Analyze Command Integration Tests', () => {
       isMonorepo: false,
       hasWorkspacePackageManager: false,
       workspaceEcosystem: 'javascript',
-      projects: [{
-        path: '.',
-        language: 'javascript',
-        type: 'api_server',
-        framework: 'express',
-        dependencies: ['express', 'dotenv'],
-        hasPackageManager: true,
-        ecosystem: 'javascript',
-        dockerized: false,
-      }]
+      projects: [
+        {
+          path: '.',
+          language: 'javascript',
+          type: 'api_server',
+          framework: 'express',
+          dependencies: ['express', 'dotenv'],
+          hasPackageManager: true,
+          ecosystem: 'javascript',
+          dockerized: false,
+        },
+      ],
     };
 
     mockQuery.mockImplementation(async function* () {
@@ -58,22 +71,23 @@ describe('Analyze Command Integration Tests', () => {
           is_monorepo: false,
           has_workspace_package_manager: false,
           workspace_ecosystem: 'javascript',
-          projects: [{
-            path: '.',
-            language: 'javascript',
-            type: 'api_server',
-            framework: 'express',
-            dependencies: ['express', 'dotenv'],
-            has_package_manager: true,
-            ecosystem: 'javascript',
-            dockerized: false,
-          }]
+          projects: [
+            {
+              path: '.',
+              language: 'javascript',
+              type: 'api_server',
+              framework: 'express',
+              dependencies: ['express', 'dotenv'],
+              has_package_manager: true,
+              ecosystem: 'javascript',
+              dockerized: false,
+            },
+          ],
         }),
         total_cost_usd: 0.05,
-        num_turns: 3
+        num_turns: 3,
       };
     });
-
 
     const mockProgress = jest.fn();
     const result = await performAnalysis(mockProgress);
@@ -84,14 +98,16 @@ describe('Analyze Command Integration Tests', () => {
       subtype: 'success',
       costUsd: 0.05,
       turns: 3,
-      durationSeconds: expect.any(Number)
+      durationSeconds: expect.any(Number),
     });
     expect(result.unrecognizedFrameworks).toBeUndefined();
 
     expect(mockProgress).toHaveBeenCalledWith('Finding git repository...');
     expect(mockProgress).toHaveBeenCalledWith('Building file tree...');
     expect(mockProgress).toHaveBeenCalledWith('Loading analysis prompt...');
-    expect(mockProgress).toHaveBeenCalledWith('Analyzing workspace with Claude...');
+    expect(mockProgress).toHaveBeenCalledWith(
+      'Analyzing workspace with Claude...'
+    );
     expect(mockProgress).toHaveBeenCalledWith('Validating frameworks...');
 
     expect(mockWriteJson).toHaveBeenCalledWith(
@@ -111,28 +127,31 @@ describe('Analyze Command Integration Tests', () => {
           is_monorepo: false,
           has_workspace_package_manager: false,
           workspace_ecosystem: 'javascript',
-          projects: [{
-            path: '.',
-            language: 'javascript',
-            type: 'web_app',
-            framework: 'unknown-framework',
-            dependencies: ['unknown-framework'],
-            has_package_manager: true,
-            ecosystem: 'javascript',
-            dockerized: false,
-          }]
+          projects: [
+            {
+              path: '.',
+              language: 'javascript',
+              type: 'web_app',
+              framework: 'unknown-framework',
+              dependencies: ['unknown-framework'],
+              has_package_manager: true,
+              ecosystem: 'javascript',
+              dockerized: false,
+            },
+          ],
         }),
         total_cost_usd: 0.05,
-        num_turns: 3
+        num_turns: 3,
       };
     });
-
 
     const mockProgress = jest.fn();
     const result = await performAnalysis(mockProgress);
 
     expect(result.unrecognizedFrameworks).toEqual(['unknown-framework']);
-    expect(mockProgress).toHaveBeenCalledWith('Warning: 1 frameworks not recognized: unknown-framework');
+    expect(mockProgress).toHaveBeenCalledWith(
+      'Warning: 1 frameworks not recognized: unknown-framework'
+    );
   });
 
   it('should handle Claude API failures', async () => {
@@ -141,7 +160,7 @@ describe('Analyze Command Integration Tests', () => {
       yield {
         type: 'result',
         subtype: 'error',
-        error: 'API Error'
+        error: 'API Error',
       };
     });
 
@@ -164,16 +183,18 @@ describe('Analyze Command Integration Tests', () => {
           is_monorepo: false,
           has_workspace_package_manager: false,
           workspace_ecosystem: 'javascript',
-          projects: [{
-            path: '.',
-            language: 'javascript',
-            type: 'library',
-            dependencies: [],
-            has_package_manager: false
-          }]
+          projects: [
+            {
+              path: '.',
+              language: 'javascript',
+              type: 'library',
+              dependencies: [],
+              has_package_manager: false,
+            },
+          ],
         }),
         total_cost_usd: 0.03,
-        num_turns: 2
+        num_turns: 2,
       };
     });
 
@@ -185,7 +206,6 @@ describe('Analyze Command Integration Tests', () => {
       expect.any(Object)
     );
   });
-
 
   it('should analyze monorepo with mixed languages', async () => {
     setupFixture('monorepo', { addGitRepo: true });
@@ -224,8 +244,8 @@ describe('Analyze Command Integration Tests', () => {
           hasPackageManager: true,
           ecosystem: 'javascript',
           dockerized: false,
-        }
-      ]
+        },
+      ],
     };
 
     mockQuery.mockImplementation(async function* () {
@@ -243,7 +263,12 @@ describe('Analyze Command Integration Tests', () => {
               language: 'typescript',
               type: 'web_app',
               framework: 'nextjs',
-              dependencies: ['next', 'react', 'react-dom', '@monorepo/shared-lib'],
+              dependencies: [
+                'next',
+                'react',
+                'react-dom',
+                '@monorepo/shared-lib',
+              ],
               has_package_manager: true,
               ecosystem: 'javascript',
               dockerized: false,
@@ -266,11 +291,11 @@ describe('Analyze Command Integration Tests', () => {
               has_package_manager: true,
               ecosystem: 'javascript',
               dockerized: false,
-            }
-          ]
+            },
+          ],
         }),
         total_cost_usd: 0.08,
-        num_turns: 4
+        num_turns: 4,
       };
     });
 
@@ -283,14 +308,16 @@ describe('Analyze Command Integration Tests', () => {
       subtype: 'success',
       costUsd: 0.08,
       turns: 4,
-      durationSeconds: expect.any(Number)
+      durationSeconds: expect.any(Number),
     });
     expect(result.unrecognizedFrameworks).toBeUndefined();
 
     expect(mockProgress).toHaveBeenCalledWith('Finding git repository...');
     expect(mockProgress).toHaveBeenCalledWith('Building file tree...');
     expect(mockProgress).toHaveBeenCalledWith('Loading analysis prompt...');
-    expect(mockProgress).toHaveBeenCalledWith('Analyzing workspace with Claude...');
+    expect(mockProgress).toHaveBeenCalledWith(
+      'Analyzing workspace with Claude...'
+    );
     expect(mockProgress).toHaveBeenCalledWith('Validating frameworks...');
 
     expect(mockWriteJson).toHaveBeenCalledWith(
@@ -310,22 +337,23 @@ describe('Analyze Command Integration Tests', () => {
           workspace_ecosystem: 'typescript',
           workspace_dependencies: ['typescript', 'next'],
           ci_cd: 'github_actions',
-          projects: [{
-            path: '.',
-            language: 'typescript',
-            type: 'web_app',
-            framework: 'nextjs',
-            dependencies: ['next', 'react'],
-            has_package_manager: true,
-            ecosystem: 'javascript',
-            dockerized: true,
-          }]
+          projects: [
+            {
+              path: '.',
+              language: 'typescript',
+              type: 'web_app',
+              framework: 'nextjs',
+              dependencies: ['next', 'react'],
+              has_package_manager: true,
+              ecosystem: 'javascript',
+              dockerized: true,
+            },
+          ],
         }),
         total_cost_usd: 0.06,
-        num_turns: 4
+        num_turns: 4,
       };
     });
-
 
     const result = await performAnalysis();
 
@@ -335,35 +363,37 @@ describe('Analyze Command Integration Tests', () => {
       workspaceEcosystem: 'typescript',
       workspaceDependencies: ['typescript', 'next'],
       ciCd: 'github_actions',
-      projects: [{
-        path: '.',
-        language: 'typescript',
-        type: 'web_app',
-        framework: 'nextjs',
-        dependencies: ['next', 'react'],
-        hasPackageManager: true,
-        ecosystem: 'javascript',
-        dockerized: true,
-      }]
+      projects: [
+        {
+          path: '.',
+          language: 'typescript',
+          type: 'web_app',
+          framework: 'nextjs',
+          dependencies: ['next', 'react'],
+          hasPackageManager: true,
+          ecosystem: 'javascript',
+          dockerized: true,
+        },
+      ],
     });
   });
 
   it('should handle invalid JSON response from Claude', async () => {
     setupFixture('simple-express', { addGitRepo: true });
-    
+
     mockQuery.mockImplementation(async function* () {
       yield {
         type: 'result',
         subtype: 'success',
         result: 'not valid json at all',
         total_cost_usd: 0.05,
-        num_turns: 3
+        num_turns: 3,
       };
     });
 
     const mockProgress = jest.fn();
     const result = await performAnalysis(mockProgress);
-    
+
     expect(result.analysis).toBeNull();
     expect(result.metadata?.subtype).toBe('error');
     expect(result.metadata?.error).toContain('Invalid JSON response');
@@ -372,19 +402,21 @@ describe('Analyze Command Integration Tests', () => {
 
   it('should handle partial response missing required fields', async () => {
     setupFixture('simple-express', { addGitRepo: true });
-    
+
     mockQuery.mockImplementation(async function* () {
       yield {
         type: 'result',
         subtype: 'success',
         result: JSON.stringify({
-          projects: [{
-            path: '.',
-            language: 'javascript'
-          }]
+          projects: [
+            {
+              path: '.',
+              language: 'javascript',
+            },
+          ],
         }),
         total_cost_usd: 0.05,
-        num_turns: 3
+        num_turns: 3,
       };
     });
 
@@ -399,7 +431,7 @@ describe('Analyze Command Integration Tests', () => {
 
   it('should handle empty workspace with no code files', async () => {
     setupFixture('simple-express', { addGitRepo: true });
-    
+
     mockQuery.mockImplementation(async function* () {
       yield {
         type: 'result',
@@ -407,10 +439,10 @@ describe('Analyze Command Integration Tests', () => {
         result: JSON.stringify({
           is_monorepo: false,
           has_workspace_package_manager: false,
-          projects: []
+          projects: [],
         }),
         total_cost_usd: 0.03,
-        num_turns: 2
+        num_turns: 2,
       };
     });
 

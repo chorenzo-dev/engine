@@ -15,6 +15,7 @@ Recipe Variant: {{ recipe_variant }}
 Based on the above recipe instructions, apply the changes directly to the project.
 
 Important:
+
 - Execute all necessary commands using the Bash tool
 - Create/modify files as needed using the Write/Edit tools
 - Follow best practices for the project's ecosystem and setup
@@ -22,6 +23,7 @@ Important:
 - Track all changes made for logging
 
 After completing the recipe application, respond with:
+
 1. A summary of what was accomplished
 2. List of key outputs/results achieved (for state tracking)
 3. Any warnings or issues encountered

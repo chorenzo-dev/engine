@@ -44,10 +44,10 @@ export async function buildFileTree(
     }
 
     const stats = await fs.stat(absPath);
-    
+
     if (stats.isDirectory()) {
       const baseName = path.basename(absPath);
-      
+
       if (baseName === '.git') {
         return null;
       }
@@ -56,7 +56,9 @@ export async function buildFileTree(
       const files: string[] = [];
 
       const entries = await fs.readdir(absPath);
-      const sortedEntries = entries.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+      const sortedEntries = entries.sort((a, b) =>
+        a.toLowerCase().localeCompare(b.toLowerCase())
+      );
 
       for (const entry of sortedEntries) {
         if (lockFiles.has(entry)) {
@@ -94,9 +96,13 @@ export async function buildFileTree(
 
   const tree = await buildTree(rootDir, new Set(), 0);
 
-  function toYamlStyle(name: string, node: TreeNode | string[] | null, indent = 0): string[] {
+  function toYamlStyle(
+    name: string,
+    node: TreeNode | string[] | null,
+    indent = 0
+  ): string[] {
     const pad = '  '.repeat(indent);
-    
+
     if (node === null) {
       return [`${pad}${name}: (empty)`];
     }
@@ -116,7 +122,9 @@ export async function buildFileTree(
           lines.push(`${pad}  - ${file}`);
         }
       } else {
-        lines.push(...toYamlStyle(key, value as TreeNode | string[], indent + 1));
+        lines.push(
+          ...toYamlStyle(key, value as TreeNode | string[], indent + 1)
+        );
       }
     }
     return lines;

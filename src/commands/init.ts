@@ -1,7 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { checkGitAvailable, cloneRepository, GitError } from '../utils/git-operations.utils';
+import {
+  checkGitAvailable,
+  cloneRepository,
+  GitError,
+} from '../utils/git-operations.utils';
 import { retry } from '../utils/retry.utils';
 import { readYaml, writeYaml, YamlError } from '../utils/yaml.utils';
 import { readJson, writeJson } from '../utils/json.utils';
@@ -37,9 +41,9 @@ class ChorenzoConfig {
       libraries: {
         core: {
           repo: 'https://github.com/chorenzo-dev/recipes-core.git',
-          ref: 'main'
-        }
-      }
+          ref: 'main',
+        },
+      },
     };
     await writeYaml(this.configPath, defaultConfig);
   }
@@ -54,7 +58,7 @@ class ChorenzoConfig {
 
   async writeDefaultState(): Promise<void> {
     const defaultState: State = {
-      last_checked: '1970-01-01T00:00:00Z'
+      last_checked: '1970-01-01T00:00:00Z',
     };
     await writeJson(this.statePath, defaultState);
   }
@@ -110,19 +114,28 @@ export interface State {
 export type ProgressCallback = (step: string) => void;
 
 export class InitError extends Error {
-  constructor(message: string, public readonly code: string) {
+  constructor(
+    message: string,
+    public readonly code: string
+  ) {
     super(message);
     this.name = 'InitError';
   }
 }
 
-export async function performInit(options: InitOptions = {}, onProgress?: ProgressCallback): Promise<void> {
-  Logger.info({ 
-    event: 'init_started',
-    command: 'init',
-    options 
-  }, 'Chorenzo initialization started');
-  
+export async function performInit(
+  options: InitOptions = {},
+  onProgress?: ProgressCallback
+): Promise<void> {
+  Logger.info(
+    {
+      event: 'init_started',
+      command: 'init',
+      options,
+    },
+    'Chorenzo initialization started'
+  );
+
   try {
     if (options.reset) {
       onProgress?.('Resetting workspace...');
@@ -143,7 +156,11 @@ export async function performInit(options: InitOptions = {}, onProgress?: Progre
 
     onProgress?.('Initialization complete!');
   } catch (error) {
-    if (error instanceof InitError || error instanceof GitError || error instanceof YamlError) {
+    if (
+      error instanceof InitError ||
+      error instanceof GitError ||
+      error instanceof YamlError
+    ) {
       throw error;
     }
     throw new InitError(
@@ -176,9 +193,12 @@ async function setupConfigFiles(): Promise<void> {
 async function readConfig(): Promise<Config> {
   try {
     const config = await chorenzoConfig.readConfig();
-    
+
     if (!config.libraries || typeof config.libraries !== 'object') {
-      throw new InitError('Invalid config.yaml: missing or invalid libraries section', 'INVALID_CONFIG');
+      throw new InitError(
+        'Invalid config.yaml: missing or invalid libraries section',
+        'INVALID_CONFIG'
+      );
     }
 
     return config;
@@ -199,7 +219,10 @@ async function readConfig(): Promise<Config> {
   }
 }
 
-async function cloneLibraries(config: Config, onProgress?: ProgressCallback): Promise<void> {
+async function cloneLibraries(
+  config: Config,
+  onProgress?: ProgressCallback
+): Promise<void> {
   await checkGitAvailable();
 
   for (const [libName, libConfig] of Object.entries(config.libraries)) {
@@ -211,21 +234,24 @@ async function cloneLibraries(config: Config, onProgress?: ProgressCallback): Pr
     const libPath = chorenzoConfig.getLibraryPath(libName);
 
     onProgress?.(`Cloning ${libName} from ${libConfig.repo}...`);
-    
+
     try {
       await retry(
         () => cloneRepository(libConfig.repo, libPath, libConfig.ref),
         {
           maxAttempts: 2,
           onRetry: (attempt) => {
-            onProgress?.(`Retrying clone of ${libName} (attempt ${attempt + 1})...`);
-          }
+            onProgress?.(
+              `Retrying clone of ${libName} (attempt ${attempt + 1})...`
+            );
+          },
         }
       );
       onProgress?.(`Successfully cloned ${libName}`);
     } catch (error) {
-      onProgress?.(`Warning: Failed to clone ${libName} after retry, skipping...`);
+      onProgress?.(
+        `Warning: Failed to clone ${libName} after retry, skipping...`
+      );
     }
   }
 }
-

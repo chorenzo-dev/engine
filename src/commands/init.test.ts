@@ -1,4 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest,
+} from '@jest/globals';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -14,7 +21,8 @@ const mockReadYaml = jest.fn<(path: string) => Promise<any>>();
 const mockWriteJson = jest.fn<(path: string, data: any) => Promise<void>>();
 const mockReadJson = jest.fn<(path: string) => Promise<any>>();
 const mockCheckGitAvailable = jest.fn<() => Promise<void>>();
-const mockCloneRepository = jest.fn<(repo: string, path: string, ref: string) => Promise<void>>();
+const mockCloneRepository =
+  jest.fn<(repo: string, path: string, ref: string) => Promise<void>>();
 
 jest.unstable_mockModule('os', () => ({
   homedir: mockHomedir,
@@ -32,11 +40,14 @@ jest.unstable_mockModule('../utils/yaml.utils', () => ({
   writeYaml: mockWriteYaml,
   readYaml: mockReadYaml,
   YamlError: class YamlError extends Error {
-    constructor(message: string, public readonly code: string) {
+    constructor(
+      message: string,
+      public readonly code: string
+    ) {
       super(message);
       this.name = 'YamlError';
     }
-  }
+  },
 }));
 
 jest.unstable_mockModule('../utils/json.utils', () => ({
@@ -48,77 +59,91 @@ jest.unstable_mockModule('../utils/git-operations.utils', () => ({
   checkGitAvailable: mockCheckGitAvailable,
   cloneRepository: mockCloneRepository,
   GitError: class GitError extends Error {
-    constructor(message: string, public readonly code: string) {
+    constructor(
+      message: string,
+      public readonly code: string
+    ) {
       super(message);
       this.name = 'GitError';
     }
-  }
+  },
 }));
-
 
 describe('Init Command Integration Tests', () => {
   let performInit: typeof import('./init').performInit;
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    
+
     mockHomedir.mockImplementation(() => '/test/home');
     mockMkdirSync.mockImplementation(() => undefined);
     mockExistsSync.mockImplementation(() => false);
     mockRmSync.mockImplementation(() => undefined);
     mockUnlinkSync.mockImplementation(() => undefined);
     mockWriteYaml.mockImplementation(() => Promise.resolve(undefined));
-    mockReadYaml.mockImplementation(() => Promise.resolve({
-      libraries: {
-        core: {
-          repo: 'https://github.com/chorenzo-dev/recipes-core.git',
-          ref: 'main'
-        }
-      }
-    }));
+    mockReadYaml.mockImplementation(() =>
+      Promise.resolve({
+        libraries: {
+          core: {
+            repo: 'https://github.com/chorenzo-dev/recipes-core.git',
+            ref: 'main',
+          },
+        },
+      })
+    );
     mockWriteJson.mockImplementation(() => Promise.resolve(undefined));
     mockReadJson.mockImplementation(() => Promise.resolve({}));
     mockCheckGitAvailable.mockImplementation(() => Promise.resolve(undefined));
     mockCloneRepository.mockImplementation(() => Promise.resolve(undefined));
-    
+
     const initModule = await import('./init');
     performInit = initModule.performInit;
   });
 
   it('should create chorenzo directory structure', async () => {
     await performInit({});
-    
-    expect(mockMkdirSync).toHaveBeenCalledWith('/test/home/.chorenzo/recipes', { recursive: true });
+
+    expect(mockMkdirSync).toHaveBeenCalledWith('/test/home/.chorenzo/recipes', {
+      recursive: true,
+    });
   });
 
   it('should create config.yaml with default configuration', async () => {
     await performInit({});
-    
-    expect(mockWriteYaml).toHaveBeenCalledWith('/test/home/.chorenzo/config.yaml', {
-      libraries: {
-        core: {
-          repo: 'https://github.com/chorenzo-dev/recipes-core.git',
-          ref: 'main'
-        }
+
+    expect(mockWriteYaml).toHaveBeenCalledWith(
+      '/test/home/.chorenzo/config.yaml',
+      {
+        libraries: {
+          core: {
+            repo: 'https://github.com/chorenzo-dev/recipes-core.git',
+            ref: 'main',
+          },
+        },
       }
-    });
+    );
   });
 
   it('should create state.json with default state', async () => {
     await performInit({});
-    
-    expect(mockWriteJson).toHaveBeenCalledWith('/test/home/.chorenzo/state.json', {
-      last_checked: '1970-01-01T00:00:00Z'
-    });
+
+    expect(mockWriteJson).toHaveBeenCalledWith(
+      '/test/home/.chorenzo/state.json',
+      {
+        last_checked: '1970-01-01T00:00:00Z',
+      }
+    );
   });
 
   it('should not overwrite existing config files', async () => {
     mockExistsSync.mockImplementation((filePath: string) => {
-      return filePath.includes('config.yaml') || filePath.includes('state.json');
+      return (
+        filePath.includes('config.yaml') || filePath.includes('state.json')
+      );
     });
-    
+
     await performInit({});
-    
+
     expect(mockWriteYaml).toHaveBeenCalledTimes(0);
     expect(mockWriteJson).toHaveBeenCalledTimes(0);
   });
@@ -132,53 +157,77 @@ describe('Init Command Integration Tests', () => {
       }
       return false;
     });
-    
+
     mockUnlinkSync.mockImplementation(() => {
       unlinkCalls++;
     });
-    
+
     await performInit({ reset: true });
-    
-    expect(mockRmSync).toHaveBeenCalledWith('/test/home/.chorenzo/recipes', { recursive: true, force: true });
-    expect(mockUnlinkSync).toHaveBeenCalledWith('/test/home/.chorenzo/config.yaml');
-    expect(mockUnlinkSync).toHaveBeenCalledWith('/test/home/.chorenzo/state.json');
-    expect(mockWriteYaml).toHaveBeenCalledWith('/test/home/.chorenzo/config.yaml', expect.any(Object));
-    expect(mockWriteJson).toHaveBeenCalledWith('/test/home/.chorenzo/state.json', expect.any(Object));
+
+    expect(mockRmSync).toHaveBeenCalledWith('/test/home/.chorenzo/recipes', {
+      recursive: true,
+      force: true,
+    });
+    expect(mockUnlinkSync).toHaveBeenCalledWith(
+      '/test/home/.chorenzo/config.yaml'
+    );
+    expect(mockUnlinkSync).toHaveBeenCalledWith(
+      '/test/home/.chorenzo/state.json'
+    );
+    expect(mockWriteYaml).toHaveBeenCalledWith(
+      '/test/home/.chorenzo/config.yaml',
+      expect.any(Object)
+    );
+    expect(mockWriteJson).toHaveBeenCalledWith(
+      '/test/home/.chorenzo/state.json',
+      expect.any(Object)
+    );
   });
 
   it('should skip cloning if library directory already exists', async () => {
     mockExistsSync.mockImplementation((filePath: string) => {
       return filePath.includes('/core');
     });
-    
+
     const mockProgress = jest.fn();
     await performInit({}, mockProgress);
-    
+
     expect(mockProgress).toHaveBeenCalledWith('Skipping core (already exists)');
     expect(mockCloneRepository).not.toHaveBeenCalled();
   });
 
   it('should handle git clone failures gracefully', async () => {
-    mockCloneRepository.mockImplementation(() => Promise.reject(new Error('Network error')));
-    
+    mockCloneRepository.mockImplementation(() =>
+      Promise.reject(new Error('Network error'))
+    );
+
     const mockProgress = jest.fn();
     await performInit({}, mockProgress);
-    
-    expect(mockProgress).toHaveBeenCalledWith('Warning: Failed to clone core after retry, skipping...');
-    expect(mockWriteYaml).toHaveBeenCalledWith('/test/home/.chorenzo/config.yaml', expect.any(Object));
+
+    expect(mockProgress).toHaveBeenCalledWith(
+      'Warning: Failed to clone core after retry, skipping...'
+    );
+    expect(mockWriteYaml).toHaveBeenCalledWith(
+      '/test/home/.chorenzo/config.yaml',
+      expect.any(Object)
+    );
   });
 
   it('should handle running init twice without errors', async () => {
     await performInit({});
-    
+
     jest.clearAllMocks();
     mockExistsSync.mockImplementation((filePath: string) => {
-      return filePath.includes('/core') || filePath.includes('config.yaml') || filePath.includes('state.yaml');
+      return (
+        filePath.includes('/core') ||
+        filePath.includes('config.yaml') ||
+        filePath.includes('state.yaml')
+      );
     });
-    
+
     const mockProgress = jest.fn();
     await expect(performInit({}, mockProgress)).resolves.not.toThrow();
-    
+
     expect(mockProgress).toHaveBeenCalledWith('Skipping core (already exists)');
     expect(mockWriteYaml).not.toHaveBeenCalled();
     expect(mockCloneRepository).not.toHaveBeenCalled();
@@ -191,23 +240,35 @@ describe('Init Command Integration Tests', () => {
       if (filePath.includes('/core')) return false;
       return false;
     });
-    
+
     const mockProgress = jest.fn();
     await performInit({}, mockProgress);
-    
-    expect(mockMkdirSync).toHaveBeenCalledWith('/test/home/.chorenzo/recipes', { recursive: true });
-    expect(mockWriteJson).toHaveBeenCalledWith('/test/home/.chorenzo/state.json', expect.any(Object));
-    expect(mockWriteYaml).not.toHaveBeenCalledWith('/test/home/.chorenzo/config.yaml', expect.any(Object));
+
+    expect(mockMkdirSync).toHaveBeenCalledWith('/test/home/.chorenzo/recipes', {
+      recursive: true,
+    });
+    expect(mockWriteJson).toHaveBeenCalledWith(
+      '/test/home/.chorenzo/state.json',
+      expect.any(Object)
+    );
+    expect(mockWriteYaml).not.toHaveBeenCalledWith(
+      '/test/home/.chorenzo/config.yaml',
+      expect.any(Object)
+    );
     expect(mockCloneRepository).toHaveBeenCalled();
-    expect(mockProgress).toHaveBeenCalledWith('Creating directory structure...');
-    expect(mockProgress).toHaveBeenCalledWith('Setting up configuration files...');
+    expect(mockProgress).toHaveBeenCalledWith(
+      'Creating directory structure...'
+    );
+    expect(mockProgress).toHaveBeenCalledWith(
+      'Setting up configuration files...'
+    );
   });
 
   it('should handle permission errors during directory creation', async () => {
     mockMkdirSync.mockImplementation(() => {
       throw new Error('EACCES: permission denied');
     });
-    
+
     await expect(performInit({})).rejects.toThrow('EACCES: permission denied');
   });
 
@@ -215,12 +276,12 @@ describe('Init Command Integration Tests', () => {
     mockExistsSync.mockImplementation((filePath: string) => {
       return filePath.includes('config.yaml');
     });
-    
+
     const YamlError = (await import('../utils/yaml.utils')).YamlError;
     mockReadYaml.mockImplementation(() => {
       throw new YamlError('Invalid YAML syntax', 'YAML_PARSE_ERROR');
     });
-    
+
     await expect(performInit({})).rejects.toThrow('Invalid YAML syntax');
   });
 
@@ -228,7 +289,9 @@ describe('Init Command Integration Tests', () => {
     mockWriteYaml.mockImplementation(() => {
       throw new Error('ENOSPC: no space left on device');
     });
-    
-    await expect(performInit({})).rejects.toThrow('ENOSPC: no space left on device');
+
+    await expect(performInit({})).rejects.toThrow(
+      'ENOSPC: no space left on device'
+    );
   });
 });

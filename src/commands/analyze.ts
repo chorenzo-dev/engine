@@ -23,7 +23,9 @@ function snakeToCamelCase<T>(obj: unknown): T {
     return obj.map(snakeToCamelCase) as T;
   } else if (obj !== null && typeof obj === 'object') {
     return Object.keys(obj).reduce((result, key) => {
-      const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
+        letter.toUpperCase()
+      );
       (result as any)[camelKey] = snakeToCamelCase((obj as any)[key]);
       return result;
     }, {} as T);
@@ -33,25 +35,29 @@ function snakeToCamelCase<T>(obj: unknown): T {
 
 export type ProgressCallback = (step: string) => void;
 
-
-export async function performAnalysis(onProgress?: ProgressCallback): Promise<AnalysisResult> {
+export async function performAnalysis(
+  onProgress?: ProgressCallback
+): Promise<AnalysisResult> {
   const startTime = Date.now();
-  Logger.info({ 
-    event: 'analysis_started',
-    command: 'analyze'
-  }, 'Workspace analysis started');
-  
+  Logger.info(
+    {
+      event: 'analysis_started',
+      command: 'analyze',
+    },
+    'Workspace analysis started'
+  );
+
   onProgress?.('Finding git repository...');
   const workspaceRoot = findGitRoot();
-  
+
   onProgress?.('Building file tree...');
   const filesStructureSummary = await buildFileTree(workspaceRoot);
-  
+
   onProgress?.('Loading analysis prompt...');
   const promptTemplate = loadPrompt('analyze_workspace');
   const prompt = renderPrompt(promptTemplate, {
     workspace_root: workspaceRoot,
-    files_structure_summary: filesStructureSummary
+    files_structure_summary: filesStructureSummary,
   });
 
   onProgress?.('Analyzing workspace with Claude...');
@@ -82,11 +88,13 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
     }
   }
 
-  let finalAnalysis = analysis ? snakeToCamelCase<WorkspaceAnalysis>(analysis) : null;
+  let finalAnalysis = analysis
+    ? snakeToCamelCase<WorkspaceAnalysis>(analysis)
+    : null;
   let totalCost = 0;
   let totalTurns = 0;
   let subtype = 'error';
-  
+
   if (sdkResultMetadata?.type === 'result') {
     if ('total_cost_usd' in sdkResultMetadata) {
       totalCost = sdkResultMetadata.total_cost_usd;
@@ -98,12 +106,16 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
       subtype = sdkResultMetadata.subtype;
     }
   }
-  
+
   let unrecognizedFrameworks: string[] = [];
 
   if (finalAnalysis && !errorMessage) {
-    if (finalAnalysis.isMonorepo === undefined || finalAnalysis.projects === undefined) {
-      errorMessage = 'Invalid analysis response: missing required fields (isMonorepo or projects)';
+    if (
+      finalAnalysis.isMonorepo === undefined ||
+      finalAnalysis.projects === undefined
+    ) {
+      errorMessage =
+        'Invalid analysis response: missing required fields (isMonorepo or projects)';
       subtype = 'error';
       finalAnalysis = null;
     } else if (finalAnalysis.projects.length === 0) {
@@ -113,12 +125,15 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
     } else {
       onProgress?.('Validating frameworks...');
       try {
-        const { validatedAnalysis, unrecognizedFrameworks: unrecognized } = await validateFrameworks(finalAnalysis);
+        const { validatedAnalysis, unrecognizedFrameworks: unrecognized } =
+          await validateFrameworks(finalAnalysis);
         finalAnalysis = validatedAnalysis;
         unrecognizedFrameworks = unrecognized;
-        
+
         if (unrecognizedFrameworks.length > 0) {
-          onProgress?.(`Warning: ${unrecognizedFrameworks.length} frameworks not recognized: ${unrecognizedFrameworks.join(', ')}`);
+          onProgress?.(
+            `Warning: ${unrecognizedFrameworks.length} frameworks not recognized: ${unrecognizedFrameworks.join(', ')}`
+          );
         }
       } catch (error) {
         onProgress?.('Warning: Framework validation failed');
@@ -127,7 +142,7 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
   }
 
   const durationSeconds = (Date.now() - startTime) / 1000;
-  
+
   const result: AnalysisResult = {
     analysis: finalAnalysis,
     metadata: {
@@ -136,9 +151,10 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
       costUsd: totalCost,
       turns: totalTurns,
       durationSeconds,
-      ...(errorMessage ? { error: errorMessage } : {})
+      ...(errorMessage ? { error: errorMessage } : {}),
     },
-    unrecognizedFrameworks: unrecognizedFrameworks.length > 0 ? unrecognizedFrameworks : undefined
+    unrecognizedFrameworks:
+      unrecognizedFrameworks.length > 0 ? unrecognizedFrameworks : undefined,
   };
 
   if (result.analysis) {

@@ -81,7 +81,7 @@ npx chorenzo recipes --help
 
 ## Requirements
 
-- Node.js 18+ 
+- Node.js 18+
 - Git repository (workspace must be in a Git repository)
 - Claude Code API access
 

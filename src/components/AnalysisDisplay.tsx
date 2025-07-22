@@ -28,19 +28,25 @@ export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result }) => {
             💰 Cost: ${result.metadata.costUsd.toFixed(4)}
           </Text>
           <Text color="cyan">🔄 Turns: {result.metadata.turns}</Text>
-          <Text color="magenta">⏱️  Duration: {result.metadata.durationSeconds.toFixed(1)}s</Text>
-        </>
-      )}
-      {result.unrecognizedFrameworks && result.unrecognizedFrameworks.length > 0 && (
-        <>
-          <Text color="yellow">
-            ⚠️  Unrecognized frameworks: {result.unrecognizedFrameworks.join(', ')}
-          </Text>
-          <Text color="gray">
-            Please consider submitting an issue at https://github.com/chorenzo-dev/engine/issues to add support for these frameworks.
+          <Text color="magenta">
+            ⏱️ Duration: {result.metadata.durationSeconds.toFixed(1)}s
           </Text>
         </>
       )}
+      {result.unrecognizedFrameworks &&
+        result.unrecognizedFrameworks.length > 0 && (
+          <>
+            <Text color="yellow">
+              ⚠️ Unrecognized frameworks:{' '}
+              {result.unrecognizedFrameworks.join(', ')}
+            </Text>
+            <Text color="gray">
+              Please consider submitting an issue at
+              https://github.com/chorenzo-dev/engine/issues to add support for
+              these frameworks.
+            </Text>
+          </>
+        )}
     </Box>
   );
 };

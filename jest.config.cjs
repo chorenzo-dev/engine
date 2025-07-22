@@ -5,18 +5,21 @@ module.exports = {
   roots: ['<rootDir>/src'],
   testMatch: [
     '**/__tests__/**/*.test.(ts|tsx|js)',
-    '**/*.(test|spec).(ts|tsx|js)'
+    '**/*.(test|spec).(ts|tsx|js)',
   ],
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1'
+    '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   resolver: '<rootDir>/jest.resolver.cjs',
   transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', { 
-      useESM: true,
-      tsconfig: 'tsconfig.test.json'
-    }]
+    '^.+\\.(ts|tsx)$': [
+      'ts-jest',
+      {
+        useESM: true,
+        tsconfig: 'tsconfig.test.json',
+      },
+    ],
   },
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
@@ -24,7 +27,7 @@ module.exports = {
     '!src/**/*.test.{ts,tsx}',
     '!src/test-utils/**',
     '!src/test-setup.ts',
-    '!src/**/node_modules/**'
+    '!src/**/node_modules/**',
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
@@ -34,5 +37,5 @@ module.exports = {
   verbose: true,
   clearMocks: true,
   restoreMocks: true,
-  resetMocks: true
+  resetMocks: true,
 };

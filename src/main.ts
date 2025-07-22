@@ -27,8 +27,8 @@ program
           reset: options.reset,
           noAnalyze: !options.analyze || options.A,
           yes: options.yes,
-          progress: options.progress
-        }
+          progress: options.progress,
+        },
       })
     );
   });
@@ -42,8 +42,8 @@ program
       React.createElement(Shell, {
         command: 'analyze',
         options: {
-          progress: options.progress
-        }
+          progress: options.progress,
+        },
       })
     );
   });
@@ -51,7 +51,9 @@ program
 const recipesCommand = program
   .command('recipes')
   .description('Manage and validate Chorenzo recipes')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   $ chorenzo recipes validate code-formatting              # Validate by recipe name
   $ chorenzo recipes validate ./my-recipe                  # Validate local recipe folder
@@ -61,13 +63,16 @@ Examples:
   $ chorenzo recipes apply code-formatting                 # Apply by recipe name
   $ chorenzo recipes apply code-formatting --variant prettier
   $ chorenzo recipes apply testing-setup --project apps/web
-`);
+`
+  );
 
 recipesCommand
   .command('validate <target>')
   .description('Validate recipes by name, path, library, or git repository')
   .option('--no-progress', 'Disable progress UI')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Arguments:
   target    Recipe name, local path, or git URL
 
@@ -76,15 +81,16 @@ Examples:
   $ chorenzo recipes validate ~/my-recipes/custom-recipe
   $ chorenzo recipes validate ~/.chorenzo/recipes/core
   $ chorenzo recipes validate https://github.com/chorenzo-dev/recipes-core.git
-`)
+`
+  )
   .action(async (target, options) => {
     render(
       React.createElement(Shell, {
         command: 'recipes-validate',
         options: {
           target,
-          progress: options.progress
-        }
+          progress: options.progress,
+        },
       })
     );
   });
@@ -96,7 +102,9 @@ recipesCommand
   .option('--project <path>', 'Apply to specific project only')
   .option('-y, --yes', 'Skip interactive confirmations')
   .option('--no-progress', 'Disable progress UI')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Arguments:
   recipe    Recipe name or local folder path
 
@@ -106,7 +114,8 @@ Examples:
   $ chorenzo recipes apply code-formatting --variant prettier
   $ chorenzo recipes apply testing-setup --project apps/web
   $ chorenzo recipes apply eslint-config -y                  # Skip confirmations
-`)
+`
+  )
   .action(async (recipe, options) => {
     render(
       React.createElement(Shell, {
@@ -116,8 +125,8 @@ Examples:
           variant: options.variant,
           project: options.project,
           yes: options.yes,
-          progress: options.progress
-        }
+          progress: options.progress,
+        },
       })
     );
   });

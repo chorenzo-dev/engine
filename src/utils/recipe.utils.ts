@@ -1,29 +1,40 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { readYaml } from './yaml.utils';
-import { 
-  Recipe, 
-  RecipeMetadata, 
-  RecipePrompt, 
-  RecipeValidationError, 
+import {
+  Recipe,
+  RecipeMetadata,
+  RecipePrompt,
+  RecipeValidationError,
   RecipeValidationResult,
-  RecipeLibrary
+  RecipeLibrary,
 } from '../types/recipe';
 
 export class RecipeParsingError extends Error {
-  constructor(message: string, public readonly recipePath: string) {
+  constructor(
+    message: string,
+    public readonly recipePath: string
+  ) {
     super(message);
     this.name = 'RecipeParsingError';
   }
 }
 
-export async function parseRecipeFromDirectory(recipePath: string): Promise<Recipe> {
+export async function parseRecipeFromDirectory(
+  recipePath: string
+): Promise<Recipe> {
   if (!fs.existsSync(recipePath)) {
-    throw new RecipeParsingError(`Recipe directory does not exist: ${recipePath}`, recipePath);
+    throw new RecipeParsingError(
+      `Recipe directory does not exist: ${recipePath}`,
+      recipePath
+    );
   }
 
   if (!fs.statSync(recipePath).isDirectory()) {
-    throw new RecipeParsingError(`Path is not a directory: ${recipePath}`, recipePath);
+    throw new RecipeParsingError(
+      `Path is not a directory: ${recipePath}`,
+      recipePath
+    );
   }
 
   const metadataPath = path.join(recipePath, 'metadata.yaml');
@@ -31,11 +42,17 @@ export async function parseRecipeFromDirectory(recipePath: string): Promise<Reci
   const fixesDir = path.join(recipePath, 'fixes');
 
   if (!fs.existsSync(metadataPath)) {
-    throw new RecipeParsingError(`Missing metadata.yaml in recipe: ${recipePath}`, recipePath);
+    throw new RecipeParsingError(
+      `Missing metadata.yaml in recipe: ${recipePath}`,
+      recipePath
+    );
   }
 
   if (!fs.existsSync(promptPath)) {
-    throw new RecipeParsingError(`Missing prompt.md in recipe: ${recipePath}`, recipePath);
+    throw new RecipeParsingError(
+      `Missing prompt.md in recipe: ${recipePath}`,
+      recipePath
+    );
   }
 
   try {
@@ -55,13 +72,21 @@ export async function parseRecipeFromDirectory(recipePath: string): Promise<Reci
   }
 }
 
-export async function parseRecipeLibraryFromDirectory(libraryPath: string): Promise<RecipeLibrary> {
+export async function parseRecipeLibraryFromDirectory(
+  libraryPath: string
+): Promise<RecipeLibrary> {
   if (!fs.existsSync(libraryPath)) {
-    throw new RecipeParsingError(`Library directory does not exist: ${libraryPath}`, libraryPath);
+    throw new RecipeParsingError(
+      `Library directory does not exist: ${libraryPath}`,
+      libraryPath
+    );
   }
 
   if (!fs.statSync(libraryPath).isDirectory()) {
-    throw new RecipeParsingError(`Path is not a directory: ${libraryPath}`, libraryPath);
+    throw new RecipeParsingError(
+      `Path is not a directory: ${libraryPath}`,
+      libraryPath
+    );
   }
 
   const recipes: Recipe[] = [];
@@ -72,7 +97,9 @@ export async function parseRecipeLibraryFromDirectory(libraryPath: string): Prom
       const recipe = await parseRecipeFromDirectory(entry);
       recipes.push(recipe);
     } catch (error) {
-      errors.push(`Failed to parse recipe at ${entry}: ${error instanceof Error ? error.message : String(error)}`);
+      errors.push(
+        `Failed to parse recipe at ${entry}: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -111,7 +138,10 @@ async function parsePrompt(promptPath: string): Promise<RecipePrompt> {
   }
 }
 
-async function parseFixFiles(fixesDir: string, metadata: RecipeMetadata): Promise<Map<string, string>> {
+async function parseFixFiles(
+  fixesDir: string,
+  metadata: RecipeMetadata
+): Promise<Map<string, string>> {
   const fixFiles = new Map<string, string>();
 
   if (!fs.existsSync(fixesDir)) {
@@ -132,8 +162,15 @@ async function parseFixFiles(fixesDir: string, metadata: RecipeMetadata): Promis
 }
 
 function validateMetadata(metadata: any, metadataPath: string): void {
-  const requiredFields = ['id', 'category', 'summary', 'ecosystems', 'provides', 'requires'];
-  
+  const requiredFields = [
+    'id',
+    'category',
+    'summary',
+    'ecosystems',
+    'provides',
+    'requires',
+  ];
+
   for (const field of requiredFields) {
     if (!metadata[field]) {
       throw new Error(`Missing required field: ${field}`);
@@ -156,7 +193,7 @@ function validateMetadata(metadata: any, metadataPath: string): void {
     if (!ecosystem.id || !ecosystem.default_variant || !ecosystem.variants) {
       throw new Error(`Invalid ecosystem structure`);
     }
-    
+
     if (!Array.isArray(ecosystem.variants)) {
       throw new Error('ecosystem.variants must be an array');
     }
@@ -171,7 +208,9 @@ function validateMetadata(metadata: any, metadataPath: string): void {
   const recipeDir = path.dirname(metadataPath);
   const recipeName = path.basename(recipeDir);
   if (metadata.id !== recipeName) {
-    throw new Error(`Recipe ID '${metadata.id}' must match directory name '${recipeName}'`);
+    throw new Error(
+      `Recipe ID '${metadata.id}' must match directory name '${recipeName}'`
+    );
   }
 }
 
@@ -207,20 +246,20 @@ function parsePromptContent(content: string): RecipePrompt {
   return {
     goal: sections.get('Goal') || '',
     investigation: sections.get('Investigation') || '',
-    expectedOutput: sections.get('Expected Output') || ''
+    expectedOutput: sections.get('Expected Output') || '',
   };
 }
 
 async function findRecipeDirectories(libraryPath: string): Promise<string[]> {
   const recipeDirectories: string[] = [];
-  
+
   async function searchDirectory(dir: string): Promise<void> {
     const entries = fs.readdirSync(dir);
-    
+
     for (const entry of entries) {
       const entryPath = path.join(dir, entry);
       const stat = fs.statSync(entryPath);
-      
+
       if (stat.isDirectory()) {
         const metadataPath = path.join(entryPath, 'metadata.yaml');
         if (fs.existsSync(metadataPath)) {
@@ -231,7 +270,7 @@ async function findRecipeDirectories(libraryPath: string): Promise<string[]> {
       }
     }
   }
-  
+
   await searchDirectory(libraryPath);
   return recipeDirectories;
 }
@@ -246,7 +285,7 @@ export function validateRecipe(recipe: Recipe): RecipeValidationResult {
     errors.push({
       type: 'metadata',
       message: error instanceof Error ? error.message : String(error),
-      file: 'metadata.yaml'
+      file: 'metadata.yaml',
     });
   }
 
@@ -256,33 +295,35 @@ export function validateRecipe(recipe: Recipe): RecipeValidationResult {
         errors.push({
           type: 'fix',
           message: `Missing fix file: ${variant.fix_prompt}`,
-          file: variant.fix_prompt
+          file: variant.fix_prompt,
         });
       }
     }
   }
 
   const kebabCaseRegex = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-  
+
   if (!kebabCaseRegex.test(recipe.metadata.id)) {
     warnings.push({
       type: 'metadata',
-      message: 'Recipe ID should use kebab-case (lowercase letters, numbers, and hyphens only)',
-      field: 'id'
+      message:
+        'Recipe ID should use kebab-case (lowercase letters, numbers, and hyphens only)',
+      field: 'id',
     });
   }
 
   if (!kebabCaseRegex.test(recipe.metadata.category)) {
     warnings.push({
       type: 'metadata',
-      message: 'Recipe category should use kebab-case (lowercase letters, numbers, and hyphens only)',
-      field: 'category'
+      message:
+        'Recipe category should use kebab-case (lowercase letters, numbers, and hyphens only)',
+      field: 'category',
     });
   }
 
   return {
     valid: errors.length === 0,
     errors,
-    warnings
+    warnings,
   };
 }

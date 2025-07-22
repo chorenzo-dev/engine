@@ -6,7 +6,12 @@ import { ApplyProgress } from './ApplyProgress';
 import { ApplyDisplay } from './ApplyDisplay';
 import { performAnalysis } from '../commands/analyze';
 import { performInit } from '../commands/init';
-import { performRecipesValidate, performRecipesApply, type ValidationCallback, type ValidationResult } from '../commands/recipes';
+import {
+  performRecipesValidate,
+  performRecipesApply,
+  type ValidationCallback,
+  type ValidationResult,
+} from '../commands/recipes';
 import { AnalysisDisplay } from './AnalysisDisplay';
 import { ApplyOptions, ApplyRecipeResult } from '../types/apply';
 
@@ -29,7 +34,8 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   const [error, setError] = useState<Error | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [simpleStep, setSimpleStep] = useState<string>('');
-  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [validationResult, setValidationResult] =
+    useState<ValidationResult | null>(null);
 
   useEffect(() => {
     if (
@@ -52,16 +58,12 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       runSimpleAnalysis();
     }
 
-    if (
-      command === 'recipes-validate' &&
-      !isComplete &&
-      !error
-    ) {
+    if (command === 'recipes-validate' && !isComplete && !error) {
       if (!options.target) {
         setError(new Error('Target parameter is required'));
         return;
       }
-      
+
       const runRecipesValidate = async () => {
         try {
           const handleValidation: ValidationCallback = (type, message) => {
@@ -81,14 +83,18 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
                 break;
             }
           };
-          
-          const result = await performRecipesValidate({
-            target: options.target!,
-            progress: options.progress
-          }, (step) => {
-            setSimpleStep(step);
-          }, handleValidation);
-          
+
+          const result = await performRecipesValidate(
+            {
+              target: options.target!,
+              progress: options.progress,
+            },
+            (step) => {
+              setSimpleStep(step);
+            },
+            handleValidation
+          );
+
           setValidationResult(result);
           setIsComplete(true);
         } catch (err) {
@@ -108,19 +114,22 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         setError(new Error('Recipe parameter is required'));
         return;
       }
-      
+
       const runRecipesApply = async () => {
         try {
-          const applyResult = await performRecipesApply({
-            recipe: options.recipe!,
-            variant: options.variant,
-            project: options.project,
-            yes: options.yes,
-            progress: options.progress
-          }, (step) => {
-            setSimpleStep(step);
-          });
-          
+          const applyResult = await performRecipesApply(
+            {
+              recipe: options.recipe!,
+              variant: options.variant,
+              project: options.project,
+              yes: options.yes,
+              progress: options.progress,
+            },
+            (step) => {
+              setSimpleStep(step);
+            }
+          );
+
           setResult(applyResult);
           setIsComplete(true);
         } catch (err) {
@@ -129,7 +138,18 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       };
       runRecipesApply();
     }
-  }, [command, options.progress, options.reset, options.target, options.recipe, options.variant, options.project, options.yes, isComplete, error]);
+  }, [
+    command,
+    options.progress,
+    options.reset,
+    options.target,
+    options.recipe,
+    options.variant,
+    options.project,
+    options.yes,
+    isComplete,
+    error,
+  ]);
 
   if (command === 'analyze') {
     if (options.progress === false) {
@@ -235,10 +255,18 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           {validationResult.messages.map((msg, index) => {
             let icon = '';
             switch (msg.type) {
-              case 'success': icon = '✅'; break;
-              case 'error': icon = '❌'; break;
-              case 'warning': icon = '⚠️ '; break;
-              case 'info': icon = '📊'; break;
+              case 'success':
+                icon = '✅';
+                break;
+              case 'error':
+                icon = '❌';
+                break;
+              case 'warning':
+                icon = '⚠️ ';
+                break;
+              case 'info':
+                icon = '📊';
+                break;
             }
             return <Text key={index}>{`${icon} ${msg.text}`}</Text>;
           })}
@@ -314,7 +342,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       variant: options.variant,
       project: options.project,
       yes: options.yes,
-      progress: options.progress
+      progress: options.progress,
     };
 
     return (

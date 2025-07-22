@@ -722,7 +722,7 @@ async function applyRecipeDirectly(recipe: Recipe, project: ProjectAnalysis, var
     }
 
     // Extract outputs from the execution log for state tracking
-    const providesMap = recipe.getProvides().reduce((acc, key) => ({ ...acc, [key]: true }), {});
+    const providesMap = buildProvidesMap(recipe, variant);
     const outputs = extractOutputsFromResult(executionLog, providesMap);
     
     logger.info({ 
@@ -754,15 +754,29 @@ async function applyRecipeDirectly(recipe: Recipe, project: ProjectAnalysis, var
   }
 }
 
-
+function buildProvidesMap(recipe: Recipe, variant: string): Record<string, string | boolean> {
+  const providesMap: Record<string, string | boolean> = {};
+  
+  for (const key of recipe.getProvides()) {
+    if (key.endsWith('.variant')) {
+      providesMap[key] = variant;
+    } else if (key.endsWith('.legacy_support')) {
+      providesMap[key] = false;
+    } else {
+      providesMap[key] = true;
+    }
+  }
+  
+  return providesMap;
+}
 
 function extractOutputsFromResult(executionLog: string, expectedOutputs: Record<string, string | boolean>): Record<string, string | boolean> {
   const outputs: Record<string, string | boolean> = {};
   
   // For now, assume all expected outputs are successfully achieved
   // In the future, this could parse the execution log to extract actual results
-  for (const [key, defaultValue] of Object.entries(expectedOutputs)) {
-    outputs[key] = typeof defaultValue === 'boolean' ? true : defaultValue;
+  for (const [key, expectedValue] of Object.entries(expectedOutputs)) {
+    outputs[key] = expectedValue;
   }
   
   return outputs;

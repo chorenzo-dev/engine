@@ -619,7 +619,7 @@ outputs:
           default_variant: 'basic',
           variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
         }],
-        provides: ['test_feature.enabled', 'test_feature.version'],
+        provides: ['test_feature.enabled', 'test_feature.legacy_support', 'test_feature.variant'],
         requires: []
       });
 
@@ -642,7 +642,8 @@ outputs:
         expect.stringContaining('state.json'),
         {
           'test_feature.enabled': true,
-          'test_feature.version': true
+          'test_feature.legacy_support': false,
+          'test_feature.variant': 'basic'
         }
       );
     });

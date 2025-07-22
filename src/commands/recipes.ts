@@ -824,10 +824,12 @@ async function applyRecipeDirectly(
     }
 
     const fixContent = variantObj.fix_prompt;
+    const recipePrompt = recipe.getPrompt();
 
     const logPath = workspaceConfig.getLogPath();
-
     const promptTemplate = loadPrompt('apply_recipe');
+    const combinedContent = recipePrompt.content + '\n\n' + fixContent;
+
     const applicationPrompt = renderPrompt(promptTemplate, {
       recipe_id: recipe.getId(),
       project_path: project.path,
@@ -840,7 +842,7 @@ async function applyRecipeDirectly(
       is_monorepo: analysis.isMonorepo ? 'true' : 'false',
       package_manager: project.hasPackageManager ? 'detected' : 'none',
       recipe_variant: variant,
-      fix_content: fixContent,
+      fix_content: combinedContent,
       recipe_provides: recipe.getProvides().join(', '),
     });
 

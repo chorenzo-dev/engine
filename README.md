@@ -1,6 +1,6 @@
 # Chorenzo Engine
 
-Open-source CLI engine that automates your engineering workflow with AI-powered workspace analysis.
+Open-source CLI engine that automates your engineering workflow with AI-powered workspace analysis and recipe application.
 
 ## Usage
 
@@ -10,10 +10,10 @@ Initialize your Chorenzo workspace and download recipe libraries:
 
 ```bash
 # Initialize workspace with recipe libraries
-npx @chorenzo/engine init
+npx chorenzo init
 
 # Reset workspace and re-initialize
-npx @chorenzo/engine init --reset
+npx chorenzo init --reset
 ```
 
 ### Analyze Command
@@ -22,28 +22,48 @@ Analyze your workspace and get detailed insights about project structure, depend
 
 ```bash
 # With progress UI (default)
-npx @chorenzo/engine analyze
+npx chorenzo analyze
 
 # Simple text output without progress UI
-npx @chorenzo/engine analyze --no-progress
+npx chorenzo analyze --no-progress
 ```
 
 ### Recipes Command
 
-Validate and manage Chorenzo recipes:
+Validate and apply Chorenzo recipes to automate your workspace:
+
+#### Validate Recipes
 
 ```bash
 # Validate a recipe by name
-npx @chorenzo/engine recipes validate code-formatting
+npx chorenzo recipes validate code-formatting
 
 # Validate a local recipe folder
-npx @chorenzo/engine recipes validate ./my-recipe
+npx chorenzo recipes validate ./my-recipe
 
 # Validate an entire recipe library
-npx @chorenzo/engine recipes validate ~/.chorenzo/recipes/core
+npx chorenzo recipes validate ~/.chorenzo/recipes/core
 
 # Validate recipes from a git repository
-npx @chorenzo/engine recipes validate https://github.com/chorenzo-dev/recipes-core.git
+npx chorenzo recipes validate https://github.com/chorenzo-dev/recipes-core.git
+```
+
+#### Apply Recipes
+
+Apply automation recipes to your workspace:
+
+```bash
+# Apply a recipe by name
+npx chorenzo recipes apply code-formatting
+
+# Apply with custom variant
+npx chorenzo recipes apply linting --variant strict
+
+# Apply to specific project in monorepo
+npx chorenzo recipes apply testing --project frontend
+
+# Apply with progress UI disabled
+npx chorenzo recipes apply ci-cd --no-progress
 ```
 
 Chorenzo uses atomic, composable automation recipes to handle workspace setup and configuration. See our [recipes documentation](docs/recipes.md) for detailed information about creating and using recipes.
@@ -52,10 +72,11 @@ Chorenzo uses atomic, composable automation recipes to handle workspace setup an
 
 ```bash
 # Show all available commands
-npx @chorenzo/engine --help
+npx chorenzo --help
 
 # Show help for specific command
-npx @chorenzo/engine analyze --help
+npx chorenzo analyze --help
+npx chorenzo recipes --help
 ```
 
 ## Requirements

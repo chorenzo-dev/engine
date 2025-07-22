@@ -35,3 +35,14 @@ export async function writeYaml<T>(filePath: string, data: T): Promise<void> {
     );
   }
 }
+
+export function parseYaml<T = any>(yamlContent: string): T {
+  try {
+    return yamlParse(yamlContent) as T;
+  } catch (error) {
+    throw new YamlError(
+      `Failed to parse YAML: ${error instanceof Error ? error.message : String(error)}`,
+      'PARSE_ERROR'
+    );
+  }
+}

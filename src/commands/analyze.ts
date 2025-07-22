@@ -3,8 +3,10 @@ import { findGitRoot, getProjectIdentifier } from '../utils/git.utils';
 import { buildFileTree } from '../utils/file-tree.utils';
 import { loadPrompt, renderPrompt } from '../utils/prompts.utils';
 import { WorkspaceAnalysis } from '../types/analysis';
+import { OperationMetadata } from '../types/common';
 import { validateFrameworks } from '../utils/framework-validation';
 import { readJson, writeJson } from '../utils/json.utils';
+import { Logger } from '../utils/logger.utils';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -12,14 +14,7 @@ const ANALYSIS_PATH = path.join(process.cwd(), '.chorenzo', 'analysis.json');
 
 export interface AnalysisResult {
   analysis: WorkspaceAnalysis | null;
-  metadata?: {
-    type: string;
-    subtype: string;
-    costUsd: number;
-    turns: number;
-    durationSeconds: number;
-    error?: string;
-  };
+  metadata?: OperationMetadata;
   unrecognizedFrameworks?: string[];
 }
 
@@ -41,9 +36,13 @@ export type ProgressCallback = (step: string) => void;
 
 export async function performAnalysis(onProgress?: ProgressCallback): Promise<AnalysisResult> {
   const startTime = Date.now();
+  Logger.info({ 
+    event: 'analysis_started',
+    command: 'analyze'
+  }, 'Workspace analysis started');
   
   onProgress?.('Finding git repository...');
-  const workspaceRoot = await findGitRoot().catch(() => process.cwd());
+  const workspaceRoot = findGitRoot();
   
   onProgress?.('Building file tree...');
   const filesStructureSummary = await buildFileTree(workspaceRoot);

@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs';
+import { Logger } from './logger.utils';
 
 function matchGitIgnorePattern(filePath: string, pattern: string): boolean {
   const regexPattern = pattern
@@ -31,7 +32,11 @@ export function loadGitIgnorePatternsForDir(
         patterns.add(line);
       }
     } catch (error) {
-      console.warn(`Failed to read .gitignore at ${gitignorePath}`);
+      Logger.warn({
+        event: 'gitignore_read_failed',
+        path: gitignorePath,
+        error: error instanceof Error ? error.message : String(error)
+      }, 'Failed to read .gitignore file');
     }
   }
 

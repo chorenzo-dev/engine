@@ -11,6 +11,8 @@ const mockRmSync = jest.fn<(path: string, options?: any) => void>();
 const mockUnlinkSync = jest.fn<(path: string) => void>();
 const mockWriteYaml = jest.fn<(path: string, data: any) => Promise<void>>();
 const mockReadYaml = jest.fn<(path: string) => Promise<any>>();
+const mockWriteJson = jest.fn<(path: string, data: any) => Promise<void>>();
+const mockReadJson = jest.fn<(path: string) => Promise<any>>();
 const mockCheckGitAvailable = jest.fn<() => Promise<void>>();
 const mockCloneRepository = jest.fn<(repo: string, path: string, ref: string) => Promise<void>>();
 
@@ -35,6 +37,11 @@ jest.unstable_mockModule('../utils/yaml.utils', () => ({
       this.name = 'YamlError';
     }
   }
+}));
+
+jest.unstable_mockModule('../utils/json.utils', () => ({
+  writeJson: mockWriteJson,
+  readJson: mockReadJson,
 }));
 
 jest.unstable_mockModule('../utils/git-operations.utils', () => ({
@@ -69,6 +76,8 @@ describe('Init Command Integration Tests', () => {
         }
       }
     }));
+    mockWriteJson.mockImplementation(() => Promise.resolve(undefined));
+    mockReadJson.mockImplementation(() => Promise.resolve({}));
     mockCheckGitAvailable.mockImplementation(() => Promise.resolve(undefined));
     mockCloneRepository.mockImplementation(() => Promise.resolve(undefined));
     
@@ -95,29 +104,30 @@ describe('Init Command Integration Tests', () => {
     });
   });
 
-  it('should create state.yaml with default state', async () => {
+  it('should create state.json with default state', async () => {
     await performInit({});
     
-    expect(mockWriteYaml).toHaveBeenCalledWith('/test/home/.chorenzo/state.yaml', {
+    expect(mockWriteJson).toHaveBeenCalledWith('/test/home/.chorenzo/state.json', {
       last_checked: '1970-01-01T00:00:00Z'
     });
   });
 
   it('should not overwrite existing config files', async () => {
     mockExistsSync.mockImplementation((filePath: string) => {
-      return filePath.includes('config.yaml') || filePath.includes('state.yaml');
+      return filePath.includes('config.yaml') || filePath.includes('state.json');
     });
     
     await performInit({});
     
     expect(mockWriteYaml).toHaveBeenCalledTimes(0);
+    expect(mockWriteJson).toHaveBeenCalledTimes(0);
   });
 
   it('should reset workspace when reset option is provided', async () => {
     let unlinkCalls = 0;
     mockExistsSync.mockImplementation((filePath: string) => {
       if (filePath.includes('recipes')) return true;
-      if (filePath.includes('config.yaml') || filePath.includes('state.yaml')) {
+      if (filePath.includes('config.yaml') || filePath.includes('state.json')) {
         return unlinkCalls < 2;
       }
       return false;
@@ -131,9 +141,9 @@ describe('Init Command Integration Tests', () => {
     
     expect(mockRmSync).toHaveBeenCalledWith('/test/home/.chorenzo/recipes', { recursive: true, force: true });
     expect(mockUnlinkSync).toHaveBeenCalledWith('/test/home/.chorenzo/config.yaml');
-    expect(mockUnlinkSync).toHaveBeenCalledWith('/test/home/.chorenzo/state.yaml');
+    expect(mockUnlinkSync).toHaveBeenCalledWith('/test/home/.chorenzo/state.json');
     expect(mockWriteYaml).toHaveBeenCalledWith('/test/home/.chorenzo/config.yaml', expect.any(Object));
-    expect(mockWriteYaml).toHaveBeenCalledWith('/test/home/.chorenzo/state.yaml', expect.any(Object));
+    expect(mockWriteJson).toHaveBeenCalledWith('/test/home/.chorenzo/state.json', expect.any(Object));
   });
 
   it('should skip cloning if library directory already exists', async () => {
@@ -186,7 +196,7 @@ describe('Init Command Integration Tests', () => {
     await performInit({}, mockProgress);
     
     expect(mockMkdirSync).toHaveBeenCalledWith('/test/home/.chorenzo/recipes', { recursive: true });
-    expect(mockWriteYaml).toHaveBeenCalledWith('/test/home/.chorenzo/state.yaml', expect.any(Object));
+    expect(mockWriteJson).toHaveBeenCalledWith('/test/home/.chorenzo/state.json', expect.any(Object));
     expect(mockWriteYaml).not.toHaveBeenCalledWith('/test/home/.chorenzo/config.yaml', expect.any(Object));
     expect(mockCloneRepository).toHaveBeenCalled();
     expect(mockProgress).toHaveBeenCalledWith('Creating directory structure...');

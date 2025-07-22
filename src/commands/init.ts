@@ -4,6 +4,8 @@ import * as os from 'os';
 import { checkGitAvailable, cloneRepository, GitError } from '../utils/git-operations.utils';
 import { retry } from '../utils/retry.utils';
 import { readYaml, writeYaml, YamlError } from '../utils/yaml.utils';
+import { readJson, writeJson } from '../utils/json.utils';
+import { Logger } from '../utils/logger.utils';
 
 class ChorenzoConfig {
   get dir(): string {
@@ -15,7 +17,7 @@ class ChorenzoConfig {
   }
 
   get statePath(): string {
-    return path.join(this.dir, 'state.yaml');
+    return path.join(this.dir, 'state.json');
   }
 
   get recipesDir(): string {
@@ -54,7 +56,7 @@ class ChorenzoConfig {
     const defaultState: State = {
       last_checked: '1970-01-01T00:00:00Z'
     };
-    await writeYaml(this.statePath, defaultState);
+    await writeJson(this.statePath, defaultState);
   }
 
   removeRecipesDir(): void {
@@ -115,6 +117,12 @@ export class InitError extends Error {
 }
 
 export async function performInit(options: InitOptions = {}, onProgress?: ProgressCallback): Promise<void> {
+  Logger.info({ 
+    event: 'init_started',
+    command: 'init',
+    options 
+  }, 'Chorenzo initialization started');
+  
   try {
     if (options.reset) {
       onProgress?.('Resetting workspace...');

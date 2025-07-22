@@ -1,4 +1,4 @@
-import * as fs from 'fs/promises';
+import * as fs from 'fs';
 import * as path from 'path';
 
 export interface ProjectIdentifier {
@@ -6,16 +6,16 @@ export interface ProjectIdentifier {
   type: 'remote' | 'local';
 }
 
-export async function findGitRoot(
+export function findGitRoot(
   startPath: string = process.cwd()
-): Promise<string> {
+): string {
   let currentPath = path.resolve(startPath);
 
   while (currentPath !== path.dirname(currentPath)) {
     const gitPath = path.join(currentPath, '.git');
 
     try {
-      const stat = await fs.stat(gitPath);
+      const stat = fs.statSync(gitPath);
       if (stat.isDirectory() || stat.isFile()) {
         return currentPath;
       }
@@ -33,19 +33,17 @@ export async function findGitRoot(
     currentPath = path.dirname(currentPath);
   }
 
-  throw new Error(
-    'Not a git repository. Chorenzo requires a git repository to work.'
-  );
+  return process.cwd();
 }
 
-export async function parseGitConfig(gitRoot: string): Promise<string | null> {
+export function parseGitConfig(gitRoot: string): string | null {
   const gitPath = path.join(gitRoot, '.git');
   let gitConfigPath: string;
   
   try {
-    const stat = await fs.stat(gitPath);
+    const stat = fs.statSync(gitPath);
     if (stat.isFile()) {
-      const gitFileContent = await fs.readFile(gitPath, 'utf-8');
+      const gitFileContent = fs.readFileSync(gitPath, 'utf-8');
       const gitDirMatch = gitFileContent.match(/gitdir:\s*(.+)/);
       if (gitDirMatch) {
         const gitDir = gitDirMatch[1].trim();
@@ -61,7 +59,7 @@ export async function parseGitConfig(gitRoot: string): Promise<string | null> {
   }
 
   try {
-    const configContent = await fs.readFile(gitConfigPath, 'utf-8');
+    const configContent = fs.readFileSync(gitConfigPath, 'utf-8');
 
     const lines = configContent.split('\n');
     let inOriginSection = false;
@@ -119,10 +117,10 @@ export function normalizeRepoIdentifier(gitUrl: string): string {
   return normalized;
 }
 
-export async function getProjectIdentifier(): Promise<ProjectIdentifier> {
-  const gitRoot = await findGitRoot();
+export function getProjectIdentifier(): ProjectIdentifier {
+  const gitRoot = findGitRoot();
 
-  const remoteUrl = await parseGitConfig(gitRoot);
+  const remoteUrl = parseGitConfig(gitRoot);
 
   if (remoteUrl) {
     return {

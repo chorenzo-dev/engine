@@ -6,7 +6,7 @@ import { AnalysisDisplay } from './AnalysisDisplay';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { writeYaml } from '../utils/yaml.utils';
+import { readJson, writeJson } from '../utils/json.utils';
 
 interface InitWithAnalysisProps {
   options: {
@@ -142,13 +142,12 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
   };
 
   const updateGlobalState = async () => {
-    const statePath = path.join(os.homedir(), '.chorenzo', 'state.yaml');
+    const statePath = path.join(os.homedir(), '.chorenzo', 'state.json');
     let state: State = { last_checked: '1970-01-01T00:00:00Z' };
     
     if (fs.existsSync(statePath)) {
-      const { readYaml } = await import('../utils/yaml.utils');
       try {
-        state = await readYaml<State>(statePath);
+        state = await readJson<State>(statePath);
       } catch (error) {
         console.warn('Failed to read existing state file, using defaults');
       }
@@ -159,7 +158,7 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
       timestamp: new Date().toISOString()
     };
     
-    await writeYaml(statePath, state);
+    await writeJson(statePath, state);
   };
 
   if (phase === 'init') {

@@ -262,11 +262,21 @@ export function validateRecipe(recipe: Recipe): RecipeValidationResult {
     }
   }
 
-  if (recipe.metadata.id.includes('_')) {
+  const kebabCaseRegex = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+  
+  if (!kebabCaseRegex.test(recipe.metadata.id)) {
     warnings.push({
       type: 'metadata',
-      message: 'Recipe ID should use kebab-case, not snake_case',
+      message: 'Recipe ID should use kebab-case (lowercase letters, numbers, and hyphens only)',
       field: 'id'
+    });
+  }
+
+  if (!kebabCaseRegex.test(recipe.metadata.category)) {
+    warnings.push({
+      type: 'metadata',
+      message: 'Recipe category should use kebab-case (lowercase letters, numbers, and hyphens only)',
+      field: 'category'
     });
   }
 

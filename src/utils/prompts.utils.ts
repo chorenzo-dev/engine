@@ -19,8 +19,8 @@ export function loadPrompt(promptName: string): string {
 export function renderPrompt(template: string, variables: Record<string, string>): string {
   let rendered = template;
   for (const [key, value] of Object.entries(variables)) {
-    const placeholder = `{${key}}`;
-    rendered = rendered.replace(new RegExp(placeholder, 'g'), value);
+    const placeholder = `{{ ${key} }}`;
+    rendered = rendered.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value);
   }
   return rendered;
 }

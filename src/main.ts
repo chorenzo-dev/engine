@@ -57,6 +57,10 @@ Examples:
   $ chorenzo recipes validate ./my-recipe                  # Validate local recipe folder
   $ chorenzo recipes validate ~/.chorenzo/recipes/core     # Validate entire library
   $ chorenzo recipes validate https://github.com/user/chorenzo-recipes.git
+  
+  $ chorenzo recipes apply code-formatting                 # Apply by recipe name
+  $ chorenzo recipes apply code-formatting --variant prettier
+  $ chorenzo recipes apply testing-setup --project apps/web
 `);
 
 recipesCommand
@@ -79,6 +83,39 @@ Examples:
         command: 'recipes-validate',
         options: {
           target,
+          progress: options.progress
+        }
+      })
+    );
+  });
+
+recipesCommand
+  .command('apply <recipe>')
+  .description('Apply a recipe to the workspace')
+  .option('--variant <id>', 'Specific variant to use')
+  .option('--project <path>', 'Apply to specific project only')
+  .option('-y, --yes', 'Skip interactive confirmations')
+  .option('--no-progress', 'Disable progress UI')
+  .addHelpText('after', `
+Arguments:
+  recipe    Recipe name or local folder path
+
+Examples:
+  $ chorenzo recipes apply code-formatting                    # Apply by recipe name
+  $ chorenzo recipes apply ./my-recipe                       # Apply local recipe
+  $ chorenzo recipes apply code-formatting --variant prettier
+  $ chorenzo recipes apply testing-setup --project apps/web
+  $ chorenzo recipes apply eslint-config -y                  # Skip confirmations
+`)
+  .action(async (recipe, options) => {
+    render(
+      React.createElement(Shell, {
+        command: 'recipes-apply',
+        options: {
+          recipe,
+          variant: options.variant,
+          project: options.project,
+          yes: options.yes,
           progress: options.progress
         }
       })

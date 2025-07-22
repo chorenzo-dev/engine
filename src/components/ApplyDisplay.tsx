@@ -7,7 +7,7 @@ interface ApplyDisplayProps {
 }
 
 export const ApplyDisplay: React.FC<ApplyDisplayProps> = ({ result }) => {
-  const { recipe, summary, executionResults, stateUpdated, metadata } = result;
+  const { recipe, summary, executionResults, metadata } = result;
 
   return (
     <Box flexDirection="column">
@@ -62,12 +62,6 @@ export const ApplyDisplay: React.FC<ApplyDisplayProps> = ({ result }) => {
               )}
             </Text>
           ))}
-        </Box>
-      )}
-
-      {stateUpdated && (
-        <Box marginTop={1}>
-          <Text color="cyan">📝 State updated in .chorenzo/state.json</Text>
         </Box>
       )}
 

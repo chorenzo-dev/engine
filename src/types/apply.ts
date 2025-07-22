@@ -28,7 +28,6 @@ export interface ExecutionResult {
   projectPath: string;
   recipeId: string;
   success: boolean;
-  outputs?: Record<string, string | boolean>;
   error?: string;
   costUsd: number;
 }
@@ -37,7 +36,6 @@ export interface ApplyRecipeResult {
   recipe: Recipe;
   dependencyCheck: DependencyValidationResult;
   executionResults: ExecutionResult[];
-  stateUpdated: boolean;
   summary: {
     totalProjects: number;
     successfulProjects: number;

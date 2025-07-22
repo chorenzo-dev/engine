@@ -33,24 +33,28 @@ class Logger {
       return;
     }
 
-    const logPath = workspaceConfig.getLogPath();
-    fs.mkdirSync(path.dirname(logPath), { recursive: true });
-    this.rotateLogIfNeeded(logPath);
-    
-    const logStream = pino.transport({
-      target: 'pino-pretty',
-      options: {
-        destination: logPath,
-        colorize: false,
-        translateTime: 'yyyy-mm-dd HH:MM:ss',
-        ignore: 'pid,hostname',
-        append: true
-      }
-    });
+    try {
+      const logPath = workspaceConfig.getLogPath();
+      fs.mkdirSync(path.dirname(logPath), { recursive: true });
+      this.rotateLogIfNeeded(logPath);
+      
+      const logStream = pino.transport({
+        target: 'pino-pretty',
+        options: {
+          destination: logPath,
+          colorize: false,
+          translateTime: 'yyyy-mm-dd HH:MM:ss',
+          ignore: 'pid,hostname',
+          append: true
+        }
+      });
 
-    this.instance = pino({
-      level: 'info'
-    }, logStream);
+      this.instance = pino({
+        level: 'info'
+      }, logStream);
+    } catch (error) {
+      throw new Error(`Failed to initialize Logger: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   private static getInstance(): pino.Logger {

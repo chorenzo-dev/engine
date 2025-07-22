@@ -508,8 +508,6 @@ outputs:
         return [];
       });
 
-      // Keep the default mockReadFileSync from beforeEach
-
       mockReadJson.mockImplementation((path) => {
         if (path.includes('analysis.json')) {
           return Promise.resolve({

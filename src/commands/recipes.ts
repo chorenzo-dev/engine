@@ -503,7 +503,6 @@ async function ensureAnalysisData(): Promise<WorkspaceAnalysis> {
     try {
       return await readJson(analysisPath);
     } catch (error) {
-      // Analysis file exists but is corrupted or unreadable
       Logger.warn({ 
         event: 'analysis_file_read_failed',
         error: error instanceof Error ? error.message : String(error) 
@@ -712,7 +711,6 @@ async function applyRecipeDirectly(recipe: Recipe, project: ProjectAnalysis, var
       };
     }
 
-    // Extract outputs from the execution log for state tracking
     const providesMap = buildProvidesMap(recipe, variant);
     const outputs = extractOutputsFromResult(executionLog, providesMap);
     
@@ -764,8 +762,6 @@ function buildProvidesMap(recipe: Recipe, variant: string): Record<string, strin
 function extractOutputsFromResult(executionLog: string, expectedOutputs: Record<string, string | boolean>): Record<string, string | boolean> {
   const outputs: Record<string, string | boolean> = {};
   
-  // For now, assume all expected outputs are successfully achieved
-  // In the future, this could parse the execution log to extract actual results
   for (const [key, expectedValue] of Object.entries(expectedOutputs)) {
     outputs[key] = expectedValue;
   }

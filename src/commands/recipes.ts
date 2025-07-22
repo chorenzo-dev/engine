@@ -10,7 +10,7 @@ import { readJson, writeJson } from '../utils/json.utils';
 import { readYaml, parseYaml } from '../utils/yaml.utils';
 import { loadPrompt, renderPrompt } from '../utils/prompts.utils';
 import { workspaceConfig } from '../utils/workspace-config.utils';
-import { createApplyLogger, getApplyLogger, closeApplyLogger } from '../utils/logger.utils';
+import { Logger } from '../utils/logger.utils';
 import { ApplyOptions, ApplyRecipeResult, ApplyError, RecipeState, DependencyValidationResult, ExecutionResult, ApplyProgressCallback, ApplyValidationCallback } from '../types/apply';
 import { Recipe, RecipeDependency } from '../types/recipe';
 import { WorkspaceAnalysis, ProjectAnalysis } from '../types/analysis';
@@ -363,8 +363,6 @@ export async function performRecipesApply(
     onProgress?.('Loading recipe...');
     const recipe = await loadRecipe(options.recipe);
     
-    await createApplyLogger(recipe.getId(), options.project || 'workspace');
-    
     onProgress?.('Validating recipe structure...');
     const validationResult = recipe.validate();
     if (!validationResult.valid) {
@@ -424,15 +422,12 @@ export async function performRecipesApply(
       skippedProjects: 0
     };
 
-    const logger = getApplyLogger();
-    logger.info({
+    Logger.info({
       event: 'apply_completed',
       duration: durationSeconds,
       totalCost: totalCostUsd,
       summary
     }, 'Recipe application completed');
-    
-    closeApplyLogger();
 
     return {
       recipe,
@@ -452,13 +447,11 @@ export async function performRecipesApply(
 
   } catch (error) {
     try {
-      const logger = getApplyLogger();
-      logger.error({
+      Logger.error({
         event: 'apply_error',
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined
       }, 'Recipe application failed');
-      closeApplyLogger();
     } catch (loggerError) {
 
     }
@@ -511,12 +504,11 @@ async function ensureAnalysisData(): Promise<WorkspaceAnalysis> {
       return await readJson(analysisPath);
     } catch (error) {
       // Analysis file exists but is corrupted or unreadable
-      const logger = getApplyLogger();
-      logger.warn({ 
+      Logger.warn({ 
         event: 'analysis_file_read_failed',
         error: error instanceof Error ? error.message : String(error) 
       }, `Failed to read analysis file`);
-      logger.info({ event: 'regenerating_analysis' }, 'Regenerating analysis');
+      Logger.info({ event: 'regenerating_analysis' }, 'Regenerating analysis');
     }
   }
   
@@ -609,8 +601,7 @@ async function applyRecipeDirectly(recipe: Recipe, project: ProjectAnalysis, var
   const projectPath = project.path === '.' ? 'workspace' : project.path;
   const workspaceRoot = workspaceConfig.getWorkspaceRoot();
   
-  const logger = getApplyLogger();
-  logger.info({
+  Logger.info({
     event: 'recipe_application_started',
     recipe: recipe.getId(),
     project: project.path,
@@ -620,7 +611,7 @@ async function applyRecipeDirectly(recipe: Recipe, project: ProjectAnalysis, var
   try {
     const ecosystem = recipe.getEcosystems().find(eco => eco.id === project.ecosystem);
     if (!ecosystem) {
-      logger.warn({
+      Logger.warn({
         event: 'ecosystem_not_supported',
         ecosystem: project.ecosystem,
         recipe: recipe.getId()
@@ -638,7 +629,7 @@ async function applyRecipeDirectly(recipe: Recipe, project: ProjectAnalysis, var
     const variantObj = variants.find(v => v.id === variant);
     
     if (!variantObj) {
-      logger.warn({
+      Logger.warn({
         event: 'variant_not_found',
         ecosystem: project.ecosystem,
         variant,
@@ -674,7 +665,7 @@ async function applyRecipeDirectly(recipe: Recipe, project: ProjectAnalysis, var
       recipe_provides: recipe.getProvides().join(', ')
     });
     
-    logger.debug({
+    Logger.debug({
       event: 'claude_execution_start',
       prompt_length: applicationPrompt.length
     }, 'Starting Claude execution for direct recipe application');
@@ -703,12 +694,12 @@ async function applyRecipeDirectly(recipe: Recipe, project: ProjectAnalysis, var
       }
     }
 
-    logger.info({ 
+    Logger.info({ 
       event: 'claude_execution_completed'
     }, 'Claude execution query completed');
 
     if (!success) {
-      logger.error({ 
+      Logger.error({ 
         event: 'recipe_application_failed',
         error: 'Claude execution did not complete successfully'
       }, 'Recipe application failed');
@@ -725,7 +716,7 @@ async function applyRecipeDirectly(recipe: Recipe, project: ProjectAnalysis, var
     const providesMap = buildProvidesMap(recipe, variant);
     const outputs = extractOutputsFromResult(executionLog, providesMap);
     
-    logger.info({ 
+    Logger.info({ 
       event: 'recipe_application_completed',
       outputCount: Object.keys(outputs).length
     }, 'Recipe application completed successfully');
@@ -739,7 +730,7 @@ async function applyRecipeDirectly(recipe: Recipe, project: ProjectAnalysis, var
     };
 
   } catch (error) {
-    logger.error({
+    Logger.error({
       event: 'recipe_application_error',
       error: error instanceof Error ? error.message : String(error)
     }, 'Error during recipe application');

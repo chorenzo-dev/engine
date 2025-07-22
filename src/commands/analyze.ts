@@ -6,6 +6,7 @@ import { WorkspaceAnalysis } from '../types/analysis';
 import { OperationMetadata } from '../types/common';
 import { validateFrameworks } from '../utils/framework-validation';
 import { readJson, writeJson } from '../utils/json.utils';
+import { Logger } from '../utils/logger.utils';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -35,6 +36,10 @@ export type ProgressCallback = (step: string) => void;
 
 export async function performAnalysis(onProgress?: ProgressCallback): Promise<AnalysisResult> {
   const startTime = Date.now();
+  Logger.info({ 
+    event: 'analysis_started',
+    command: 'analyze'
+  }, 'Workspace analysis started');
   
   onProgress?.('Finding git repository...');
   const workspaceRoot = findGitRoot();

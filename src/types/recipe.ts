@@ -33,6 +33,7 @@ export interface RecipePrompt {
   goal: string;
   investigation: string;
   expectedOutput: string;
+  content: string;
 }
 
 export interface RecipeValidationError {
@@ -104,6 +105,10 @@ export class Recipe {
       (eco) => eco.id === ecosystemId
     );
     return ecosystem?.default_variant;
+  }
+
+  getPrompt(): RecipePrompt {
+    return this.prompt;
   }
 }
 

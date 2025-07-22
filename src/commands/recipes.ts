@@ -1267,13 +1267,7 @@ async function executePlan(plan: ApplyRecipePlan): Promise<ExecutionResult> {
 
 function extractPlanOutputs(planContent: string): Record<string, string | boolean> {
   try {
-    const yamlMatch = planContent.match(/```yaml\n([\s\S]*?)\n```/);
-    if (!yamlMatch) {
-      return {};
-    }
-    
-    const planYaml = yamlMatch[1];
-    const plan = parseYaml(planYaml);
+    const plan = parseYaml(planContent);
     
     if (plan?.outputs && typeof plan.outputs === 'object') {
       return plan.outputs;

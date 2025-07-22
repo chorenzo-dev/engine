@@ -504,7 +504,7 @@ async function loadRecipe(recipeName: string): Promise<Recipe> {
 }
 
 async function ensureAnalysisData(): Promise<WorkspaceAnalysis> {
-  const analysisPath = await workspaceConfig.getAnalysisPath();
+  const analysisPath = workspaceConfig.getAnalysisPath();
   
   if (fs.existsSync(analysisPath)) {
     try {
@@ -532,7 +532,7 @@ async function ensureAnalysisData(): Promise<WorkspaceAnalysis> {
 }
 
 async function readCurrentState(): Promise<RecipeState> {
-  const statePath = await workspaceConfig.getStatePath();
+  const statePath = workspaceConfig.getStatePath();
   
   if (!fs.existsSync(statePath)) {
     return {};
@@ -607,7 +607,7 @@ function filterApplicableProjects(analysis: WorkspaceAnalysis, recipe: Recipe, p
 
 async function applyRecipeDirectly(recipe: Recipe, project: ProjectAnalysis, variant: string, analysis: WorkspaceAnalysis): Promise<ExecutionResult> {
   const projectPath = project.path === '.' ? 'workspace' : project.path;
-  const workspaceRoot = await workspaceConfig.getWorkspaceRoot();
+  const workspaceRoot = workspaceConfig.getWorkspaceRoot();
   
   const logger = getApplyLogger();
   logger.info({
@@ -655,7 +655,7 @@ async function applyRecipeDirectly(recipe: Recipe, project: ProjectAnalysis, var
 
     const fixContent = variantObj.fix_prompt;
 
-    const logPath = await workspaceConfig.getLogPath();
+    const logPath = workspaceConfig.getLogPath();
     
     const promptTemplate = loadPrompt('apply_recipe');
     const applicationPrompt = renderPrompt(promptTemplate, {
@@ -785,10 +785,10 @@ function extractOutputsFromResult(executionLog: string, expectedOutputs: Record<
 
 async function updateState(recipeId: string, outputs: Record<string, string | boolean>): Promise<void> {
   const currentState = await readCurrentState();
-  const statePath = await workspaceConfig.getStatePath();
+  const statePath = workspaceConfig.getStatePath();
 
   Object.assign(currentState, outputs);
 
-  await workspaceConfig.ensureChorenzoDir();
+  workspaceConfig.ensureChorenzoDir();
   await writeJson(statePath, currentState);
 }

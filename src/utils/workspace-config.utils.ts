@@ -15,46 +15,46 @@ export class WorkspaceConfig {
     return WorkspaceConfig.instance;
   }
 
-  async getWorkspaceRoot(): Promise<string> {
+  getWorkspaceRoot(): string {
     if (!this.workspaceRoot) {
-      this.workspaceRoot = await findGitRoot().catch(() => process.cwd());
+      this.workspaceRoot = findGitRoot();
     }
     return this.workspaceRoot;
   }
 
-  async getChorenzoDir(): Promise<string> {
-    const root = await this.getWorkspaceRoot();
+  getChorenzoDir(): string {
+    const root = this.getWorkspaceRoot();
     return path.join(root, '.chorenzo');
   }
 
-  async getAnalysisPath(): Promise<string> {
-    const chorenzoDir = await this.getChorenzoDir();
+  getAnalysisPath(): string {
+    const chorenzoDir = this.getChorenzoDir();
     return path.join(chorenzoDir, 'analysis.json');
   }
 
-  async getStatePath(): Promise<string> {
-    const chorenzoDir = await this.getChorenzoDir();
+  getStatePath(): string {
+    const chorenzoDir = this.getChorenzoDir();
     return path.join(chorenzoDir, 'state.json');
   }
 
-  async getLogsDir(): Promise<string> {
-    const chorenzoDir = await this.getChorenzoDir();
+  getLogsDir(): string {
+    const chorenzoDir = this.getChorenzoDir();
     return path.join(chorenzoDir, 'logs');
   }
 
-  async getLogPath(): Promise<string> {
-    const logsDir = await this.getLogsDir();
+  getLogPath(): string {
+    const logsDir = this.getLogsDir();
     return path.join(logsDir, 'chorenzo.log');
   }
 
-  async getArchivedLogPath(): Promise<string> {
-    const logsDir = await this.getLogsDir();
+  getArchivedLogPath(): string {
+    const logsDir = this.getLogsDir();
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     return path.join(logsDir, `chorenzo-${timestamp}.log`);
   }
 
-  async ensureChorenzoDir(): Promise<void> {
-    const chorenzoDir = await this.getChorenzoDir();
+  ensureChorenzoDir(): void {
+    const chorenzoDir = this.getChorenzoDir();
     fs.mkdirSync(chorenzoDir, { recursive: true });
   }
 }

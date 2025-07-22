@@ -6,7 +6,7 @@ import { workspaceConfig } from './workspace-config.utils';
 let applyLogger: pino.Logger | null = null;
 const MAX_LOG_SIZE_MB = 10;
 
-async function rotateLogIfNeeded(logPath: string): Promise<void> {
+function rotateLogIfNeeded(logPath: string): void {
   if (!fs.existsSync(logPath)) {
     return;
   }
@@ -15,17 +15,17 @@ async function rotateLogIfNeeded(logPath: string): Promise<void> {
   const fileSizeMB = stats.size / (1024 * 1024);
   
   if (fileSizeMB > MAX_LOG_SIZE_MB) {
-    const archivedPath = await workspaceConfig.getArchivedLogPath();
+    const archivedPath = workspaceConfig.getArchivedLogPath();
     fs.renameSync(logPath, archivedPath);
   }
 }
 
 export async function createApplyLogger(recipeId: string, projectPath: string): Promise<pino.Logger> {
-  const logPath = await workspaceConfig.getLogPath();
+  const logPath = workspaceConfig.getLogPath();
   
   fs.mkdirSync(path.dirname(logPath), { recursive: true });
   
-  await rotateLogIfNeeded(logPath);
+  rotateLogIfNeeded(logPath);
   
   const logStream = pino.transport({
     target: 'pino-pretty',

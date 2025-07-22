@@ -37,7 +37,7 @@ export async function performAnalysis(onProgress?: ProgressCallback): Promise<An
   const startTime = Date.now();
   
   onProgress?.('Finding git repository...');
-  const workspaceRoot = await findGitRoot().catch(() => process.cwd());
+  const workspaceRoot = findGitRoot();
   
   onProgress?.('Building file tree...');
   const filesStructureSummary = await buildFileTree(workspaceRoot);

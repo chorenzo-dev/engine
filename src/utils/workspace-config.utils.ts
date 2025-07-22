@@ -37,20 +37,9 @@ export class WorkspaceConfig {
     return path.join(chorenzoDir, 'state.json');
   }
 
-  async getPlansDir(): Promise<string> {
-    const chorenzoDir = await this.getChorenzoDir();
-    return path.join(chorenzoDir, 'plans');
-  }
-
   async getLogsDir(): Promise<string> {
     const chorenzoDir = await this.getChorenzoDir();
     return path.join(chorenzoDir, 'logs');
-  }
-
-  async getPlanPath(projectPath: string, recipeId: string): Promise<string> {
-    const plansDir = await this.getPlansDir();
-    const normalizedProjectPath = projectPath === '.' ? 'workspace' : projectPath;
-    return path.join(plansDir, normalizedProjectPath, `${recipeId}.plan.md`);
   }
 
   async getLogPath(): Promise<string> {

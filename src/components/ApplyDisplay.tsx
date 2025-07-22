@@ -45,7 +45,7 @@ export const ApplyDisplay: React.FC<ApplyDisplayProps> = ({ result }) => {
           {executionResults.map((result, i) => (
             <Text key={i}>
               {result.success ? '✅' : '❌'} {result.projectPath}
-              {result.logPath && <Text dimColor> (log: {result.logPath})</Text>}
+              {result.error && !result.success && <Text dimColor> ({result.error})</Text>}
             </Text>
           ))}
         </Box>

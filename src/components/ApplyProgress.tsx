@@ -14,7 +14,6 @@ export const ApplyProgress: React.FC<ApplyProgressProps> = ({ options, onComplet
   const [validationMessages, setValidationMessages] = useState<string[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showValidations, setShowValidations] = useState(true);
 
   useEffect(() => {
     const runApply = async () => {
@@ -69,7 +68,7 @@ export const ApplyProgress: React.FC<ApplyProgressProps> = ({ options, onComplet
       <Text color={isComplete ? 'green' : 'blue'}>
         {isComplete ? '✅' : '⏳'} {currentStep}
       </Text>
-      {showValidations && validationMessages.length > 0 && (
+      {validationMessages.length > 0 && (
         <Box flexDirection="column" marginTop={1}>
           {validationMessages.map((msg, i) => (
             <Text key={i} dimColor>{msg}</Text>

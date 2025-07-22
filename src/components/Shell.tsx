@@ -29,7 +29,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   const [error, setError] = useState<Error | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [simpleStep, setSimpleStep] = useState<string>('');
-  const [validationMessages, setValidationMessages] = useState<string[]>([]);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
 
   useEffect(() => {
@@ -81,7 +80,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
                 formattedMessage = `📊 ${message}`;
                 break;
             }
-            setValidationMessages(prev => [...prev, formattedMessage]);
           };
           
           const result = await performRecipesValidate({
@@ -220,45 +218,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         />
       );
     }
-
-    if (error) {
-      return (
-        <Box flexDirection="column">
-          <Text color="red">❌ Error: {error.message}</Text>
-        </Box>
-      );
-    }
-
-    if (isComplete) {
-      return (
-        <Box flexDirection="column">
-          <Text color="green">✅ Initialization complete!</Text>
-          {result && result.analysis && (
-            <Box marginTop={1}>
-              <AnalysisDisplay result={result} />
-            </Box>
-          )}
-        </Box>
-      );
-    }
-
-    return (
-      <InitWithAnalysis
-        options={{
-          reset: options.reset,
-          noAnalyze: options.noAnalyze,
-          yes: options.yes,
-          progress: options.progress,
-        }}
-        onComplete={(result) => {
-          setResult(result);
-          setIsComplete(true);
-        }}
-        onError={(error) => {
-          setError(error);
-        }}
-      />
-    );
   }
 
   if (command === 'recipes-validate') {

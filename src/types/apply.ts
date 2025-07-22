@@ -30,26 +30,6 @@ export interface DependencyValidationResult {
   }>;
 }
 
-export interface PlanGenerationContext {
-  recipe: Recipe;
-  project: ProjectAnalysis;
-  variant: string;
-  workspaceRoot: string;
-  analysis: WorkspaceAnalysis;
-}
-
-export interface ApplyRecipePlan {
-  projectPath: string;
-  recipeId: string;
-  variant: string;
-  planContent: string;
-  planPath: string;
-  success: boolean;
-  error?: string;
-  costUsd: number;
-}
-
-export interface PlanResult extends ApplyRecipePlan {}
 
 export interface ExecutionResult {
   projectPath: string;
@@ -57,14 +37,12 @@ export interface ExecutionResult {
   success: boolean;
   outputs?: Record<string, string | boolean>;
   error?: string;
-  logPath?: string;
   costUsd: number;
 }
 
 export interface ApplyRecipeResult {
   recipe: Recipe;
   dependencyCheck: DependencyValidationResult;
-  planResults: PlanResult[];
   executionResults: ExecutionResult[];
   stateUpdated: boolean;
   summary: {

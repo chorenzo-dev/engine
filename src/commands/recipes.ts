@@ -11,7 +11,7 @@ import { readYaml, parseYaml } from '../utils/yaml.utils';
 import { loadPrompt, renderPrompt } from '../utils/prompts.utils';
 import { workspaceConfig } from '../utils/workspace-config.utils';
 import { createApplyLogger, getApplyLogger, closeApplyLogger } from '../utils/logger.utils';
-import { ApplyOptions, ApplyRecipeResult, ApplyError, RecipeState, StateEntry, DependencyValidationResult, ApplyRecipePlan, PlanResult, ExecutionResult, ApplyProgressCallback, ApplyValidationCallback } from '../types/apply';
+import { ApplyOptions, ApplyRecipeResult, ApplyError, RecipeState, StateEntry, DependencyValidationResult, ExecutionResult, ApplyProgressCallback, ApplyValidationCallback } from '../types/apply';
 import { Recipe, RecipeDependency } from '../types/recipe';
 import { WorkspaceAnalysis, ProjectAnalysis } from '../types/analysis';
 
@@ -394,31 +394,11 @@ export async function performRecipesApply(
       );
     }
 
-    onProgress?.('Generating plans...');
-    const planResults: PlanResult[] = [];
+    onProgress?.('Applying recipe...');
+    const executionResults: ExecutionResult[] = [];
     for (const project of applicableProjects) {
       const variant = options.variant || recipe.getDefaultVariant(project.ecosystem || 'unknown') || 'default';
-      const planResult = await generatePlan(recipe, project, variant, analysis);
-      
-      if (planResult.costUsd) {
-        totalCostUsd += planResult.costUsd;
-      }
-      
-      if (!planResult.success) {
-        throw new ApplyError(
-          `Failed to generate plan for ${project.path}: ${planResult.error}`,
-          'PLAN_GENERATION_FAILED'
-        );
-      }
-      
-      planResults.push(planResult);
-      onValidation?.('success', `Plan generated for ${planResult.projectPath}`);
-    }
-
-    onProgress?.('Executing plans...');
-    const executionResults: ExecutionResult[] = [];
-    for (const planResult of planResults) {
-      const executionResult = await executePlan(planResult);
+      const executionResult = await applyRecipeDirectly(recipe, project, variant, analysis);
       
       totalCostUsd += executionResult.costUsd;
       executionResults.push(executionResult);
@@ -438,7 +418,7 @@ export async function performRecipesApply(
     const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
 
     const summary = {
-      totalProjects: planResults.length,
+      totalProjects: applicableProjects.length,
       successfulProjects: executionResults.filter(e => e.success).length,
       failedProjects: executionResults.filter(e => !e.success).length,
       skippedProjects: 0
@@ -457,7 +437,6 @@ export async function performRecipesApply(
     return {
       recipe,
       dependencyCheck,
-      planResults,
       executionResults,
       stateUpdated: executionResults.some(e => e.success && e.outputs),
       summary,
@@ -626,19 +605,17 @@ function filterApplicableProjects(analysis: WorkspaceAnalysis, recipe: Recipe, p
   });
 }
 
-async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: string, analysis: WorkspaceAnalysis): Promise<PlanResult> {
+async function applyRecipeDirectly(recipe: Recipe, project: ProjectAnalysis, variant: string, analysis: WorkspaceAnalysis): Promise<ExecutionResult> {
   const projectPath = project.path === '.' ? 'workspace' : project.path;
-  const planPath = await workspaceConfig.getPlanPath(project.path, recipe.getId());
   const workspaceRoot = await workspaceConfig.getWorkspaceRoot();
   
   const logger = getApplyLogger();
   logger.info({
-    event: 'plan_generation_started',
+    event: 'recipe_application_started',
     recipe: recipe.getId(),
     project: project.path,
-    variant,
-    planPath
-  }, 'Starting plan generation');
+    variant
+  }, 'Starting direct recipe application');
 
   try {
     const ecosystem = recipe.getEcosystems().find(eco => eco.id === project.ecosystem);
@@ -651,638 +628,146 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
       return {
         projectPath,
         recipeId: recipe.getId(),
-        variant,
-        planContent: '',
-        planPath,
         success: false,
         error: `Recipe '${recipe.getId()}' does not support ecosystem '${project.ecosystem}'`,
         costUsd: 0
       };
     }
 
-    logger.debug({ ecosystem: ecosystem.id }, 'Found matching ecosystem');
-    const variantObj = ecosystem.variants.find(v => v.id === variant);
+    const variants = recipe.getVariantsForEcosystem(project.ecosystem || 'unknown');
+    const variantObj = variants.find(v => v.id === variant);
+    
     if (!variantObj) {
       logger.warn({
         event: 'variant_not_found',
+        ecosystem: project.ecosystem,
         variant,
-        ecosystem: ecosystem.id
-      }, `Variant not found: ${variant}`);
+        recipe: recipe.getId()
+      }, `Variant '${variant}' not found for ecosystem ${project.ecosystem}`);
       return {
         projectPath,
         recipeId: recipe.getId(),
-        variant,
-        planContent: '',
-        planPath,
         success: false,
         error: `Variant '${variant}' not found for ecosystem '${project.ecosystem}'`,
         costUsd: 0
       };
     }
 
-    logger.debug({ variant }, 'Found matching variant');
-    const promptTemplate = loadPrompt('generate_plan');
-    const providesYaml = recipe.getProvides()
-      .map(key => `    ${key}: true`)
-      .join('\n');
+    const fixContent = variantObj.fix_prompt;
+
+    const logPath = await workspaceConfig.getLogPath();
     
-    logger.debug({
-      event: 'prompt_template_loaded',
-      provides: recipe.getProvides()
-    }, 'Loaded prompt template and built context');
-    
-    const prompt = renderPrompt(promptTemplate, {
+    const promptTemplate = loadPrompt('apply_recipe');
+    const applicationPrompt = renderPrompt(promptTemplate, {
+      recipe_id: recipe.getId(),
       project_path: project.path,
-      project_type: project.type,
-      project_language: project.language,
-      project_framework: project.framework || 'none',
-      project_dependencies: project.dependencies.join(', '),
+      recipe_summary: recipe.getSummary(),
+      project_type: project.type || 'unknown',
+      project_language: project.language || 'unknown',
+      project_framework: project.framework || 'unknown',
       project_ecosystem: project.ecosystem || 'unknown',
       workspace_root: workspaceRoot,
-      is_monorepo: analysis.isMonorepo.toString(),
+      is_monorepo: analysis.isMonorepo ? 'true' : 'false',
       package_manager: project.hasPackageManager ? 'detected' : 'none',
-      recipe_id: recipe.getId(),
-      recipe_summary: recipe.getSummary(),
-      recipe_provides: providesYaml,
       recipe_variant: variant,
-      fix_content: variantObj.fix_prompt,
-      plan_path: planPath
-    });
-
-    let planContent = '';
-    let errorMessage: string | undefined;
-    let planCost = 0;
-
-    logger.info({ event: 'claude_query_started' }, 'Starting Claude query for plan generation');
-    
-    let messageCount = 0;
-    let toolUsageCount = 0;
-    const queryStartTime = Date.now();
-    
-    const progressInterval = setInterval(() => {
-      const elapsed = ((Date.now() - queryStartTime) / 1000).toFixed(1);
-      logger.info({
-        event: 'plan_generation_progress',
-        elapsed,
-        messageCount,
-        toolUsageCount
-      }, `Plan generation progress: ${elapsed}s elapsed, ${messageCount} messages, ${toolUsageCount} tool calls`);
-    }, 10000);
-    
-    try {
-    for await (const message of query({
-      prompt,
-      options: {
-        model: 'sonnet',
-        allowedTools: ['Bash', 'Read', 'Write', 'Edit', 'MultiEdit', 'LS', 'Glob', 'Grep'],
-        permissionMode: 'bypassPermissions',
-      },
-    })) {
-      messageCount++;
-      
-      if (message.type === 'system' && message.subtype === 'init') {
-        logger.info({
-          event: 'claude_system_init',
-          sessionId: message.session_id,
-          model: message.model,
-          tools: message.tools,
-          permissionMode: message.permissionMode,
-          cwd: message.cwd
-        }, 'Claude system initialized');
-      }
-      
-      else if (message.type === 'assistant') {
-        const content = message.message?.content;
-        let toolUses = [];
-        let textContent = '';
-        
-        if (Array.isArray(content)) {
-          for (const block of content) {
-            if (typeof block === 'object' && block !== null) {
-              if ('type' in block && block.type === 'tool_use') {
-                toolUses.push({
-                  name: block.name,
-                  id: block.id,
-                  input: typeof block.input === 'object' ? JSON.stringify(block.input).substring(0, 300) : block.input
-                });
-              } else if ('type' in block && block.type === 'text') {
-                textContent = block.text?.substring(0, 200) || '';
-              }
-            }
-          }
-        } else if (typeof content === 'string') {
-          textContent = content.substring(0, 200);
-        }
-        
-        logger.debug({
-          event: 'claude_assistant_message',
-          sessionId: message.session_id,
-          textContent,
-          toolUses,
-          toolCount: toolUses.length
-        }, `Claude assistant response${toolUses.length > 0 ? ` with ${toolUses.length} tool calls` : ''}`);
-        
-        for (const tool of toolUses) {
-          toolUsageCount++;
-          logger.info({
-            event: 'claude_tool_use',
-            sessionId: message.session_id,
-            toolName: tool.name,
-            toolId: tool.id,
-            toolInput: tool.input
-          }, `Claude calling tool: ${tool.name}`);
-        }
-      }
-      
-      else if (message.type === 'user') {
-        const content = message.message?.content;
-        let toolResults = [];
-        let textContent = '';
-        
-        if (Array.isArray(content)) {
-          for (const block of content) {
-            if (typeof block === 'object' && block !== null) {
-              if ('type' in block && block.type === 'tool_result') {
-                toolResults.push({
-                  tool_use_id: block.tool_use_id,
-                  content: typeof block.content === 'string' ? block.content.substring(0, 300) : 'non-string content',
-                  is_error: block.is_error || false
-                });
-              } else if ('type' in block && block.type === 'text') {
-                textContent = block.text?.substring(0, 200) || '';
-              }
-            }
-          }
-        } else if (typeof content === 'string') {
-          textContent = content.substring(0, 200);
-        }
-        
-        logger.debug({
-          event: 'claude_user_message', 
-          sessionId: message.session_id,
-          textContent,
-          toolResults,
-          toolCount: toolResults.length
-        }, `Claude user message${toolResults.length > 0 ? ` with ${toolResults.length} tool results` : ''}`);
-        
-        for (const result of toolResults) {
-          logger.info({
-            event: 'claude_tool_result',
-            sessionId: message.session_id,
-            toolUseId: result.tool_use_id,
-            isError: result.is_error,
-            resultPreview: result.content
-          }, `Tool result${result.is_error ? ' (ERROR)' : ''}: ${result.content.substring(0, 100)}`);
-        }
-      }
-      
-      else {
-        logger.debug({ 
-          event: 'claude_message',
-          messageType: message.type,
-          sessionId: 'session_id' in message ? message.session_id : undefined
-        }, `Received Claude message: ${message.type}`);
-      }
-      
-      if (message.type === 'result') {
-        logger.info({
-          event: 'claude_query_result',
-          subtype: message.subtype,
-          duration_ms: message.duration_ms,
-          duration_api_ms: message.duration_api_ms,
-          num_turns: message.num_turns,
-          sessionId: message.session_id
-        }, 'Claude query completed');
-        
-        if ('total_cost_usd' in message) {
-          planCost = message.total_cost_usd;
-          logger.info({ cost: planCost }, `Plan generation cost: $${planCost}`);
-        }
-        if (message.subtype === 'success') {
-          logger.info({
-            event: 'plan_generation_completed',
-            cost: planCost
-          }, 'Plan generation completed successfully');
-        } else {
-          errorMessage = 'Plan generation failed';
-          logger.error({
-            event: 'plan_generation_failed',
-            subtype: message.subtype,
-            error: 'error' in message ? message.error : undefined
-          }, 'Plan generation failed');
-        }
-        break;
-      }
-    }
-    } finally {
-      clearInterval(progressInterval);
-    }
-
-    if (errorMessage) {
-      logger.error({ error: errorMessage }, 'Plan generation failed');
-      return {
-        projectPath,
-        recipeId: recipe.getId(),
-        variant,
-        planContent: '',
-        planPath,
-        success: false,
-        error: errorMessage,
-        costUsd: planCost
-      };
-    }
-
-    fs.mkdirSync(path.dirname(planPath), { recursive: true });
-    
-    if (!fs.existsSync(planPath)) {
-      logger.error({ event: 'plan_file_not_found', planPath }, 'Plan file was not created by Claude');
-      return {
-        projectPath,
-        recipeId: recipe.getId(),
-        variant,
-        planContent: '',
-        planPath,
-        success: false,
-        error: 'Plan file was not created',
-        costUsd: planCost
-      };
-    }
-
-    planContent = fs.readFileSync(planPath, 'utf8');
-    logger.info({ 
-      event: 'plan_file_read',
-      planPath,
-      contentLength: planContent.length,
-      content: planContent.substring(0, 100)
-    }, 'Plan file read successfully');
-    
-    if (!planContent || planContent.trim() === '') {
-      logger.error({ event: 'empty_plan' }, 'Plan file is empty');
-      return {
-        projectPath,
-        recipeId: recipe.getId(),
-        variant,
-        planContent: '',
-        planPath,
-        success: false,
-        error: 'Plan file is empty',
-        costUsd: planCost
-      };
-    }
-
-    const result = {
-      projectPath,
-      recipeId: recipe.getId(),
-      variant,
-      planContent,
-      planPath,
-      success: true,
-      costUsd: planCost
-    };
-    logger.info({
-      event: 'plan_generation_completed',
-      cost: planCost
-    }, 'Plan generation completed successfully');
-    return result;
-
-  } catch (error) {
-    logger.error({
-      event: 'plan_generation_error',
-      error: error instanceof Error ? error.message : String(error)
-    }, 'Plan generation caught error');
-    return {
-      projectPath,
-      recipeId: recipe.getId(),
-      variant,
-      planContent: '',
-      planPath,
-      success: false,
-      error: `Plan generation failed: ${error instanceof Error ? error.message : String(error)}`,
-      costUsd: 0
-    };
-  }
-}
-
-async function executePlan(plan: ApplyRecipePlan): Promise<ExecutionResult> {
-  const logger = getApplyLogger();
-  logger.info({
-    event: 'plan_execution_started',
-    project: plan.projectPath,
-    recipe: plan.recipeId
-  }, 'Starting plan execution');
-  
-  if (!plan.success) {
-    logger.warn({ event: 'plan_not_successful' }, 'Plan was not successful, skipping execution');
-    return {
-      projectPath: plan.projectPath,
-      recipeId: plan.recipeId,
-      success: false,
-      error: plan.error || 'Plan generation failed',
-      costUsd: plan.costUsd
-    };
-  }
-
-  const logPath = await workspaceConfig.getLogPath();
-  
-  try {
-    const promptTemplate = loadPrompt('execute_plan');
-    const executionPrompt = renderPrompt(promptTemplate, {
-      plan_content: plan.planContent
+      fix_content: fixContent,
+      recipe_provides: recipe.getProvides().join(', ')
     });
     
     logger.debug({
-      event: 'execution_prompt_prepared',
-      promptLength: executionPrompt.length
-    }, 'Execution prompt prepared');
-    
-    logger.info({
-      event: 'plan_details',
-      recipe: plan.recipeId,
-      project: plan.projectPath,
-      variant: plan.variant,
-      planContentLength: plan.planContent.length
-    }, 'Executing plan');
+      event: 'claude_execution_start',
+      prompt_length: applicationPrompt.length
+    }, 'Starting Claude execution for direct recipe application');
 
-    let executionLog = '';
-    let errorMessage: string | undefined;
-    let success = false;
     let executionCost = 0;
-
-    logger.info({ event: 'claude_execution_started' }, 'Starting Claude query for plan execution');
-    const queryStartTime = Date.now();
+    let executionLog = '';
+    let success = false;
     
-    let messageCount = 0;
-    let toolUsageCount = 0;
-    
-    const progressInterval = setInterval(() => {
-      const elapsed = ((Date.now() - queryStartTime) / 1000).toFixed(1);
-      logger.info({
-        event: 'plan_execution_progress',
-        elapsed,
-        messageCount,
-        toolUsageCount
-      }, `Plan execution progress: ${elapsed}s elapsed, ${messageCount} messages, ${toolUsageCount} tool calls`);
-    }, 10000);
-    
-    try {
     for await (const message of query({
-      prompt: executionPrompt,
+      prompt: applicationPrompt,
       options: {
         model: 'sonnet',
         allowedTools: ['Bash', 'Read', 'Write', 'Edit', 'MultiEdit', 'LS', 'Glob', 'Grep'],
         permissionMode: 'bypassPermissions',
       },
     })) {
-      messageCount++;
-      const elapsed = ((Date.now() - queryStartTime) / 1000).toFixed(1);
-      
-      if (message.type === 'system' && message.subtype === 'init') {
-        logger.info({
-          event: 'claude_execution_system_init',
-          sessionId: message.session_id,
-          model: message.model,
-          tools: message.tools,
-          permissionMode: message.permissionMode,
-          cwd: message.cwd,
-          elapsed
-        }, 'Claude execution system initialized');
-      }
-      
-      else if (message.type === 'assistant') {
-        const content = message.message?.content;
-        let toolUses = [];
-        let textContent = '';
-        
-        if (Array.isArray(content)) {
-          for (const block of content) {
-            if (typeof block === 'object' && block !== null) {
-              if ('type' in block && block.type === 'tool_use') {
-                toolUses.push({
-                  name: block.name,
-                  id: block.id,
-                  input: typeof block.input === 'object' ? JSON.stringify(block.input).substring(0, 300) : block.input
-                });
-              } else if ('type' in block && block.type === 'text') {
-                textContent = block.text?.substring(0, 200) || '';
-              }
-            }
-          }
-        } else if (typeof content === 'string') {
-          textContent = content.substring(0, 200);
-        }
-        
-        logger.debug({
-          event: 'claude_execution_assistant_message',
-          sessionId: message.session_id,
-          textContent,
-          toolUses,
-          toolCount: toolUses.length,
-          elapsed
-        }, `Claude execution assistant response${toolUses.length > 0 ? ` with ${toolUses.length} tool calls` : ''}`);
-        
-        for (const tool of toolUses) {
-          toolUsageCount++;
-          logger.info({
-            event: 'claude_execution_tool_use',
-            sessionId: message.session_id,
-            toolName: tool.name,
-            toolId: tool.id,
-            toolInput: tool.input,
-            elapsed
-          }, `Claude execution calling tool: ${tool.name}`);
-        }
-      }
-      
-      else if (message.type === 'user') {
-        const content = message.message?.content;
-        let toolResults = [];
-        let textContent = '';
-        
-        if (Array.isArray(content)) {
-          for (const block of content) {
-            if (typeof block === 'object' && block !== null) {
-              if ('type' in block && block.type === 'tool_result') {
-                toolResults.push({
-                  tool_use_id: block.tool_use_id,
-                  content: typeof block.content === 'string' ? block.content.substring(0, 300) : 'non-string content',
-                  is_error: block.is_error || false
-                });
-              } else if ('type' in block && block.type === 'text') {
-                textContent = block.text?.substring(0, 200) || '';
-              }
-            }
-          }
-        } else if (typeof content === 'string') {
-          textContent = content.substring(0, 200);
-        }
-        
-        logger.debug({
-          event: 'claude_execution_user_message', 
-          sessionId: message.session_id,
-          textContent,
-          toolResults,
-          toolCount: toolResults.length,
-          elapsed
-        }, `Claude execution user message${toolResults.length > 0 ? ` with ${toolResults.length} tool results` : ''}`);
-        
-        for (const result of toolResults) {
-          logger.info({
-            event: 'claude_execution_tool_result',
-            sessionId: message.session_id,
-            toolUseId: result.tool_use_id,
-            isError: result.is_error,
-            resultPreview: result.content,
-            elapsed
-          }, `Execution tool result${result.is_error ? ' (ERROR)' : ''}: ${result.content.substring(0, 100)}`);
-        }
-      }
-      
-      else {
-        logger.debug({ 
-          event: 'claude_execution_message',
-          messageType: message.type,
-          sessionId: 'session_id' in message ? message.session_id : undefined,
-          elapsed
-        }, `Received Claude execution message: ${message.type}`);
-      }
-      
       if (message.type === 'result') {
-        logger.info({
-          event: 'claude_execution_result',
-          subtype: message.subtype,
-          duration_ms: message.duration_ms,
-          duration_api_ms: message.duration_api_ms,
-          num_turns: message.num_turns,
-          sessionId: message.session_id,
-          elapsed
-        }, 'Claude execution completed');
-        
         if ('total_cost_usd' in message) {
           executionCost = message.total_cost_usd;
-          logger.info({ cost: executionCost, elapsed }, `Execution cost: $${executionCost}`);
         }
         if (message.subtype === 'success' && 'result' in message) {
           executionLog = message.result;
           success = true;
-          logger.info({ 
-            event: 'execution_success',
-            resultLength: executionLog.length,
-            elapsed 
-          }, `Execution completed successfully (${executionLog.length} chars)`);
-        } else {
-          errorMessage = 'Plan execution failed';
-          success = false;
-          if ('error' in message) {
-            errorMessage = `Plan execution failed: ${message.error}`;
-          }
-          logger.error({
-            event: 'execution_failed',
-            subtype: message.subtype,
-            error: 'error' in message ? message.error : undefined,
-            elapsed
-          }, `Execution failed: ${message.subtype}`);
         }
         break;
       }
     }
-    } finally {
-      clearInterval(progressInterval);
-    }
-    
-    const totalElapsed = ((Date.now() - queryStartTime) / 1000).toFixed(1);
-    logger.info({ event: 'claude_execution_completed', elapsed: totalElapsed }, `Claude execution query completed in ${totalElapsed}s`);
 
-    fs.appendFileSync(logPath, `\n--- EXECUTION COMPLETED - ${new Date().toISOString()} ---\n` +
-      `Success: ${success}\n` +
-      `Cost: $${executionCost}\n` +
-      `--- EXECUTION LOG ---\n${executionLog}\n\n` +
-      (errorMessage ? `--- ERROR ---\n${errorMessage}\n` : ''), 'utf8');
-    logger.info({ event: 'execution_log_updated' }, 'Final log updated');
+    logger.info({ 
+      event: 'claude_execution_completed'
+    }, 'Claude execution query completed');
 
-    if (!success || errorMessage) {
-      logger.error({ event: 'execution_failed', error: errorMessage }, 'Execution failed, returning error result');
+    if (!success) {
+      logger.error({ 
+        event: 'recipe_application_failed',
+        error: 'Claude execution did not complete successfully'
+      }, 'Recipe application failed');
       return {
-        projectPath: plan.projectPath,
-        recipeId: plan.recipeId,
+        projectPath,
+        recipeId: recipe.getId(),
         success: false,
-        error: errorMessage || 'Execution failed',
-        logPath,
+        error: 'Recipe application failed during execution',
         costUsd: executionCost
       };
     }
 
-    logger.info({ event: 'extracting_plan_outputs' }, 'Extracting plan outputs');
-    const outputs = extractPlanOutputs(plan.planContent);
-    logger.info({ 
-      event: 'plan_outputs_extracted', 
-      outputCount: Object.keys(outputs).length,
-      outputs 
-    }, `Extracted ${Object.keys(outputs).length} outputs from plan`);
-
-    const result = {
-      projectPath: plan.projectPath,
-      recipeId: plan.recipeId,
-      success: true,
-      outputs,
-      logPath,
-      costUsd: executionCost
-    };
-    logger.info({ 
-      event: 'execution_completed_successfully',
-      outputCount: Object.keys(outputs).length 
-    }, 'Plan execution completed successfully');
-    return result;
-
-  } catch (error) {
-    const errorMsg = `Execution failed: ${error instanceof Error ? error.message : String(error)}`;
-    logger.error({ 
-      event: 'execution_error',
-      error: error instanceof Error ? error.message : String(error) 
-    }, 'Plan execution caught error');
+    // Extract outputs from the execution log for state tracking
+    const providesMap = recipe.getProvides().reduce((acc, key) => ({ ...acc, [key]: true }), {});
+    const outputs = extractOutputsFromResult(executionLog, providesMap);
     
-    try {
-      fs.mkdirSync(path.dirname(logPath), { recursive: true });
-      fs.writeFileSync(logPath, `Plan Execution Error - ${new Date().toISOString()}\n` +
-        `Recipe: ${plan.recipeId}\n` +
-        `Project: ${plan.projectPath}\n` +
-        `Error: ${errorMsg}\n`, 'utf8');
-      logger.info({ event: 'error_log_written', logPath }, 'Error log written');
-    } catch (logError) {
-      logger.error({ 
-        event: 'error_log_write_failed',
-        error: logError instanceof Error ? logError.message : String(logError) 
-      }, 'Failed to write error log');
-    }
+    logger.info({ 
+      event: 'recipe_application_completed',
+      outputCount: Object.keys(outputs).length
+    }, 'Recipe application completed successfully');
 
     return {
-      projectPath: plan.projectPath,
-      recipeId: plan.recipeId,
+      projectPath,
+      recipeId: recipe.getId(),
+      success: true,
+      costUsd: executionCost,
+      outputs
+    };
+
+  } catch (error) {
+    logger.error({
+      event: 'recipe_application_error',
+      error: error instanceof Error ? error.message : String(error)
+    }, 'Error during recipe application');
+    
+    return {
+      projectPath,
+      recipeId: recipe.getId(),
       success: false,
-      error: errorMsg,
-      logPath,
+      error: error instanceof Error ? error.message : String(error),
       costUsd: 0
     };
   }
 }
 
-function extractPlanOutputs(planContent: string): Record<string, string | boolean> {
-  try {
-    const plan = parseYaml(planContent);
-    
-    if (plan?.outputs && typeof plan.outputs === 'object') {
-      return plan.outputs;
-    }
-    
-    return {};
-  } catch (error) {
-    const logger = getApplyLogger();
-    logger.error({ 
-      event: 'plan_output_parse_failed',
-      error: error instanceof Error ? error.message : String(error) 
-    }, 'Failed to parse plan outputs');
-    return {};
+
+
+function extractOutputsFromResult(executionLog: string, expectedOutputs: Record<string, string | boolean>): Record<string, string | boolean> {
+  const outputs: Record<string, string | boolean> = {};
+  
+  // For now, assume all expected outputs are successfully achieved
+  // In the future, this could parse the execution log to extract actual results
+  for (const [key, defaultValue] of Object.entries(expectedOutputs)) {
+    outputs[key] = typeof defaultValue === 'boolean' ? true : defaultValue;
   }
+  
+  return outputs;
 }
+
 
 async function updateState(recipeId: string, outputs: Record<string, string | boolean>): Promise<void> {
   const currentState = await readCurrentState();

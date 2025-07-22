@@ -23,6 +23,7 @@ const mockWriteFileSync = jest.fn();
 const mockAppendFileSync = jest.fn();
 const mockCreateWriteStream = jest.fn();
 
+
 jest.unstable_mockModule('os', () => ({
   homedir: mockHomedir,
   tmpdir: mockTmpdir,
@@ -62,9 +63,11 @@ jest.unstable_mockModule('../utils/git-operations.utils', () => ({
   cloneRepository: mockCloneRepository,
 }));
 
+
 describe('Recipes Command Integration Tests', () => {
   let performRecipesValidate: typeof import('./recipes').performRecipesValidate;
   let performRecipesApply: typeof import('./recipes').performRecipesApply;
+
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -72,7 +75,6 @@ describe('Recipes Command Integration Tests', () => {
     mockHomedir.mockImplementation(() => '/test/home');
     mockTmpdir.mockImplementation(() => '/tmp');
     mockExistsSync.mockImplementation((path) => {
-      if (path.includes('.plan.md')) return true;
       return true;
     });
     mockStatSync.mockImplementation(() => ({
@@ -404,7 +406,6 @@ outputs:
       mockReaddirSync.mockImplementation(() => []);
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
-        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
       
@@ -439,7 +440,6 @@ outputs:
       mockReaddirSync.mockImplementation(() => []);
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
-        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
       
@@ -479,13 +479,8 @@ outputs:
         if (filePath.includes('prompt.md')) {
           return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
         }
-        if (filePath.includes('test-recipe.plan.md')) {
-          return `title: "test plan"
-steps:
-  - type: configure
-    description: test
-outputs:
-  test_feature.exists: true`;
+        if (filePath.includes('apply_recipe.md')) {
+          return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
         }
         return '';
       });
@@ -497,7 +492,7 @@ outputs:
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
-        if (path.includes('test-recipe.plan.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
         return true;
       });
 
@@ -562,7 +557,7 @@ outputs:
 
       expect(result).toBeDefined();
       expect(result.summary.successfulProjects).toBe(1);
-      expect(mockQuery).toHaveBeenCalledTimes(2);
+      expect(mockQuery).toHaveBeenCalledTimes(1);
     });
 
     it('should handle missing analysis by running analysis', async () => {
@@ -572,7 +567,7 @@ outputs:
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
-        if (path.includes('.plan.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
         return true;
       });
 
@@ -590,7 +585,6 @@ outputs:
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
-        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -646,7 +640,7 @@ outputs:
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
-        if (path.includes('.plan.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
         return true;
       });
 
@@ -700,7 +694,7 @@ outputs:
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
-        if (path.includes('.plan.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
         return true;
       });
 
@@ -718,7 +712,6 @@ outputs:
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
-        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -753,20 +746,11 @@ outputs:
         requires: []
       });
 
-      let callCount = 0;
       mockQuery.mockImplementation(async function* () {
-        if (callCount++ === 0) {
-          yield {
-            type: 'result',
-            subtype: 'success',
-            result: 'plan:\n  outputs:\n    test_feature.exists: true'
-          };
-        } else {
-          yield {
-            type: 'result',
-            subtype: 'error'
-          };
-        }
+        yield {
+          type: 'result',
+          subtype: 'error'
+        };
       });
 
       const result = await performRecipesApply({
@@ -785,7 +769,7 @@ outputs:
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
-        if (path.includes('.plan.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
         return true;
       });
 
@@ -803,7 +787,6 @@ outputs:
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
-        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -867,7 +850,7 @@ outputs:
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
-        if (path.includes('.plan.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
         return true;
       });
 
@@ -885,7 +868,6 @@ outputs:
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
-        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -957,7 +939,7 @@ outputs:
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
-        if (path.includes('.plan.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
         return true;
       });
 
@@ -975,7 +957,6 @@ outputs:
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
-        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -1023,13 +1004,7 @@ outputs:
       let queryCallCount = 0;
       mockQuery.mockImplementation(async function* () {
         queryCallCount++;
-        if (queryCallCount <= 2) {
-          yield {
-            type: 'result',
-            subtype: 'success',
-            result: 'plan:\n  outputs:\n    test_feature.exists: true'
-          };
-        } else if (queryCallCount === 3) {
+        if (queryCallCount === 1) {
           yield {
             type: 'result',
             subtype: 'success',
@@ -1060,7 +1035,7 @@ outputs:
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
-        if (path.includes('.plan.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
         return true;
       });
 
@@ -1078,7 +1053,6 @@ outputs:
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
-        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -1148,7 +1122,7 @@ outputs:
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
-        if (path.includes('.plan.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
         return true;
       });
 
@@ -1166,7 +1140,6 @@ outputs:
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
-        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -1214,7 +1187,7 @@ outputs:
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
-        if (path.includes('.plan.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
         return true;
       });
 
@@ -1232,7 +1205,6 @@ outputs:
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
-        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -1296,7 +1268,7 @@ outputs:
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
-        if (path.includes('.plan.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
         return true;
       });
 
@@ -1314,7 +1286,6 @@ outputs:
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
-        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -1342,14 +1313,14 @@ outputs:
       })).rejects.toThrow('Analysis failed');
     });
 
-    it('should handle plan generation failure', async () => {
+    it('should handle recipe application failure', async () => {
       mockExistsSync.mockImplementation((path) => {
         if (path.includes('analysis.json')) return true;
         if (path.includes('.chorenzo/recipes')) return true;
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
-        if (path.includes('.plan.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
         return true;
       });
 
@@ -1367,7 +1338,6 @@ outputs:
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
-        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -1409,10 +1379,16 @@ outputs:
         };
       });
 
-      await expect(performRecipesApply({
+      const result = await performRecipesApply({
         recipe: 'test-recipe',
         progress: false
-      })).rejects.toThrow('Failed to generate plan');
+      });
+      
+      expect(result.summary.totalProjects).toBe(1);
+      expect(result.summary.successfulProjects).toBe(0);
+      expect(result.summary.failedProjects).toBe(1);
+      expect(result.executionResults[0].success).toBe(false);
+      expect(result.executionResults[0].error).toContain('Recipe application failed during execution');
     });
 
     it('should handle variant not found', async () => {
@@ -1422,7 +1398,7 @@ outputs:
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
-        if (path.includes('.plan.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
         return true;
       });
 
@@ -1440,7 +1416,6 @@ outputs:
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
-        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -1475,11 +1450,17 @@ outputs:
         requires: []
       });
 
-      await expect(performRecipesApply({
+      const result = await performRecipesApply({
         recipe: 'test-recipe',
         variant: 'nonexistent',
         progress: false
-      })).rejects.toThrow('Failed to generate plan');
+      });
+      
+      expect(result.summary.totalProjects).toBe(1);
+      expect(result.summary.successfulProjects).toBe(0);
+      expect(result.summary.failedProjects).toBe(1);
+      expect(result.executionResults[0].success).toBe(false);
+      expect(result.executionResults[0].error).toContain('not found for ecosystem');
     });
 
     it('should handle state file read errors', async () => {
@@ -1490,7 +1471,7 @@ outputs:
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
-        if (path.includes('.plan.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
         return true;
       });
 
@@ -1508,7 +1489,6 @@ outputs:
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
-        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -1552,14 +1532,14 @@ outputs:
       })).rejects.toThrow('Failed to read state file');
     });
 
-    it('should handle empty plan generation', async () => {
+    it('should handle empty recipe application result', async () => {
       mockExistsSync.mockImplementation((path) => {
         if (path.includes('analysis.json')) return true;
         if (path.includes('.chorenzo/recipes')) return true;
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
-        if (path.includes('.plan.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
         return true;
       });
 
@@ -1577,7 +1557,6 @@ outputs:
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
-        if (filePath.includes('.plan.md')) return '';
         return '';
       });
 
@@ -1620,10 +1599,15 @@ outputs:
         };
       });
 
-      await expect(performRecipesApply({
+      const result = await performRecipesApply({
         recipe: 'test-recipe',
         progress: false
-      })).rejects.toThrow('Plan file is empty');
+      });
+      
+      expect(result.summary.totalProjects).toBe(1);
+      expect(result.summary.successfulProjects).toBe(1);
+      expect(result.summary.failedProjects).toBe(0);
+      expect(result.executionResults[0].success).toBe(true);
     });
   });
 });

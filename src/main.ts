@@ -57,6 +57,10 @@ Examples:
   $ chorenzo recipes validate ./my-recipe                  # Validate local recipe folder
   $ chorenzo recipes validate ~/.chorenzo/recipes/core     # Validate entire library
   $ chorenzo recipes validate https://github.com/user/chorenzo-recipes.git
+  
+  $ chorenzo recipes apply code-formatting                 # Apply by recipe name
+  $ chorenzo recipes apply code-formatting --variant prettier
+  $ chorenzo recipes apply testing-setup --project apps/web
 `);
 
 recipesCommand

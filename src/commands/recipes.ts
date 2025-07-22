@@ -528,9 +528,6 @@ export async function performRecipesApply(
           'success',
           `Successfully applied to ${executionResult.projectPath}`
         );
-        if (executionResult.outputs) {
-          await updateState(recipe.getId(), executionResult.outputs);
-        }
       } else {
         onValidation?.(
           'error',
@@ -564,7 +561,6 @@ export async function performRecipesApply(
       recipe,
       dependencyCheck,
       executionResults,
-      stateUpdated: executionResults.some((e) => e.success && e.outputs),
       summary,
       metadata: {
         durationSeconds,
@@ -843,7 +839,7 @@ async function applyRecipeDirectly(
       package_manager: project.hasPackageManager ? 'detected' : 'none',
       recipe_variant: variant,
       fix_content: combinedContent,
-      recipe_provides: recipe.getProvides().join(', '),
+      recipe_provides: recipe.getProvides().map(key => `   - ${key}`).join('\n'),
     });
 
     Logger.debug(
@@ -911,13 +907,9 @@ async function applyRecipeDirectly(
       };
     }
 
-    const providesMap = buildProvidesMap(recipe, variant);
-    const outputs = extractOutputsFromResult(executionLog, providesMap);
-
     Logger.info(
       {
         event: 'recipe_application_completed',
-        outputCount: Object.keys(outputs).length,
       },
       'Recipe application completed successfully'
     );
@@ -927,7 +919,6 @@ async function applyRecipeDirectly(
       recipeId: recipe.getId(),
       success: true,
       costUsd: executionCost,
-      outputs,
     };
   } catch (error) {
     Logger.error(
@@ -948,47 +939,3 @@ async function applyRecipeDirectly(
   }
 }
 
-function buildProvidesMap(
-  recipe: Recipe,
-  variant: string
-): Record<string, string | boolean> {
-  const providesMap: Record<string, string | boolean> = {};
-
-  for (const key of recipe.getProvides()) {
-    if (key.endsWith('.variant')) {
-      providesMap[key] = variant;
-    } else if (key.endsWith('.legacy_support')) {
-      providesMap[key] = false;
-    } else {
-      providesMap[key] = true;
-    }
-  }
-
-  return providesMap;
-}
-
-function extractOutputsFromResult(
-  executionLog: string,
-  expectedOutputs: Record<string, string | boolean>
-): Record<string, string | boolean> {
-  const outputs: Record<string, string | boolean> = {};
-
-  for (const [key, expectedValue] of Object.entries(expectedOutputs)) {
-    outputs[key] = expectedValue;
-  }
-
-  return outputs;
-}
-
-async function updateState(
-  recipeId: string,
-  outputs: Record<string, string | boolean>
-): Promise<void> {
-  const currentState = await readCurrentState();
-  const statePath = workspaceConfig.getStatePath();
-
-  Object.assign(currentState, outputs);
-
-  workspaceConfig.ensureChorenzoDir();
-  await writeJson(statePath, currentState);
-}

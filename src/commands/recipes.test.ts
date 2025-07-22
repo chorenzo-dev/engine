@@ -1,4 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest,
+} from '@jest/globals';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -15,14 +22,14 @@ const mockParseYaml = jest.fn<(content: string) => any>();
 const mockReadJson = jest.fn<(path: string) => Promise<any>>();
 const mockWriteJson = jest.fn<(path: string, data: any) => Promise<void>>();
 const mockQuery = jest.fn();
-const mockPerformAnalysis = jest.fn<() => Promise<import('./analyze').AnalysisResult>>();
+const mockPerformAnalysis =
+  jest.fn<() => Promise<import('./analyze').AnalysisResult>>();
 const mockCloneRepository = jest.fn();
 const mockRmSync = jest.fn();
 const mockMkdirSync = jest.fn();
 const mockWriteFileSync = jest.fn();
 const mockAppendFileSync = jest.fn();
 const mockCreateWriteStream = jest.fn();
-
 
 jest.unstable_mockModule('os', () => ({
   homedir: mockHomedir,
@@ -63,24 +70,25 @@ jest.unstable_mockModule('../utils/git-operations.utils', () => ({
   cloneRepository: mockCloneRepository,
 }));
 
-
 describe('Recipes Command Integration Tests', () => {
   let performRecipesValidate: typeof import('./recipes').performRecipesValidate;
   let performRecipesApply: typeof import('./recipes').performRecipesApply;
 
-
   beforeEach(async () => {
     jest.clearAllMocks();
-    
+
     mockHomedir.mockImplementation(() => '/test/home');
     mockTmpdir.mockImplementation(() => '/tmp');
     mockExistsSync.mockImplementation((path) => {
       return true;
     });
-    mockStatSync.mockImplementation(() => ({
-      isDirectory: () => true,
-      isFile: () => false,
-    } as fs.Stats));
+    mockStatSync.mockImplementation(
+      () =>
+        ({
+          isDirectory: () => true,
+          isFile: () => false,
+        }) as fs.Stats
+    );
     mockReaddirSync.mockImplementation(() => []);
     mockReadFileSync.mockImplementation((filePath: string) => {
       if (filePath.includes('prompt.md')) {
@@ -102,26 +110,32 @@ outputs:
       end: jest.fn(),
       on: jest.fn(),
       once: jest.fn(),
-      emit: jest.fn()
+      emit: jest.fn(),
     }));
-    mockReadYaml.mockImplementation(() => Promise.resolve({
-      id: 'test-recipe',
-      category: 'test',
-      summary: 'Test recipe',
-      ecosystems: [{
-        id: 'javascript',
-        default_variant: 'basic',
-        variants: [{
-          id: 'basic',
-          fix_prompt: 'fixes/basic.md'
-        }]
-      }],
-      provides: ['test-functionality'],
-      requires: []
-    }));
+    mockReadYaml.mockImplementation(() =>
+      Promise.resolve({
+        id: 'test-recipe',
+        category: 'test',
+        summary: 'Test recipe',
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [
+              {
+                id: 'basic',
+                fix_prompt: 'fixes/basic.md',
+              },
+            ],
+          },
+        ],
+        provides: ['test-functionality'],
+        requires: [],
+      })
+    );
     mockCloneRepository.mockImplementation(() => Promise.resolve());
     mockRmSync.mockImplementation(() => {});
-    
+
     const recipesModule = await import('./recipes');
     performRecipesValidate = recipesModule.performRecipesValidate;
     performRecipesApply = recipesModule.performRecipesApply;
@@ -132,41 +146,54 @@ outputs:
     jest.restoreAllMocks();
   });
 
-
   it('should detect recipe folder input type', async () => {
     const options = { target: '/path/to/recipe' };
-    
-    mockReadYaml.mockImplementation(() => Promise.resolve({
-      id: 'recipe',
-      category: 'test',
-      summary: 'Test recipe',
-      ecosystems: [{
-        id: 'javascript',
-        default_variant: 'basic',
-        variants: [{
-          id: 'basic',
-          fix_prompt: 'fixes/basic.md'
-        }]
-      }],
-      provides: ['test-functionality'],
-      requires: []
-    }));
-    
+
+    mockReadYaml.mockImplementation(() =>
+      Promise.resolve({
+        id: 'recipe',
+        category: 'test',
+        summary: 'Test recipe',
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [
+              {
+                id: 'basic',
+                fix_prompt: 'fixes/basic.md',
+              },
+            ],
+          },
+        ],
+        provides: ['test-functionality'],
+        requires: [],
+      })
+    );
+
     const mockProgress = jest.fn();
     const result = await performRecipesValidate(options, mockProgress);
-    
+
     expect(result.context.inputType).toBe('recipe-folder');
     expect(result.context.target).toBe('/path/to/recipe');
     expect(result.context.resolvedPath).toBe('/path/to/recipe');
     expect(result.context.recipesValidated).toEqual(['recipe']);
     expect(result.messages).toBeDefined();
-    expect(result.messages.some(msg => msg.type === 'success' && msg.text.includes("Recipe 'recipe' is valid"))).toBe(true);
-    expect(mockProgress).toHaveBeenCalledWith('Validating recipe folder: /path/to/recipe');
+    expect(
+      result.messages.some(
+        (msg) =>
+          msg.type === 'success' &&
+          msg.text.includes("Recipe 'recipe' is valid")
+      )
+    ).toBe(true);
+    expect(mockProgress).toHaveBeenCalledWith(
+      'Validating recipe folder: /path/to/recipe'
+    );
   });
 
   it('should detect library input type', async () => {
     const options = { target: '/path/to/library' };
-    
+
     mockExistsSync.mockImplementation((filePath: string) => {
       if (filePath === '/path/to/library') return true;
       if (filePath === '/path/to/library/metadata.yaml') return false;
@@ -182,80 +209,117 @@ outputs:
       if (filePath === '/path/to/library/recipe2/fixes/basic.md') return true;
       return false;
     });
-    
-    mockStatSync.mockImplementation((filePath: string) => ({
-      isDirectory: () => !filePath.includes('.'),
-      isFile: () => filePath.includes('.')
-    } as fs.Stats));
-    
+
+    mockStatSync.mockImplementation(
+      (filePath: string) =>
+        ({
+          isDirectory: () => !filePath.includes('.'),
+          isFile: () => filePath.includes('.'),
+        }) as fs.Stats
+    );
+
     mockReaddirSync.mockImplementation((dirPath: string) => {
       if (dirPath === '/path/to/library') {
         return ['recipe1', 'recipe2'];
       }
       return [];
     });
-    
+
     mockReadYaml.mockImplementation((filePath: string) => {
       if (filePath.includes('recipe1/metadata.yaml')) {
         return Promise.resolve({
           id: 'recipe1',
           category: 'test',
           summary: 'Recipe 1',
-          ecosystems: [{ id: 'javascript', default_variant: 'basic', variants: [{ id: 'basic', fix_prompt: 'fixes/basic.md' }] }],
+          ecosystems: [
+            {
+              id: 'javascript',
+              default_variant: 'basic',
+              variants: [{ id: 'basic', fix_prompt: 'fixes/basic.md' }],
+            },
+          ],
           provides: ['feature1'],
-          requires: []
+          requires: [],
         });
       } else if (filePath.includes('recipe2/metadata.yaml')) {
         return Promise.resolve({
           id: 'recipe2',
           category: 'test',
           summary: 'Recipe 2',
-          ecosystems: [{ id: 'python', default_variant: 'basic', variants: [{ id: 'basic', fix_prompt: 'fixes/basic.md' }] }],
+          ecosystems: [
+            {
+              id: 'python',
+              default_variant: 'basic',
+              variants: [{ id: 'basic', fix_prompt: 'fixes/basic.md' }],
+            },
+          ],
           provides: ['feature2'],
-          requires: []
+          requires: [],
         });
       }
       return Promise.resolve({});
     });
-    
+
     const mockProgress = jest.fn();
     const result = await performRecipesValidate(options, mockProgress);
-    
+
     expect(result.context.inputType).toBe('library');
     expect(result.context.target).toBe('/path/to/library');
     expect(result.context.resolvedPath).toBe('/path/to/library');
-    expect(result.context.recipesValidated).toEqual(expect.arrayContaining(['recipe1', 'recipe2']));
+    expect(result.context.recipesValidated).toEqual(
+      expect.arrayContaining(['recipe1', 'recipe2'])
+    );
     expect(result.summary).toBeDefined();
     expect(result.summary!.total).toBe(2);
     expect(result.summary!.valid).toBe(2);
-    expect(mockProgress).toHaveBeenCalledWith('This will validate all recipes in the library: /path/to/library');
+    expect(mockProgress).toHaveBeenCalledWith(
+      'This will validate all recipes in the library: /path/to/library'
+    );
   });
 
   it('should handle recipe search in nested directories', async () => {
     const options = { target: 'nested-recipe' };
-    
+
     mockExistsSync.mockImplementation((filePath: string) => {
       if (filePath === '/test/home/.chorenzo/recipes') return true;
       if (filePath === '/test/home/.chorenzo/recipes/lib1') return true;
       if (filePath === '/test/home/.chorenzo/recipes/lib2') return true;
-      if (filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe') return true;
-      if (filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/metadata.yaml') return true;
-      if (filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/prompt.md') return true;
-      if (filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/fixes') return true;
-      if (filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/fixes/basic.md') return true;
+      if (filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe')
+        return true;
+      if (
+        filePath ===
+        '/test/home/.chorenzo/recipes/lib1/nested-recipe/metadata.yaml'
+      )
+        return true;
+      if (
+        filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/prompt.md'
+      )
+        return true;
+      if (filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/fixes')
+        return true;
+      if (
+        filePath ===
+        '/test/home/.chorenzo/recipes/lib1/nested-recipe/fixes/basic.md'
+      )
+        return true;
       return false;
     });
-    
-    mockStatSync.mockImplementation((filePath: string) => ({
-      isDirectory: () => {
-        return filePath === '/test/home/.chorenzo/recipes' ||
-               filePath === '/test/home/.chorenzo/recipes/lib1' ||
-               filePath === '/test/home/.chorenzo/recipes/lib2' ||
-               filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe';
-      },
-      isFile: () => filePath.includes('.')
-    } as fs.Stats));
-    
+
+    mockStatSync.mockImplementation(
+      (filePath: string) =>
+        ({
+          isDirectory: () => {
+            return (
+              filePath === '/test/home/.chorenzo/recipes' ||
+              filePath === '/test/home/.chorenzo/recipes/lib1' ||
+              filePath === '/test/home/.chorenzo/recipes/lib2' ||
+              filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe'
+            );
+          },
+          isFile: () => filePath.includes('.'),
+        }) as fs.Stats
+    );
+
     mockReaddirSync.mockImplementation((dirPath: string) => {
       if (dirPath === '/test/home/.chorenzo/recipes') {
         return ['lib1', 'lib2'];
@@ -266,209 +330,280 @@ outputs:
       }
       return [];
     });
-    
-    mockReadYaml.mockImplementation(() => Promise.resolve({
-      id: 'nested-recipe',
-      category: 'test',
-      summary: 'Nested recipe',
-      ecosystems: [{
-        id: 'javascript',
-        default_variant: 'basic',
-        variants: [{
-          id: 'basic',
-          fix_prompt: 'fixes/basic.md'
-        }]
-      }],
-      provides: ['nested-functionality'],
-      requires: []
-    }));
-    
+
+    mockReadYaml.mockImplementation(() =>
+      Promise.resolve({
+        id: 'nested-recipe',
+        category: 'test',
+        summary: 'Nested recipe',
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [
+              {
+                id: 'basic',
+                fix_prompt: 'fixes/basic.md',
+              },
+            ],
+          },
+        ],
+        provides: ['nested-functionality'],
+        requires: [],
+      })
+    );
+
     const mockProgress = jest.fn();
     const result = await performRecipesValidate(options, mockProgress);
-    
+
     expect(result.context.inputType).toBe('recipe-name');
     expect(result.context.target).toBe('nested-recipe');
     expect(result.context.resolvedPath).toBe('nested-recipe');
     expect(result.context.recipesValidated).toEqual(['nested-recipe']);
     expect(result.messages).toBeDefined();
-    expect(result.messages.some(msg => msg.type === 'success' && msg.text.includes("Recipe 'nested-recipe' is valid"))).toBe(true);
-    expect(mockProgress).toHaveBeenCalledWith('Searching for recipe: nested-recipe');
+    expect(
+      result.messages.some(
+        (msg) =>
+          msg.type === 'success' &&
+          msg.text.includes("Recipe 'nested-recipe' is valid")
+      )
+    ).toBe(true);
+    expect(mockProgress).toHaveBeenCalledWith(
+      'Searching for recipe: nested-recipe'
+    );
   });
 
   it('should detect git URL input type', async () => {
     const options = { target: 'https://github.com/user/recipes.git' };
-    
+
     const mockProgress = jest.fn();
     const result = await performRecipesValidate(options, mockProgress);
-    
+
     expect(result.context.inputType).toBe('git-url');
     expect(result.context.target).toBe('https://github.com/user/recipes.git');
-    expect(result.context.resolvedPath).toBe('https://github.com/user/recipes.git');
+    expect(result.context.resolvedPath).toBe(
+      'https://github.com/user/recipes.git'
+    );
     expect(result.summary).toBeDefined();
     expect(result.summary!.total).toBe(0);
-    expect(mockProgress).toHaveBeenCalledWith('This will clone and validate recipes from: https://github.com/user/recipes.git');
+    expect(mockProgress).toHaveBeenCalledWith(
+      'This will clone and validate recipes from: https://github.com/user/recipes.git'
+    );
     expect(mockProgress).toHaveBeenCalledWith('Cloning repository...');
     expect(mockProgress).toHaveBeenCalledWith('Validating cloned recipes...');
-    expect(mockCloneRepository).toHaveBeenCalledWith('https://github.com/user/recipes.git', expect.stringMatching(/\/tmp\/chorenzo-recipes-user-recipes-\d+/), 'main');
+    expect(mockCloneRepository).toHaveBeenCalledWith(
+      'https://github.com/user/recipes.git',
+      expect.stringMatching(/\/tmp\/chorenzo-recipes-user-recipes-\d+/),
+      'main'
+    );
   });
 
   it('should handle path resolution with tilde', async () => {
     const options = { target: '~/my-recipes/test-recipe' };
-    
-    mockReadYaml.mockImplementation(() => Promise.resolve({
-      id: 'test-recipe',
-      category: 'test',
-      summary: 'Test recipe',
-      ecosystems: [{
-        id: 'javascript',
-        default_variant: 'basic',
-        variants: [{
-          id: 'basic',
-          fix_prompt: 'fixes/basic.md'
-        }]
-      }],
-      provides: ['test-functionality'],
-      requires: []
-    }));
-    
+
+    mockReadYaml.mockImplementation(() =>
+      Promise.resolve({
+        id: 'test-recipe',
+        category: 'test',
+        summary: 'Test recipe',
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [
+              {
+                id: 'basic',
+                fix_prompt: 'fixes/basic.md',
+              },
+            ],
+          },
+        ],
+        provides: ['test-functionality'],
+        requires: [],
+      })
+    );
+
     const mockProgress = jest.fn();
     const result = await performRecipesValidate(options, mockProgress);
-    
-    expect(result.context.target).toBe('~/my-recipes/test-recipe');
-    expect(result.context.resolvedPath).toBe('/test/home/my-recipes/test-recipe');
-    expect(result.context.inputType).toBe('recipe-folder');
-    expect(mockProgress).toHaveBeenCalledWith('Validating recipe folder: /test/home/my-recipes/test-recipe');
-  });
 
+    expect(result.context.target).toBe('~/my-recipes/test-recipe');
+    expect(result.context.resolvedPath).toBe(
+      '/test/home/my-recipes/test-recipe'
+    );
+    expect(result.context.inputType).toBe('recipe-folder');
+    expect(mockProgress).toHaveBeenCalledWith(
+      'Validating recipe folder: /test/home/my-recipes/test-recipe'
+    );
+  });
 
   describe('Recipes Validation', () => {
     it('should throw error when target parameter is missing', async () => {
       const options = { target: '' };
-      
-      await expect(performRecipesValidate(options)).rejects.toThrow('Target parameter is required for validation');
+
+      await expect(performRecipesValidate(options)).rejects.toThrow(
+        'Target parameter is required for validation'
+      );
     });
 
     it('should handle recipe not found by name', async () => {
-    const options = { target: 'nonexistent-recipe' };
-    
-    mockExistsSync.mockImplementation((filePath: string) => {
-      if (filePath === '/test/home/.chorenzo/recipes') return true;
-      if (filePath === '/test/home/.chorenzo/recipes/other-recipe') return true;
-      if (filePath === '/test/home/.chorenzo/recipes/other-recipe/metadata.yaml') return true;
-      return false;
-    });
-    
-    mockStatSync.mockImplementation((filePath: string) => ({
-      isDirectory: () => !filePath.includes('.'),
-      isFile: () => filePath.includes('.')
-    } as fs.Stats));
-    
-    mockReaddirSync.mockImplementation((dirPath: string) => {
-      if (dirPath === '/test/home/.chorenzo/recipes') {
-        return ['other-recipe'];
-      }
-      return [];
-    });
-    
-    await expect(performRecipesValidate(options)).rejects.toThrow("Recipe 'nonexistent-recipe' not found in ~/.chorenzo/recipes");
-  });
+      const options = { target: 'nonexistent-recipe' };
 
-  it('should handle YAML parsing errors', async () => {
-    const options = { target: '/path/to/broken-recipe' };
-    
-    mockReadYaml.mockImplementation(() => {
-      throw new Error('Invalid YAML syntax');
-    });
-    
-    await expect(performRecipesValidate(options)).rejects.toThrow('Failed to parse metadata.yaml: Invalid YAML syntax');
-  });
+      mockExistsSync.mockImplementation((filePath: string) => {
+        if (filePath === '/test/home/.chorenzo/recipes') return true;
+        if (filePath === '/test/home/.chorenzo/recipes/other-recipe')
+          return true;
+        if (
+          filePath === '/test/home/.chorenzo/recipes/other-recipe/metadata.yaml'
+        )
+          return true;
+        return false;
+      });
 
-  it('should handle missing required files', async () => {
-    const options = { target: '/path/to/incomplete-recipe' };
-    
-    mockExistsSync.mockImplementation((filePath: string) => {
-      return filePath === '/path/to/incomplete-recipe' || 
-             filePath.includes('metadata.yaml') ||
-             !filePath.includes('prompt.md');
+      mockStatSync.mockImplementation(
+        (filePath: string) =>
+          ({
+            isDirectory: () => !filePath.includes('.'),
+            isFile: () => filePath.includes('.'),
+          }) as fs.Stats
+      );
+
+      mockReaddirSync.mockImplementation((dirPath: string) => {
+        if (dirPath === '/test/home/.chorenzo/recipes') {
+          return ['other-recipe'];
+        }
+        return [];
+      });
+
+      await expect(performRecipesValidate(options)).rejects.toThrow(
+        "Recipe 'nonexistent-recipe' not found in ~/.chorenzo/recipes"
+      );
     });
-    
-    await expect(performRecipesValidate(options)).rejects.toThrow('Missing prompt.md in recipe');
+
+    it('should handle YAML parsing errors', async () => {
+      const options = { target: '/path/to/broken-recipe' };
+
+      mockReadYaml.mockImplementation(() => {
+        throw new Error('Invalid YAML syntax');
+      });
+
+      await expect(performRecipesValidate(options)).rejects.toThrow(
+        'Failed to parse metadata.yaml: Invalid YAML syntax'
+      );
+    });
+
+    it('should handle missing required files', async () => {
+      const options = { target: '/path/to/incomplete-recipe' };
+
+      mockExistsSync.mockImplementation((filePath: string) => {
+        return (
+          filePath === '/path/to/incomplete-recipe' ||
+          filePath.includes('metadata.yaml') ||
+          !filePath.includes('prompt.md')
+        );
+      });
+
+      await expect(performRecipesValidate(options)).rejects.toThrow(
+        'Missing prompt.md in recipe'
+      );
     });
 
     it('should warn about non-kebab-case recipe ID', async () => {
       const options = { target: '/path/to/snake_case_recipe' };
-      
+
       mockExistsSync.mockImplementation(() => true);
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
       mockReaddirSync.mockImplementation(() => []);
       mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
       });
-      
+
       mockReadYaml.mockResolvedValue({
         id: 'snake_case_recipe',
         category: 'test',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
-        }],
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
         provides: ['test_feature'],
-        requires: []
+        requires: [],
       });
-      
+
       const result = await performRecipesValidate(options);
-      
-      expect(result.messages.some(msg => 
-        msg.type === 'warning' && msg.text.includes('Recipe ID should use kebab-case (lowercase letters, numbers, and hyphens only)')
-      )).toBe(true);
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'warning' &&
+            msg.text.includes(
+              'Recipe ID should use kebab-case (lowercase letters, numbers, and hyphens only)'
+            )
+        )
+      ).toBe(true);
     });
 
     it('should warn about non-kebab-case recipe category', async () => {
       const options = { target: '/path/to/test-recipe' };
-      
+
       mockExistsSync.mockImplementation(() => true);
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
       mockReaddirSync.mockImplementation(() => []);
       mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
       });
-      
+
       mockReadYaml.mockResolvedValue({
         id: 'test-recipe',
         category: 'BadCategory',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
-        }],
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
         provides: ['test_feature'],
-        requires: []
+        requires: [],
       });
-      
-      const result = await performRecipesValidate(options);
-      
-      expect(result.messages.some(msg => 
-        msg.type === 'warning' && msg.text.includes('Recipe category should use kebab-case (lowercase letters, numbers, and hyphens only)')
-      )).toBe(true);
-    });
 
+      const result = await performRecipesValidate(options);
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'warning' &&
+            msg.text.includes(
+              'Recipe category should use kebab-case (lowercase letters, numbers, and hyphens only)'
+            )
+        )
+      ).toBe(true);
+    });
   });
 
   describe('Apply Command Integration', () => {
     beforeEach(() => {
       mockParseYaml.mockReturnValue({
-        plan: { outputs: { 'test_feature.exists': true } }
+        plan: { outputs: { 'test_feature.exists': true } },
       });
       mockReadJson.mockResolvedValue({});
       mockWriteJson.mockResolvedValue(undefined);
@@ -484,7 +619,7 @@ outputs:
         }
         return '';
       });
-      
+
       mockExistsSync.mockImplementation((path) => {
         if (path.includes('analysis.json')) return true;
         if (path.includes('state.json')) return false;
@@ -496,10 +631,13 @@ outputs:
         return true;
       });
 
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
 
       mockReaddirSync.mockImplementation((dirPath) => {
         if (dirPath.includes('.chorenzo/recipes')) {
@@ -513,14 +651,16 @@ outputs:
           return Promise.resolve({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            projects: [{
-              path: '.',
-              language: 'javascript',
-              ecosystem: 'javascript',
-              type: 'web_app',
-              dependencies: [],
-              hasPackageManager: true
-            }]
+            projects: [
+              {
+                path: '.',
+                language: 'javascript',
+                ecosystem: 'javascript',
+                type: 'web_app',
+                dependencies: [],
+                hasPackageManager: true,
+              },
+            ],
           });
         }
         return Promise.resolve({});
@@ -530,13 +670,15 @@ outputs:
         id: 'test-recipe',
         category: 'test',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
-        }],
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
         provides: ['test_feature.exists'],
-        requires: []
+        requires: [],
       });
 
       mockQuery.mockImplementation(async function* () {
@@ -544,13 +686,13 @@ outputs:
           type: 'result',
           subtype: 'success',
           result: 'Execution completed successfully',
-          total_cost_usd: 0.05
+          total_cost_usd: 0.05,
         };
       });
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false
+        progress: false,
       });
 
       expect(result).toBeDefined();
@@ -570,10 +712,13 @@ outputs:
         return true;
       });
 
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
 
       mockReaddirSync.mockImplementation((dirPath) => {
         if (dirPath.includes('.chorenzo/recipes')) {
@@ -583,7 +728,8 @@ outputs:
       });
 
       mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         if (filePath.includes('apply_recipe.md')) {
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
         }
@@ -595,14 +741,16 @@ outputs:
           return Promise.resolve({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            projects: [{
-              path: '.',
-              language: 'javascript',
-              ecosystem: 'javascript',
-              type: 'web_app',
-              dependencies: [],
-              hasPackageManager: true
-            }]
+            projects: [
+              {
+                path: '.',
+                language: 'javascript',
+                ecosystem: 'javascript',
+                type: 'web_app',
+                dependencies: [],
+                hasPackageManager: true,
+              },
+            ],
           });
         }
         return Promise.resolve({});
@@ -612,13 +760,19 @@ outputs:
         id: 'test-recipe',
         category: 'test',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
-        }],
-        provides: ['test_feature.enabled', 'test_feature.legacy_support', 'test_feature.variant'],
-        requires: []
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
+        provides: [
+          'test_feature.enabled',
+          'test_feature.legacy_support',
+          'test_feature.variant',
+        ],
+        requires: [],
       });
 
       mockQuery.mockImplementation(async function* () {
@@ -626,13 +780,13 @@ outputs:
           type: 'result',
           subtype: 'success',
           result: 'Successfully applied recipe',
-          total_cost_usd: 0.05
+          total_cost_usd: 0.05,
         };
       });
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false
+        progress: false,
       });
 
       expect(result.stateUpdated).toBe(true);
@@ -641,7 +795,7 @@ outputs:
         {
           'test_feature.enabled': true,
           'test_feature.legacy_support': false,
-          'test_feature.variant': 'basic'
+          'test_feature.variant': 'basic',
         }
       );
     });
@@ -657,10 +811,13 @@ outputs:
         return true;
       });
 
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
 
       mockReaddirSync.mockImplementation((dirPath) => {
         if (dirPath.includes('.chorenzo/recipes')) {
@@ -670,7 +827,8 @@ outputs:
       });
 
       mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
       });
 
@@ -678,28 +836,32 @@ outputs:
         id: 'test-recipe',
         category: 'test',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
-        }],
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
         provides: ['test_feature.exists'],
-        requires: []
+        requires: [],
       });
 
       mockPerformAnalysis.mockResolvedValue({
         analysis: {
           isMonorepo: false,
           hasWorkspacePackageManager: false,
-          projects: [{
-            path: '.',
-            language: 'javascript',
-            ecosystem: 'javascript',
-            type: 'web_app',
-            dependencies: [],
-            hasPackageManager: true
-          }]
-        }
+          projects: [
+            {
+              path: '.',
+              language: 'javascript',
+              ecosystem: 'javascript',
+              type: 'web_app',
+              dependencies: [],
+              hasPackageManager: true,
+            },
+          ],
+        },
       });
 
       mockQuery.mockImplementation(async function* () {
@@ -707,13 +869,13 @@ outputs:
           type: 'result',
           subtype: 'success',
           result: 'Execution completed successfully',
-          total_cost_usd: 0.05
+          total_cost_usd: 0.05,
         };
       });
 
       await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false
+        progress: false,
       });
 
       expect(mockPerformAnalysis).toHaveBeenCalled();
@@ -730,10 +892,13 @@ outputs:
         return true;
       });
 
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
 
       mockReaddirSync.mockImplementation((dirPath) => {
         if (dirPath.includes('.chorenzo/recipes')) {
@@ -743,14 +908,16 @@ outputs:
       });
 
       mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
-        if (filePath.includes('state.json')) return JSON.stringify({
-          'prerequisite.exists': {
-            value: false,
-            source: 'other-recipe',
-            timestamp: '2024-01-01T00:00:00Z'
-          }
-        });
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('state.json'))
+          return JSON.stringify({
+            'prerequisite.exists': {
+              value: false,
+              source: 'other-recipe',
+              timestamp: '2024-01-01T00:00:00Z',
+            },
+          });
         return '';
       });
 
@@ -758,19 +925,23 @@ outputs:
         id: 'test-recipe',
         category: 'test',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
-        }],
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
         provides: ['test_feature.exists'],
-        requires: [{ key: 'prerequisite.exists', equals: 'true' }]
+        requires: [{ key: 'prerequisite.exists', equals: 'true' }],
       });
 
-      await expect(performRecipesApply({
-        recipe: 'test-recipe',
-        progress: false
-      })).rejects.toThrow('unsatisfied dependencies');
+      await expect(
+        performRecipesApply({
+          recipe: 'test-recipe',
+          progress: false,
+        })
+      ).rejects.toThrow('unsatisfied dependencies');
     });
 
     it('should handle execution failures gracefully', async () => {
@@ -784,10 +955,13 @@ outputs:
         return true;
       });
 
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
 
       mockReaddirSync.mockImplementation((dirPath) => {
         if (dirPath.includes('.chorenzo/recipes')) {
@@ -797,7 +971,8 @@ outputs:
       });
 
       mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
       });
 
@@ -806,14 +981,16 @@ outputs:
           return Promise.resolve({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            projects: [{
-              path: '.',
-              language: 'javascript',
-              ecosystem: 'javascript',
-              type: 'web_app',
-              dependencies: [],
-              hasPackageManager: true
-            }]
+            projects: [
+              {
+                path: '.',
+                language: 'javascript',
+                ecosystem: 'javascript',
+                type: 'web_app',
+                dependencies: [],
+                hasPackageManager: true,
+              },
+            ],
           });
         }
         return Promise.resolve({});
@@ -823,25 +1000,27 @@ outputs:
         id: 'test-recipe',
         category: 'test',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
-        }],
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
         provides: ['test_feature.exists'],
-        requires: []
+        requires: [],
       });
 
       mockQuery.mockImplementation(async function* () {
         yield {
           type: 'result',
-          subtype: 'error'
+          subtype: 'error',
         };
       });
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false
+        progress: false,
       });
 
       expect(result.summary.failedProjects).toBe(1);
@@ -859,10 +1038,13 @@ outputs:
         return true;
       });
 
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
 
       mockReaddirSync.mockImplementation((dirPath) => {
         if (dirPath.includes('.chorenzo/recipes')) {
@@ -872,7 +1054,8 @@ outputs:
       });
 
       mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
       });
 
@@ -881,14 +1064,16 @@ outputs:
           return Promise.resolve({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            projects: [{
-              path: '.',
-              language: 'javascript',
-              ecosystem: 'javascript',
-              type: 'web_app',
-              dependencies: [],
-              hasPackageManager: true
-            }]
+            projects: [
+              {
+                path: '.',
+                language: 'javascript',
+                ecosystem: 'javascript',
+                type: 'web_app',
+                dependencies: [],
+                hasPackageManager: true,
+              },
+            ],
           });
         }
         return Promise.resolve({});
@@ -898,16 +1083,18 @@ outputs:
         id: 'test-recipe',
         category: 'test',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [
-            { id: 'basic', fix_prompt: 'Basic fix' },
-            { id: 'advanced', fix_prompt: 'Advanced fix' }
-          ]
-        }],
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [
+              { id: 'basic', fix_prompt: 'Basic fix' },
+              { id: 'advanced', fix_prompt: 'Advanced fix' },
+            ],
+          },
+        ],
         provides: ['test_feature.exists'],
-        requires: []
+        requires: [],
       });
 
       mockQuery.mockImplementation(async function* () {
@@ -915,14 +1102,14 @@ outputs:
           type: 'result',
           subtype: 'success',
           result: 'Execution completed successfully',
-          total_cost_usd: 0.05
+          total_cost_usd: 0.05,
         };
       });
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
         variant: 'advanced',
-        progress: false
+        progress: false,
       });
 
       expect(result).toBeDefined();
@@ -940,10 +1127,13 @@ outputs:
         return true;
       });
 
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
 
       mockReaddirSync.mockImplementation((dirPath) => {
         if (dirPath.includes('.chorenzo/recipes')) {
@@ -953,7 +1143,8 @@ outputs:
       });
 
       mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
       });
 
@@ -969,7 +1160,7 @@ outputs:
                 ecosystem: 'javascript',
                 type: 'web_app',
                 dependencies: [],
-                hasPackageManager: true
+                hasPackageManager: true,
               },
               {
                 path: 'backend',
@@ -977,9 +1168,9 @@ outputs:
                 ecosystem: 'javascript',
                 type: 'api_server',
                 dependencies: [],
-                hasPackageManager: true
-              }
-            ]
+                hasPackageManager: true,
+              },
+            ],
           });
         }
         return Promise.resolve({});
@@ -989,13 +1180,15 @@ outputs:
         id: 'test-recipe',
         category: 'test',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
-        }],
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
         provides: ['test_feature.exists'],
-        requires: []
+        requires: [],
       });
 
       mockQuery.mockImplementation(async function* () {
@@ -1003,14 +1196,14 @@ outputs:
           type: 'result',
           subtype: 'success',
           result: 'Execution completed successfully',
-          total_cost_usd: 0.05
+          total_cost_usd: 0.05,
         };
       });
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
         project: 'frontend',
-        progress: false
+        progress: false,
       });
 
       expect(result).toBeDefined();
@@ -1029,10 +1222,13 @@ outputs:
         return true;
       });
 
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
 
       mockReaddirSync.mockImplementation((dirPath) => {
         if (dirPath.includes('.chorenzo/recipes')) {
@@ -1042,7 +1238,8 @@ outputs:
       });
 
       mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
       });
 
@@ -1058,7 +1255,7 @@ outputs:
                 ecosystem: 'javascript',
                 type: 'web_app',
                 dependencies: [],
-                hasPackageManager: true
+                hasPackageManager: true,
               },
               {
                 path: 'project2',
@@ -1066,9 +1263,9 @@ outputs:
                 ecosystem: 'javascript',
                 type: 'api_server',
                 dependencies: [],
-                hasPackageManager: true
-              }
-            ]
+                hasPackageManager: true,
+              },
+            ],
           });
         }
         return Promise.resolve({});
@@ -1078,13 +1275,15 @@ outputs:
         id: 'test-recipe',
         category: 'test',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
-        }],
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
         provides: ['test_feature.exists'],
-        requires: []
+        requires: [],
       });
 
       let queryCallCount = 0;
@@ -1094,19 +1293,19 @@ outputs:
           yield {
             type: 'result',
             subtype: 'success',
-            result: 'execution successful'
+            result: 'execution successful',
           };
         } else {
           yield {
             type: 'result',
-            subtype: 'error'
+            subtype: 'error',
           };
         }
       });
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false
+        progress: false,
       });
 
       expect(result.summary.totalProjects).toBe(2);
@@ -1125,10 +1324,13 @@ outputs:
         return true;
       });
 
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
 
       mockReaddirSync.mockImplementation((dirPath) => {
         if (dirPath.includes('.chorenzo/recipes')) {
@@ -1138,14 +1340,15 @@ outputs:
       });
 
       mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
       });
 
       mockReadJson.mockImplementation((path) => {
         if (path.includes('state.json')) {
           return Promise.resolve({
-            'prerequisite.version': '1.0.0'
+            'prerequisite.version': '1.0.0',
           });
         }
         return Promise.resolve({});
@@ -1155,19 +1358,23 @@ outputs:
         id: 'test-recipe',
         category: 'test',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
-        }],
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
         provides: ['test_feature.exists'],
-        requires: [{ key: 'prerequisite.version', equals: '2.0.0' }]
+        requires: [{ key: 'prerequisite.version', equals: '2.0.0' }],
       });
 
-      await expect(performRecipesApply({
-        recipe: 'test-recipe',
-        progress: false
-      })).rejects.toThrow('unsatisfied dependencies');
+      await expect(
+        performRecipesApply({
+          recipe: 'test-recipe',
+          progress: false,
+        })
+      ).rejects.toThrow('unsatisfied dependencies');
     });
 
     it('should handle recipe not found', async () => {
@@ -1178,10 +1385,13 @@ outputs:
         return false;
       });
 
-      mockStatSync.mockImplementation((path) => ({
-        isDirectory: () => !path.includes('.'),
-        isFile: () => path.includes('.')
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        (path) =>
+          ({
+            isDirectory: () => !path.includes('.'),
+            isFile: () => path.includes('.'),
+          }) as fs.Stats
+      );
 
       mockReaddirSync.mockImplementation((dirPath) => {
         if (dirPath === '/test/home/.chorenzo/recipes') {
@@ -1190,12 +1400,13 @@ outputs:
         return [];
       });
 
-      await expect(performRecipesApply({
-        recipe: 'nonexistent-recipe',
-        progress: false
-      })).rejects.toThrow("Recipe 'nonexistent-recipe' not found");
+      await expect(
+        performRecipesApply({
+          recipe: 'nonexistent-recipe',
+          progress: false,
+        })
+      ).rejects.toThrow("Recipe 'nonexistent-recipe' not found");
     });
-
 
     it('should handle no applicable projects', async () => {
       mockExistsSync.mockImplementation((path) => {
@@ -1208,10 +1419,13 @@ outputs:
         return true;
       });
 
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
 
       mockReaddirSync.mockImplementation((dirPath) => {
         if (dirPath.includes('.chorenzo/recipes')) {
@@ -1221,7 +1435,8 @@ outputs:
       });
 
       mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
       });
 
@@ -1230,14 +1445,16 @@ outputs:
           return Promise.resolve({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            projects: [{
-              path: '.',
-              language: 'python',
-              ecosystem: 'python',
-              type: 'script',
-              dependencies: [],
-              hasPackageManager: true
-            }]
+            projects: [
+              {
+                path: '.',
+                language: 'python',
+                ecosystem: 'python',
+                type: 'script',
+                dependencies: [],
+                hasPackageManager: true,
+              },
+            ],
           });
         }
         return Promise.resolve({});
@@ -1247,19 +1464,23 @@ outputs:
         id: 'test-recipe',
         category: 'test',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
-        }],
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
         provides: ['test_feature.exists'],
-        requires: []
+        requires: [],
       });
 
-      await expect(performRecipesApply({
-        recipe: 'test-recipe',
-        progress: false
-      })).rejects.toThrow('No applicable projects found');
+      await expect(
+        performRecipesApply({
+          recipe: 'test-recipe',
+          progress: false,
+        })
+      ).rejects.toThrow('No applicable projects found');
     });
 
     it('should handle corrupted analysis file', async () => {
@@ -1273,10 +1494,13 @@ outputs:
         return true;
       });
 
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
 
       mockReaddirSync.mockImplementation((dirPath) => {
         if (dirPath.includes('.chorenzo/recipes')) {
@@ -1286,7 +1510,8 @@ outputs:
       });
 
       mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
       });
 
@@ -1301,28 +1526,32 @@ outputs:
         id: 'test-recipe',
         category: 'test',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
-        }],
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
         provides: ['test_feature.exists'],
-        requires: []
+        requires: [],
       });
 
       mockPerformAnalysis.mockResolvedValue({
         analysis: {
           isMonorepo: false,
           hasWorkspacePackageManager: false,
-          projects: [{
-            path: '.',
-            language: 'javascript',
-            ecosystem: 'javascript',
-            type: 'web_app',
-            dependencies: [],
-            hasPackageManager: true
-          }]
-        }
+          projects: [
+            {
+              path: '.',
+              language: 'javascript',
+              ecosystem: 'javascript',
+              type: 'web_app',
+              dependencies: [],
+              hasPackageManager: true,
+            },
+          ],
+        },
       });
 
       mockQuery.mockImplementation(async function* () {
@@ -1330,13 +1559,13 @@ outputs:
           type: 'result',
           subtype: 'success',
           result: 'Execution completed successfully',
-          total_cost_usd: 0.05
+          total_cost_usd: 0.05,
         };
       });
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false
+        progress: false,
       });
 
       expect(mockPerformAnalysis).toHaveBeenCalled();
@@ -1354,10 +1583,13 @@ outputs:
         return true;
       });
 
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
 
       mockReaddirSync.mockImplementation((dirPath) => {
         if (dirPath.includes('.chorenzo/recipes')) {
@@ -1367,7 +1599,8 @@ outputs:
       });
 
       mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
       });
 
@@ -1375,24 +1608,35 @@ outputs:
         id: 'test-recipe',
         category: 'test',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
-        }],
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
         provides: ['test_feature.exists'],
-        requires: []
+        requires: [],
       });
 
       mockPerformAnalysis.mockResolvedValue({
         analysis: null,
-        metadata: { error: 'Analysis failed', type: 'result', subtype: 'error', costUsd: 0, turns: 0, durationSeconds: 0 }
+        metadata: {
+          error: 'Analysis failed',
+          type: 'result',
+          subtype: 'error',
+          costUsd: 0,
+          turns: 0,
+          durationSeconds: 0,
+        },
       });
 
-      await expect(performRecipesApply({
-        recipe: 'test-recipe',
-        progress: false
-      })).rejects.toThrow('Analysis failed');
+      await expect(
+        performRecipesApply({
+          recipe: 'test-recipe',
+          progress: false,
+        })
+      ).rejects.toThrow('Analysis failed');
     });
 
     it('should handle recipe application failure', async () => {
@@ -1406,10 +1650,13 @@ outputs:
         return true;
       });
 
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
 
       mockReaddirSync.mockImplementation((dirPath) => {
         if (dirPath.includes('.chorenzo/recipes')) {
@@ -1419,7 +1666,8 @@ outputs:
       });
 
       mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
       });
 
@@ -1428,14 +1676,16 @@ outputs:
           return Promise.resolve({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            projects: [{
-              path: '.',
-              language: 'javascript',
-              ecosystem: 'javascript',
-              type: 'web_app',
-              dependencies: [],
-              hasPackageManager: true
-            }]
+            projects: [
+              {
+                path: '.',
+                language: 'javascript',
+                ecosystem: 'javascript',
+                type: 'web_app',
+                dependencies: [],
+                hasPackageManager: true,
+              },
+            ],
           });
         }
         return Promise.resolve({});
@@ -1445,32 +1695,36 @@ outputs:
         id: 'test-recipe',
         category: 'test',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
-        }],
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
         provides: ['test_feature.exists'],
-        requires: []
+        requires: [],
       });
 
       mockQuery.mockImplementation(async function* () {
         yield {
           type: 'result',
-          subtype: 'error'
+          subtype: 'error',
         };
       });
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false
+        progress: false,
       });
-      
+
       expect(result.summary.totalProjects).toBe(1);
       expect(result.summary.successfulProjects).toBe(0);
       expect(result.summary.failedProjects).toBe(1);
       expect(result.executionResults[0].success).toBe(false);
-      expect(result.executionResults[0].error).toContain('Recipe application failed during execution');
+      expect(result.executionResults[0].error).toContain(
+        'Recipe application failed during execution'
+      );
     });
 
     it('should handle variant not found', async () => {
@@ -1484,10 +1738,13 @@ outputs:
         return true;
       });
 
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
 
       mockReaddirSync.mockImplementation((dirPath) => {
         if (dirPath.includes('.chorenzo/recipes')) {
@@ -1497,7 +1754,8 @@ outputs:
       });
 
       mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
       });
 
@@ -1506,14 +1764,16 @@ outputs:
           return Promise.resolve({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            projects: [{
-              path: '.',
-              language: 'javascript',
-              ecosystem: 'javascript',
-              type: 'web_app',
-              dependencies: [],
-              hasPackageManager: true
-            }]
+            projects: [
+              {
+                path: '.',
+                language: 'javascript',
+                ecosystem: 'javascript',
+                type: 'web_app',
+                dependencies: [],
+                hasPackageManager: true,
+              },
+            ],
           });
         }
         return Promise.resolve({});
@@ -1523,26 +1783,30 @@ outputs:
         id: 'test-recipe',
         category: 'test',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
-        }],
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
         provides: ['test_feature.exists'],
-        requires: []
+        requires: [],
       });
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
         variant: 'nonexistent',
-        progress: false
+        progress: false,
       });
-      
+
       expect(result.summary.totalProjects).toBe(1);
       expect(result.summary.successfulProjects).toBe(0);
       expect(result.summary.failedProjects).toBe(1);
       expect(result.executionResults[0].success).toBe(false);
-      expect(result.executionResults[0].error).toContain('not found for ecosystem');
+      expect(result.executionResults[0].error).toContain(
+        'not found for ecosystem'
+      );
     });
 
     it('should handle state file read errors', async () => {
@@ -1557,10 +1821,13 @@ outputs:
         return true;
       });
 
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
 
       mockReaddirSync.mockImplementation((dirPath) => {
         if (dirPath.includes('.chorenzo/recipes')) {
@@ -1570,7 +1837,8 @@ outputs:
       });
 
       mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
       });
 
@@ -1579,14 +1847,16 @@ outputs:
           return Promise.resolve({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            projects: [{
-              path: '.',
-              language: 'javascript',
-              ecosystem: 'javascript',
-              type: 'web_app',
-              dependencies: [],
-              hasPackageManager: true
-            }]
+            projects: [
+              {
+                path: '.',
+                language: 'javascript',
+                ecosystem: 'javascript',
+                type: 'web_app',
+                dependencies: [],
+                hasPackageManager: true,
+              },
+            ],
           });
         }
         if (path.includes('state.json')) {
@@ -1599,19 +1869,23 @@ outputs:
         id: 'test-recipe',
         category: 'test',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
-        }],
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
         provides: ['test_feature.exists'],
-        requires: []
+        requires: [],
       });
 
-      await expect(performRecipesApply({
-        recipe: 'test-recipe',
-        progress: false
-      })).rejects.toThrow('Failed to read state file');
+      await expect(
+        performRecipesApply({
+          recipe: 'test-recipe',
+          progress: false,
+        })
+      ).rejects.toThrow('Failed to read state file');
     });
 
     it('should handle empty recipe application result', async () => {
@@ -1625,10 +1899,13 @@ outputs:
         return true;
       });
 
-      mockStatSync.mockImplementation(() => ({
-        isDirectory: () => true,
-        isFile: () => false,
-      } as fs.Stats));
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
 
       mockReaddirSync.mockImplementation((dirPath) => {
         if (dirPath.includes('.chorenzo/recipes')) {
@@ -1638,7 +1915,8 @@ outputs:
       });
 
       mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
       });
 
@@ -1647,14 +1925,16 @@ outputs:
           return Promise.resolve({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            projects: [{
-              path: '.',
-              language: 'javascript',
-              ecosystem: 'javascript',
-              type: 'web_app',
-              dependencies: [],
-              hasPackageManager: true
-            }]
+            projects: [
+              {
+                path: '.',
+                language: 'javascript',
+                ecosystem: 'javascript',
+                type: 'web_app',
+                dependencies: [],
+                hasPackageManager: true,
+              },
+            ],
           });
         }
         return Promise.resolve({});
@@ -1664,28 +1944,30 @@ outputs:
         id: 'test-recipe',
         category: 'test',
         summary: 'Test recipe',
-        ecosystems: [{
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
-        }],
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
         provides: ['test_feature.exists'],
-        requires: []
+        requires: [],
       });
 
       mockQuery.mockImplementation(async function* () {
         yield {
           type: 'result',
           subtype: 'success',
-          result: ''
+          result: '',
         };
       });
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false
+        progress: false,
       });
-      
+
       expect(result.summary.totalProjects).toBe(1);
       expect(result.summary.successfulProjects).toBe(1);
       expect(result.summary.failedProjects).toBe(0);

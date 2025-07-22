@@ -1,7 +1,10 @@
 import { simpleGit } from 'simple-git';
 
 export class GitError extends Error {
-  constructor(message: string, public readonly code: string) {
+  constructor(
+    message: string,
+    public readonly code: string
+  ) {
     super(message);
     this.name = 'GitError';
   }
@@ -9,7 +12,7 @@ export class GitError extends Error {
 
 export async function checkGitAvailable(): Promise<void> {
   const git = simpleGit();
-  
+
   try {
     await git.raw(['--version']);
   } catch (error) {

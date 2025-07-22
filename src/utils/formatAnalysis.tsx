@@ -1,27 +1,46 @@
 import React from 'react';
 import { Text, Box } from 'ink';
-import { WorkspaceAnalysis, ProjectAnalysis, CiCdSystem } from '../types/analysis';
+import {
+  WorkspaceAnalysis,
+  ProjectAnalysis,
+  CiCdSystem,
+} from '../types/analysis';
 
-export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({ analysis }) => {
+export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({
+  analysis,
+}) => {
   const { isMonorepo, workspaceEcosystem, projects, ciCd } = analysis;
 
   if (isMonorepo) {
     return (
       <Box flexDirection="column">
-        <Text color="blue" bold>📁 Workspace Structure</Text>
+        <Text color="blue" bold>
+          📁 Workspace Structure
+        </Text>
         <Text>├─ Type: Monorepo</Text>
-        {workspaceEcosystem ? <Text>└─ Ecosystem: {capitalize(workspaceEcosystem)}</Text> : <Text>└─ Ecosystem: Unknown</Text>}
-        
+        {workspaceEcosystem ? (
+          <Text>└─ Ecosystem: {capitalize(workspaceEcosystem)}</Text>
+        ) : (
+          <Text>└─ Ecosystem: Unknown</Text>
+        )}
+
         <Box marginTop={1}>
-          <Text color="blue" bold>📦 Projects ({projects.length})</Text>
+          <Text color="blue" bold>
+            📦 Projects ({projects.length})
+          </Text>
         </Box>
         {projects.map((project, index) => (
           <Box key={project.path} flexDirection="column">
-            <Text>{index === projects.length - 1 ? '└─' : '├─'} {project.path}</Text>
+            <Text>
+              {index === projects.length - 1 ? '└─' : '├─'} {project.path}
+            </Text>
             <Box flexDirection="column" marginLeft={3}>
               <Text>├─ Type: {formatProjectType(project.type)}</Text>
               <Text>├─ Language: {capitalize(project.language)}</Text>
-              <Text>├─ Framework: {project.framework ? capitalize(project.framework) : 'None'}</Text>
+              <Text>
+                ├─ Framework:{' '}
+                {project.framework ? capitalize(project.framework) : 'None'}
+              </Text>
               <Text>├─ Docker: {project.dockerized ? 'Yes' : 'No'}</Text>
               <Text>└─ CI/CD: {formatCiCd(ciCd)}</Text>
             </Box>
@@ -33,10 +52,15 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({ anal
     const project = projects[0];
     return (
       <Box flexDirection="column">
-        <Text color="blue" bold>📁 Project Analysis</Text>
+        <Text color="blue" bold>
+          📁 Project Analysis
+        </Text>
         <Text>Type: {formatProjectType(project.type)}</Text>
         <Text>Language: {capitalize(project.language)}</Text>
-        <Text>Framework: {project.framework ? capitalize(project.framework) : 'None'}</Text>
+        <Text>
+          Framework:{' '}
+          {project.framework ? capitalize(project.framework) : 'None'}
+        </Text>
         <Text>Docker: {project.dockerized ? 'Yes' : 'No'}</Text>
         <Text>CI/CD: {formatCiCd(ciCd)}</Text>
         <Text>Package Manager: {getPackageManager(project)}</Text>
@@ -74,16 +98,16 @@ function getPackageManager(project: ProjectAnalysis): string {
 
 function formatCiCd(ciCd?: CiCdSystem): string {
   if (!ciCd || ciCd === 'none') return 'None';
-  
+
   return ciCd
     .split('_')
-    .map(word => {
+    .map((word) => {
       const specialCases: Record<string, string> = {
-        'ci': 'CI',
-        'cd': 'CD',
-        'devops': 'DevOps'
+        ci: 'CI',
+        cd: 'CD',
+        devops: 'DevOps',
       };
-      
+
       return specialCases[word] || word.charAt(0).toUpperCase() + word.slice(1);
     })
     .join(' ');

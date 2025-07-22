@@ -2,7 +2,10 @@ import * as fs from 'fs';
 import { parse as yamlParse, stringify as yamlStringify } from 'yaml';
 
 export class YamlError extends Error {
-  constructor(message: string, public readonly code: string) {
+  constructor(
+    message: string,
+    public readonly code: string
+  ) {
     super(message);
     this.name = 'YamlError';
   }

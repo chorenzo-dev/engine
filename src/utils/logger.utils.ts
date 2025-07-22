@@ -11,10 +11,10 @@ class Logger {
     if (!fs.existsSync(logPath)) {
       return;
     }
-    
+
     const stats = fs.statSync(logPath);
     const fileSizeMB = stats.size / (1024 * 1024);
-    
+
     if (fileSizeMB > this.MAX_LOG_SIZE_MB) {
       const archivedPath = workspaceConfig.getArchivedLogPath();
       fs.renameSync(logPath, archivedPath);
@@ -26,8 +26,10 @@ class Logger {
       return;
     }
 
-    const isTest = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
-    
+    const isTest =
+      process.env.NODE_ENV === 'test' ||
+      process.env.JEST_WORKER_ID !== undefined;
+
     if (isTest) {
       this.instance = pino({ level: 'silent' });
       return;
@@ -37,7 +39,7 @@ class Logger {
       const logPath = workspaceConfig.getLogPath();
       fs.mkdirSync(path.dirname(logPath), { recursive: true });
       this.rotateLogIfNeeded(logPath);
-      
+
       const logStream = pino.transport({
         target: 'pino-pretty',
         options: {
@@ -45,15 +47,20 @@ class Logger {
           colorize: false,
           translateTime: 'yyyy-mm-dd HH:MM:ss',
           ignore: 'pid,hostname',
-          append: true
-        }
+          append: true,
+        },
       });
 
-      this.instance = pino({
-        level: 'info'
-      }, logStream);
+      this.instance = pino(
+        {
+          level: 'info',
+        },
+        logStream
+      );
     } catch (error) {
-      throw new Error(`Failed to initialize Logger: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to initialize Logger: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 

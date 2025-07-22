@@ -1,5 +1,5 @@
-import { defineConfig } from 'tsup'
-import { copy } from 'esbuild-plugin-copy'
+import { defineConfig } from 'tsup';
+import { copy } from 'esbuild-plugin-copy';
 
 export default defineConfig({
   entry: ['src/main.ts'],
@@ -10,7 +10,7 @@ export default defineConfig({
   sourcemap: true,
   external: ['commander', '@anthropic-ai/claude-code', 'ink', 'react'],
   banner: {
-    js: '#!/usr/bin/env node'
+    js: '#!/usr/bin/env node',
   },
   esbuildPlugins: [
     copy({
@@ -22,8 +22,8 @@ export default defineConfig({
         {
           from: ['./src/resources/**/*'],
           to: ['./resources'],
-        }
-      ]
-    })
-  ]
-})
+        },
+      ],
+    }),
+  ],
+});

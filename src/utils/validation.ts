@@ -32,11 +32,14 @@ export function loadGitIgnorePatternsForDir(
         patterns.add(line);
       }
     } catch (error) {
-      Logger.warn({
-        event: 'gitignore_read_failed',
-        path: gitignorePath,
-        error: error instanceof Error ? error.message : String(error)
-      }, 'Failed to read .gitignore file');
+      Logger.warn(
+        {
+          event: 'gitignore_read_failed',
+          path: gitignorePath,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Failed to read .gitignore file'
+      );
     }
   }
 

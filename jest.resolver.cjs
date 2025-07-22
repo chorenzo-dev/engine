@@ -4,7 +4,7 @@ const { existsSync } = require('fs');
 module.exports = (request, options) => {
   if (request.startsWith('./') || request.startsWith('../')) {
     const basedir = options.basedir;
-    
+
     try {
       return options.defaultResolver(request, options);
     } catch (error) {
@@ -12,15 +12,15 @@ module.exports = (request, options) => {
       if (existsSync(tsPath)) {
         return tsPath;
       }
-      
+
       const tsxPath = resolve(basedir, request + '.tsx');
       if (existsSync(tsxPath)) {
         return tsxPath;
       }
-      
+
       throw error;
     }
   }
-  
+
   return options.defaultResolver(request, options);
 };

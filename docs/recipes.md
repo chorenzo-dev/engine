@@ -22,23 +22,23 @@ recipe_id/
 Minimal manifest declaring the recipe's identity, supported ecosystems, and dependencies:
 
 ```yaml
-id: recipe_id                # Must match folder name (kebab-case)
-category: category_id        # Grouping for UI display
+id: recipe_id # Must match folder name (kebab-case)
+category: category_id # Grouping for UI display
 summary: One-sentence description of what this recipe does.
 
-ecosystems:                  # Languages/runtimes this recipe supports
+ecosystems: # Languages/runtimes this recipe supports
   - id: javascript
     default_variant: prettier
     variants:
       - id: prettier
         fix_prompt: fixes/javascript_prettier.md
 
-provides:                    # Facts this recipe outputs
+provides: # Facts this recipe outputs
   - recipe_id.exists
   - recipe_id.configured
   - recipe_id.variant
 
-requires: []                 # Dependencies (array of {key: fact, equals: value})
+requires: [] # Dependencies (array of {key: fact, equals: value})
 ```
 
 ### prompt.md
@@ -47,18 +47,20 @@ Single unified prompt file with three required sections:
 
 ```markdown
 ## Goal
+
 One-sentence goal describing what this recipe accomplishes.
 
 ## Investigation
+
 1. **Step one**
    - Specific, actionable instruction
    - Tool-agnostic discovery commands
-   
 2. **Step two**
    - Focus on detection, not analysis
    - No vague instructions like "examine files"
 
 ## Expected Output
+
 - <recipe_id>.key1: Clear description of what this boolean/string represents
 - <recipe_id>.key2: Another fact this recipe will emit
 ```
@@ -73,12 +75,15 @@ Variant-specific implementation instructions:
 # Setting up [Tool Name]
 
 ## Installation
+
 Concrete commands to install the tool.
 
 ## Configuration
+
 Example configuration with sensible defaults.
 
 ## Verification
+
 How to verify the tool is working correctly.
 ```
 

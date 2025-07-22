@@ -6,9 +6,7 @@ export interface ProjectIdentifier {
   type: 'remote' | 'local';
 }
 
-export function findGitRoot(
-  startPath: string = process.cwd()
-): string {
+export function findGitRoot(startPath: string = process.cwd()): string {
   let currentPath = path.resolve(startPath);
 
   while (currentPath !== path.dirname(currentPath)) {
@@ -39,7 +37,7 @@ export function findGitRoot(
 export function parseGitConfig(gitRoot: string): string | null {
   const gitPath = path.join(gitRoot, '.git');
   let gitConfigPath: string;
-  
+
   try {
     const stat = fs.statSync(gitPath);
     if (stat.isFile()) {

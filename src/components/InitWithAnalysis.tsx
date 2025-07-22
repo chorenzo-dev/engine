@@ -29,8 +29,14 @@ interface State {
   last_analysis?: LastAnalysis;
 }
 
-export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onComplete, onError }) => {
-  const [phase, setPhase] = useState<'init' | 'confirm' | 'analysis' | 'complete'>('init');
+export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
+  options,
+  onComplete,
+  onError,
+}) => {
+  const [phase, setPhase] = useState<
+    'init' | 'confirm' | 'analysis' | 'complete'
+  >('init');
   const [initComplete, setInitComplete] = useState(false);
   const [step, setStep] = useState<string>('');
   const [analysisResult, setAnalysisResult] = useState<any>(null);
@@ -42,29 +48,32 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
 
   const shouldUseInput = options.progress !== false && isRawModeSupported;
 
-  useInput((input, key) => {
-    if (phase === 'confirm') {
-      if (key.return) {
-        const response = userResponse.toLowerCase();
-        if (response === 'y' || response === 'yes') {
-          setPhase('analysis');
-          setAnalysisStartTime(Date.now());
-        } else {
-          setPhase('complete');
-          onComplete();
+  useInput(
+    (input, key) => {
+      if (phase === 'confirm') {
+        if (key.return) {
+          const response = userResponse.toLowerCase();
+          if (response === 'y' || response === 'yes') {
+            setPhase('analysis');
+            setAnalysisStartTime(Date.now());
+          } else {
+            setPhase('complete');
+            onComplete();
+          }
+          setUserResponse('');
+        } else if (key.backspace) {
+          setUserResponse((prev) => prev.slice(0, -1));
+        } else if (input) {
+          setUserResponse((prev) => prev + input);
         }
-        setUserResponse('');
-      } else if (key.backspace) {
-        setUserResponse(prev => prev.slice(0, -1));
-      } else if (input) {
-        setUserResponse(prev => prev + input);
+      } else if (phase === 'analysis' && key.ctrl && input === 'c') {
+        setAnalysisAborted(true);
+        setPhase('complete');
+        onComplete();
       }
-    } else if (phase === 'analysis' && key.ctrl && input === 'c') {
-      setAnalysisAborted(true);
-      setPhase('complete');
-      onComplete();
-    }
-  }, { isActive: shouldUseInput });
+    },
+    { isActive: shouldUseInput }
+  );
 
   useEffect(() => {
     if (phase === 'init' && !initComplete) {
@@ -74,7 +83,7 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
             setStep(step);
           });
           setInitComplete(true);
-          
+
           if (options.noAnalyze) {
             setPhase('complete');
             onComplete();
@@ -90,7 +99,16 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
       };
       runInit();
     }
-  }, [phase, initComplete, options.reset, options.noAnalyze, options.yes, shouldUseInput, onComplete, onError]);
+  }, [
+    phase,
+    initComplete,
+    options.reset,
+    options.noAnalyze,
+    options.yes,
+    shouldUseInput,
+    onComplete,
+    onError,
+  ]);
 
   useEffect(() => {
     if (phase === 'analysis' && !analysisAborted) {
@@ -100,12 +118,9 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
             setStep(step);
           });
           setAnalysisResult(result);
-          
-          await Promise.all([
-            updateGitignore(),
-            updateGlobalState()
-          ]);
-          
+
+          await Promise.all([updateGitignore(), updateGlobalState()]);
+
           setPhase('complete');
           onComplete(result);
         } catch (err) {
@@ -125,15 +140,14 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
     }
   }, [phase, analysisStartTime]);
 
-
   const updateGitignore = async () => {
     const gitignorePath = path.join(process.cwd(), '.gitignore');
     let gitignoreContent = '';
-    
+
     if (fs.existsSync(gitignorePath)) {
       gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
     }
-    
+
     if (!gitignoreContent.includes('/.chorenzo/')) {
       gitignoreContent += gitignoreContent.endsWith('\n') ? '' : '\n';
       gitignoreContent += '/.chorenzo/\n';
@@ -144,7 +158,7 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
   const updateGlobalState = async () => {
     const statePath = path.join(os.homedir(), '.chorenzo', 'state.json');
     let state: State = { last_checked: '1970-01-01T00:00:00Z' };
-    
+
     if (fs.existsSync(statePath)) {
       try {
         state = await readJson<State>(statePath);
@@ -152,12 +166,12 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
         console.warn('Failed to read existing state file, using defaults');
       }
     }
-    
+
     state.last_analysis = {
       workspace: path.resolve(process.cwd()),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
-    
+
     await writeJson(statePath, state);
   };
 
@@ -173,7 +187,9 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
     return (
       <Box flexDirection="column">
         <Text color="green">✅ Initialization complete!</Text>
-        <Text color="blue">🛈 Run code-base analysis now? (y/N) {userResponse}</Text>
+        <Text color="blue">
+          🛈 Run code-base analysis now? (y/N) {userResponse}
+        </Text>
       </Box>
     );
   }
@@ -185,7 +201,9 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({ options, onC
         <Text color="blue">🔍 Analyzing workspace...</Text>
         <Text color="gray">{step}</Text>
         {showLongRunningMessage && (
-          <Text color="yellow">⧗ Still working... (Ctrl-C to abort analysis and continue)</Text>
+          <Text color="yellow">
+            ⧗ Still working... (Ctrl-C to abort analysis and continue)
+          </Text>
         )}
       </Box>
     );

@@ -9,8 +9,14 @@ interface ApplyProgressProps {
   onError: (error: Error) => void;
 }
 
-export const ApplyProgress: React.FC<ApplyProgressProps> = ({ options, onComplete, onError }) => {
-  const [currentStep, setCurrentStep] = useState('Initializing recipe application...');
+export const ApplyProgress: React.FC<ApplyProgressProps> = ({
+  options,
+  onComplete,
+  onError,
+}) => {
+  const [currentStep, setCurrentStep] = useState(
+    'Initializing recipe application...'
+  );
   const [validationMessages, setValidationMessages] = useState<string[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,17 +31,22 @@ export const ApplyProgress: React.FC<ApplyProgressProps> = ({ options, onComplet
           },
           (type, message) => {
             if (type === 'success' || type === 'error' || type === 'warning') {
-              setValidationMessages(prev => [...prev.slice(-4), `${getIcon(type)} ${message}`]);
+              setValidationMessages((prev) => [
+                ...prev.slice(-4),
+                `${getIcon(type)} ${message}`,
+              ]);
             }
           }
         );
-        
+
         setIsComplete(true);
-        setCurrentStep(`Recipe applied successfully! (${result.summary.successfulProjects}/${result.summary.totalProjects} projects)`);
+        setCurrentStep(
+          `Recipe applied successfully! (${result.summary.successfulProjects}/${result.summary.totalProjects} projects)`
+        );
         onComplete(result);
-        
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        const errorMessage =
+          err instanceof Error ? err.message : 'Unknown error';
         setError(errorMessage);
         setCurrentStep('Recipe application failed');
         onError(err instanceof Error ? err : new Error(errorMessage));
@@ -47,10 +58,14 @@ export const ApplyProgress: React.FC<ApplyProgressProps> = ({ options, onComplet
 
   const getIcon = (type: string) => {
     switch (type) {
-      case 'success': return '✅';
-      case 'error': return '❌';
-      case 'warning': return '⚠️';
-      default: return 'ℹ️';
+      case 'success':
+        return '✅';
+      case 'error':
+        return '❌';
+      case 'warning':
+        return '⚠️';
+      default:
+        return 'ℹ️';
     }
   };
 
@@ -71,7 +86,9 @@ export const ApplyProgress: React.FC<ApplyProgressProps> = ({ options, onComplet
       {validationMessages.length > 0 && (
         <Box flexDirection="column" marginTop={1}>
           {validationMessages.map((msg, i) => (
-            <Text key={i} dimColor>{msg}</Text>
+            <Text key={i} dimColor>
+              {msg}
+            </Text>
           ))}
         </Box>
       )}

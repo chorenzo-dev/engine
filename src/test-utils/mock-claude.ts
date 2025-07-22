@@ -8,12 +8,12 @@ export function mockClaudeAnalysis(analysisResult: WorkspaceAnalysis) {
       subtype: 'success',
       result: JSON.stringify(analysisResult),
       total_cost_usd: 0.01,
-      num_turns: 1
+      num_turns: 1,
     };
   });
 
   jest.doMock('@anthropic-ai/claude-code', () => ({
-    query: mockQuery
+    query: mockQuery,
   }));
 
   return mockQuery;

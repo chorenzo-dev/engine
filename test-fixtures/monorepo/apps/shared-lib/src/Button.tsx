@@ -6,16 +6,13 @@ interface ButtonProps {
   variant?: 'primary' | 'secondary';
 }
 
-export const Button: React.FC<ButtonProps> = ({ 
-  children, 
-  onClick, 
-  variant = 'primary' 
+export const Button: React.FC<ButtonProps> = ({
+  children,
+  onClick,
+  variant = 'primary',
 }) => {
   return (
-    <button 
-      onClick={onClick}
-      className={`btn btn-${variant}`}
-    >
+    <button onClick={onClick} className={`btn btn-${variant}`}>
       {children}
     </button>
   );

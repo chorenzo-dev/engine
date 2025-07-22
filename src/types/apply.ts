@@ -24,7 +24,6 @@ export interface DependencyValidationResult {
   }>;
 }
 
-
 export interface ExecutionResult {
   projectPath: string;
   recipeId: string;
@@ -51,11 +50,17 @@ export interface ApplyRecipeResult {
 export interface ApplyResult extends ApplyRecipeResult {}
 
 export class ApplyError extends Error {
-  constructor(message: string, public readonly code: string) {
+  constructor(
+    message: string,
+    public readonly code: string
+  ) {
     super(message);
     this.name = 'ApplyError';
   }
 }
 
 export type ApplyProgressCallback = (step: string) => void;
-export type ApplyValidationCallback = (type: 'info' | 'success' | 'error' | 'warning', message: string) => void;
+export type ApplyValidationCallback = (
+  type: 'info' | 'success' | 'error' | 'warning',
+  message: string
+) => void;

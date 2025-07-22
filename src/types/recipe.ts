@@ -1,4 +1,8 @@
-import { parseRecipeFromDirectory, parseRecipeLibraryFromDirectory, validateRecipe } from '../utils/recipe.utils';
+import {
+  parseRecipeFromDirectory,
+  parseRecipeLibraryFromDirectory,
+  validateRecipe,
+} from '../utils/recipe.utils';
 
 export interface RecipeVariant {
   id: string;
@@ -85,16 +89,20 @@ export class Recipe {
   }
 
   hasEcosystem(ecosystemId: string): boolean {
-    return this.metadata.ecosystems.some(eco => eco.id === ecosystemId);
+    return this.metadata.ecosystems.some((eco) => eco.id === ecosystemId);
   }
 
   getVariantsForEcosystem(ecosystemId: string): RecipeVariant[] {
-    const ecosystem = this.metadata.ecosystems.find(eco => eco.id === ecosystemId);
+    const ecosystem = this.metadata.ecosystems.find(
+      (eco) => eco.id === ecosystemId
+    );
     return ecosystem?.variants || [];
   }
 
   getDefaultVariant(ecosystemId: string): string | undefined {
-    const ecosystem = this.metadata.ecosystems.find(eco => eco.id === ecosystemId);
+    const ecosystem = this.metadata.ecosystems.find(
+      (eco) => eco.id === ecosystemId
+    );
     return ecosystem?.default_variant;
   }
 }
@@ -110,15 +118,15 @@ export class RecipeLibrary {
   }
 
   findRecipeById(id: string): Recipe | undefined {
-    return this.recipes.find(recipe => recipe.getId() === id);
+    return this.recipes.find((recipe) => recipe.getId() === id);
   }
 
   findRecipesByCategory(category: string): Recipe[] {
-    return this.recipes.filter(recipe => recipe.getCategory() === category);
+    return this.recipes.filter((recipe) => recipe.getCategory() === category);
   }
 
   findRecipesByEcosystem(ecosystemId: string): Recipe[] {
-    return this.recipes.filter(recipe => recipe.hasEcosystem(ecosystemId));
+    return this.recipes.filter((recipe) => recipe.hasEcosystem(ecosystemId));
   }
 
   validateAll(): Map<string, RecipeValidationResult> {

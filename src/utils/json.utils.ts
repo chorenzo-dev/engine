@@ -1,7 +1,10 @@
 import * as fs from 'fs';
 
 export class JsonError extends Error {
-  constructor(message: string, public readonly code: string) {
+  constructor(
+    message: string,
+    public readonly code: string
+  ) {
     super(message);
     this.name = 'JsonError';
   }
@@ -17,7 +20,10 @@ export async function readJson<T>(filePath: string): Promise<T> {
       throw new JsonError(`File not found: ${filePath}`, 'FILE_NOT_FOUND');
     }
     if (error instanceof SyntaxError) {
-      throw new JsonError(`Invalid JSON in file ${filePath}: ${error.message}`, 'PARSE_ERROR');
+      throw new JsonError(
+        `Invalid JSON in file ${filePath}: ${error.message}`,
+        'PARSE_ERROR'
+      );
     }
     throw new JsonError(
       `Failed to read JSON file: ${error instanceof Error ? error.message : String(error)}`,
@@ -26,9 +32,15 @@ export async function readJson<T>(filePath: string): Promise<T> {
   }
 }
 
-export async function writeJson<T>(filePath: string, data: T, pretty = true): Promise<void> {
+export async function writeJson<T>(
+  filePath: string,
+  data: T,
+  pretty = true
+): Promise<void> {
   try {
-    const jsonContent = pretty ? JSON.stringify(data, null, 2) : JSON.stringify(data);
+    const jsonContent = pretty
+      ? JSON.stringify(data, null, 2)
+      : JSON.stringify(data);
     fs.writeFileSync(filePath, jsonContent, 'utf8');
   } catch (error) {
     throw new JsonError(

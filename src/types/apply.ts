@@ -10,14 +10,8 @@ export interface ApplyOptions {
   progress?: boolean;
 }
 
-export interface StateEntry {
-  value: string | boolean;
-  source: string;
-  timestamp: string;
-}
-
 export interface RecipeState {
-  [key: string]: StateEntry;
+  [key: string]: string | boolean;
 }
 
 export interface DependencyValidationResult {

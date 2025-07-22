@@ -11,7 +11,7 @@ import { readYaml, parseYaml } from '../utils/yaml.utils';
 import { loadPrompt, renderPrompt } from '../utils/prompts.utils';
 import { workspaceConfig } from '../utils/workspace-config.utils';
 import { createApplyLogger, getApplyLogger, closeApplyLogger } from '../utils/logger.utils';
-import { ApplyOptions, ApplyRecipeResult, ApplyError, RecipeState, StateEntry, DependencyValidationResult, ExecutionResult, ApplyProgressCallback, ApplyValidationCallback } from '../types/apply';
+import { ApplyOptions, ApplyRecipeResult, ApplyError, RecipeState, DependencyValidationResult, ExecutionResult, ApplyProgressCallback, ApplyValidationCallback } from '../types/apply';
 import { Recipe, RecipeDependency } from '../types/recipe';
 import { WorkspaceAnalysis, ProjectAnalysis } from '../types/analysis';
 
@@ -551,12 +551,12 @@ function validateDependencies(recipe: Recipe, currentState: RecipeState): Depend
   const conflicting: Array<{ key: string; required: string; current: string }> = [];
 
   for (const dependency of recipe.getRequires()) {
-    const stateEntry = currentState[dependency.key];
+    const stateValue = currentState[dependency.key];
     
-    if (!stateEntry) {
+    if (stateValue === undefined) {
       missing.push(dependency);
     } else {
-      const currentValue = String(stateEntry.value);
+      const currentValue = String(stateValue);
       if (currentValue !== dependency.equals) {
         conflicting.push({
           key: dependency.key,
@@ -578,7 +578,7 @@ function formatDependencyError(recipeId: string, validationResult: DependencyVal
   const lines = [`Recipe '${recipeId}' has unsatisfied dependencies:`];
 
   for (const dep of validationResult.missing) {
-    const currentValue = currentState[dep.key]?.value || 'undefined';
+    const currentValue = currentState[dep.key] ?? 'undefined';
     lines.push(`  - ${dep.key} = ${dep.equals} (currently: ${currentValue})`);
   }
 
@@ -771,16 +771,9 @@ function extractOutputsFromResult(executionLog: string, expectedOutputs: Record<
 
 async function updateState(recipeId: string, outputs: Record<string, string | boolean>): Promise<void> {
   const currentState = await readCurrentState();
-  const timestamp = new Date().toISOString();
   const statePath = await workspaceConfig.getStatePath();
 
-  for (const [key, value] of Object.entries(outputs)) {
-    currentState[key] = {
-      value,
-      source: recipeId,
-      timestamp
-    };
-  }
+  Object.assign(currentState, outputs);
 
   await workspaceConfig.ensureChorenzoDir();
   await writeJson(statePath, currentState);

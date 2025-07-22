@@ -560,6 +560,93 @@ outputs:
       expect(mockQuery).toHaveBeenCalledTimes(1);
     });
 
+    it('should update state.json with recipe outputs', async () => {
+      mockExistsSync.mockImplementation((path) => {
+        if (path.includes('analysis.json')) return true;
+        if (path.includes('state.json')) return false;
+        if (path.includes('.chorenzo/recipes')) return true;
+        if (path.includes('test-recipe')) return true;
+        if (path.includes('metadata.yaml')) return true;
+        if (path.includes('prompt.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
+        return true;
+      });
+
+      mockStatSync.mockImplementation(() => ({
+        isDirectory: () => true,
+        isFile: () => false,
+      } as fs.Stats));
+
+      mockReaddirSync.mockImplementation((dirPath) => {
+        if (dirPath.includes('.chorenzo/recipes')) {
+          return ['test-recipe'];
+        }
+        return [];
+      });
+
+      mockReadFileSync.mockImplementation((filePath) => {
+        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('apply_recipe.md')) {
+          return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        return '';
+      });
+
+      mockReadJson.mockImplementation((path) => {
+        if (path.includes('analysis.json')) {
+          return Promise.resolve({
+            isMonorepo: false,
+            hasWorkspacePackageManager: false,
+            projects: [{
+              path: '.',
+              language: 'javascript',
+              ecosystem: 'javascript',
+              type: 'web_app',
+              dependencies: [],
+              hasPackageManager: true
+            }]
+          });
+        }
+        return Promise.resolve({});
+      });
+
+      mockReadYaml.mockResolvedValue({
+        id: 'test-recipe',
+        category: 'test',
+        summary: 'Test recipe',
+        ecosystems: [{
+          id: 'javascript',
+          default_variant: 'basic',
+          variants: [{ id: 'basic', fix_prompt: 'Basic fix' }]
+        }],
+        provides: ['test_feature.enabled', 'test_feature.version'],
+        requires: []
+      });
+
+      mockQuery.mockImplementation(async function* () {
+        yield {
+          type: 'result',
+          subtype: 'success',
+          result: 'Successfully applied recipe',
+          total_cost_usd: 0.05
+        };
+      });
+
+      const result = await performRecipesApply({
+        recipe: 'test-recipe',
+        progress: false
+      });
+
+      expect(result.stateUpdated).toBe(true);
+      expect(mockWriteJson).toHaveBeenCalledWith(
+        expect.stringContaining('state.json'),
+        {
+          'test_feature.enabled': true,
+          'test_feature.version': true
+        }
+      );
+    });
+
     it('should handle missing analysis by running analysis', async () => {
       mockExistsSync.mockImplementation((path) => {
         if (path.includes('analysis.json')) return false;
@@ -1059,11 +1146,7 @@ outputs:
       mockReadJson.mockImplementation((path) => {
         if (path.includes('state.json')) {
           return Promise.resolve({
-            'prerequisite.version': {
-              value: '1.0.0',
-              source: 'other-recipe',
-              timestamp: '2024-01-01T00:00:00Z'
-            }
+            'prerequisite.version': '1.0.0'
           });
         }
         return Promise.resolve({});

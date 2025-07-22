@@ -71,7 +71,10 @@ describe('Recipes Command Integration Tests', () => {
     
     mockHomedir.mockImplementation(() => '/test/home');
     mockTmpdir.mockImplementation(() => '/tmp');
-    mockExistsSync.mockImplementation(() => true);
+    mockExistsSync.mockImplementation((path) => {
+      if (path.includes('.plan.md')) return true;
+      return true;
+    });
     mockStatSync.mockImplementation(() => ({
       isDirectory: () => true,
       isFile: () => false,
@@ -82,6 +85,13 @@ describe('Recipes Command Integration Tests', () => {
         return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
       } else if (filePath.includes('fixes/basic.md')) {
         return 'Basic fix prompt content';
+      } else if (filePath.includes('plan') && filePath.includes('.md')) {
+        return `title: "test plan"
+steps:
+  - type: configure
+    description: test
+outputs:
+  test_feature.exists: true`;
       }
       return '';
     });
@@ -394,6 +404,7 @@ describe('Recipes Command Integration Tests', () => {
       mockReaddirSync.mockImplementation(() => []);
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
       
@@ -428,6 +439,7 @@ describe('Recipes Command Integration Tests', () => {
       mockReaddirSync.mockImplementation(() => []);
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
       
@@ -463,6 +475,21 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should apply recipe successfully', async () => {
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+        }
+        if (filePath.includes('test-recipe.plan.md')) {
+          return `title: "test plan"
+steps:
+  - type: configure
+    description: test
+outputs:
+  test_feature.exists: true`;
+        }
+        return '';
+      });
+      
       mockExistsSync.mockImplementation((path) => {
         if (path.includes('analysis.json')) return true;
         if (path.includes('state.json')) return false;
@@ -470,6 +497,7 @@ describe('Recipes Command Integration Tests', () => {
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
+        if (path.includes('test-recipe.plan.md')) return true;
         return true;
       });
 
@@ -485,11 +513,7 @@ describe('Recipes Command Integration Tests', () => {
         return [];
       });
 
-      mockReadFileSync.mockImplementation((filePath) => {
-        if (filePath.includes('metadata.yaml')) return '';
-        if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
-        return '';
-      });
+      // Keep the default mockReadFileSync from beforeEach
 
       mockReadJson.mockImplementation((path) => {
         if (path.includes('analysis.json')) {
@@ -526,7 +550,8 @@ describe('Recipes Command Integration Tests', () => {
         yield {
           type: 'result',
           subtype: 'success',
-          result: 'plan:\n  outputs:\n    test_feature.exists: true'
+          result: 'Execution completed successfully',
+          total_cost_usd: 0.05
         };
       });
 
@@ -547,6 +572,7 @@ describe('Recipes Command Integration Tests', () => {
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
+        if (path.includes('.plan.md')) return true;
         return true;
       });
 
@@ -564,6 +590,7 @@ describe('Recipes Command Integration Tests', () => {
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -599,7 +626,8 @@ describe('Recipes Command Integration Tests', () => {
         yield {
           type: 'result',
           subtype: 'success',
-          result: 'plan:\n  outputs:\n    test_feature.exists: true'
+          result: 'Execution completed successfully',
+          total_cost_usd: 0.05
         };
       });
 
@@ -618,6 +646,7 @@ describe('Recipes Command Integration Tests', () => {
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
+        if (path.includes('.plan.md')) return true;
         return true;
       });
 
@@ -671,6 +700,7 @@ describe('Recipes Command Integration Tests', () => {
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
+        if (path.includes('.plan.md')) return true;
         return true;
       });
 
@@ -688,6 +718,7 @@ describe('Recipes Command Integration Tests', () => {
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -754,6 +785,7 @@ describe('Recipes Command Integration Tests', () => {
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
+        if (path.includes('.plan.md')) return true;
         return true;
       });
 
@@ -771,6 +803,7 @@ describe('Recipes Command Integration Tests', () => {
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -812,7 +845,8 @@ describe('Recipes Command Integration Tests', () => {
         yield {
           type: 'result',
           subtype: 'success',
-          result: 'plan:\n  outputs:\n    test_feature.exists: true'
+          result: 'Execution completed successfully',
+          total_cost_usd: 0.05
         };
       });
 
@@ -833,6 +867,7 @@ describe('Recipes Command Integration Tests', () => {
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
+        if (path.includes('.plan.md')) return true;
         return true;
       });
 
@@ -850,6 +885,7 @@ describe('Recipes Command Integration Tests', () => {
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -898,7 +934,8 @@ describe('Recipes Command Integration Tests', () => {
         yield {
           type: 'result',
           subtype: 'success',
-          result: 'plan:\n  outputs:\n    test_feature.exists: true'
+          result: 'Execution completed successfully',
+          total_cost_usd: 0.05
         };
       });
 
@@ -920,6 +957,7 @@ describe('Recipes Command Integration Tests', () => {
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
+        if (path.includes('.plan.md')) return true;
         return true;
       });
 
@@ -937,6 +975,7 @@ describe('Recipes Command Integration Tests', () => {
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -1021,6 +1060,7 @@ describe('Recipes Command Integration Tests', () => {
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
+        if (path.includes('.plan.md')) return true;
         return true;
       });
 
@@ -1038,6 +1078,7 @@ describe('Recipes Command Integration Tests', () => {
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -1107,6 +1148,7 @@ describe('Recipes Command Integration Tests', () => {
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
+        if (path.includes('.plan.md')) return true;
         return true;
       });
 
@@ -1124,6 +1166,7 @@ describe('Recipes Command Integration Tests', () => {
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -1171,6 +1214,7 @@ describe('Recipes Command Integration Tests', () => {
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
+        if (path.includes('.plan.md')) return true;
         return true;
       });
 
@@ -1188,6 +1232,7 @@ describe('Recipes Command Integration Tests', () => {
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -1230,7 +1275,8 @@ describe('Recipes Command Integration Tests', () => {
         yield {
           type: 'result',
           subtype: 'success',
-          result: 'plan:\n  outputs:\n    test_feature.exists: true'
+          result: 'Execution completed successfully',
+          total_cost_usd: 0.05
         };
       });
 
@@ -1250,6 +1296,7 @@ describe('Recipes Command Integration Tests', () => {
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
+        if (path.includes('.plan.md')) return true;
         return true;
       });
 
@@ -1267,6 +1314,7 @@ describe('Recipes Command Integration Tests', () => {
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -1301,6 +1349,7 @@ describe('Recipes Command Integration Tests', () => {
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
+        if (path.includes('.plan.md')) return true;
         return true;
       });
 
@@ -1318,6 +1367,7 @@ describe('Recipes Command Integration Tests', () => {
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -1372,6 +1422,7 @@ describe('Recipes Command Integration Tests', () => {
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
+        if (path.includes('.plan.md')) return true;
         return true;
       });
 
@@ -1389,6 +1440,7 @@ describe('Recipes Command Integration Tests', () => {
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -1438,6 +1490,7 @@ describe('Recipes Command Integration Tests', () => {
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
+        if (path.includes('.plan.md')) return true;
         return true;
       });
 
@@ -1455,6 +1508,7 @@ describe('Recipes Command Integration Tests', () => {
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('.plan.md')) return 'title: "test plan"\nsteps:\n  - type: configure\n    description: test\noutputs:\n  test_feature.exists: true';
         return '';
       });
 
@@ -1505,6 +1559,7 @@ describe('Recipes Command Integration Tests', () => {
         if (path.includes('test-recipe')) return true;
         if (path.includes('metadata.yaml')) return true;
         if (path.includes('prompt.md')) return true;
+        if (path.includes('.plan.md')) return true;
         return true;
       });
 
@@ -1522,6 +1577,7 @@ describe('Recipes Command Integration Tests', () => {
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md')) return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        if (filePath.includes('.plan.md')) return '';
         return '';
       });
 
@@ -1567,7 +1623,7 @@ describe('Recipes Command Integration Tests', () => {
       await expect(performRecipesApply({
         recipe: 'test-recipe',
         progress: false
-      })).rejects.toThrow('Plan generation returned empty content');
+      })).rejects.toThrow('Plan file is empty');
     });
   });
 });

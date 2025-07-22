@@ -705,7 +705,8 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
       recipe_summary: recipe.getSummary(),
       recipe_provides: providesYaml,
       recipe_variant: variant,
-      fix_content: variantObj.fix_prompt
+      fix_content: variantObj.fix_prompt,
+      plan_path: planPath
     });
 
     let planContent = '';
@@ -857,12 +858,11 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
           planCost = message.total_cost_usd;
           logger.info({ cost: planCost }, `Plan generation cost: $${planCost}`);
         }
-        if (message.subtype === 'success' && 'result' in message) {
-          planContent = message.result;
+        if (message.subtype === 'success') {
           logger.info({
-            event: 'plan_generated',
-            contentLength: planContent.length
-          }, 'Plan generated successfully');
+            event: 'plan_generation_completed',
+            cost: planCost
+          }, 'Plan generation completed successfully');
         } else {
           errorMessage = 'Plan generation failed';
           logger.error({
@@ -892,8 +892,10 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
       };
     }
 
-    if (!planContent || planContent.trim() === '') {
-      logger.error({ event: 'empty_plan' }, 'Plan generation returned empty content');
+    fs.mkdirSync(path.dirname(planPath), { recursive: true });
+    
+    if (!fs.existsSync(planPath)) {
+      logger.error({ event: 'plan_file_not_found', planPath }, 'Plan file was not created by Claude');
       return {
         projectPath,
         recipeId: recipe.getId(),
@@ -901,14 +903,32 @@ async function generatePlan(recipe: Recipe, project: ProjectAnalysis, variant: s
         planContent: '',
         planPath,
         success: false,
-        error: 'Plan generation returned empty content',
+        error: 'Plan file was not created',
         costUsd: planCost
       };
     }
 
-    fs.mkdirSync(path.dirname(planPath), { recursive: true });
-    fs.writeFileSync(planPath, planContent, 'utf8');
-    logger.info({ planPath }, 'Plan written to filesystem');
+    planContent = fs.readFileSync(planPath, 'utf8');
+    logger.info({ 
+      event: 'plan_file_read',
+      planPath,
+      contentLength: planContent.length,
+      content: planContent.substring(0, 100)
+    }, 'Plan file read successfully');
+    
+    if (!planContent || planContent.trim() === '') {
+      logger.error({ event: 'empty_plan' }, 'Plan file is empty');
+      return {
+        projectPath,
+        recipeId: recipe.getId(),
+        variant,
+        planContent: '',
+        planPath,
+        success: false,
+        error: 'Plan file is empty',
+        costUsd: planCost
+      };
+    }
 
     const result = {
       projectPath,

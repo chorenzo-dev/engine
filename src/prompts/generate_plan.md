@@ -12,25 +12,28 @@ Recipe Variant: {{ recipe_variant }}
 
 {{ fix_content }}
 
-Based on the above recipe instructions, create a detailed execution plan.
+Based on the above recipe instructions, create a detailed execution plan and write it to a file.
 
-IMPORTANT: Structure your response as a YAML document with the following format:
+Create a plan file at: {{ plan_path }}
+
+The plan file should contain a YAML document with the following structure:
 
 ```yaml
-title: "chorenzo plan: {{ recipe_id }} · {{ recipe_variant }}"
+title: 'chorenzo plan: {{ recipe_id }} · {{ recipe_variant }}'
 steps:
-  - type: "step_type"
-    description: "What this step accomplishes"
+  - type: 'step_type'
+    description: 'What this step accomplishes'
     commands:
-      - "command to execute"
+      - 'command to execute'
     files:
-      - path: "file/path"
+      - path: 'file/path'
         content: |
           file content here
-outputs:
-  {{ recipe_provides }}
+outputs: { { recipe_provides } }
 ```
 
 Step types can include: install, configure, create, update, verify, etc.
 The outputs section should map each provided key to its expected value (usually true for boolean flags).
 Make sure all steps are specific to the project's ecosystem and existing setup.
+
+After writing the plan file, provide a brief summary of what the plan will do.

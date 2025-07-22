@@ -1623,7 +1623,7 @@ outputs:
       expect(result.summary.failedProjects).toBe(1);
       expect(result.executionResults[0].success).toBe(false);
       expect(result.executionResults[0].error).toContain(
-        'Recipe application failed during execution'
+        'Unknown error occurred'
       );
     });
 

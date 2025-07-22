@@ -7,6 +7,7 @@ import { OperationMetadata } from '../types/common';
 import { validateFrameworks } from '../utils/framework-validation';
 import { readJson, writeJson } from '../utils/json.utils';
 import { Logger } from '../utils/logger.utils';
+import { executeCodeChangesOperation, CodeChangesEventHandlers } from '../utils/code-changes-events.utils';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -38,7 +39,7 @@ export type ProgressCallback = (step: string) => void;
 export async function performAnalysis(
   onProgress?: ProgressCallback
 ): Promise<AnalysisResult> {
-  const startTime = Date.now();
+  const startTime = new Date();
   Logger.info(
     {
       event: 'analysis_started',
@@ -61,51 +62,45 @@ export async function performAnalysis(
   });
 
   onProgress?.('Analyzing workspace with Claude...');
-  let sdkResultMetadata: SDKMessage | null = null;
+  
   let analysis = null;
   let errorMessage: string | undefined;
 
-  for await (const message of query({
-    prompt,
-    options: {
-      model: 'sonnet',
-      maxTurns: 10,
-      allowedTools: ['Read', 'LS', 'Glob', 'Grep'],
-      permissionMode: 'bypassPermissions',
-    },
-  })) {
-    if (message.type === 'result') {
-      sdkResultMetadata = message;
-      if (message.subtype === 'success' && 'result' in message) {
-        try {
-          analysis = JSON.parse(message.result);
-        } catch (error) {
-          errorMessage = `Invalid JSON response: ${error instanceof Error ? error.message : String(error)}`;
-          analysis = null;
-        }
+  const handlers: CodeChangesEventHandlers = {
+    onProgress: (step) => onProgress?.(step),
+    onComplete: (result) => {
+      try {
+        analysis = JSON.parse(result);
+      } catch (error) {
+        errorMessage = `Invalid JSON response: ${error instanceof Error ? error.message : String(error)}`;
+        analysis = null;
       }
-      break;
+    },
+    onError: (error) => {
+      errorMessage = error.message;
     }
-  }
+  };
+
+  const operationResult = await executeCodeChangesOperation(
+    query({
+      prompt,
+      options: {
+        model: 'sonnet',
+        maxTurns: 10,
+        allowedTools: ['Read', 'LS', 'Glob', 'Grep'],
+        permissionMode: 'bypassPermissions',
+      },
+    }),
+    handlers,
+    startTime
+  );
 
   let finalAnalysis = analysis
     ? snakeToCamelCase<WorkspaceAnalysis>(analysis)
     : null;
-  let totalCost = 0;
-  let totalTurns = 0;
-  let subtype = 'error';
-
-  if (sdkResultMetadata?.type === 'result') {
-    if ('total_cost_usd' in sdkResultMetadata) {
-      totalCost = sdkResultMetadata.total_cost_usd;
-    }
-    if ('num_turns' in sdkResultMetadata) {
-      totalTurns = sdkResultMetadata.num_turns;
-    }
-    if ('subtype' in sdkResultMetadata) {
-      subtype = sdkResultMetadata.subtype;
-    }
-  }
+  let totalCost = operationResult.metadata.costUsd;
+  let totalTurns = operationResult.metadata.turns;
+  let subtype = operationResult.success ? 'success' : 'error';
 
   let unrecognizedFrameworks: string[] = [];
 
@@ -141,7 +136,7 @@ export async function performAnalysis(
     }
   }
 
-  const durationSeconds = (Date.now() - startTime) / 1000;
+  const durationSeconds = operationResult.metadata.durationSeconds;
 
   const result: AnalysisResult = {
     analysis: finalAnalysis,

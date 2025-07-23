@@ -18,7 +18,8 @@
     "lint:fix": "eslint --fix .",
     "test": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --watch",
-    "test:coverage": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --coverage"
+    "test:coverage": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --coverage",
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",

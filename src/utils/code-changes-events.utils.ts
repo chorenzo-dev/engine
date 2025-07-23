@@ -1,6 +1,7 @@
 import { SDKMessage } from '@anthropic-ai/claude-code';
 import { CodeChangesOperation } from '../components/CodeChangesProgress';
 import { workspaceConfig } from '../utils/workspace-config.utils';
+import { Logger } from './logger.utils';
 import * as os from 'os';
 
 export interface CodeChangesEventHandlers {
@@ -36,6 +37,16 @@ export async function executeCodeChangesOperation<T = any>(
 
   try {
     for await (const message of operationPromise) {
+      Logger.debug(
+        {
+          event: 'claude_message_received',
+          messageType: message.type,
+          messageSubtype: (message as any).subtype || 'none',
+          hasContent: 'content' in message,
+          hasMessage: 'message' in message,
+        },
+        `Claude message: ${message.type}`
+      );
       
       if (message.type === 'result') {
         handlers.onThinkingStateChange?.(false);
@@ -43,6 +54,13 @@ export async function executeCodeChangesOperation<T = any>(
         if (message.subtype === 'success' && 'result' in message) {
           result = message.result;
           success = true;
+          Logger.info(
+            {
+              event: 'claude_execution_success',
+              resultLength: message.result ? String(message.result).length : 0,
+            },
+            `Claude execution completed successfully. Result preview: ${String(message.result || '').substring(0, 200)}...`
+          );
         } else if (message.subtype && message.subtype.startsWith('error')) {
           errorMessage = 'error' in message ? String((message as any).error) : 'Unknown error occurred';
           success = false;
@@ -54,15 +72,58 @@ export async function executeCodeChangesOperation<T = any>(
           if (assistantMessage.content) {
             for (const content of assistantMessage.content) {
               if (content.type === 'tool_use') {
+                Logger.info(
+                  {
+                    event: 'claude_tool_use',
+                    toolName: content.name,
+                    hasInput: !!content.input,
+                  },
+                  `Claude tool use: ${content.name}`
+                );
+
+                if (content.name === 'Bash' && content.input && content.input.command) {
+                  Logger.info(
+                    {
+                      event: 'claude_bash_command',
+                      command: content.input.command.substring(0, 200),
+                    },
+                    `Claude bash: ${content.input.command}`
+                  );
+                }
+
                 const toolMessage = formatToolMessage(content.name, content.input);
                 if (toolMessage) {
                   handlers.onThinkingStateChange?.(false);
                   handlers.onProgress?.(toolMessage);
                 }
+              } else if (content.type === 'text') {
+                Logger.debug(
+                  {
+                    event: 'claude_text_response',
+                    textLength: content.text ? content.text.length : 0,
+                  },
+                  `Claude text: ${content.text ? content.text.substring(0, 200) : ''}...`
+                );
               }
             }
           }
         } else if (message.type === 'user' && 'message' in message) {
+          const userMessage = message.message as any;
+          if (userMessage.content) {
+            for (const content of userMessage.content) {
+              if (content.type === 'tool_result') {
+                Logger.debug(
+                  {
+                    event: 'claude_tool_result',
+                    toolUseId: content.tool_use_id || 'unknown',
+                    isError: content.is_error || false,
+                    contentLength: content.content ? String(content.content).length : 0,
+                  },
+                  `Tool result: ${content.is_error ? 'error' : 'success'}`
+                );
+              }
+            }
+          }
           handlers.onThinkingStateChange?.(true);
         }
       }

@@ -3,6 +3,8 @@ import { Box, Text, useInput, useStdin } from 'ink';
 import { performInit } from '../commands/init';
 import { performAnalysis } from '../commands/analyze';
 import { AnalysisDisplay } from './AnalysisDisplay';
+import { CodeChangesProgress, useCodeChangesProgress } from './CodeChangesProgress';
+import { generateOperationId } from '../utils/code-changes-events.utils';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -45,6 +47,14 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
   const [analysisAborted, setAnalysisAborted] = useState(false);
   const [userResponse, setUserResponse] = useState<string>('');
   const { isRawModeSupported } = useStdin();
+  
+  const {
+    operations,
+    startOperation,
+    progressOperation,
+    completeOperation,
+    errorOperation,
+  } = useCodeChangesProgress();
 
   const shouldUseInput = options.progress !== false && isRawModeSupported;
 
@@ -113,23 +123,41 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
   useEffect(() => {
     if (phase === 'analysis' && !analysisAborted) {
       const runAnalysis = async () => {
+        const operationId = generateOperationId('analysis');
+        
         try {
+          startOperation({
+            id: operationId,
+            type: 'analysis',
+            description: 'Initializing workspace analysis...',
+            status: 'in_progress',
+          });
+
           const result = await performAnalysis((step) => {
             setStep(step);
+            progressOperation(operationId, step);
           });
+          
           setAnalysisResult(result);
+
+          completeOperation(operationId, {
+            costUsd: result.metadata?.costUsd || 0,
+            turns: result.metadata?.turns || 0,
+            durationSeconds: result.metadata?.durationSeconds || 0,
+          });
 
           await Promise.all([updateGitignore(), updateGlobalState()]);
 
           setPhase('complete');
           onComplete(result);
         } catch (err) {
+          errorOperation(operationId, err instanceof Error ? err.message : String(err));
           onError(err instanceof Error ? err : new Error(String(err)));
         }
       };
       runAnalysis();
     }
-  }, [phase, analysisAborted, onComplete, onError]);
+  }, [phase, analysisAborted, onComplete, onError, startOperation, progressOperation, completeOperation, errorOperation]);
 
   useEffect(() => {
     if (phase === 'analysis' && analysisStartTime > 0) {
@@ -198,8 +226,7 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
     return (
       <Box flexDirection="column">
         <Text color="green">✅ Initialization complete!</Text>
-        <Text color="blue">🔍 Analyzing workspace...</Text>
-        <Text color="gray">{step}</Text>
+        <CodeChangesProgress operations={operations} showLogs />
         {showLongRunningMessage && (
           <Text color="yellow">
             ⧗ Still working... (Ctrl-C to abort analysis and continue)

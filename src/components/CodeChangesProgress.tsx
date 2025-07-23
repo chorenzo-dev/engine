@@ -58,8 +58,6 @@ export const CodeChangesProgress: React.FC<CodeChangesProgressProps> = ({
     setCurrentOperation(current);
   }, [getCurrentOperation]);
 
-  // Removed unused addLog function
-
   const getOperationIcon = (status: CodeChangesOperation['status']) => {
     switch (status) {
       case 'pending':

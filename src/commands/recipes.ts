@@ -862,7 +862,6 @@ async function applyRecipeDirectly(
         onProgress?.('', isThinking);
       },
       onComplete: (result, metadata) => {
-        // Store execution result if needed
         executionCost = metadata?.costUsd || 0;
         success = true;
         Logger.info(
@@ -873,7 +872,6 @@ async function applyRecipeDirectly(
         );
       },
       onError: (error) => {
-        // Store error message if needed
         Logger.error(
           {
             event: 'recipe_application_failed',

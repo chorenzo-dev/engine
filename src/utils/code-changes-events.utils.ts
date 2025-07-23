@@ -4,7 +4,6 @@ import { workspaceConfig } from '../utils/workspace-config.utils';
 import { Logger } from './logger.utils';
 import * as os from 'os';
 
-// Tool input interfaces
 interface BaseToolInput {
   [key: string]: unknown;
 }
@@ -32,7 +31,6 @@ interface TaskToolInput extends BaseToolInput {
 
 type ToolInput = FileToolInput | BashToolInput | SearchToolInput | PathToolInput | TaskToolInput | BaseToolInput;
 
-// Message interfaces for SDK responses
 interface AssistantMessage {
   content: Array<{
     type: string;

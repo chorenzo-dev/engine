@@ -162,7 +162,6 @@ async function parseFixFiles(
 }
 
 function validateMetadata(metadata: unknown, metadataPath: string): void {
-  // Type guard to check if metadata has the expected structure
   if (!metadata || typeof metadata !== 'object') {
     throw new Error(`Invalid metadata format in ${metadataPath}`);
   }

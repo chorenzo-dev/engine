@@ -28,6 +28,7 @@ interface ShellProps {
     variant?: string;
     project?: string;
     debug?: boolean;
+    cost?: boolean;
   };
 }
 
@@ -184,7 +185,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     }
 
     if (isComplete && result) {
-      return <AnalysisDisplay result={result} />;
+      return <AnalysisDisplay result={result} showCost={options.cost} />;
     }
 
     return (
@@ -216,7 +217,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
             <Text color="green">✅ Initialization complete!</Text>
             {result && result.analysis && (
               <Box marginTop={1}>
-                <AnalysisDisplay result={result} />
+                <AnalysisDisplay result={result} showCost={options.cost} />
               </Box>
             )}
           </Box>
@@ -230,6 +231,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
             noAnalyze: options.noAnalyze,
             yes: options.yes,
             progress: options.progress,
+            cost: options.cost,
           }}
           onComplete={(result) => {
             setResult(result);
@@ -323,6 +325,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         project: options.project,
         yes: options.yes,
         progress: options.progress,
+        cost: options.cost,
       };
 
       return (
@@ -349,7 +352,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       }
 
       if (isComplete && result) {
-        return <ApplyDisplay result={result as ApplyRecipeResult} />;
+        return <ApplyDisplay result={result as ApplyRecipeResult} showCost={options.cost} />;
       }
 
       return (
@@ -368,7 +371,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     }
 
     if (isComplete && result) {
-      return <ApplyDisplay result={result as ApplyRecipeResult} />;
+      return <ApplyDisplay result={result as ApplyRecipeResult} showCost={options.cost} />;
     }
 
     const applyOptions: ApplyOptions = {

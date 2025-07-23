@@ -317,10 +317,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         );
       }
 
-      if (isComplete && result) {
-        return <ApplyDisplay result={result as ApplyRecipeResult} />;
-      }
-
       const applyOptions: ApplyOptions = {
         recipe: options.recipe,
         variant: options.variant,

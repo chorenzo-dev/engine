@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Text, Box } from 'ink';
 import { performRecipesApply } from '../commands/recipes';
 import { ApplyOptions, ApplyRecipeResult } from '../types/apply';
+import { CodeChangesProgress, useCodeChangesProgress } from './CodeChangesProgress';
+import { generateOperationId } from '../utils/code-changes-events.utils';
 
 interface ApplyProgressProps {
   options: ApplyOptions;
@@ -14,20 +16,38 @@ export const ApplyProgress: React.FC<ApplyProgressProps> = ({
   onComplete,
   onError,
 }) => {
-  const [currentStep, setCurrentStep] = useState(
-    'Initializing recipe application...'
-  );
+  const {
+    operations,
+    startOperation,
+    progressOperation,
+    completeOperation,
+    errorOperation,
+    updateOperation,
+  } = useCodeChangesProgress();
+  
   const [validationMessages, setValidationMessages] = useState<string[]>([]);
-  const [isComplete, setIsComplete] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const runApply = async () => {
+      const operationId = generateOperationId('apply');
+      
       try {
+        startOperation({
+          id: operationId,
+          type: 'apply',
+          description: 'Applying recipe',
+          status: 'in_progress',
+        });
+
         const result = await performRecipesApply(
           options,
-          (step) => {
-            setCurrentStep(step);
+          (step, isThinking) => {
+            if (step) {
+              progressOperation(operationId, step);
+            }
+            if (isThinking !== undefined) {
+              updateOperation(operationId, { isThinking });
+            }
           },
           (type, message) => {
             if (type === 'success' || type === 'error' || type === 'warning') {
@@ -39,22 +59,22 @@ export const ApplyProgress: React.FC<ApplyProgressProps> = ({
           }
         );
 
-        setIsComplete(true);
-        setCurrentStep(
-          `Recipe applied successfully! (${result.summary.successfulProjects}/${result.summary.totalProjects} projects)`
-        );
+        completeOperation(operationId, {
+          costUsd: result.metadata?.costUsd || 0,
+          turns: result.metadata?.turns || 0,
+          durationSeconds: result.metadata?.durationSeconds || 0,
+        });
+        
         onComplete(result);
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Unknown error';
-        setError(errorMessage);
-        setCurrentStep('Recipe application failed');
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        errorOperation(operationId, errorMessage);
         onError(err instanceof Error ? err : new Error(errorMessage));
       }
     };
 
     runApply();
-  }, [options, onComplete, onError]);
+  }, [options, onComplete, onError, startOperation, progressOperation, completeOperation, errorOperation]);
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -69,20 +89,9 @@ export const ApplyProgress: React.FC<ApplyProgressProps> = ({
     }
   };
 
-  if (error) {
-    return (
-      <Box flexDirection="column">
-        <Text color="red">❌ {currentStep}</Text>
-        <Text color="red">{error}</Text>
-      </Box>
-    );
-  }
-
   return (
     <Box flexDirection="column">
-      <Text color={isComplete ? 'green' : 'blue'}>
-        {isComplete ? '✅' : '⏳'} {currentStep}
-      </Text>
+      <CodeChangesProgress operations={operations} showLogs />
       {validationMessages.length > 0 && (
         <Box flexDirection="column" marginTop={1}>
           {validationMessages.map((msg, i) => (

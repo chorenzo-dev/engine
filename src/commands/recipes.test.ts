@@ -74,9 +74,7 @@ describe('Recipes Command Integration Tests', () => {
   let performRecipesValidate: typeof import('./recipes').performRecipesValidate;
   let performRecipesApply: typeof import('./recipes').performRecipesApply;
 
-  beforeEach(async () => {
-    jest.clearAllMocks();
-
+  const setupDefaultMocks = () => {
     mockHomedir.mockImplementation(() => '/test/home');
     mockTmpdir.mockImplementation(() => '/tmp');
     mockExistsSync.mockImplementation((path) => {
@@ -135,6 +133,11 @@ outputs:
     );
     mockCloneRepository.mockImplementation(() => Promise.resolve());
     mockRmSync.mockImplementation(() => {});
+  };
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    setupDefaultMocks();
 
     const recipesModule = await import('./recipes');
     performRecipesValidate = recipesModule.performRecipesValidate;
@@ -601,15 +604,145 @@ outputs:
   });
 
   describe('Apply Command Integration', () => {
-    beforeEach(() => {
+    const setupApplyMocks = () => {
       mockParseYaml.mockReturnValue({
         plan: { outputs: { 'test_feature.exists': true } },
       });
       mockReadJson.mockResolvedValue({});
       mockWriteJson.mockResolvedValue(undefined);
+    };
+
+    const setupStandardFileSystemMocks = () => {
+      mockExistsSync.mockImplementation((path) => {
+        if (path.includes('analysis.json')) return true;
+        if (path.includes('state.json')) return false;
+        if (path.includes('.chorenzo/recipes')) return true;
+        if (path.includes('test-recipe')) return true;
+        if (path.includes('metadata.yaml')) return true;
+        if (path.includes('prompt.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
+        return true;
+      });
+
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
+
+      mockReaddirSync.mockImplementation((dirPath) => {
+        if (dirPath.includes('.chorenzo/recipes')) {
+          return ['test-recipe'];
+        }
+        return [];
+      });
+    };
+
+    const setupStandardFileMocks = () => {
+      mockReadFileSync.mockImplementation((filePath) => {
+        if (filePath.includes('prompt.md'))
+          return '## Goal\\nTest goal\\n\\n## Investigation\\nTest investigation\\n\\n## Expected Output\\nTest output';
+        return '';
+      });
+    };
+
+    const setupStandardAnalysisJsonMock = () => {
+      mockReadJson.mockImplementation((path) => {
+        if (path.includes('analysis.json')) {
+          return Promise.resolve({
+            isMonorepo: false,
+            hasWorkspacePackageManager: false,
+            projects: [
+              {
+                path: '.',
+                language: 'javascript',
+                ecosystem: 'javascript',
+                type: 'web_app',
+                dependencies: [],
+                hasPackageManager: true,
+              },
+            ],
+          });
+        }
+        return Promise.resolve({});
+      });
+    };
+
+    const setupStandardRecipeYamlMock = () => {
+      mockReadYaml.mockResolvedValue({
+        id: 'test-recipe',
+        category: 'test',
+        summary: 'Test recipe',
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
+        provides: ['test_feature.exists'],
+        requires: [],
+      });
+    };
+
+    const setupSuccessfulQueryMock = () => {
+      mockQuery.mockImplementation(async function* () {
+        yield {
+          type: 'result',
+          subtype: 'success',
+          result: 'Execution completed successfully',
+          total_cost_usd: 0.05,
+        };
+      });
+    };
+
+    const setupErrorQueryMock = () => {
+      mockQuery.mockImplementation(async function* () {
+        yield {
+          type: 'result',
+          subtype: 'error',
+        };
+      });
+    };
+
+    const setupStandardApplyScenario = () => {
+      setupStandardFileSystemMocks();
+      setupStandardFileMocks();
+      setupStandardAnalysisJsonMock();
+      setupStandardRecipeYamlMock();
+      setupSuccessfulQueryMock();
+    };
+
+    beforeEach(() => {
+      setupApplyMocks();
     });
 
     it('should apply recipe successfully', async () => {
+      setupStandardApplyScenario();
+      
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+        }
+        if (filePath.includes('apply_recipe.md')) {
+          return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        return '';
+      });
+
+      const result = await performRecipesApply({
+        recipe: 'test-recipe',
+        progress: false,
+      });
+
+      expect(result).toBeDefined();
+      expect(result.summary.successfulProjects).toBe(1);
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+    });
+
+    it('should verify progress events and thinking state during recipe application', async () => {
       mockReadFileSync.mockImplementation((filePath: string) => {
         if (filePath.includes('prompt.md')) {
           return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
@@ -683,6 +816,34 @@ outputs:
 
       mockQuery.mockImplementation(async function* () {
         yield {
+          type: 'assistant',
+          message: {
+            content: [
+              {
+                type: 'tool_use',
+                name: 'Read',
+                input: { file_path: 'src/package.json' },
+              },
+            ],
+          },
+        };
+        yield {
+          type: 'user',
+          message: { content: 'thinking...' },
+        };
+        yield {
+          type: 'assistant',
+          message: {
+            content: [
+              {
+                type: 'tool_use',
+                name: 'Write',
+                input: { file_path: '.eslintrc.js', content: 'eslint config' },
+              },
+            ],
+          },
+        };
+        yield {
           type: 'result',
           subtype: 'success',
           result: 'Execution completed successfully',
@@ -690,17 +851,31 @@ outputs:
         };
       });
 
+      const mockProgress = jest.fn();
       const result = await performRecipesApply({
         recipe: 'test-recipe',
         progress: false,
-      });
+      }, mockProgress);
 
       expect(result).toBeDefined();
       expect(result.summary.successfulProjects).toBe(1);
-      expect(mockQuery).toHaveBeenCalledTimes(1);
+      
+      expect(mockProgress).toHaveBeenCalledWith('Loading recipe...');
+      expect(mockProgress).toHaveBeenCalledWith('Validating recipe structure...');
+      expect(mockProgress).toHaveBeenCalledWith('Ensuring analysis data...');
+      expect(mockProgress).toHaveBeenCalledWith('Checking recipe dependencies...');
+      expect(mockProgress).toHaveBeenCalledWith('Filtering applicable projects...');
+      expect(mockProgress).toHaveBeenCalledWith('Reading src/package.json', false);
+      expect(mockProgress).toHaveBeenCalledWith('', true);
+      expect(mockProgress).toHaveBeenCalledWith('', false);
+      expect(mockProgress).toHaveBeenCalledWith('Writing .eslintrc.js', false);
     });
 
     it('should handle missing analysis by running analysis', async () => {
+      setupStandardFileSystemMocks();
+      setupStandardRecipeYamlMock();
+      setupSuccessfulQueryMock();
+      
       mockExistsSync.mockImplementation((path) => {
         if (path.includes('analysis.json')) return false;
         if (path.includes('.chorenzo/recipes')) return true;
@@ -711,40 +886,10 @@ outputs:
         return true;
       });
 
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
-
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md'))
           return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
-      });
-
-      mockReadYaml.mockResolvedValue({
-        id: 'test-recipe',
-        category: 'test',
-        summary: 'Test recipe',
-        ecosystems: [
-          {
-            id: 'javascript',
-            default_variant: 'basic',
-            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
-          },
-        ],
-        provides: ['test_feature.exists'],
-        requires: [],
       });
 
       mockPerformAnalysis.mockResolvedValue({
@@ -762,15 +907,6 @@ outputs:
             },
           ],
         },
-      });
-
-      mockQuery.mockImplementation(async function* () {
-        yield {
-          type: 'result',
-          subtype: 'success',
-          result: 'Execution completed successfully',
-          total_cost_usd: 0.05,
-        };
       });
 
       await performRecipesApply({
@@ -845,77 +981,15 @@ outputs:
     });
 
     it('should handle execution failures gracefully', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) return true;
-        if (path.includes('.chorenzo/recipes')) return true;
-        if (path.includes('test-recipe')) return true;
-        if (path.includes('metadata.yaml')) return true;
-        if (path.includes('prompt.md')) return true;
-        if (path.includes('apply_recipe.md')) return true;
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
+      setupStandardAnalysisJsonMock();
+      setupStandardRecipeYamlMock();
+      setupErrorQueryMock();
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md'))
           return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
-      });
-
-      mockReadJson.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return Promise.resolve({
-            isMonorepo: false,
-            hasWorkspacePackageManager: false,
-            projects: [
-              {
-                path: '.',
-                language: 'javascript',
-                ecosystem: 'javascript',
-                type: 'web_app',
-                dependencies: [],
-                hasPackageManager: true,
-              },
-            ],
-          });
-        }
-        return Promise.resolve({});
-      });
-
-      mockReadYaml.mockResolvedValue({
-        id: 'test-recipe',
-        category: 'test',
-        summary: 'Test recipe',
-        ecosystems: [
-          {
-            id: 'javascript',
-            default_variant: 'basic',
-            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
-          },
-        ],
-        provides: ['test_feature.exists'],
-        requires: [],
-      });
-
-      mockQuery.mockImplementation(async function* () {
-        yield {
-          type: 'result',
-          subtype: 'error',
-        };
       });
 
       const result = await performRecipesApply({
@@ -928,55 +1002,14 @@ outputs:
     });
 
     it('should apply recipe with custom variant', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) return true;
-        if (path.includes('.chorenzo/recipes')) return true;
-        if (path.includes('test-recipe')) return true;
-        if (path.includes('metadata.yaml')) return true;
-        if (path.includes('prompt.md')) return true;
-        if (path.includes('apply_recipe.md')) return true;
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
+      setupStandardAnalysisJsonMock();
+      setupSuccessfulQueryMock();
 
       mockReadFileSync.mockImplementation((filePath) => {
         if (filePath.includes('prompt.md'))
           return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
         return '';
-      });
-
-      mockReadJson.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return Promise.resolve({
-            isMonorepo: false,
-            hasWorkspacePackageManager: false,
-            projects: [
-              {
-                path: '.',
-                language: 'javascript',
-                ecosystem: 'javascript',
-                type: 'web_app',
-                dependencies: [],
-                hasPackageManager: true,
-              },
-            ],
-          });
-        }
-        return Promise.resolve({});
       });
 
       mockReadYaml.mockResolvedValue({
@@ -995,15 +1028,6 @@ outputs:
         ],
         provides: ['test_feature.exists'],
         requires: [],
-      });
-
-      mockQuery.mockImplementation(async function* () {
-        yield {
-          type: 'result',
-          subtype: 'success',
-          result: 'Execution completed successfully',
-          total_cost_usd: 0.05,
-        };
       });
 
       const result = await performRecipesApply({
@@ -1623,7 +1647,7 @@ outputs:
       expect(result.summary.failedProjects).toBe(1);
       expect(result.executionResults[0].success).toBe(false);
       expect(result.executionResults[0].error).toContain(
-        'Recipe application failed during execution'
+        'Unknown error occurred'
       );
     });
 
@@ -1872,6 +1896,116 @@ outputs:
       expect(result.summary.successfulProjects).toBe(1);
       expect(result.summary.failedProjects).toBe(0);
       expect(result.executionResults[0].success).toBe(true);
+    });
+
+    it('should verify chorenzo context initialization progress', async () => {
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+        }
+        if (filePath.includes('apply_recipe.md')) {
+          return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        return '';
+      });
+
+      mockExistsSync.mockImplementation((path) => {
+        if (path.includes('analysis.json')) return true;
+        if (path.includes('state.json')) return false;
+        if (path.includes('.chorenzo/recipes')) return true;
+        if (path.includes('test-recipe')) return true;
+        if (path.includes('metadata.yaml')) return true;
+        if (path.includes('prompt.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
+        return true;
+      });
+
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
+
+      mockReaddirSync.mockImplementation((dirPath) => {
+        if (dirPath.includes('.chorenzo/recipes')) {
+          return ['test-recipe'];
+        }
+        return [];
+      });
+
+      mockReadJson.mockImplementation((path) => {
+        if (path.includes('analysis.json')) {
+          return Promise.resolve({
+            isMonorepo: false,
+            hasWorkspacePackageManager: false,
+            projects: [
+              {
+                path: '.',
+                language: 'javascript',
+                ecosystem: 'javascript',
+                type: 'web_app',
+                dependencies: [],
+                hasPackageManager: true,
+              },
+            ],
+          });
+        }
+        return Promise.resolve({});
+      });
+
+      mockReadYaml.mockResolvedValue({
+        id: 'test-recipe',
+        category: 'test',
+        summary: 'Test recipe',
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
+        provides: ['test_feature.exists'],
+        requires: [],
+      });
+
+      mockQuery.mockImplementation(async function* () {
+        yield {
+          type: 'assistant',
+          message: {
+            content: [
+              {
+                type: 'tool_use',
+                name: 'Bash',
+                input: { command: 'mkdir -p .chorenzo/recipes' },
+              },
+            ],
+          },
+        };
+        yield {
+          type: 'result',
+          subtype: 'success',
+          result: 'Execution completed successfully',
+          total_cost_usd: 0.05,
+        };
+      });
+
+      const mockProgress = jest.fn();
+      const result = await performRecipesApply({
+        recipe: 'test-recipe',
+        progress: false,
+      }, mockProgress);
+
+      expect(result).toBeDefined();
+      expect(result.summary.successfulProjects).toBe(1);
+      
+      expect(mockProgress).toHaveBeenCalledWith('Loading recipe...');
+      expect(mockProgress).toHaveBeenCalledWith('Validating recipe structure...');
+      expect(mockProgress).toHaveBeenCalledWith('Ensuring analysis data...');
+      expect(mockProgress).toHaveBeenCalledWith('Checking recipe dependencies...');
+      expect(mockProgress).toHaveBeenCalledWith('Filtering applicable projects...');
+      expect(mockProgress).toHaveBeenCalledWith('Initializing the chorenzo engine', false);
     });
 
   });

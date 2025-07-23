@@ -28,10 +28,13 @@ describe('Analyze Command Integration Tests', () => {
     metadata?: any;
     unrecognizedFrameworks?: string[];
   }>;
+  let mockProgress: jest.MockedFunction<(message: string) => void>;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
+
+    mockProgress = jest.fn();
 
     const analyzeModule = await import('./analyze');
     performAnalysis = analyzeModule.performAnalysis;
@@ -89,7 +92,6 @@ describe('Analyze Command Integration Tests', () => {
       };
     });
 
-    const mockProgress = jest.fn();
     const result = await performAnalysis(mockProgress);
 
     expect(result.analysis).toEqual(expectedAnalysis);
@@ -145,7 +147,6 @@ describe('Analyze Command Integration Tests', () => {
       };
     });
 
-    const mockProgress = jest.fn();
     const result = await performAnalysis(mockProgress);
 
     expect(result.unrecognizedFrameworks).toEqual(['unknown-framework']);
@@ -205,6 +206,80 @@ describe('Analyze Command Integration Tests', () => {
       path.join(process.cwd(), '.chorenzo', 'analysis.json'),
       expect.any(Object)
     );
+  });
+
+  it('should verify tool-specific progress events and thinking state', async () => {
+    setupFixture('simple-express', { addGitRepo: true });
+
+    mockQuery.mockImplementation(async function* () {
+      yield {
+        type: 'assistant',
+        message: {
+          content: [
+            {
+              type: 'tool_use',
+              name: 'Read',
+              input: { file_path: 'package.json' },
+            },
+          ],
+        },
+      };
+      yield {
+        type: 'user',
+        message: { content: 'thinking...' },
+      };
+      yield {
+        type: 'assistant',
+        message: {
+          content: [
+            {
+              type: 'tool_use',
+              name: 'LS',
+              input: { path: '/workspace' },
+            },
+          ],
+        },
+      };
+      yield {
+        type: 'result',
+        subtype: 'success',
+        result: JSON.stringify({
+          is_monorepo: false,
+          has_workspace_package_manager: false,
+          workspace_ecosystem: 'javascript',
+          projects: [
+            {
+              path: '.',
+              language: 'javascript',
+              type: 'api_server',
+              framework: 'express',
+              dependencies: ['express', 'dotenv'],
+              has_package_manager: true,
+              ecosystem: 'javascript',
+              dockerized: false,
+            },
+          ],
+        }),
+        total_cost_usd: 0.05,
+        num_turns: 3,
+      };
+    });
+
+    const mockProgress = jest.fn();
+    const result = await performAnalysis(mockProgress);
+
+    expect(result.analysis).toBeDefined();
+    expect(result.metadata?.subtype).toBe('success');
+
+    expect(mockProgress).toHaveBeenCalledWith('Finding git repository...');
+    expect(mockProgress).toHaveBeenCalledWith('Building file tree...');
+    expect(mockProgress).toHaveBeenCalledWith('Loading analysis prompt...');
+    expect(mockProgress).toHaveBeenCalledWith('Analyzing workspace with Claude...');
+    expect(mockProgress).toHaveBeenCalledWith('Reading package.json', false);
+    expect(mockProgress).toHaveBeenCalledWith('', true);
+    expect(mockProgress).toHaveBeenCalledWith('', false);
+    expect(mockProgress).toHaveBeenCalledWith('Listing /workspace', false);
+    expect(mockProgress).toHaveBeenCalledWith('Validating frameworks...');
   });
 
   it('should analyze monorepo with mixed languages', async () => {
@@ -299,7 +374,6 @@ describe('Analyze Command Integration Tests', () => {
       };
     });
 
-    const mockProgress = jest.fn();
     const result = await performAnalysis(mockProgress);
 
     expect(result.analysis).toEqual(expectedAnalysis);
@@ -391,13 +465,80 @@ describe('Analyze Command Integration Tests', () => {
       };
     });
 
-    const mockProgress = jest.fn();
     const result = await performAnalysis(mockProgress);
 
     expect(result.analysis).toBeNull();
     expect(result.metadata?.subtype).toBe('error');
     expect(result.metadata?.error).toContain('Invalid JSON response');
     expect(mockWriteJson).not.toHaveBeenCalled();
+  });
+
+  it('should filter out TodoWrite and TodoRead progress events', async () => {
+    setupFixture('simple-express', { addGitRepo: true });
+
+    mockQuery.mockImplementation(async function* () {
+      yield {
+        type: 'assistant',
+        message: {
+          content: [
+            {
+              type: 'tool_use',
+              name: 'TodoWrite',
+              input: { todos: [{ content: 'test task', status: 'pending' }] },
+            },
+          ],
+        },
+      };
+      yield {
+        type: 'assistant',
+        message: {
+          content: [
+            {
+              type: 'tool_use',
+              name: 'Read',
+              input: { file_path: 'src/app.js' },
+            },
+          ],
+        },
+      };
+      yield {
+        type: 'result',
+        subtype: 'success',
+        result: JSON.stringify({
+          is_monorepo: false,
+          has_workspace_package_manager: false,
+          workspace_ecosystem: 'javascript',
+          projects: [
+            {
+              path: '.',
+              language: 'javascript',
+              type: 'api_server',
+              framework: 'express',
+              dependencies: ['express'],
+              has_package_manager: true,
+              ecosystem: 'javascript',
+              dockerized: false,
+            },
+          ],
+        }),
+        total_cost_usd: 0.03,
+        num_turns: 2,
+      };
+    });
+
+    const mockProgress = jest.fn();
+    const result = await performAnalysis(mockProgress);
+
+    expect(result.analysis).toBeDefined();
+    expect(result.metadata?.subtype).toBe('success');
+
+    expect(mockProgress).not.toHaveBeenCalledWith(
+      expect.stringContaining('TodoWrite')
+    );
+    expect(mockProgress).not.toHaveBeenCalledWith(
+      expect.stringContaining('TodoRead')
+    );
+    expect(mockProgress).toHaveBeenCalledWith('Reading src/app.js', false);
   });
 
   it('should handle partial response missing required fields', async () => {
@@ -420,7 +561,6 @@ describe('Analyze Command Integration Tests', () => {
       };
     });
 
-    const mockProgress = jest.fn();
     const result = await performAnalysis(mockProgress);
 
     expect(result.analysis).toBeNull();
@@ -446,12 +586,61 @@ describe('Analyze Command Integration Tests', () => {
       };
     });
 
-    const mockProgress = jest.fn();
     const result = await performAnalysis(mockProgress);
 
     expect(result.analysis).toBeNull();
     expect(result.metadata?.subtype).toBe('error');
     expect(result.metadata?.error).toContain('No projects found in workspace');
     expect(mockWriteJson).not.toHaveBeenCalled();
+  });
+
+  it('should verify chorenzo directory operations show initialization progress', async () => {
+    setupFixture('simple-express', { addGitRepo: true });
+
+    mockQuery.mockImplementation(async function* () {
+      yield {
+        type: 'assistant',
+        message: {
+          content: [
+            {
+              type: 'tool_use',
+              name: 'Bash',
+              input: { command: 'mkdir -p .chorenzo' },
+            },
+          ],
+        },
+      };
+      yield {
+        type: 'result',
+        subtype: 'success',
+        result: JSON.stringify({
+          is_monorepo: false,
+          has_workspace_package_manager: false,
+          workspace_ecosystem: 'javascript',
+          projects: [
+            {
+              path: '.',
+              language: 'javascript',
+              type: 'api_server',
+              framework: 'express',
+              dependencies: ['express'],
+              has_package_manager: true,
+              ecosystem: 'javascript',
+              dockerized: false,
+            },
+          ],
+        }),
+        total_cost_usd: 0.03,
+        num_turns: 2,
+      };
+    });
+
+    const mockProgress = jest.fn();
+    const result = await performAnalysis(mockProgress);
+
+    expect(result.analysis).toBeDefined();
+    expect(result.metadata?.subtype).toBe('success');
+
+    expect(mockProgress).toHaveBeenCalledWith('Initializing the chorenzo engine', false);
   });
 });

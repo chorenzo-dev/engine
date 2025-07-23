@@ -22,6 +22,7 @@ export const ApplyProgress: React.FC<ApplyProgressProps> = ({
     progressOperation,
     completeOperation,
     errorOperation,
+    updateOperation,
   } = useCodeChangesProgress();
   
   const [validationMessages, setValidationMessages] = useState<string[]>([]);
@@ -34,14 +35,19 @@ export const ApplyProgress: React.FC<ApplyProgressProps> = ({
         startOperation({
           id: operationId,
           type: 'apply',
-          description: 'Initializing recipe application...',
+          description: 'Applying recipe',
           status: 'in_progress',
         });
 
         const result = await performRecipesApply(
           options,
-          (step) => {
-            progressOperation(operationId, step);
+          (step, isThinking) => {
+            if (step) {
+              progressOperation(operationId, step);
+            }
+            if (isThinking !== undefined) {
+              updateOperation(operationId, { isThinking });
+            }
           },
           (type, message) => {
             if (type === 'success' || type === 'error' || type === 'warning') {

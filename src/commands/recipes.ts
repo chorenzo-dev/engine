@@ -507,7 +507,7 @@ export async function performRecipesApply(
       );
     }
 
-    onProgress?.('Applying recipe...');
+    onProgress?.('Initializing...');
     const executionResults: ExecutionResult[] = [];
     for (const project of applicableProjects) {
       const variant =
@@ -518,7 +518,8 @@ export async function performRecipesApply(
         recipe,
         project,
         variant,
-        analysis
+        analysis,
+        onProgress
       );
 
       totalCostUsd += executionResult.costUsd;
@@ -759,7 +760,8 @@ async function applyRecipeDirectly(
   recipe: Recipe,
   project: ProjectAnalysis,
   variant: string,
-  analysis: WorkspaceAnalysis
+  analysis: WorkspaceAnalysis,
+  onProgress?: ApplyProgressCallback
 ): Promise<ExecutionResult> {
   const projectPath = project.path === '.' ? 'workspace' : project.path;
   const workspaceRoot = workspaceConfig.getWorkspaceRoot();
@@ -858,6 +860,12 @@ async function applyRecipeDirectly(
     const operationStartTime = new Date();
 
     const handlers: CodeChangesEventHandlers = {
+      onProgress: (step) => {
+        onProgress?.(step, false);
+      },
+      onThinkingStateChange: (isThinking) => {
+        onProgress?.('', isThinking);
+      },
       onComplete: (result, metadata) => {
         executionLog = result;
         executionCost = metadata?.costUsd || 0;

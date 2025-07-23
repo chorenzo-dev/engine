@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Text, Box } from 'ink';
+import Spinner from 'ink-spinner';
 
 export interface CodeChangesOperation {
   id: string;
@@ -9,6 +10,8 @@ export interface CodeChangesOperation {
   startTime?: Date;
   endTime?: Date;
   error?: string;
+  currentActivity?: string;
+  isThinking?: boolean;
   metadata?: {
     costUsd?: number;
     turns?: number;
@@ -121,6 +124,19 @@ export const CodeChangesProgress: React.FC<CodeChangesProgressProps> = ({
         {getOperationIcon(currentOperation.status)} {currentOperation.description}
       </Text>
       
+      {currentOperation.status === 'in_progress' && currentOperation.currentActivity && (
+        <Box marginLeft={2}>
+          <Text color="cyan">
+            {currentOperation.isThinking && (
+              <>
+                <Spinner type="dots" />{' '}
+              </>
+            )}
+            {currentOperation.currentActivity}
+          </Text>
+        </Box>
+      )}
+      
       {hasError && currentOperation.error && (
         <Box marginTop={1}>
           <Text color="red">{currentOperation.error}</Text>
@@ -202,7 +218,7 @@ export const useCodeChangesProgress = () => {
   }, [updateOperation]);
 
   const progressOperation = useCallback((id: string, message: string) => {
-    updateOperation(id, { description: message });
+    updateOperation(id, { currentActivity: message });
   }, [updateOperation]);
 
   const clearOperations = useCallback(() => {

@@ -72,9 +72,7 @@ jest.unstable_mockModule('../utils/git-operations.utils', () => ({
 describe('Init Command Integration Tests', () => {
   let performInit: typeof import('./init').performInit;
 
-  beforeEach(async () => {
-    jest.clearAllMocks();
-
+  const setupDefaultMocks = () => {
     mockHomedir.mockImplementation(() => '/test/home');
     mockMkdirSync.mockImplementation(() => undefined);
     mockExistsSync.mockImplementation(() => false);
@@ -95,6 +93,11 @@ describe('Init Command Integration Tests', () => {
     mockReadJson.mockImplementation(() => Promise.resolve({}));
     mockCheckGitAvailable.mockImplementation(() => Promise.resolve(undefined));
     mockCloneRepository.mockImplementation(() => Promise.resolve(undefined));
+  };
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    setupDefaultMocks();
 
     const initModule = await import('./init');
     performInit = initModule.performInit;
@@ -217,6 +220,7 @@ describe('Init Command Integration Tests', () => {
     await performInit({});
 
     jest.clearAllMocks();
+    setupDefaultMocks();
     mockExistsSync.mockImplementation((filePath: string) => {
       return (
         filePath.includes('/core') ||

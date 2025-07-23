@@ -74,9 +74,7 @@ describe('Recipes Command Integration Tests', () => {
   let performRecipesValidate: typeof import('./recipes').performRecipesValidate;
   let performRecipesApply: typeof import('./recipes').performRecipesApply;
 
-  beforeEach(async () => {
-    jest.clearAllMocks();
-
+  const setupDefaultMocks = () => {
     mockHomedir.mockImplementation(() => '/test/home');
     mockTmpdir.mockImplementation(() => '/tmp');
     mockExistsSync.mockImplementation((path) => {
@@ -135,6 +133,11 @@ outputs:
     );
     mockCloneRepository.mockImplementation(() => Promise.resolve());
     mockRmSync.mockImplementation(() => {});
+  };
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    setupDefaultMocks();
 
     const recipesModule = await import('./recipes');
     performRecipesValidate = recipesModule.performRecipesValidate;
@@ -601,50 +604,58 @@ outputs:
   });
 
   describe('Apply Command Integration', () => {
-    beforeEach(() => {
+    const setupApplyMocks = () => {
       mockParseYaml.mockReturnValue({
         plan: { outputs: { 'test_feature.exists': true } },
       });
       mockReadJson.mockResolvedValue({});
       mockWriteJson.mockResolvedValue(undefined);
+    };
+
+    beforeEach(() => {
+      setupApplyMocks();
     });
 
     it('should apply recipe successfully', async () => {
-      mockReadFileSync.mockImplementation((filePath: string) => {
-        if (filePath.includes('prompt.md')) {
-          return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
-        }
-        if (filePath.includes('apply_recipe.md')) {
-          return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
-        }
-        return '';
-      });
+      const setupSuccessfulApplyScenario = () => {
+        mockReadFileSync.mockImplementation((filePath: string) => {
+          if (filePath.includes('prompt.md')) {
+            return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+          }
+          if (filePath.includes('apply_recipe.md')) {
+            return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+          }
+          return '';
+        });
 
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) return true;
-        if (path.includes('state.json')) return false;
-        if (path.includes('.chorenzo/recipes')) return true;
-        if (path.includes('test-recipe')) return true;
-        if (path.includes('metadata.yaml')) return true;
-        if (path.includes('prompt.md')) return true;
-        if (path.includes('apply_recipe.md')) return true;
-        return true;
-      });
+        mockExistsSync.mockImplementation((path) => {
+          if (path.includes('analysis.json')) return true;
+          if (path.includes('state.json')) return false;
+          if (path.includes('.chorenzo/recipes')) return true;
+          if (path.includes('test-recipe')) return true;
+          if (path.includes('metadata.yaml')) return true;
+          if (path.includes('prompt.md')) return true;
+          if (path.includes('apply_recipe.md')) return true;
+          return true;
+        });
 
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
+        mockStatSync.mockImplementation(
+          () =>
+            ({
+              isDirectory: () => true,
+              isFile: () => false,
+            }) as fs.Stats
+        );
 
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+        mockReaddirSync.mockImplementation((dirPath) => {
+          if (dirPath.includes('.chorenzo/recipes')) {
+            return ['test-recipe'];
+          }
+          return [];
+        });
+      };
+
+      setupSuccessfulApplyScenario();
 
       mockReadJson.mockImplementation((path) => {
         if (path.includes('analysis.json')) {

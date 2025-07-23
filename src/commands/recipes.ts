@@ -566,6 +566,7 @@ export async function performRecipesApply(
       metadata: {
         durationSeconds,
         costUsd: totalCostUsd,
+        turns: executionResults.length,
         startTime: startTimeIso,
         endTime: endTimeIso,
         type: 'result',

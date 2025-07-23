@@ -8,6 +8,7 @@ import {
 } from '@jest/globals';
 import * as path from 'path';
 import type { WorkspaceAnalysis } from '../types/analysis';
+import type { OperationMetadata } from '../types/common';
 import { setupFixture } from '../test-utils/fixture-loader';
 
 const mockQuery = jest.fn<() => AsyncGenerator<unknown, void, unknown>>();
@@ -25,13 +26,7 @@ jest.unstable_mockModule('../utils/json.utils', () => ({
 describe('Analyze Command Integration Tests', () => {
   let performAnalysis: (progress?: (message: string) => void) => Promise<{
     analysis: WorkspaceAnalysis | null;
-    metadata?: {
-      costUsd?: number;
-      turns?: number;
-      durationSeconds?: number;
-      subtype?: string;
-      error?: string;
-    };
+    metadata?: Partial<OperationMetadata>;
     unrecognizedFrameworks?: string[];
   }>;
   let mockProgress: jest.MockedFunction<(message: string) => void>;

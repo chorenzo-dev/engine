@@ -2,6 +2,7 @@ import { SDKMessage } from '@anthropic-ai/claude-code';
 import { CodeChangesOperation } from '../components/CodeChangesProgress';
 import { workspaceConfig } from '../utils/workspace-config.utils';
 import { Logger } from './logger.utils';
+import { BaseMetadata, OperationMetadata } from '../types/common';
 import * as os from 'os';
 
 interface BaseToolInput {
@@ -51,7 +52,7 @@ interface UserMessage {
 export interface CodeChangesEventHandlers {
   onProgress?: (step: string) => void;
   onThinkingStateChange?: (isThinking: boolean) => void;
-  onComplete?: (result: unknown, metadata?: CodeChangesOperation['metadata']) => void;
+  onComplete?: (result: unknown, metadata?: Partial<OperationMetadata>) => void;
   onError?: (error: Error) => void;
 }
 
@@ -59,12 +60,7 @@ export interface CodeChangesOperationResult {
   success: boolean;
   result?: unknown;
   error?: string;
-  metadata: {
-    costUsd: number;
-    turns: number;
-    durationSeconds: number;
-    subtype?: string;
-  };
+  metadata: BaseMetadata;
 }
 
 export async function executeCodeChangesOperation(

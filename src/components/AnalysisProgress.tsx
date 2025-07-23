@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
-import { performAnalysis } from '../commands/analyze';
+import { performAnalysis, AnalysisResult } from '../commands/analyze';
 import { CodeChangesProgress, useCodeChangesProgress } from './CodeChangesProgress';
 import { generateOperationId } from '../utils/code-changes-events.utils';
 
 interface AnalysisProgressProps {
-  onComplete: (result: unknown) => void;
+  onComplete: (result: AnalysisResult) => void;
   onError: (error: Error) => void;
 }
 

@@ -212,7 +212,7 @@ function formatToolMessage(toolName: string, input: any): string | null {
     case 'Bash':
       const command = input.command || input.cmd || '';
       if (command.includes('mkdir') && command.includes('.chorenzo')) {
-        return 'Updating Chorenzo context';
+        return 'Initializing the chorenzo engine';
       }
       if (command.includes('mkdir')) {
         const pathMatch = command.match(/mkdir\s+(-p\s+)?["']?([^"'\s]+)["']?/);

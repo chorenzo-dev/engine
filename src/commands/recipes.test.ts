@@ -700,6 +700,135 @@ outputs:
       expect(mockQuery).toHaveBeenCalledTimes(1);
     });
 
+    it('should verify progress events and thinking state during recipe application', async () => {
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+        }
+        if (filePath.includes('apply_recipe.md')) {
+          return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        return '';
+      });
+
+      mockExistsSync.mockImplementation((path) => {
+        if (path.includes('analysis.json')) return true;
+        if (path.includes('state.json')) return false;
+        if (path.includes('.chorenzo/recipes')) return true;
+        if (path.includes('test-recipe')) return true;
+        if (path.includes('metadata.yaml')) return true;
+        if (path.includes('prompt.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
+        return true;
+      });
+
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
+
+      mockReaddirSync.mockImplementation((dirPath) => {
+        if (dirPath.includes('.chorenzo/recipes')) {
+          return ['test-recipe'];
+        }
+        return [];
+      });
+
+      mockReadJson.mockImplementation((path) => {
+        if (path.includes('analysis.json')) {
+          return Promise.resolve({
+            isMonorepo: false,
+            hasWorkspacePackageManager: false,
+            projects: [
+              {
+                path: '.',
+                language: 'javascript',
+                ecosystem: 'javascript',
+                type: 'web_app',
+                dependencies: [],
+                hasPackageManager: true,
+              },
+            ],
+          });
+        }
+        return Promise.resolve({});
+      });
+
+      mockReadYaml.mockResolvedValue({
+        id: 'test-recipe',
+        category: 'test',
+        summary: 'Test recipe',
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
+        provides: ['test_feature.exists'],
+        requires: [],
+      });
+
+      mockQuery.mockImplementation(async function* () {
+        yield {
+          type: 'assistant',
+          message: {
+            content: [
+              {
+                type: 'tool_use',
+                name: 'Read',
+                input: { file_path: 'src/package.json' },
+              },
+            ],
+          },
+        };
+        yield {
+          type: 'user',
+          message: { content: 'thinking...' },
+        };
+        yield {
+          type: 'assistant',
+          message: {
+            content: [
+              {
+                type: 'tool_use',
+                name: 'Write',
+                input: { file_path: '.eslintrc.js', content: 'eslint config' },
+              },
+            ],
+          },
+        };
+        yield {
+          type: 'result',
+          subtype: 'success',
+          result: 'Execution completed successfully',
+          total_cost_usd: 0.05,
+        };
+      });
+
+      const mockProgress = jest.fn();
+      const result = await performRecipesApply({
+        recipe: 'test-recipe',
+        progress: false,
+      }, mockProgress);
+
+      expect(result).toBeDefined();
+      expect(result.summary.successfulProjects).toBe(1);
+      
+      expect(mockProgress).toHaveBeenCalledWith('Loading recipe...');
+      expect(mockProgress).toHaveBeenCalledWith('Validating recipe structure...');
+      expect(mockProgress).toHaveBeenCalledWith('Ensuring analysis data...');
+      expect(mockProgress).toHaveBeenCalledWith('Checking recipe dependencies...');
+      expect(mockProgress).toHaveBeenCalledWith('Filtering applicable projects...');
+      expect(mockProgress).toHaveBeenCalledWith('Reading src/package.json', false);
+      expect(mockProgress).toHaveBeenCalledWith('', true);
+      expect(mockProgress).toHaveBeenCalledWith('', false);
+      expect(mockProgress).toHaveBeenCalledWith('Writing .eslintrc.js', false);
+    });
+
     it('should handle missing analysis by running analysis', async () => {
       mockExistsSync.mockImplementation((path) => {
         if (path.includes('analysis.json')) return false;
@@ -1872,6 +2001,116 @@ outputs:
       expect(result.summary.successfulProjects).toBe(1);
       expect(result.summary.failedProjects).toBe(0);
       expect(result.executionResults[0].success).toBe(true);
+    });
+
+    it('should verify chorenzo context initialization progress', async () => {
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+        }
+        if (filePath.includes('apply_recipe.md')) {
+          return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        return '';
+      });
+
+      mockExistsSync.mockImplementation((path) => {
+        if (path.includes('analysis.json')) return true;
+        if (path.includes('state.json')) return false;
+        if (path.includes('.chorenzo/recipes')) return true;
+        if (path.includes('test-recipe')) return true;
+        if (path.includes('metadata.yaml')) return true;
+        if (path.includes('prompt.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
+        return true;
+      });
+
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
+
+      mockReaddirSync.mockImplementation((dirPath) => {
+        if (dirPath.includes('.chorenzo/recipes')) {
+          return ['test-recipe'];
+        }
+        return [];
+      });
+
+      mockReadJson.mockImplementation((path) => {
+        if (path.includes('analysis.json')) {
+          return Promise.resolve({
+            isMonorepo: false,
+            hasWorkspacePackageManager: false,
+            projects: [
+              {
+                path: '.',
+                language: 'javascript',
+                ecosystem: 'javascript',
+                type: 'web_app',
+                dependencies: [],
+                hasPackageManager: true,
+              },
+            ],
+          });
+        }
+        return Promise.resolve({});
+      });
+
+      mockReadYaml.mockResolvedValue({
+        id: 'test-recipe',
+        category: 'test',
+        summary: 'Test recipe',
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
+          },
+        ],
+        provides: ['test_feature.exists'],
+        requires: [],
+      });
+
+      mockQuery.mockImplementation(async function* () {
+        yield {
+          type: 'assistant',
+          message: {
+            content: [
+              {
+                type: 'tool_use',
+                name: 'Bash',
+                input: { command: 'mkdir -p .chorenzo/recipes' },
+              },
+            ],
+          },
+        };
+        yield {
+          type: 'result',
+          subtype: 'success',
+          result: 'Execution completed successfully',
+          total_cost_usd: 0.05,
+        };
+      });
+
+      const mockProgress = jest.fn();
+      const result = await performRecipesApply({
+        recipe: 'test-recipe',
+        progress: false,
+      }, mockProgress);
+
+      expect(result).toBeDefined();
+      expect(result.summary.successfulProjects).toBe(1);
+      
+      expect(mockProgress).toHaveBeenCalledWith('Loading recipe...');
+      expect(mockProgress).toHaveBeenCalledWith('Validating recipe structure...');
+      expect(mockProgress).toHaveBeenCalledWith('Ensuring analysis data...');
+      expect(mockProgress).toHaveBeenCalledWith('Checking recipe dependencies...');
+      expect(mockProgress).toHaveBeenCalledWith('Filtering applicable projects...');
+      expect(mockProgress).toHaveBeenCalledWith('Initializing the chorenzo engine', false);
     });
 
   });

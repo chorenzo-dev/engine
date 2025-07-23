@@ -167,7 +167,7 @@ export const DebugProgress: React.FC<DebugProgressProps> = ({
             ═══════════════════════ OPERATION COMPLETE ═══════════════════════
           </Text>
           <Box marginTop={1}>
-            <ApplyDisplay result={result} />
+            <ApplyDisplay result={result} showCost={options.cost} />
           </Box>
         </Box>
       )}

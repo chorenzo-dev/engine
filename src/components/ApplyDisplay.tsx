@@ -4,9 +4,10 @@ import { ApplyRecipeResult } from '../types/apply';
 
 interface ApplyDisplayProps {
   result: ApplyRecipeResult;
+  showCost?: boolean;
 }
 
-export const ApplyDisplay: React.FC<ApplyDisplayProps> = ({ result }) => {
+export const ApplyDisplay: React.FC<ApplyDisplayProps> = ({ result, showCost }) => {
   const { recipe, summary, executionResults, metadata } = result;
 
   return (
@@ -35,7 +36,9 @@ export const ApplyDisplay: React.FC<ApplyDisplayProps> = ({ result }) => {
         <Box flexDirection="column" marginBottom={1}>
           <Text bold>Performance:</Text>
           <Text> • Duration: {metadata.durationSeconds.toFixed(1)}s</Text>
-          <Text> • Cost: ${metadata.costUsd.toFixed(4)} USD</Text>
+          {showCost && (
+            <Text> • Cost: ${metadata.costUsd.toFixed(4)} USD</Text>
+          )}
           {metadata.startTime && (
             <Text dimColor>
               {' '}

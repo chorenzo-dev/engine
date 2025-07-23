@@ -16,6 +16,7 @@ interface InitWithAnalysisProps {
     noAnalyze?: boolean;
     yes?: boolean;
     progress?: boolean;
+    cost?: boolean;
   };
   onComplete: (result?: AnalysisResult) => void;
   onError: (error: Error) => void;
@@ -250,7 +251,7 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
       return (
         <Box flexDirection="column">
           <Text color="green">✅ Initialization complete!</Text>
-          <AnalysisDisplay result={analysisResult} />
+          <AnalysisDisplay result={analysisResult} showCost={options.cost} />
         </Box>
       );
     }

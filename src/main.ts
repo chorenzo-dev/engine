@@ -19,6 +19,7 @@ program
   .option('-A', 'Alias for --no-analyze')
   .option('-y, --yes', 'Skip interactive confirmation')
   .option('--no-progress', 'Disable progress UI')
+  .option('--cost', 'Show LLM cost information')
   .action(async (options) => {
     render(
       React.createElement(Shell, {
@@ -28,6 +29,7 @@ program
           noAnalyze: !options.analyze || options.A,
           yes: options.yes,
           progress: options.progress,
+          cost: options.cost,
         },
       })
     );
@@ -37,12 +39,14 @@ program
   .command('analyze')
   .description('Analyze your workspace structure and provide insights')
   .option('--no-progress', 'Disable progress UI')
+  .option('--cost', 'Show LLM cost information')
   .action(async (options) => {
     render(
       React.createElement(Shell, {
         command: 'analyze',
         options: {
           progress: options.progress,
+          cost: options.cost,
         },
       })
     );
@@ -103,6 +107,7 @@ recipesCommand
   .option('-y, --yes', 'Skip interactive confirmations')
   .option('--no-progress', 'Disable progress UI')
   .option('--debug', 'Show all progress messages in list format')
+  .option('--cost', 'Show LLM cost information')
   .addHelpText(
     'after',
     `
@@ -128,6 +133,7 @@ Examples:
           yes: options.yes,
           progress: options.progress,
           debug: options.debug,
+          cost: options.cost,
         },
       })
     );

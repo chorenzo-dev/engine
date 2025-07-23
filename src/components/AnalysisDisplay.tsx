@@ -5,9 +5,10 @@ import { AnalysisResult } from '../commands/analyze';
 
 interface AnalysisDisplayProps {
   result: AnalysisResult;
+  showCost?: boolean;
 }
 
-export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result }) => {
+export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result, showCost }) => {
   if (!result.analysis) {
     return (
       <Box flexDirection="column">
@@ -24,9 +25,11 @@ export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result }) => {
       </Box>
       {result.metadata && (
         <>
-          <Text color="yellow">
-            💰 Cost: ${result.metadata.costUsd.toFixed(4)}
-          </Text>
+          {showCost && (
+            <Text color="yellow">
+              💰 Cost: ${result.metadata.costUsd.toFixed(4)}
+            </Text>
+          )}
           <Text color="cyan">🔄 Turns: {result.metadata.turns}</Text>
           <Text color="magenta">
             ⏱️ Duration: {result.metadata.durationSeconds.toFixed(1)}s

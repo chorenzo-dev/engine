@@ -881,6 +881,40 @@ async function applyRecipeDirectly(
         }
         break;
       }
+
+      if ('name' in message || 'tool_use' in message || message.type === 'tool_use' || (message as any).toolName) {
+        const toolName = (message as any).name || (message as any).toolName || 'unknown_tool';
+        Logger.info(
+          {
+            event: 'claude_tool_use',
+            toolName: toolName,
+            messageType: message.type,
+          },
+          `Claude tool use: ${toolName}`
+        );
+
+        if (toolName === 'Bash' && 'input' in message && message.input) {
+          const input = message.input as any;
+          Logger.info(
+            {
+              event: 'claude_bash_command',
+              command: input.command ? input.command.substring(0, 200) : 'unknown',
+            },
+            `Claude bash: ${input.command || 'unknown command'}`
+          );
+        }
+      }
+
+      if (message.type === 'tool_result' && 'content' in message) {
+        Logger.debug(
+          {
+            event: 'claude_tool_result',
+            contentLength: message.content.length,
+            isError: message.is_error || false,
+          },
+          `Tool result: ${message.is_error ? 'error' : 'success'}`
+        );
+      }
     }
 
     Logger.info(

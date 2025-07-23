@@ -819,7 +819,7 @@ async function applyRecipeDirectly(
       };
     }
 
-    const fixContent = variantObj.fix_prompt;
+    const fixContent = recipe.fixFiles.get(variantObj.fix_prompt) || variantObj.fix_prompt;
     const recipePrompt = recipe.getPrompt();
 
     const logPath = workspaceConfig.getLogPath();

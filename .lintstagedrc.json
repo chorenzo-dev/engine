@@ -1,6 +1,6 @@
 {
   "*.{js,jsx,ts,tsx}": [
-    "npm run typecheck",
+    "bash -c 'npm run typecheck'",
     "npm run lint:fix",
     "npm run format"
   ],

@@ -28,10 +28,13 @@ describe('Analyze Command Integration Tests', () => {
     metadata?: any;
     unrecognizedFrameworks?: string[];
   }>;
+  let mockProgress: jest.MockedFunction<(message: string) => void>;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
+
+    mockProgress = jest.fn();
 
     const analyzeModule = await import('./analyze');
     performAnalysis = analyzeModule.performAnalysis;
@@ -89,7 +92,6 @@ describe('Analyze Command Integration Tests', () => {
       };
     });
 
-    const mockProgress = jest.fn();
     const result = await performAnalysis(mockProgress);
 
     expect(result.analysis).toEqual(expectedAnalysis);
@@ -145,7 +147,6 @@ describe('Analyze Command Integration Tests', () => {
       };
     });
 
-    const mockProgress = jest.fn();
     const result = await performAnalysis(mockProgress);
 
     expect(result.unrecognizedFrameworks).toEqual(['unknown-framework']);
@@ -373,7 +374,6 @@ describe('Analyze Command Integration Tests', () => {
       };
     });
 
-    const mockProgress = jest.fn();
     const result = await performAnalysis(mockProgress);
 
     expect(result.analysis).toEqual(expectedAnalysis);
@@ -465,7 +465,6 @@ describe('Analyze Command Integration Tests', () => {
       };
     });
 
-    const mockProgress = jest.fn();
     const result = await performAnalysis(mockProgress);
 
     expect(result.analysis).toBeNull();
@@ -562,7 +561,6 @@ describe('Analyze Command Integration Tests', () => {
       };
     });
 
-    const mockProgress = jest.fn();
     const result = await performAnalysis(mockProgress);
 
     expect(result.analysis).toBeNull();
@@ -588,7 +586,6 @@ describe('Analyze Command Integration Tests', () => {
       };
     });
 
-    const mockProgress = jest.fn();
     const result = await performAnalysis(mockProgress);
 
     expect(result.analysis).toBeNull();

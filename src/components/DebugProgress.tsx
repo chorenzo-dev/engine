@@ -27,6 +27,7 @@ export const DebugProgress: React.FC<DebugProgressProps> = ({
   const [isComplete, setIsComplete] = useState(false);
   const [result, setResult] = useState<ApplyRecipeResult | null>(null);
   const [validationMessages, setValidationMessages] = useState<string[]>([]);
+  const [hasStarted, setHasStarted] = useState(false);
   
   const {
     operations,
@@ -43,7 +44,10 @@ export const DebugProgress: React.FC<DebugProgressProps> = ({
   };
 
   useEffect(() => {
+    if (hasStarted) return;
+
     const runApply = async () => {
+      setHasStarted(true);
       const operationId = generateOperationId('apply');
       
       try {
@@ -101,7 +105,7 @@ export const DebugProgress: React.FC<DebugProgressProps> = ({
     };
 
     runApply();
-  }, [options, onComplete, onError, startOperation, progressOperation, completeOperation, errorOperation]);
+  }, [hasStarted]);
 
   const getIcon = (type: ProgressMessage['type']) => {
     switch (type) {

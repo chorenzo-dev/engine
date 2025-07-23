@@ -57,7 +57,7 @@ export class ApplyError extends Error {
   }
 }
 
-export type ApplyProgressCallback = (step: string) => void;
+export type ApplyProgressCallback = (step: string, isThinking?: boolean) => void;
 export type ApplyValidationCallback = (
   type: 'info' | 'success' | 'error' | 'warning',
   message: string

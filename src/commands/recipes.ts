@@ -14,6 +14,7 @@ import { readYaml, parseYaml } from '../utils/yaml.utils';
 import { loadPrompt, renderPrompt } from '../utils/prompts.utils';
 import { workspaceConfig } from '../utils/workspace-config.utils';
 import { Logger } from '../utils/logger.utils';
+import { executeCodeChangesOperation, CodeChangesEventHandlers } from '../utils/code-changes-events.utils';
 import {
   ApplyOptions,
   ApplyRecipeResult,
@@ -506,7 +507,7 @@ export async function performRecipesApply(
       );
     }
 
-    onProgress?.('Applying recipe...');
+    onProgress?.('Initializing the chorenzo engine');
     const executionResults: ExecutionResult[] = [];
     for (const project of applicableProjects) {
       const variant =
@@ -517,7 +518,8 @@ export async function performRecipesApply(
         recipe,
         project,
         variant,
-        analysis
+        analysis,
+        onProgress
       );
 
       totalCostUsd += executionResult.costUsd;
@@ -758,7 +760,8 @@ async function applyRecipeDirectly(
   recipe: Recipe,
   project: ProjectAnalysis,
   variant: string,
-  analysis: WorkspaceAnalysis
+  analysis: WorkspaceAnalysis,
+  onProgress?: ApplyProgressCallback
 ): Promise<ExecutionResult> {
   const projectPath = project.path === '.' ? 'workspace' : project.path;
   const workspaceRoot = workspaceConfig.getWorkspaceRoot();
@@ -853,56 +856,70 @@ async function applyRecipeDirectly(
     let executionCost = 0;
     let executionLog = '';
     let success = false;
+    let errorMessage: string | undefined;
+    const operationStartTime = new Date();
 
-    for await (const message of query({
-      prompt: applicationPrompt,
-      options: {
-        model: 'sonnet',
-        allowedTools: [
-          'Bash',
-          'Read',
-          'Write',
-          'Edit',
-          'MultiEdit',
-          'LS',
-          'Glob',
-          'Grep',
-        ],
-        permissionMode: 'bypassPermissions',
+    const handlers: CodeChangesEventHandlers = {
+      onProgress: (step) => {
+        onProgress?.(step, false);
       },
-    })) {
-      if (message.type === 'result') {
-        if ('total_cost_usd' in message) {
-          executionCost = message.total_cost_usd;
-        }
-        if (message.subtype === 'success' && 'result' in message) {
-          executionLog = message.result;
-          success = true;
-        }
-        break;
+      onThinkingStateChange: (isThinking) => {
+        onProgress?.('', isThinking);
+      },
+      onComplete: (result, metadata) => {
+        executionLog = result;
+        executionCost = metadata?.costUsd || 0;
+        success = true;
+        Logger.info(
+          {
+            event: 'claude_execution_completed',
+          },
+          'Claude execution query completed'
+        );
+      },
+      onError: (error) => {
+        errorMessage = error.message;
+        Logger.error(
+          {
+            event: 'recipe_application_failed',
+            error: error.message,
+          },
+          'Recipe application failed'
+        );
       }
-    }
+    };
 
-    Logger.info(
-      {
-        event: 'claude_execution_completed',
-      },
-      'Claude execution query completed'
+    const operationResult = await executeCodeChangesOperation(
+      query({
+        prompt: applicationPrompt,
+        options: {
+          model: 'sonnet',
+          allowedTools: [
+            'Bash',
+            'Read',
+            'Write',
+            'Edit',
+            'MultiEdit',
+            'LS',
+            'Glob',
+            'Grep',
+          ],
+          permissionMode: 'bypassPermissions',
+        },
+      }),
+      handlers,
+      operationStartTime
     );
 
+    executionCost = operationResult.metadata.costUsd;
+    success = operationResult.success;
+
     if (!success) {
-      Logger.error(
-        {
-          event: 'recipe_application_failed',
-          error: 'Claude execution did not complete successfully',
-        },
-        'Recipe application failed'
-      );
       return {
         projectPath,
         recipeId: recipe.getId(),
         success: false,
-        error: 'Recipe application failed during execution',
+        error: operationResult.error || 'Recipe application failed during execution',
         costUsd: executionCost,
       };
     }

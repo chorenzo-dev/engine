@@ -27,6 +27,7 @@ interface ShellProps {
     variant?: string;
     project?: string;
     debug?: boolean;
+    cost?: boolean;
   };
 }
 
@@ -202,7 +203,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       commandState.command === 'analyze' &&
       commandState.result
     ) {
-      return <AnalysisDisplay result={commandState.result} />;
+      return (
+        <AnalysisDisplay result={commandState.result} showCost={options.cost} />
+      );
     }
 
     return (
@@ -236,7 +239,10 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
             commandState.result &&
             commandState.result.analysis ? (
               <Box marginTop={1}>
-                <AnalysisDisplay result={commandState.result} />
+                <AnalysisDisplay
+                  result={commandState.result}
+                  showCost={options.cost}
+                />
               </Box>
             ) : null}
           </Box>
@@ -250,6 +256,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
             noAnalyze: options.noAnalyze,
             yes: options.yes,
             progress: options.progress,
+            cost: options.cost,
           }}
           onComplete={(result) => {
             setCommandState({ command: 'init', result: result || null });
@@ -343,6 +350,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         project: options.project,
         yes: options.yes,
         progress: options.progress,
+        cost: options.cost,
       };
 
       return (
@@ -373,7 +381,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         commandState.command === 'recipes-apply' &&
         commandState.result
       ) {
-        return <ApplyDisplay result={commandState.result} />;
+        return (
+          <ApplyDisplay result={commandState.result} showCost={options.cost} />
+        );
       }
 
       return (
@@ -396,7 +406,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       commandState.command === 'recipes-apply' &&
       commandState.result
     ) {
-      return <ApplyDisplay result={commandState.result} />;
+      return (
+        <ApplyDisplay result={commandState.result} showCost={options.cost} />
+      );
     }
 
     const applyOptions: ApplyOptions = {
@@ -405,6 +417,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       project: options.project,
       yes: options.yes,
       progress: options.progress,
+      cost: options.cost,
     };
 
     return (

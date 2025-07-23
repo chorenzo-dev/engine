@@ -7,6 +7,7 @@ export interface ApplyOptions {
   project?: string;
   yes?: boolean;
   progress?: boolean;
+  cost?: boolean;
 }
 
 export interface RecipeState {

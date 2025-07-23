@@ -19,6 +19,7 @@ export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
     progressOperation,
     completeOperation,
     errorOperation,
+    updateOperation,
   } = useCodeChangesProgress();
 
   useEffect(() => {
@@ -29,12 +30,17 @@ export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
         startOperation({
           id: operationId,
           type: 'analysis',
-          description: 'Initializing workspace analysis...',
+          description: 'Analyzing workspace',
           status: 'in_progress',
         });
 
-        const result = await performAnalysis((step) => {
-          progressOperation(operationId, step);
+        const result = await performAnalysis((step, isThinking) => {
+          if (step) {
+            progressOperation(operationId, step);
+          }
+          if (isThinking !== undefined) {
+            updateOperation(operationId, { isThinking });
+          }
         });
 
         completeOperation(operationId, {

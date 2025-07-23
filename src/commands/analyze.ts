@@ -34,7 +34,7 @@ function snakeToCamelCase<T>(obj: unknown): T {
   return obj as T;
 }
 
-export type ProgressCallback = (step: string) => void;
+export type ProgressCallback = (step: string, isThinking?: boolean) => void;
 
 export async function performAnalysis(
   onProgress?: ProgressCallback
@@ -67,7 +67,10 @@ export async function performAnalysis(
   let errorMessage: string | undefined;
 
   const handlers: CodeChangesEventHandlers = {
-    onProgress: (step) => onProgress?.(step),
+    onProgress: (step) => onProgress?.(step, false),
+    onThinkingStateChange: (isThinking) => {
+      onProgress?.('', isThinking);
+    },
     onComplete: (result) => {
       try {
         analysis = JSON.parse(result);

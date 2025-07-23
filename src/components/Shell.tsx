@@ -5,8 +5,7 @@ import { InitWithAnalysis } from './InitWithAnalysis';
 import { ApplyProgress } from './ApplyProgress';
 import { DebugProgress } from './DebugProgress';
 import { ApplyDisplay } from './ApplyDisplay';
-import { performAnalysis } from '../commands/analyze';
-import { performInit } from '../commands/init';
+import { performAnalysis, AnalysisResult } from '../commands/analyze';
 import {
   performRecipesValidate,
   performRecipesApply,
@@ -32,8 +31,17 @@ interface ShellProps {
   };
 }
 
+type ShellState = 
+  | { command: 'analyze'; result: AnalysisResult | null }
+  | { command: 'init'; result: AnalysisResult | null }
+  | { command: 'recipes-validate'; result: ValidationResult | null }
+  | { command: 'recipes-apply'; result: ApplyRecipeResult | null };
+
 export const Shell: React.FC<ShellProps> = ({ command, options }) => {
-  const [result, setResult] = useState<any>(null);
+  const [commandState, setCommandState] = useState<ShellState>(() => ({
+    command,
+    result: null,
+  } as ShellState));
   const [error, setError] = useState<Error | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [simpleStep, setSimpleStep] = useState<string>('');
@@ -52,7 +60,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           const analysisResult = await performAnalysis((step) => {
             setSimpleStep(step);
           });
-          setResult(analysisResult);
+          setCommandState({ command: 'analyze', result: analysisResult });
           setIsComplete(true);
         } catch (err) {
           setError(err instanceof Error ? err : new Error(String(err)));
@@ -70,19 +78,18 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       const runRecipesValidate = async () => {
         try {
           const handleValidation: ValidationCallback = (type, message) => {
-            let formattedMessage: string;
             switch (type) {
               case 'success':
-                formattedMessage = `✅ ${message}`;
+                console.log(`✅ ${message}`);
                 break;
               case 'error':
-                formattedMessage = `❌ ${message}`;
+                console.error(`❌ ${message}`);
                 break;
               case 'warning':
-                formattedMessage = `⚠️  ${message}`;
+                console.warn(`⚠️ ${message}`);
                 break;
               case 'info':
-                formattedMessage = `📊 ${message}`;
+                console.info(`📊 ${message}`);
                 break;
             }
           };
@@ -134,7 +141,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
             }
           );
 
-          setResult(applyResult);
+          setCommandState({ command: 'recipes-apply', result: applyResult });
           setIsComplete(true);
         } catch (err) {
           setError(err instanceof Error ? err : new Error(String(err)));
@@ -165,8 +172,8 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         );
       }
 
-      if (isComplete && result) {
-        return <AnalysisDisplay result={result} />;
+      if (isComplete && commandState.command === 'analyze' && commandState.result) {
+        return <AnalysisDisplay result={commandState.result} />;
       }
 
       return (
@@ -184,14 +191,14 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       );
     }
 
-    if (isComplete && result) {
-      return <AnalysisDisplay result={result} showCost={options.cost} />;
+    if (isComplete && commandState.command === 'analyze' && commandState.result) {
+      return <AnalysisDisplay result={commandState.result} showCost={options.cost} />;
     }
 
     return (
       <AnalysisProgress
         onComplete={(result) => {
-          setResult(result);
+          setCommandState({ command: 'analyze', result });
           setIsComplete(true);
         }}
         onError={(error) => {
@@ -215,11 +222,11 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         return (
           <Box flexDirection="column">
             <Text color="green">✅ Initialization complete!</Text>
-            {result && result.analysis && (
+            {commandState.command === 'init' && commandState.result && commandState.result.analysis ? (
               <Box marginTop={1}>
-                <AnalysisDisplay result={result} showCost={options.cost} />
+                <AnalysisDisplay result={commandState.result} showCost={options.cost} />
               </Box>
-            )}
+            ) : null}
           </Box>
         );
       }
@@ -234,7 +241,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
             cost: options.cost,
           }}
           onComplete={(result) => {
-            setResult(result);
+            setCommandState({ command: 'init', result: result || null });
             setIsComplete(true);
           }}
           onError={(error) => {
@@ -332,7 +339,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         <DebugProgress
           options={applyOptions}
           onComplete={(applyResult) => {
-            setResult(applyResult);
+            setCommandState({ command: 'recipes-apply', result: applyResult });
             setIsComplete(true);
           }}
           onError={(error) => {
@@ -351,8 +358,8 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         );
       }
 
-      if (isComplete && result) {
-        return <ApplyDisplay result={result as ApplyRecipeResult} showCost={options.cost} />;
+      if (isComplete && commandState.command === 'recipes-apply' && commandState.result) {
+        return <ApplyDisplay result={commandState.result} showCost={options.cost} />;
       }
 
       return (
@@ -370,8 +377,8 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       );
     }
 
-    if (isComplete && result) {
-      return <ApplyDisplay result={result as ApplyRecipeResult} showCost={options.cost} />;
+    if (isComplete && commandState.command === 'recipes-apply' && commandState.result) {
+      return <ApplyDisplay result={commandState.result} showCost={options.cost} />;
     }
 
     const applyOptions: ApplyOptions = {
@@ -380,13 +387,14 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       project: options.project,
       yes: options.yes,
       progress: options.progress,
+      cost: options.cost,
     };
 
     return (
       <ApplyProgress
         options={applyOptions}
         onComplete={(applyResult) => {
-          setResult(applyResult);
+          setCommandState({ command: 'recipes-apply', result: applyResult });
           setIsComplete(true);
         }}
         onError={(error) => {

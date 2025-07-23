@@ -92,7 +92,7 @@ function normalizeFrameworkName(framework: string): string {
     .toLowerCase()
     .trim()
     .replace(/\./g, '') // Remove dots: "express.js" -> "expressjs"
-    .replace(/[\s\/\\]+/g, '-') // Replace spaces and slashes with dashes: "react native" -> "react-native"
+    .replace(/[\s/\\]+/g, '-') // Replace spaces and slashes with dashes: "react native" -> "react-native"
     .replace(/-+/g, '-') // Collapse multiple dashes: "react--native" -> "react-native"
     .replace(/^-|-$/g, ''); // Remove leading/trailing dashes
 }

@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import type { jest as jestType } from '@jest/globals';
 
 declare global {
   namespace jest {
@@ -6,7 +6,7 @@ declare global {
       moduleName: string,
       factory?: () => T | Promise<T>,
       options?: MockOptions
-    ): typeof jest;
+    ): typeof jestType;
   }
 }
 

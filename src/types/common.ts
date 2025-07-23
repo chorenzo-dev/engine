@@ -1,10 +1,13 @@
-export interface OperationMetadata {
-  durationSeconds: number;
+export interface BaseMetadata {
   costUsd: number;
+  turns: number;
+  durationSeconds: number;
+  subtype?: string;
+}
+
+export interface OperationMetadata extends BaseMetadata {
   startTime?: string;
   endTime?: string;
   type?: string;
-  subtype?: string;
-  turns?: number;
   error?: string;
 }

@@ -1,5 +1,4 @@
 import { Recipe, RecipeDependency } from './recipe';
-import { WorkspaceAnalysis, ProjectAnalysis } from './analysis';
 import { OperationMetadata } from './common';
 
 export interface ApplyOptions {
@@ -46,7 +45,7 @@ export interface ApplyRecipeResult {
   metadata: OperationMetadata;
 }
 
-export interface ApplyResult extends ApplyRecipeResult {}
+export type ApplyResult = ApplyRecipeResult;
 
 export class ApplyError extends Error {
   constructor(

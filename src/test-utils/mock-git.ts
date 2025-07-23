@@ -21,7 +21,7 @@ export function mockGitOperations(
     parseGitConfig: jest
       .fn<() => Promise<string>>()
       .mockResolvedValue(remoteUrl),
-    normalizeRepoIdentifier: jest.fn((url: string) => 'test/repo'),
+    normalizeRepoIdentifier: jest.fn(() => 'test/repo'),
     getProjectIdentifier: jest
       .fn<() => Promise<{ identifier: string; type: string }>>()
       .mockResolvedValue({

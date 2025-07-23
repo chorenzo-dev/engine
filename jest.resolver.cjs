@@ -1,4 +1,4 @@
-const { resolve, join } = require('path');
+const { resolve } = require('path');
 const { existsSync } = require('fs');
 
 module.exports = (request, options) => {

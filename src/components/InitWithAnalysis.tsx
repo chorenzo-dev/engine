@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput, useStdin } from 'ink';
 import { performInit } from '../commands/init';
-import { performAnalysis } from '../commands/analyze';
+import { performAnalysis, AnalysisResult } from '../commands/analyze';
 import { AnalysisDisplay } from './AnalysisDisplay';
 import { CodeChangesProgress, useCodeChangesProgress } from './CodeChangesProgress';
 import { generateOperationId } from '../utils/code-changes-events.utils';
@@ -18,7 +18,7 @@ interface InitWithAnalysisProps {
     progress?: boolean;
     cost?: boolean;
   };
-  onComplete: (result?: any) => void;
+  onComplete: (result?: AnalysisResult) => void;
   onError: (error: Error) => void;
 }
 
@@ -42,7 +42,7 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
   >('init');
   const [initComplete, setInitComplete] = useState(false);
   const [step, setStep] = useState<string>('');
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [analysisStartTime, setAnalysisStartTime] = useState<number>(0);
   const [showLongRunningMessage, setShowLongRunningMessage] = useState(false);
   const [analysisAborted, setAnalysisAborted] = useState(false);
@@ -191,7 +191,7 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
     if (fs.existsSync(statePath)) {
       try {
         state = await readJson<State>(statePath);
-      } catch (error) {
+      } catch {
         console.warn('Failed to read existing state file, using defaults');
       }
     }

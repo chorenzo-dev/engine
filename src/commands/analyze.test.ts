@@ -8,10 +8,11 @@ import {
 } from '@jest/globals';
 import * as path from 'path';
 import type { WorkspaceAnalysis } from '../types/analysis';
+import type { OperationMetadata } from '../types/common';
 import { setupFixture } from '../test-utils/fixture-loader';
 
-const mockQuery = jest.fn<() => AsyncGenerator<any, void, unknown>>();
-const mockWriteJson = jest.fn<(path: string, data: any) => Promise<void>>();
+const mockQuery = jest.fn<() => AsyncGenerator<unknown, void, unknown>>();
+const mockWriteJson = jest.fn<(path: string, data: unknown) => Promise<void>>();
 
 jest.unstable_mockModule('@anthropic-ai/claude-code', () => ({
   query: mockQuery,
@@ -19,13 +20,13 @@ jest.unstable_mockModule('@anthropic-ai/claude-code', () => ({
 
 jest.unstable_mockModule('../utils/json.utils', () => ({
   writeJson: mockWriteJson,
-  readJson: jest.fn<() => Promise<any>>(),
+  readJson: jest.fn<() => Promise<unknown>>(),
 }));
 
 describe('Analyze Command Integration Tests', () => {
   let performAnalysis: (progress?: (message: string) => void) => Promise<{
     analysis: WorkspaceAnalysis | null;
-    metadata?: any;
+    metadata?: Partial<OperationMetadata>;
     unrecognizedFrameworks?: string[];
   }>;
   let mockProgress: jest.MockedFunction<(message: string) => void>;

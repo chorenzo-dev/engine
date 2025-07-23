@@ -17,7 +17,7 @@ interface InitWithAnalysisProps {
     yes?: boolean;
     progress?: boolean;
   };
-  onComplete: (result?: any) => void;
+  onComplete: (result?: unknown) => void;
   onError: (error: Error) => void;
 }
 
@@ -41,7 +41,7 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
   >('init');
   const [initComplete, setInitComplete] = useState(false);
   const [step, setStep] = useState<string>('');
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisResult, setAnalysisResult] = useState<unknown>(null);
   const [analysisStartTime, setAnalysisStartTime] = useState<number>(0);
   const [showLongRunningMessage, setShowLongRunningMessage] = useState(false);
   const [analysisAborted, setAnalysisAborted] = useState(false);
@@ -190,7 +190,7 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
     if (fs.existsSync(statePath)) {
       try {
         state = await readJson<State>(statePath);
-      } catch (error) {
+      } catch {
         console.warn('Failed to read existing state file, using defaults');
       }
     }
@@ -250,7 +250,7 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
       return (
         <Box flexDirection="column">
           <Text color="green">✅ Initialization complete!</Text>
-          <AnalysisDisplay result={analysisResult} />
+          <AnalysisDisplay result={analysisResult as import('../commands/analyze').AnalysisResult} />
         </Box>
       );
     }

@@ -8,7 +8,7 @@ import {
 } from '../utils/git-operations.utils';
 import { retry } from '../utils/retry.utils';
 import { readYaml, writeYaml, YamlError } from '../utils/yaml.utils';
-import { readJson, writeJson } from '../utils/json.utils';
+import { writeJson } from '../utils/json.utils';
 import { Logger } from '../utils/logger.utils';
 
 class ChorenzoConfig {
@@ -248,7 +248,7 @@ async function cloneLibraries(
         }
       );
       onProgress?.(`Successfully cloned ${libName}`);
-    } catch (error) {
+    } catch {
       onProgress?.(
         `Warning: Failed to clone ${libName} after retry, skipping...`
       );

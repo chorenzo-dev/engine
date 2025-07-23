@@ -1,11 +1,11 @@
-import { query, type SDKMessage } from '@anthropic-ai/claude-code';
-import { findGitRoot, getProjectIdentifier } from '../utils/git.utils';
+import { query } from '@anthropic-ai/claude-code';
+import { findGitRoot } from '../utils/git.utils';
 import { buildFileTree } from '../utils/file-tree.utils';
 import { loadPrompt, renderPrompt } from '../utils/prompts.utils';
 import { WorkspaceAnalysis } from '../types/analysis';
 import { OperationMetadata } from '../types/common';
 import { validateFrameworks } from '../utils/framework-validation';
-import { readJson, writeJson } from '../utils/json.utils';
+import { writeJson } from '../utils/json.utils';
 import { Logger } from '../utils/logger.utils';
 import { executeCodeChangesOperation, CodeChangesEventHandlers } from '../utils/code-changes-events.utils';
 import * as fs from 'fs';
@@ -27,7 +27,7 @@ function snakeToCamelCase<T>(obj: unknown): T {
       const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
         letter.toUpperCase()
       );
-      (result as any)[camelKey] = snakeToCamelCase((obj as any)[key]);
+      (result as Record<string, unknown>)[camelKey] = snakeToCamelCase((obj as Record<string, unknown>)[key]);
       return result;
     }, {} as T);
   }
@@ -73,7 +73,7 @@ export async function performAnalysis(
     },
     onComplete: (result) => {
       try {
-        analysis = JSON.parse(result);
+        analysis = JSON.parse(String(result));
       } catch (error) {
         errorMessage = `Invalid JSON response: ${error instanceof Error ? error.message : String(error)}`;
         analysis = null;
@@ -133,7 +133,7 @@ export async function performAnalysis(
             `Warning: ${unrecognizedFrameworks.length} frameworks not recognized: ${unrecognizedFrameworks.join(', ')}`
           );
         }
-      } catch (error) {
+      } catch {
         onProgress?.('Warning: Framework validation failed');
       }
     }

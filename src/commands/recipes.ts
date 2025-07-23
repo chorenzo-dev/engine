@@ -9,8 +9,7 @@ import {
 import { cloneRepository } from '../utils/git-operations.utils';
 import { normalizeRepoIdentifier } from '../utils/git.utils';
 import { performAnalysis } from './analyze';
-import { readJson, writeJson } from '../utils/json.utils';
-import { readYaml, parseYaml } from '../utils/yaml.utils';
+import { readJson } from '../utils/json.utils';
 import { loadPrompt, renderPrompt } from '../utils/prompts.utils';
 import { workspaceConfig } from '../utils/workspace-config.utils';
 import { Logger } from '../utils/logger.utils';
@@ -415,7 +414,7 @@ async function validateGitRepository(
     'This will create a temporary directory and may take some time.'
   );
 
-  const repoName = normalizeRepoIdentifier(gitUrl).replace(/[\/\\]/g, '-');
+  const repoName = normalizeRepoIdentifier(gitUrl).replace(/[/\\]/g, '-');
   const tempDir = path.join(
     os.tmpdir(),
     `chorenzo-recipes-${repoName}-${Date.now()}`
@@ -448,7 +447,7 @@ async function validateGitRepository(
       if (fs.existsSync(tempDir)) {
         fs.rmSync(tempDir, { recursive: true, force: true });
       }
-    } catch (cleanupError) {
+    } catch {
       onProgress?.('Warning: Failed to clean up temporary directory');
     }
   }
@@ -583,7 +582,9 @@ export async function performRecipesApply(
         },
         'Recipe application failed'
       );
-    } catch (loggerError) {}
+    } catch {
+      // Silently ignore logging errors
+    }
 
     if (error instanceof ApplyError) {
       throw error;
@@ -600,7 +601,7 @@ async function loadRecipe(recipeName: string): Promise<Recipe> {
   const inputType = detectInputType(resolvedTarget);
 
   switch (inputType) {
-    case InputType.RecipeName:
+    case InputType.RecipeName: {
       const foundPaths = await findRecipeByName(resolvedTarget);
       if (foundPaths.length === 0) {
         throw new ApplyError(
@@ -616,6 +617,7 @@ async function loadRecipe(recipeName: string): Promise<Recipe> {
         );
       }
       return await parseRecipeFromDirectory(foundPaths[0]);
+    }
 
     case InputType.RecipeFolder:
       if (!fs.existsSync(resolvedTarget)) {
@@ -825,7 +827,6 @@ async function applyRecipeDirectly(
     const fixContent = recipe.fixFiles.get(variantObj.fix_prompt) || variantObj.fix_prompt;
     const recipePrompt = recipe.getPrompt();
 
-    const logPath = workspaceConfig.getLogPath();
     const promptTemplate = loadPrompt('apply_recipe');
     const combinedContent = recipePrompt.content + '\n\n' + fixContent;
 
@@ -854,9 +855,7 @@ async function applyRecipeDirectly(
     );
 
     let executionCost = 0;
-    let executionLog = '';
     let success = false;
-    let errorMessage: string | undefined;
     const operationStartTime = new Date();
 
     const handlers: CodeChangesEventHandlers = {
@@ -867,7 +866,7 @@ async function applyRecipeDirectly(
         onProgress?.('', isThinking);
       },
       onComplete: (result, metadata) => {
-        executionLog = result;
+        // Store execution result if needed
         executionCost = metadata?.costUsd || 0;
         success = true;
         Logger.info(
@@ -878,7 +877,7 @@ async function applyRecipeDirectly(
         );
       },
       onError: (error) => {
-        errorMessage = error.message;
+        // Store error message if needed
         Logger.error(
           {
             event: 'recipe_application_failed',

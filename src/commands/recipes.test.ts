@@ -7,9 +7,6 @@ import {
   jest,
 } from '@jest/globals';
 import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-import type { ValidateOptions } from './recipes';
 
 const mockHomedir = jest.fn<() => string>(() => '/test/home');
 const mockTmpdir = jest.fn<() => string>(() => '/tmp');
@@ -17,10 +14,10 @@ const mockExistsSync = jest.fn<(path: string) => boolean>();
 const mockStatSync = jest.fn<(path: string) => fs.Stats>();
 const mockReaddirSync = jest.fn<(path: string) => string[]>();
 const mockReadFileSync = jest.fn<(path: string, encoding?: string) => string>();
-const mockReadYaml = jest.fn<(path: string) => Promise<any>>();
-const mockParseYaml = jest.fn<(content: string) => any>();
-const mockReadJson = jest.fn<(path: string) => Promise<any>>();
-const mockWriteJson = jest.fn<(path: string, data: any) => Promise<void>>();
+const mockReadYaml = jest.fn<(path: string) => Promise<unknown>>();
+const mockParseYaml = jest.fn<(content: string) => unknown>();
+const mockReadJson = jest.fn<(path: string) => Promise<unknown>>();
+const mockWriteJson = jest.fn<(path: string, data: unknown) => Promise<void>>();
 const mockQuery = jest.fn();
 const mockPerformAnalysis =
   jest.fn<() => Promise<import('./analyze').AnalysisResult>>();
@@ -77,7 +74,7 @@ describe('Recipes Command Integration Tests', () => {
   const setupDefaultMocks = () => {
     mockHomedir.mockImplementation(() => '/test/home');
     mockTmpdir.mockImplementation(() => '/tmp');
-    mockExistsSync.mockImplementation((path) => {
+    mockExistsSync.mockImplementation(() => {
       return true;
     });
     mockStatSync.mockImplementation(

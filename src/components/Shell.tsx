@@ -5,7 +5,6 @@ import { InitWithAnalysis } from './InitWithAnalysis';
 import { ApplyProgress } from './ApplyProgress';
 import { ApplyDisplay } from './ApplyDisplay';
 import { performAnalysis } from '../commands/analyze';
-import { performInit } from '../commands/init';
 import {
   performRecipesValidate,
   performRecipesApply,
@@ -30,7 +29,7 @@ interface ShellProps {
 }
 
 export const Shell: React.FC<ShellProps> = ({ command, options }) => {
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<unknown>(null);
   const [error, setError] = useState<Error | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [simpleStep, setSimpleStep] = useState<string>('');
@@ -67,19 +66,18 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       const runRecipesValidate = async () => {
         try {
           const handleValidation: ValidationCallback = (type, message) => {
-            let formattedMessage: string;
             switch (type) {
               case 'success':
-                formattedMessage = `✅ ${message}`;
+                console.log(`✅ ${message}`);
                 break;
               case 'error':
-                formattedMessage = `❌ ${message}`;
+                console.error(`❌ ${message}`);
                 break;
               case 'warning':
-                formattedMessage = `⚠️  ${message}`;
+                console.warn(`⚠️ ${message}`);
                 break;
               case 'info':
-                formattedMessage = `📊 ${message}`;
+                console.info(`📊 ${message}`);
                 break;
             }
           };
@@ -162,7 +160,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       }
 
       if (isComplete && result) {
-        return <AnalysisDisplay result={result} />;
+        return <AnalysisDisplay result={result as import('../commands/analyze').AnalysisResult} />;
       }
 
       return (
@@ -181,7 +179,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     }
 
     if (isComplete && result) {
-      return <AnalysisDisplay result={result} />;
+      return <AnalysisDisplay result={result as import('../commands/analyze').AnalysisResult} />;
     }
 
     return (
@@ -211,11 +209,11 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         return (
           <Box flexDirection="column">
             <Text color="green">✅ Initialization complete!</Text>
-            {result && result.analysis && (
+            {result && (result as import('../commands/analyze').AnalysisResult).analysis ? (
               <Box marginTop={1}>
-                <AnalysisDisplay result={result} />
+                <AnalysisDisplay result={result as import('../commands/analyze').AnalysisResult} />
               </Box>
-            )}
+            ) : null}
           </Box>
         );
       }

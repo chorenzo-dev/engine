@@ -161,7 +161,13 @@ async function parseFixFiles(
   return fixFiles;
 }
 
-function validateMetadata(metadata: any, metadataPath: string): void {
+function validateMetadata(metadata: unknown, metadataPath: string): void {
+  // Type guard to check if metadata has the expected structure
+  if (!metadata || typeof metadata !== 'object') {
+    throw new Error(`Invalid metadata format in ${metadataPath}`);
+  }
+  
+  const metadataObj = metadata as Record<string, unknown>;
   const requiredFields = [
     'id',
     'category',
@@ -172,24 +178,24 @@ function validateMetadata(metadata: any, metadataPath: string): void {
   ];
 
   for (const field of requiredFields) {
-    if (!metadata[field]) {
+    if (!metadataObj[field]) {
       throw new Error(`Missing required field: ${field}`);
     }
   }
 
-  if (!Array.isArray(metadata.ecosystems)) {
+  if (!Array.isArray(metadataObj.ecosystems)) {
     throw new Error('ecosystems must be an array');
   }
 
-  if (!Array.isArray(metadata.provides)) {
+  if (!Array.isArray(metadataObj.provides)) {
     throw new Error('provides must be an array');
   }
 
-  if (!Array.isArray(metadata.requires)) {
+  if (!Array.isArray(metadataObj.requires)) {
     throw new Error('requires must be an array');
   }
 
-  for (const ecosystem of metadata.ecosystems) {
+  for (const ecosystem of metadataObj.ecosystems as Array<Record<string, unknown>>) {
     if (!ecosystem.id || !ecosystem.default_variant || !ecosystem.variants) {
       throw new Error(`Invalid ecosystem structure`);
     }
@@ -207,9 +213,9 @@ function validateMetadata(metadata: any, metadataPath: string): void {
 
   const recipeDir = path.dirname(metadataPath);
   const recipeName = path.basename(recipeDir);
-  if (metadata.id !== recipeName) {
+  if (metadataObj.id !== recipeName) {
     throw new Error(
-      `Recipe ID '${metadata.id}' must match directory name '${recipeName}'`
+      `Recipe ID '${metadataObj.id}' must match directory name '${recipeName}'`
     );
   }
 }

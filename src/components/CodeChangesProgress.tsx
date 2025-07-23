@@ -23,7 +23,7 @@ export interface CodeChangesProgressEvent {
   type: 'operation_start' | 'operation_progress' | 'operation_complete' | 'operation_error';
   operationId: string;
   message: string;
-  metadata?: any;
+  metadata?: unknown;
 }
 
 export interface CodeChangesProgressProps {
@@ -42,11 +42,9 @@ interface LogEntry {
 
 export const CodeChangesProgress: React.FC<CodeChangesProgressProps> = ({
   operations,
-  onOperationUpdate,
   showLogs = false,
-  maxLogEntries = 5,
 }) => {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [logs] = useState<LogEntry[]>([]);
   const [currentOperation, setCurrentOperation] = useState<CodeChangesOperation | null>(null);
 
   const getCurrentOperation = useCallback(() => {
@@ -60,9 +58,7 @@ export const CodeChangesProgress: React.FC<CodeChangesProgressProps> = ({
     setCurrentOperation(current);
   }, [getCurrentOperation]);
 
-  const addLog = useCallback((entry: LogEntry) => {
-    setLogs(prev => [...prev.slice(-(maxLogEntries - 1)), entry]);
-  }, [maxLogEntries]);
+  // Removed unused addLog function
 
   const getOperationIcon = (status: CodeChangesOperation['status']) => {
     switch (status) {

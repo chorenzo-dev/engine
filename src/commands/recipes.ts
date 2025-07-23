@@ -573,18 +573,14 @@ export async function performRecipesApply(
       },
     };
   } catch (error) {
-    try {
-      Logger.error(
-        {
-          event: 'apply_error',
-          error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-        },
-        'Recipe application failed'
-      );
-    } catch {
-      // Silently ignore logging errors
-    }
+    Logger.error(
+      {
+        event: 'apply_error',
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+      'Recipe application failed'
+    );
 
     if (error instanceof ApplyError) {
       throw error;

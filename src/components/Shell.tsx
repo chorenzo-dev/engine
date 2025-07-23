@@ -3,6 +3,7 @@ import { Box, Text } from 'ink';
 import { AnalysisProgress } from './AnalysisProgress';
 import { InitWithAnalysis } from './InitWithAnalysis';
 import { ApplyProgress } from './ApplyProgress';
+import { DebugProgress } from './DebugProgress';
 import { ApplyDisplay } from './ApplyDisplay';
 import { performAnalysis } from '../commands/analyze';
 import { performInit } from '../commands/init';
@@ -26,6 +27,7 @@ interface ShellProps {
     recipe?: string;
     variant?: string;
     project?: string;
+    debug?: boolean;
   };
 }
 
@@ -107,6 +109,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     if (
       command === 'recipes-apply' &&
       options.progress === false &&
+      !options.debug &&
       !isComplete &&
       !error
     ) {
@@ -302,6 +305,41 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         <Box flexDirection="column">
           <Text color="red">❌ Error: Recipe parameter is required</Text>
         </Box>
+      );
+    }
+
+    if (options.debug) {
+      if (error) {
+        return (
+          <Box flexDirection="column">
+            <Text color="red">❌ Error: {error.message}</Text>
+          </Box>
+        );
+      }
+
+      if (isComplete && result) {
+        return <ApplyDisplay result={result as ApplyRecipeResult} />;
+      }
+
+      const applyOptions: ApplyOptions = {
+        recipe: options.recipe,
+        variant: options.variant,
+        project: options.project,
+        yes: options.yes,
+        progress: options.progress,
+      };
+
+      return (
+        <DebugProgress
+          options={applyOptions}
+          onComplete={(applyResult) => {
+            setResult(applyResult);
+            setIsComplete(true);
+          }}
+          onError={(error) => {
+            setError(error);
+          }}
+        />
       );
     }
 

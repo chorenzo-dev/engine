@@ -102,6 +102,7 @@ recipesCommand
   .option('--project <path>', 'Apply to specific project only')
   .option('-y, --yes', 'Skip interactive confirmations')
   .option('--no-progress', 'Disable progress UI')
+  .option('--debug', 'Show all progress messages in list format')
   .addHelpText(
     'after',
     `
@@ -126,6 +127,7 @@ Examples:
           project: options.project,
           yes: options.yes,
           progress: options.progress,
+          debug: options.debug,
         },
       })
     );

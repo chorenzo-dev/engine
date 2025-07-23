@@ -2,28 +2,68 @@ import { SDKMessage } from '@anthropic-ai/claude-code';
 import { CodeChangesOperation } from '../components/CodeChangesProgress';
 import { workspaceConfig } from '../utils/workspace-config.utils';
 import { Logger } from './logger.utils';
+import { BaseMetadata, OperationMetadata } from '../types/common';
 import * as os from 'os';
+
+interface BaseToolInput {
+  [key: string]: unknown;
+}
+
+interface FileToolInput extends BaseToolInput {
+  file_path: string;
+}
+
+interface BashToolInput extends BaseToolInput {
+  command: string;
+  cmd?: string;
+}
+
+interface SearchToolInput extends BaseToolInput {
+  pattern: string;
+}
+
+interface PathToolInput extends BaseToolInput {
+  path: string;
+}
+
+interface TaskToolInput extends BaseToolInput {
+  description: string;
+}
+
+type ToolInput = FileToolInput | BashToolInput | SearchToolInput | PathToolInput | TaskToolInput | BaseToolInput;
+
+interface AssistantMessage {
+  content: Array<{
+    type: string;
+    text?: string;
+    [key: string]: unknown;
+  }>;
+}
+
+interface UserMessage {
+  content: Array<{
+    type: string;
+    tool_use_id?: string;
+    is_error?: boolean;
+    [key: string]: unknown;
+  }>;
+}
 
 export interface CodeChangesEventHandlers {
   onProgress?: (step: string) => void;
   onThinkingStateChange?: (isThinking: boolean) => void;
-  onComplete?: (result: any, metadata?: CodeChangesOperation['metadata']) => void;
+  onComplete?: (result: unknown, metadata?: Partial<OperationMetadata>) => void;
   onError?: (error: Error) => void;
 }
 
 export interface CodeChangesOperationResult {
   success: boolean;
-  result?: any;
+  result?: unknown;
   error?: string;
-  metadata: {
-    costUsd: number;
-    turns: number;
-    durationSeconds: number;
-    subtype?: string;
-  };
+  metadata: BaseMetadata;
 }
 
-export async function executeCodeChangesOperation<T = any>(
+export async function executeCodeChangesOperation(
   operationPromise: AsyncGenerator<SDKMessage, void, unknown>,
   handlers: CodeChangesEventHandlers,
   startTime: Date = new Date()
@@ -41,7 +81,7 @@ export async function executeCodeChangesOperation<T = any>(
         {
           event: 'claude_message_received',
           messageType: message.type,
-          messageSubtype: (message as any).subtype || 'none',
+          messageSubtype: (message as Record<string, unknown>).subtype || 'none',
           hasContent: 'content' in message,
           hasMessage: 'message' in message,
         },
@@ -62,13 +102,13 @@ export async function executeCodeChangesOperation<T = any>(
             `Claude execution completed successfully. Result preview: ${String(message.result || '').substring(0, 200)}...`
           );
         } else if (message.subtype && message.subtype.startsWith('error')) {
-          errorMessage = 'error' in message ? String((message as any).error) : 'Unknown error occurred';
+          errorMessage = 'error' in message ? String((message as Record<string, unknown>).error) : 'Unknown error occurred';
           success = false;
         }
         break;
       } else {
         if (message.type === 'assistant' && 'message' in message) {
-          const assistantMessage = message.message as any;
+          const assistantMessage = message.message as AssistantMessage;
           if (assistantMessage.content) {
             for (const content of assistantMessage.content) {
               if (content.type === 'tool_use') {
@@ -81,17 +121,20 @@ export async function executeCodeChangesOperation<T = any>(
                   `Claude tool use: ${content.name}`
                 );
 
-                if (content.name === 'Bash' && content.input && content.input.command) {
-                  Logger.info(
-                    {
-                      event: 'claude_bash_command',
-                      command: content.input.command.substring(0, 200),
-                    },
-                    `Claude bash: ${content.input.command}`
-                  );
+                if (content.name === 'Bash' && content.input && typeof content.input === 'object') {
+                  const bashInput = content.input as BashToolInput;
+                  if (bashInput.command) {
+                    Logger.info(
+                      {
+                        event: 'claude_bash_command',
+                        command: bashInput.command.substring(0, 200),
+                      },
+                      `Claude bash: ${bashInput.command}`
+                    );
+                  }
                 }
 
-                const toolMessage = formatToolMessage(content.name, content.input);
+                const toolMessage = formatToolMessage(String(content.name), content.input as ToolInput);
                 if (toolMessage) {
                   handlers.onThinkingStateChange?.(false);
                   handlers.onProgress?.(toolMessage);
@@ -108,7 +151,7 @@ export async function executeCodeChangesOperation<T = any>(
             }
           }
         } else if (message.type === 'user' && 'message' in message) {
-          const userMessage = message.message as any;
+          const userMessage = message.message as UserMessage;
           if (userMessage.content) {
             for (const content of userMessage.content) {
               if (content.type === 'tool_result') {
@@ -207,9 +250,9 @@ export function createProgressHandler(
 export function createCompletionHandler(
   operationId: string,
   updateOperation: (id: string, updates: Partial<CodeChangesOperation>) => void,
-  onComplete?: (result: any) => void
+  onComplete?: (result: unknown) => void
 ) {
-  return (result: any, metadata?: CodeChangesOperation['metadata']) => {
+  return (result: unknown, metadata?: CodeChangesOperation['metadata']) => {
     updateOperation(operationId, { 
       status: 'completed',
       metadata,
@@ -238,7 +281,7 @@ export function generateOperationId(type: CodeChangesOperation['type']): string 
   return `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
-function formatToolMessage(toolName: string, input: any): string | null {
+function formatToolMessage(toolName: string, input: ToolInput): string | null {
   if (toolName === 'TodoWrite' || toolName === 'TodoRead') {
     return null;
   }
@@ -248,30 +291,37 @@ function formatToolMessage(toolName: string, input: any): string | null {
   }
 
   switch (toolName) {
-    case 'Read':
-      const readPath = getRelativePath(input.file_path) || 'file';
+    case 'Read': {
+      const fileInput = input as FileToolInput;
+      const readPath = getRelativePath(fileInput.file_path) || 'file';
       if (isChorenzoPath(readPath)) {
         return 'Updating Chorenzo context';
       }
       return `Reading ${readPath}`;
+    }
     
-    case 'Write':
-      const writePath = getRelativePath(input.file_path) || 'file';
+    case 'Write': {
+      const fileInput = input as FileToolInput;
+      const writePath = getRelativePath(fileInput.file_path) || 'file';
       if (isChorenzoPath(writePath)) {
         return 'Updating Chorenzo context';
       }
       return `Writing ${writePath}`;
+    }
     
     case 'Edit':
-    case 'MultiEdit':
-      const editPath = getRelativePath(input.file_path) || 'file';
+    case 'MultiEdit': {
+      const fileInput = input as FileToolInput;
+      const editPath = getRelativePath(fileInput.file_path) || 'file';
       if (isChorenzoPath(editPath)) {
         return 'Updating Chorenzo context';
       }
       return `Editing ${editPath}`;
+    }
     
-    case 'Bash':
-      const command = input.command || input.cmd || '';
+    case 'Bash': {
+      const bashInput = input as BashToolInput;
+      const command = bashInput.command || bashInput.cmd || '';
       if (command.includes('mkdir') && command.includes('.chorenzo')) {
         return 'Initializing the chorenzo engine';
       }
@@ -290,18 +340,19 @@ function formatToolMessage(toolName: string, input: any): string | null {
         }
       }
       return `Running: ${command}`;
+    }
     
     case 'LS':
-      return `Listing ${getRelativePath(input.path) || 'directory'}`;
+      return `Listing ${getRelativePath((input as PathToolInput).path) || 'directory'}`;
     
     case 'Glob':
-      return `Finding files: ${input.pattern || 'pattern'}`;
+      return `Finding files: ${(input as SearchToolInput).pattern || 'pattern'}`;
     
     case 'Grep':
-      return `Searching for: ${input.pattern || 'pattern'}`;
+      return `Searching for: ${(input as SearchToolInput).pattern || 'pattern'}`;
     
     case 'Task':
-      return `Running task: ${input.description || 'background task'}`;
+      return `Running task: ${(input as TaskToolInput).description || 'background task'}`;
     
     default:
       return `Using ${toolName} tool`;

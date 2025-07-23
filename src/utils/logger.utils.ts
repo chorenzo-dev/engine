@@ -71,19 +71,19 @@ class Logger {
     return this.instance!;
   }
 
-  static debug(obj: any, msg?: string): void {
+  static debug(obj: unknown, msg?: string): void {
     this.getInstance().debug(obj, msg);
   }
 
-  static info(obj: any, msg?: string): void {
+  static info(obj: unknown, msg?: string): void {
     this.getInstance().info(obj, msg);
   }
 
-  static warn(obj: any, msg?: string): void {
+  static warn(obj: unknown, msg?: string): void {
     this.getInstance().warn(obj, msg);
   }
 
-  static error(obj: any, msg?: string): void {
+  static error(obj: unknown, msg?: string): void {
     this.getInstance().error(obj, msg);
   }
 }

@@ -15,7 +15,7 @@ export async function checkGitAvailable(): Promise<void> {
 
   try {
     await git.raw(['--version']);
-  } catch (error) {
+  } catch {
     throw new GitError(
       'Git is not installed or not available in PATH. Please install Git first.',
       'GIT_NOT_FOUND'

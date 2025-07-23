@@ -3,23 +3,18 @@ import {
   it,
   expect,
   beforeEach,
-  afterEach,
   jest,
 } from '@jest/globals';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-import type { Config, State } from './init';
 
 const mockHomedir = jest.fn<() => string>(() => '/test/home');
-const mockMkdirSync = jest.fn<(path: string, options?: any) => void>();
+const mockMkdirSync = jest.fn<(path: string, options?: unknown) => void>();
 const mockExistsSync = jest.fn<(path: string) => boolean>();
-const mockRmSync = jest.fn<(path: string, options?: any) => void>();
+const mockRmSync = jest.fn<(path: string, options?: unknown) => void>();
 const mockUnlinkSync = jest.fn<(path: string) => void>();
-const mockWriteYaml = jest.fn<(path: string, data: any) => Promise<void>>();
-const mockReadYaml = jest.fn<(path: string) => Promise<any>>();
-const mockWriteJson = jest.fn<(path: string, data: any) => Promise<void>>();
-const mockReadJson = jest.fn<(path: string) => Promise<any>>();
+const mockWriteYaml = jest.fn<(path: string, data: unknown) => Promise<void>>();
+const mockReadYaml = jest.fn<(path: string) => Promise<unknown>>();
+const mockWriteJson = jest.fn<(path: string, data: unknown) => Promise<void>>();
+const mockReadJson = jest.fn<(path: string) => Promise<unknown>>();
 const mockCheckGitAvailable = jest.fn<() => Promise<void>>();
 const mockCloneRepository =
   jest.fn<(repo: string, path: string, ref: string) => Promise<void>>();

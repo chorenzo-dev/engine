@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Text, Box } from 'ink';
 import Spinner from 'ink-spinner';
+import { OperationMetadata } from '../types/common';
 
 export interface CodeChangesOperation {
   id: string;
@@ -12,18 +13,14 @@ export interface CodeChangesOperation {
   error?: string;
   currentActivity?: string;
   isThinking?: boolean;
-  metadata?: {
-    costUsd?: number;
-    turns?: number;
-    durationSeconds?: number;
-  };
+  metadata?: Partial<OperationMetadata>;
 }
 
 export interface CodeChangesProgressEvent {
   type: 'operation_start' | 'operation_progress' | 'operation_complete' | 'operation_error';
   operationId: string;
   message: string;
-  metadata?: any;
+  metadata?: Partial<OperationMetadata> & { [key: string]: unknown };
 }
 
 export interface CodeChangesProgressProps {
@@ -42,11 +39,9 @@ interface LogEntry {
 
 export const CodeChangesProgress: React.FC<CodeChangesProgressProps> = ({
   operations,
-  onOperationUpdate,
   showLogs = false,
-  maxLogEntries = 5,
 }) => {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [logs] = useState<LogEntry[]>([]);
   const [currentOperation, setCurrentOperation] = useState<CodeChangesOperation | null>(null);
 
   const getCurrentOperation = useCallback(() => {
@@ -59,10 +54,6 @@ export const CodeChangesProgress: React.FC<CodeChangesProgressProps> = ({
     const current = getCurrentOperation();
     setCurrentOperation(current);
   }, [getCurrentOperation]);
-
-  const addLog = useCallback((entry: LogEntry) => {
-    setLogs(prev => [...prev.slice(-(maxLogEntries - 1)), entry]);
-  }, [maxLogEntries]);
 
   const getOperationIcon = (status: CodeChangesOperation['status']) => {
     switch (status) {

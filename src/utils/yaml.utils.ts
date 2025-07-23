@@ -39,7 +39,7 @@ export async function writeYaml<T>(filePath: string, data: T): Promise<void> {
   }
 }
 
-export function parseYaml<T = any>(yamlContent: string): T {
+export function parseYaml<T = unknown>(yamlContent: string): T {
   try {
     return yamlParse(yamlContent) as T;
   } catch (error) {

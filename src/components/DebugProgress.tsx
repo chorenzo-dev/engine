@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Text, Box } from 'ink';
 import { performRecipesApply } from '../commands/recipes';
 import { ApplyOptions, ApplyRecipeResult } from '../types/apply';
+import { ApplyDisplay } from './ApplyDisplay';
+import { useCodeChangesProgress } from './CodeChangesProgress';
+import { generateOperationId } from '../utils/code-changes-events.utils';
 
 interface DebugProgressProps {
   options: ApplyOptions;
@@ -22,7 +25,17 @@ export const DebugProgress: React.FC<DebugProgressProps> = ({
 }) => {
   const [messages, setMessages] = useState<ProgressMessage[]>([]);
   const [isComplete, setIsComplete] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<ApplyRecipeResult | null>(null);
+  const [validationMessages, setValidationMessages] = useState<string[]>([]);
+  
+  const {
+    operations,
+    startOperation,
+    progressOperation,
+    completeOperation,
+    errorOperation,
+    updateOperation,
+  } = useCodeChangesProgress();
 
   const addMessage = (type: ProgressMessage['type'], message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -31,38 +44,64 @@ export const DebugProgress: React.FC<DebugProgressProps> = ({
 
   useEffect(() => {
     const runApply = async () => {
+      const operationId = generateOperationId('apply');
+      
       try {
         addMessage('step', 'Starting recipe application...');
         
-        const result = await performRecipesApply(
+        startOperation({
+          id: operationId,
+          type: 'apply',
+          description: 'Applying recipe',
+          status: 'in_progress',
+        });
+
+        const applyResult = await performRecipesApply(
           options,
-          (step) => {
-            addMessage('step', step);
+          (step, isThinking) => {
+            if (step) {
+              addMessage('step', step);
+              progressOperation(operationId, step);
+            }
+            if (isThinking !== undefined) {
+              updateOperation(operationId, { isThinking });
+            }
           },
           (type, message) => {
             if (type === 'success' || type === 'error' || type === 'warning') {
               addMessage(type, message);
+              setValidationMessages((prev) => [
+                ...prev.slice(-4),
+                `${getIcon(type)} ${message}`,
+              ]);
             }
           }
         );
 
+        completeOperation(operationId, {
+          costUsd: applyResult.metadata?.costUsd || 0,
+          turns: applyResult.metadata?.turns || 0,
+          durationSeconds: applyResult.metadata?.durationSeconds || 0,
+        });
+
         setIsComplete(true);
+        setResult(applyResult);
         addMessage(
           'success',
-          `Recipe applied successfully! (${result.summary.successfulProjects}/${result.summary.totalProjects} projects)`
+          `Recipe applied successfully! (${applyResult.summary.successfulProjects}/${applyResult.summary.totalProjects} projects)`
         );
-        onComplete(result);
+        onComplete(applyResult);
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : 'Unknown error';
-        setError(errorMessage);
+        errorOperation(operationId, errorMessage);
         addMessage('error', `Recipe application failed: ${errorMessage}`);
         onError(err instanceof Error ? err : new Error(errorMessage));
       }
     };
 
     runApply();
-  }, [options, onComplete, onError]);
+  }, [options, onComplete, onError, startOperation, progressOperation, completeOperation, errorOperation]);
 
   const getIcon = (type: ProgressMessage['type']) => {
     switch (type) {
@@ -109,11 +148,23 @@ export const DebugProgress: React.FC<DebugProgressProps> = ({
           </Text>
         </Box>
       ))}
-      {isComplete && (
-        <Box marginTop={1}>
-          <Text color="green">
-            🎉 Recipe application complete!
+      {validationMessages.length > 0 && (
+        <Box flexDirection="column" marginTop={1}>
+          {validationMessages.map((msg, i) => (
+            <Text key={i} dimColor>
+              {msg}
+            </Text>
+          ))}
+        </Box>
+      )}
+      {isComplete && result && (
+        <Box flexDirection="column" marginTop={2}>
+          <Text bold color="blue">
+            ═══════════════════════ OPERATION COMPLETE ═══════════════════════
           </Text>
+          <Box marginTop={1}>
+            <ApplyDisplay result={result} />
+          </Box>
         </Box>
       )}
     </Box>

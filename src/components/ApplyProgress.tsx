@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Text, Box } from 'ink';
 import { performRecipesApply } from '../commands/recipes';
 import { ApplyOptions, ApplyRecipeResult } from '../types/apply';
-import { CodeChangesProgress, useCodeChangesProgress } from './CodeChangesProgress';
+import {
+  CodeChangesProgress,
+  useCodeChangesProgress,
+} from './CodeChangesProgress';
 import { generateOperationId } from '../utils/code-changes-events.utils';
 
 interface ApplyProgressProps {
@@ -24,13 +27,13 @@ export const ApplyProgress: React.FC<ApplyProgressProps> = ({
     errorOperation,
     updateOperation,
   } = useCodeChangesProgress();
-  
+
   const [validationMessages, setValidationMessages] = useState<string[]>([]);
 
   useEffect(() => {
     const runApply = async () => {
       const operationId = generateOperationId('apply');
-      
+
       try {
         startOperation({
           id: operationId,
@@ -64,17 +67,26 @@ export const ApplyProgress: React.FC<ApplyProgressProps> = ({
           turns: result.metadata?.turns || 0,
           durationSeconds: result.metadata?.durationSeconds || 0,
         });
-        
+
         onComplete(result);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        const errorMessage =
+          err instanceof Error ? err.message : 'Unknown error';
         errorOperation(operationId, errorMessage);
         onError(err instanceof Error ? err : new Error(errorMessage));
       }
     };
 
     runApply();
-  }, [options, onComplete, onError, startOperation, progressOperation, completeOperation, errorOperation]);
+  }, [
+    options,
+    onComplete,
+    onError,
+    startOperation,
+    progressOperation,
+    completeOperation,
+    errorOperation,
+  ]);
 
   const getIcon = (type: string) => {
     switch (type) {

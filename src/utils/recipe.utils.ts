@@ -165,7 +165,7 @@ function validateMetadata(metadata: unknown, metadataPath: string): void {
   if (!metadata || typeof metadata !== 'object') {
     throw new Error(`Invalid metadata format in ${metadataPath}`);
   }
-  
+
   const metadataObj = metadata as Record<string, unknown>;
   const requiredFields = [
     'id',
@@ -194,7 +194,9 @@ function validateMetadata(metadata: unknown, metadataPath: string): void {
     throw new Error('requires must be an array');
   }
 
-  for (const ecosystem of metadataObj.ecosystems as Array<Record<string, unknown>>) {
+  for (const ecosystem of metadataObj.ecosystems as Array<
+    Record<string, unknown>
+  >) {
     if (!ecosystem.id || !ecosystem.default_variant || !ecosystem.variants) {
       throw new Error(`Invalid ecosystem structure`);
     }

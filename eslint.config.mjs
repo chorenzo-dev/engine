@@ -5,12 +5,7 @@ import tsparser from '@typescript-eslint/parser';
 
 export default [
   {
-    ignores: [
-      'dist/**',
-      'build/**',
-      'node_modules/**',
-      '**/*.generated.*'
-    ]
+    ignores: ['dist/**', 'build/**', 'node_modules/**', '**/*.generated.*'],
   },
   {
     files: ['**/*.js', '**/*.cjs'],
@@ -20,14 +15,14 @@ export default [
       sourceType: 'module',
       globals: {
         ...globals.node,
-        ...globals.es2022
-      }
-    }
+        ...globals.es2022,
+      },
+    },
   },
   {
     files: ['**/*.ts', '**/*.tsx'],
     plugins: {
-      '@typescript-eslint': tseslint
+      '@typescript-eslint': tseslint,
     },
     languageOptions: {
       parser: tsparser,
@@ -35,12 +30,12 @@ export default [
       sourceType: 'module',
       globals: {
         ...globals.node,
-        ...globals.es2022
-      }
+        ...globals.es2022,
+      },
     },
     rules: {
       ...js.configs.recommended.rules,
-      ...tseslint.configs.recommended.rules
-    }
-  }
+      ...tseslint.configs.recommended.rules,
+    },
+  },
 ];

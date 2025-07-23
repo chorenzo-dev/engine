@@ -17,7 +17,11 @@ export interface CodeChangesOperation {
 }
 
 export interface CodeChangesProgressEvent {
-  type: 'operation_start' | 'operation_progress' | 'operation_complete' | 'operation_error';
+  type:
+    | 'operation_start'
+    | 'operation_progress'
+    | 'operation_complete'
+    | 'operation_error';
   operationId: string;
   message: string;
   metadata?: Partial<OperationMetadata> & { [key: string]: unknown };
@@ -42,11 +46,12 @@ export const CodeChangesProgress: React.FC<CodeChangesProgressProps> = ({
   showLogs = false,
 }) => {
   const [logs] = useState<LogEntry[]>([]);
-  const [currentOperation, setCurrentOperation] = useState<CodeChangesOperation | null>(null);
+  const [currentOperation, setCurrentOperation] =
+    useState<CodeChangesOperation | null>(null);
 
   const getCurrentOperation = useCallback(() => {
-    const inProgress = operations.find(op => op.status === 'in_progress');
-    const pending = operations.find(op => op.status === 'pending');
+    const inProgress = operations.find((op) => op.status === 'in_progress');
+    const pending = operations.find((op) => op.status === 'pending');
     return inProgress || pending || operations[operations.length - 1] || null;
   }, [operations]);
 
@@ -112,20 +117,20 @@ export const CodeChangesProgress: React.FC<CodeChangesProgressProps> = ({
   return (
     <Box flexDirection="column">
       <Text color={getOperationColor(currentOperation.status)}>
-        {getOperationIcon(currentOperation.status)} {currentOperation.description}
+        {getOperationIcon(currentOperation.status)}{' '}
+        {currentOperation.description}
       </Text>
-      
-      {currentOperation.status === 'in_progress' && currentOperation.currentActivity && (
-        <Box flexDirection="row">
-          <Box width={3}>
-            {currentOperation.isThinking && <Spinner type="dots" />}
+
+      {currentOperation.status === 'in_progress' &&
+        currentOperation.currentActivity && (
+          <Box flexDirection="row">
+            <Box width={3}>
+              {currentOperation.isThinking && <Spinner type="dots" />}
+            </Box>
+            <Text color="cyan">{currentOperation.currentActivity}</Text>
           </Box>
-          <Text color="cyan">
-            {currentOperation.currentActivity}
-          </Text>
-        </Box>
-      )}
-      
+        )}
+
       {hasError && currentOperation.error && (
         <Box marginTop={1}>
           <Text color="red">{currentOperation.error}</Text>
@@ -135,11 +140,11 @@ export const CodeChangesProgress: React.FC<CodeChangesProgressProps> = ({
       {isComplete && currentOperation.metadata && (
         <Box marginTop={1}>
           <Text color="gray">
-            {currentOperation.metadata.durationSeconds && 
+            {currentOperation.metadata.durationSeconds &&
               `Duration: ${currentOperation.metadata.durationSeconds.toFixed(2)}s`}
-            {currentOperation.metadata.costUsd && 
+            {currentOperation.metadata.costUsd &&
               ` • Cost: $${currentOperation.metadata.costUsd.toFixed(4)}`}
-            {currentOperation.metadata.turns && 
+            {currentOperation.metadata.turns &&
               ` • Turns: ${currentOperation.metadata.turns}`}
           </Text>
         </Box>
@@ -161,54 +166,76 @@ export const CodeChangesProgress: React.FC<CodeChangesProgressProps> = ({
 export const useCodeChangesProgress = () => {
   const [operations, setOperations] = useState<CodeChangesOperation[]>([]);
 
-  const createOperation = useCallback((
-    id: string,
-    type: CodeChangesOperation['type'],
-    description: string
-  ): CodeChangesOperation => ({
-    id,
-    type,
-    description,
-    status: 'pending',
-    startTime: new Date(),
-  }), []);
+  const createOperation = useCallback(
+    (
+      id: string,
+      type: CodeChangesOperation['type'],
+      description: string
+    ): CodeChangesOperation => ({
+      id,
+      type,
+      description,
+      status: 'pending',
+      startTime: new Date(),
+    }),
+    []
+  );
 
-  const updateOperation = useCallback((
-    id: string,
-    updates: Partial<CodeChangesOperation>
-  ) => {
-    setOperations(prev => 
-      prev.map(op => 
-        op.id === id 
-          ? { ...op, ...updates, endTime: updates.status === 'completed' || updates.status === 'error' ? new Date() : op.endTime }
-          : op
-      )
-    );
-  }, []);
+  const updateOperation = useCallback(
+    (id: string, updates: Partial<CodeChangesOperation>) => {
+      setOperations((prev) =>
+        prev.map((op) =>
+          op.id === id
+            ? {
+                ...op,
+                ...updates,
+                endTime:
+                  updates.status === 'completed' || updates.status === 'error'
+                    ? new Date()
+                    : op.endTime,
+              }
+            : op
+        )
+      );
+    },
+    []
+  );
 
   const startOperation = useCallback((operation: CodeChangesOperation) => {
-    setOperations(prev => [...prev, { ...operation, status: 'in_progress', startTime: new Date() }]);
+    setOperations((prev) => [
+      ...prev,
+      { ...operation, status: 'in_progress', startTime: new Date() },
+    ]);
   }, []);
 
-  const completeOperation = useCallback((id: string, metadata?: CodeChangesOperation['metadata']) => {
-    updateOperation(id, { 
-      status: 'completed', 
-      endTime: new Date(),
-      metadata: metadata ? { ...metadata } : undefined
-    });
-  }, [updateOperation]);
+  const completeOperation = useCallback(
+    (id: string, metadata?: CodeChangesOperation['metadata']) => {
+      updateOperation(id, {
+        status: 'completed',
+        endTime: new Date(),
+        metadata: metadata ? { ...metadata } : undefined,
+      });
+    },
+    [updateOperation]
+  );
 
-  const errorOperation = useCallback((id: string, error: string) => {
-    updateOperation(id, { 
-      status: 'error', 
-      error,
-      endTime: new Date()
-    });
-  }, [updateOperation]);
+  const errorOperation = useCallback(
+    (id: string, error: string) => {
+      updateOperation(id, {
+        status: 'error',
+        error,
+        endTime: new Date(),
+      });
+    },
+    [updateOperation]
+  );
 
-  const progressOperation = useCallback((id: string, message: string) => {
-    updateOperation(id, { currentActivity: message });
-  }, [updateOperation]);
+  const progressOperation = useCallback(
+    (id: string, message: string) => {
+      updateOperation(id, { currentActivity: message });
+    },
+    [updateOperation]
+  );
 
   const clearOperations = useCallback(() => {
     setOperations([]);

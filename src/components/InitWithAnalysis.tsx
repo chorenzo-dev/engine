@@ -3,7 +3,10 @@ import { Box, Text, useInput, useStdin } from 'ink';
 import { performInit } from '../commands/init';
 import { performAnalysis, AnalysisResult } from '../commands/analyze';
 import { AnalysisDisplay } from './AnalysisDisplay';
-import { CodeChangesProgress, useCodeChangesProgress } from './CodeChangesProgress';
+import {
+  CodeChangesProgress,
+  useCodeChangesProgress,
+} from './CodeChangesProgress';
 import { generateOperationId } from '../utils/code-changes-events.utils';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -41,13 +44,15 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
   >('init');
   const [initComplete, setInitComplete] = useState(false);
   const [step, setStep] = useState<string>('');
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
+    null
+  );
   const [analysisStartTime, setAnalysisStartTime] = useState<number>(0);
   const [showLongRunningMessage, setShowLongRunningMessage] = useState(false);
   const [analysisAborted, setAnalysisAborted] = useState(false);
   const [userResponse, setUserResponse] = useState<string>('');
   const { isRawModeSupported } = useStdin();
-  
+
   const {
     operations,
     startOperation,
@@ -124,7 +129,7 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
     if (phase === 'analysis' && !analysisAborted) {
       const runAnalysis = async () => {
         const operationId = generateOperationId('analysis');
-        
+
         try {
           startOperation({
             id: operationId,
@@ -137,7 +142,7 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
             setStep(step);
             progressOperation(operationId, step);
           });
-          
+
           setAnalysisResult(result);
 
           completeOperation(operationId, {
@@ -151,13 +156,25 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
           setPhase('complete');
           onComplete(result);
         } catch (err) {
-          errorOperation(operationId, err instanceof Error ? err.message : String(err));
+          errorOperation(
+            operationId,
+            err instanceof Error ? err.message : String(err)
+          );
           onError(err instanceof Error ? err : new Error(String(err)));
         }
       };
       runAnalysis();
     }
-  }, [phase, analysisAborted, onComplete, onError, startOperation, progressOperation, completeOperation, errorOperation]);
+  }, [
+    phase,
+    analysisAborted,
+    onComplete,
+    onError,
+    startOperation,
+    progressOperation,
+    completeOperation,
+    errorOperation,
+  ]);
 
   useEffect(() => {
     if (phase === 'analysis' && analysisStartTime > 0) {

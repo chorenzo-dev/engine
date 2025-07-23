@@ -125,13 +125,11 @@ export const CodeChangesProgress: React.FC<CodeChangesProgressProps> = ({
       </Text>
       
       {currentOperation.status === 'in_progress' && currentOperation.currentActivity && (
-        <Box marginLeft={2}>
+        <Box marginLeft={2} flexDirection="row">
+          <Box width={2}>
+            {currentOperation.isThinking && <Spinner type="dots" />}
+          </Box>
           <Text color="cyan">
-            {currentOperation.isThinking && (
-              <>
-                <Spinner type="dots" />{' '}
-              </>
-            )}
             {currentOperation.currentActivity}
           </Text>
         </Box>

@@ -507,7 +507,7 @@ export async function performRecipesApply(
       );
     }
 
-    onProgress?.('Initializing...');
+    onProgress?.('Initializing the chorenzo engine');
     const executionResults: ExecutionResult[] = [];
     for (const project of applicableProjects) {
       const variant =

@@ -33,7 +33,6 @@ export async function executeCodeChangesOperation<T = any>(
   let success = false;
 
   handlers.onThinkingStateChange?.(true);
-  handlers.onProgress?.('Initializing...');
 
   try {
     for await (const message of operationPromise) {

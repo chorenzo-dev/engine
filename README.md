@@ -26,6 +26,9 @@ npx chorenzo analyze
 
 # Simple text output without progress UI
 npx chorenzo analyze --no-progress
+
+# Show LLM cost information
+npx chorenzo analyze --cost
 ```
 
 ### Recipes Command
@@ -64,6 +67,12 @@ npx chorenzo recipes apply testing --project frontend
 
 # Apply with progress UI disabled
 npx chorenzo recipes apply ci-cd --no-progress
+
+# Show LLM cost information
+npx chorenzo recipes apply code-formatting --cost
+
+# Combine flags for detailed output
+npx chorenzo recipes apply linting --cost --debug
 ```
 
 Chorenzo uses atomic, composable automation recipes to handle workspace setup and configuration. See our [recipes documentation](docs/recipes.md) for detailed information about creating and using recipes.

@@ -30,7 +30,13 @@ interface TaskToolInput extends BaseToolInput {
   description: string;
 }
 
-type ToolInput = FileToolInput | BashToolInput | SearchToolInput | PathToolInput | TaskToolInput | BaseToolInput;
+type ToolInput =
+  | FileToolInput
+  | BashToolInput
+  | SearchToolInput
+  | PathToolInput
+  | TaskToolInput
+  | BaseToolInput;
 
 interface AssistantMessage {
   content: Array<{
@@ -81,13 +87,14 @@ export async function executeCodeChangesOperation(
         {
           event: 'claude_message_received',
           messageType: message.type,
-          messageSubtype: (message as Record<string, unknown>).subtype || 'none',
+          messageSubtype:
+            (message as Record<string, unknown>).subtype || 'none',
           hasContent: 'content' in message,
           hasMessage: 'message' in message,
         },
         `Claude message: ${message.type}`
       );
-      
+
       if (message.type === 'result') {
         handlers.onThinkingStateChange?.(false);
         sdkResultMetadata = message;
@@ -102,7 +109,10 @@ export async function executeCodeChangesOperation(
             `Claude execution completed successfully. Result preview: ${String(message.result || '').substring(0, 200)}...`
           );
         } else if (message.subtype && message.subtype.startsWith('error')) {
-          errorMessage = 'error' in message ? String((message as Record<string, unknown>).error) : 'Unknown error occurred';
+          errorMessage =
+            'error' in message
+              ? String((message as Record<string, unknown>).error)
+              : 'Unknown error occurred';
           success = false;
         }
         break;
@@ -121,7 +131,11 @@ export async function executeCodeChangesOperation(
                   `Claude tool use: ${content.name}`
                 );
 
-                if (content.name === 'Bash' && content.input && typeof content.input === 'object') {
+                if (
+                  content.name === 'Bash' &&
+                  content.input &&
+                  typeof content.input === 'object'
+                ) {
                   const bashInput = content.input as BashToolInput;
                   if (bashInput.command) {
                     Logger.info(
@@ -134,7 +148,10 @@ export async function executeCodeChangesOperation(
                   }
                 }
 
-                const toolMessage = formatToolMessage(String(content.name), content.input as ToolInput);
+                const toolMessage = formatToolMessage(
+                  String(content.name),
+                  content.input as ToolInput
+                );
                 if (toolMessage) {
                   handlers.onThinkingStateChange?.(false);
                   handlers.onProgress?.(toolMessage);
@@ -160,7 +177,9 @@ export async function executeCodeChangesOperation(
                     event: 'claude_tool_result',
                     toolUseId: content.tool_use_id || 'unknown',
                     isError: content.is_error || false,
-                    contentLength: content.content ? String(content.content).length : 0,
+                    contentLength: content.content
+                      ? String(content.content).length
+                      : 0,
                   },
                   `Tool result: ${content.is_error ? 'error' : 'success'}`
                 );
@@ -174,7 +193,7 @@ export async function executeCodeChangesOperation(
 
     const endTime = new Date();
     const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
-    
+
     let totalCost = 0;
     let totalTurns = 0;
     let subtype = 'error';
@@ -218,7 +237,7 @@ export async function executeCodeChangesOperation(
     const endTime = new Date();
     const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
+
     const metadata = {
       costUsd: 0,
       turns: 0,
@@ -226,7 +245,9 @@ export async function executeCodeChangesOperation(
       subtype: 'error',
     };
 
-    handlers.onError?.(error instanceof Error ? error : new Error(errorMessage));
+    handlers.onError?.(
+      error instanceof Error ? error : new Error(errorMessage)
+    );
     return {
       success: false,
       error: errorMessage,
@@ -240,9 +261,9 @@ export function createProgressHandler(
   updateOperation: (id: string, updates: Partial<CodeChangesOperation>) => void
 ) {
   return (step: string) => {
-    updateOperation(operationId, { 
+    updateOperation(operationId, {
       description: step,
-      status: 'in_progress' 
+      status: 'in_progress',
     });
   };
 }
@@ -253,10 +274,10 @@ export function createCompletionHandler(
   onComplete?: (result: unknown) => void
 ) {
   return (result: unknown, metadata?: CodeChangesOperation['metadata']) => {
-    updateOperation(operationId, { 
+    updateOperation(operationId, {
       status: 'completed',
       metadata,
-      endTime: new Date()
+      endTime: new Date(),
     });
     onComplete?.(result);
   };
@@ -268,16 +289,18 @@ export function createErrorHandler(
   onError?: (error: Error) => void
 ) {
   return (error: Error) => {
-    updateOperation(operationId, { 
+    updateOperation(operationId, {
       status: 'error',
       error: error.message,
-      endTime: new Date()
+      endTime: new Date(),
     });
     onError?.(error);
   };
 }
 
-export function generateOperationId(type: CodeChangesOperation['type']): string {
+export function generateOperationId(
+  type: CodeChangesOperation['type']
+): string {
   return `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
@@ -299,7 +322,7 @@ function formatToolMessage(toolName: string, input: ToolInput): string | null {
       }
       return `Reading ${readPath}`;
     }
-    
+
     case 'Write': {
       const fileInput = input as FileToolInput;
       const writePath = getRelativePath(fileInput.file_path) || 'file';
@@ -308,7 +331,7 @@ function formatToolMessage(toolName: string, input: ToolInput): string | null {
       }
       return `Writing ${writePath}`;
     }
-    
+
     case 'Edit':
     case 'MultiEdit': {
       const fileInput = input as FileToolInput;
@@ -318,7 +341,7 @@ function formatToolMessage(toolName: string, input: ToolInput): string | null {
       }
       return `Editing ${editPath}`;
     }
-    
+
     case 'Bash': {
       const bashInput = input as BashToolInput;
       const command = bashInput.command || bashInput.cmd || '';
@@ -333,7 +356,9 @@ function formatToolMessage(toolName: string, input: ToolInput): string | null {
         }
       }
       if (command.includes('rm ') || command.includes('rmdir')) {
-        const pathMatch = command.match(/(?:rm|rmdir)\s+(-[rf]+\s+)?["']?([^"'\s]+)["']?/);
+        const pathMatch = command.match(
+          /(?:rm|rmdir)\s+(-[rf]+\s+)?["']?([^"'\s]+)["']?/
+        );
         if (pathMatch && pathMatch[2]) {
           const relativePath = getRelativePath(pathMatch[2]);
           return `Removing: ${relativePath}`;
@@ -341,19 +366,19 @@ function formatToolMessage(toolName: string, input: ToolInput): string | null {
       }
       return `Running: ${command}`;
     }
-    
+
     case 'LS':
       return `Listing ${getRelativePath((input as PathToolInput).path) || 'directory'}`;
-    
+
     case 'Glob':
       return `Finding files: ${(input as SearchToolInput).pattern || 'pattern'}`;
-    
+
     case 'Grep':
       return `Searching for: ${(input as SearchToolInput).pattern || 'pattern'}`;
-    
+
     case 'Task':
       return `Running task: ${(input as TaskToolInput).description || 'background task'}`;
-    
+
     default:
       return `Using ${toolName} tool`;
   }
@@ -361,25 +386,27 @@ function formatToolMessage(toolName: string, input: ToolInput): string | null {
 
 function getRelativePath(filePath: string | undefined): string | undefined {
   if (!filePath) return filePath;
-  
+
   const workspaceRoot = workspaceConfig.getWorkspaceRoot();
-  
+
   if (filePath.startsWith(workspaceRoot)) {
     const relativePath = filePath.substring(workspaceRoot.length);
-    return relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
+    return relativePath.startsWith('/')
+      ? relativePath.substring(1)
+      : relativePath;
   }
-  
+
   const homeDir = os.homedir();
   if (filePath.startsWith(homeDir)) {
     const relativePath = filePath.substring(homeDir.length);
     return `~${relativePath}`;
   }
-  
+
   return filePath;
 }
 
 function isChorenzoPath(filePath: string): boolean {
   if (!filePath) return false;
-  
+
   return filePath.includes('.chorenzo');
 }

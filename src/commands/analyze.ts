@@ -7,7 +7,10 @@ import { OperationMetadata } from '../types/common';
 import { validateFrameworks } from '../utils/framework-validation';
 import { writeJson } from '../utils/json.utils';
 import { Logger } from '../utils/logger.utils';
-import { executeCodeChangesOperation, CodeChangesEventHandlers } from '../utils/code-changes-events.utils';
+import {
+  executeCodeChangesOperation,
+  CodeChangesEventHandlers,
+} from '../utils/code-changes-events.utils';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -27,7 +30,9 @@ function snakeToCamelCase<T>(obj: unknown): T {
       const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
         letter.toUpperCase()
       );
-      (result as Record<string, unknown>)[camelKey] = snakeToCamelCase((obj as Record<string, unknown>)[key]);
+      (result as Record<string, unknown>)[camelKey] = snakeToCamelCase(
+        (obj as Record<string, unknown>)[key]
+      );
       return result;
     }, {} as T);
   }
@@ -62,7 +67,7 @@ export async function performAnalysis(
   });
 
   onProgress?.('Analyzing workspace with Claude...');
-  
+
   let analysis = null;
   let errorMessage: string | undefined;
 
@@ -81,7 +86,7 @@ export async function performAnalysis(
     },
     onError: (error) => {
       errorMessage = error.message;
-    }
+    },
   };
 
   const operationResult = await executeCodeChangesOperation(

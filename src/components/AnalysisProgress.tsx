@@ -1,6 +1,9 @@
 import React, { useEffect } from 'react';
 import { performAnalysis, AnalysisResult } from '../commands/analyze';
-import { CodeChangesProgress, useCodeChangesProgress } from './CodeChangesProgress';
+import {
+  CodeChangesProgress,
+  useCodeChangesProgress,
+} from './CodeChangesProgress';
 import { generateOperationId } from '../utils/code-changes-events.utils';
 
 interface AnalysisProgressProps {
@@ -24,7 +27,7 @@ export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
   useEffect(() => {
     const runAnalysis = async () => {
       const operationId = generateOperationId('analysis');
-      
+
       try {
         startOperation({
           id: operationId,
@@ -47,17 +50,25 @@ export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
           turns: result.metadata?.turns || 0,
           durationSeconds: result.metadata?.durationSeconds || 0,
         });
-        
+
         onComplete(result);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        const errorMessage =
+          err instanceof Error ? err.message : 'Unknown error';
         errorOperation(operationId, errorMessage);
         onError(err instanceof Error ? err : new Error(errorMessage));
       }
     };
 
     runAnalysis();
-  }, [onComplete, onError, startOperation, progressOperation, completeOperation, errorOperation]);
+  }, [
+    onComplete,
+    onError,
+    startOperation,
+    progressOperation,
+    completeOperation,
+    errorOperation,
+  ]);
 
   return <CodeChangesProgress operations={operations} showLogs />;
 };

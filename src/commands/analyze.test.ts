@@ -275,7 +275,9 @@ describe('Analyze Command Integration Tests', () => {
     expect(mockProgress).toHaveBeenCalledWith('Finding git repository...');
     expect(mockProgress).toHaveBeenCalledWith('Building file tree...');
     expect(mockProgress).toHaveBeenCalledWith('Loading analysis prompt...');
-    expect(mockProgress).toHaveBeenCalledWith('Analyzing workspace with Claude...');
+    expect(mockProgress).toHaveBeenCalledWith(
+      'Analyzing workspace with Claude...'
+    );
     expect(mockProgress).toHaveBeenCalledWith('Reading package.json', false);
     expect(mockProgress).toHaveBeenCalledWith('', true);
     expect(mockProgress).toHaveBeenCalledWith('', false);
@@ -642,6 +644,9 @@ describe('Analyze Command Integration Tests', () => {
     expect(result.analysis).toBeDefined();
     expect(result.metadata?.subtype).toBe('success');
 
-    expect(mockProgress).toHaveBeenCalledWith('Initializing the chorenzo engine', false);
+    expect(mockProgress).toHaveBeenCalledWith(
+      'Initializing the chorenzo engine',
+      false
+    );
   });
 });

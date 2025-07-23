@@ -7,7 +7,10 @@ interface ApplyDisplayProps {
   showCost?: boolean;
 }
 
-export const ApplyDisplay: React.FC<ApplyDisplayProps> = ({ result, showCost }) => {
+export const ApplyDisplay: React.FC<ApplyDisplayProps> = ({
+  result,
+  showCost,
+}) => {
   const { recipe, summary, executionResults, metadata } = result;
 
   return (
@@ -36,9 +39,7 @@ export const ApplyDisplay: React.FC<ApplyDisplayProps> = ({ result, showCost }) 
         <Box flexDirection="column" marginBottom={1}>
           <Text bold>Performance:</Text>
           <Text> • Duration: {metadata.durationSeconds.toFixed(1)}s</Text>
-          {showCost && (
-            <Text> • Cost: ${metadata.costUsd.toFixed(4)} USD</Text>
-          )}
+          {showCost && <Text> • Cost: ${metadata.costUsd.toFixed(4)} USD</Text>}
           {metadata.startTime && (
             <Text dimColor>
               {' '}

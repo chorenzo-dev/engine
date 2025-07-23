@@ -8,7 +8,10 @@ interface AnalysisDisplayProps {
   showCost?: boolean;
 }
 
-export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result, showCost }) => {
+export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
+  result,
+  showCost,
+}) => {
   if (!result.analysis) {
     return (
       <Box flexDirection="column">

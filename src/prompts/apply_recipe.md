@@ -31,8 +31,9 @@ The state.json file tracks the current state of applied recipes. You must:
 1. Read the current state.json file (create it if it doesn't exist with {})
 2. Add/update the following keys based on your successful completion of the recipe:
    {{ recipe_provides }}
-   
+
    Set appropriate values for each key based on what you actually accomplished during the recipe execution.
+
 3. Write the updated state back to state.json with keys in alphabetical order
 
 After completing the recipe application, respond with:

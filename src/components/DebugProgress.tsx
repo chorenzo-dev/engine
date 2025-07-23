@@ -28,9 +28,8 @@ export const DebugProgress: React.FC<DebugProgressProps> = ({
   const [result, setResult] = useState<ApplyRecipeResult | null>(null);
   const [validationMessages, setValidationMessages] = useState<string[]>([]);
   const [hasStarted, setHasStarted] = useState(false);
-  
+
   const {
-    operations,
     startOperation,
     progressOperation,
     completeOperation,
@@ -49,10 +48,10 @@ export const DebugProgress: React.FC<DebugProgressProps> = ({
     const runApply = async () => {
       setHasStarted(true);
       const operationId = generateOperationId('apply');
-      
+
       try {
         addMessage('step', 'Starting recipe application...');
-        
+
         startOperation({
           id: operationId,
           type: 'apply',
@@ -140,9 +139,7 @@ export const DebugProgress: React.FC<DebugProgressProps> = ({
   return (
     <Box flexDirection="column">
       <Box marginBottom={1}>
-        <Text bold>
-          Debug Mode - All Progress Messages:
-        </Text>
+        <Text bold>Debug Mode - All Progress Messages:</Text>
       </Box>
       {messages.map((msg, i) => (
         <Box key={i} marginBottom={0}>

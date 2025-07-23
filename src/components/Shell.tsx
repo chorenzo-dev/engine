@@ -31,17 +31,20 @@ interface ShellProps {
   };
 }
 
-type ShellState = 
+type ShellState =
   | { command: 'analyze'; result: AnalysisResult | null }
   | { command: 'init'; result: AnalysisResult | null }
   | { command: 'recipes-validate'; result: ValidationResult | null }
   | { command: 'recipes-apply'; result: ApplyRecipeResult | null };
 
 export const Shell: React.FC<ShellProps> = ({ command, options }) => {
-  const [commandState, setCommandState] = useState<ShellState>(() => ({
-    command,
-    result: null,
-  } as ShellState));
+  const [commandState, setCommandState] = useState<ShellState>(
+    () =>
+      ({
+        command,
+        result: null,
+      }) as ShellState
+  );
   const [error, setError] = useState<Error | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [simpleStep, setSimpleStep] = useState<string>('');
@@ -172,7 +175,11 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         );
       }
 
-      if (isComplete && commandState.command === 'analyze' && commandState.result) {
+      if (
+        isComplete &&
+        commandState.command === 'analyze' &&
+        commandState.result
+      ) {
         return <AnalysisDisplay result={commandState.result} />;
       }
 
@@ -191,8 +198,14 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       );
     }
 
-    if (isComplete && commandState.command === 'analyze' && commandState.result) {
-      return <AnalysisDisplay result={commandState.result} showCost={options.cost} />;
+    if (
+      isComplete &&
+      commandState.command === 'analyze' &&
+      commandState.result
+    ) {
+      return (
+        <AnalysisDisplay result={commandState.result} showCost={options.cost} />
+      );
     }
 
     return (
@@ -222,9 +235,14 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         return (
           <Box flexDirection="column">
             <Text color="green">✅ Initialization complete!</Text>
-            {commandState.command === 'init' && commandState.result && commandState.result.analysis ? (
+            {commandState.command === 'init' &&
+            commandState.result &&
+            commandState.result.analysis ? (
               <Box marginTop={1}>
-                <AnalysisDisplay result={commandState.result} showCost={options.cost} />
+                <AnalysisDisplay
+                  result={commandState.result}
+                  showCost={options.cost}
+                />
               </Box>
             ) : null}
           </Box>
@@ -358,8 +376,14 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         );
       }
 
-      if (isComplete && commandState.command === 'recipes-apply' && commandState.result) {
-        return <ApplyDisplay result={commandState.result} showCost={options.cost} />;
+      if (
+        isComplete &&
+        commandState.command === 'recipes-apply' &&
+        commandState.result
+      ) {
+        return (
+          <ApplyDisplay result={commandState.result} showCost={options.cost} />
+        );
       }
 
       return (
@@ -377,8 +401,14 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       );
     }
 
-    if (isComplete && commandState.command === 'recipes-apply' && commandState.result) {
-      return <ApplyDisplay result={commandState.result} showCost={options.cost} />;
+    if (
+      isComplete &&
+      commandState.command === 'recipes-apply' &&
+      commandState.result
+    ) {
+      return (
+        <ApplyDisplay result={commandState.result} showCost={options.cost} />
+      );
     }
 
     const applyOptions: ApplyOptions = {

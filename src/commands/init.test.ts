@@ -1,10 +1,4 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeEach,
-  jest,
-} from '@jest/globals';
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
 const mockHomedir = jest.fn<() => string>(() => '/test/home');
 const mockMkdirSync = jest.fn<(path: string, options?: unknown) => void>();

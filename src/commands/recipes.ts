@@ -13,7 +13,10 @@ import { readJson } from '../utils/json.utils';
 import { loadPrompt, renderPrompt } from '../utils/prompts.utils';
 import { workspaceConfig } from '../utils/workspace-config.utils';
 import { Logger } from '../utils/logger.utils';
-import { executeCodeChangesOperation, CodeChangesEventHandlers } from '../utils/code-changes-events.utils';
+import {
+  executeCodeChangesOperation,
+  CodeChangesEventHandlers,
+} from '../utils/code-changes-events.utils';
 import {
   ApplyOptions,
   ApplyRecipeResult,
@@ -821,7 +824,8 @@ async function applyRecipeDirectly(
       };
     }
 
-    const fixContent = recipe.fixFiles.get(variantObj.fix_prompt) || variantObj.fix_prompt;
+    const fixContent =
+      recipe.fixFiles.get(variantObj.fix_prompt) || variantObj.fix_prompt;
     const recipePrompt = recipe.getPrompt();
 
     const promptTemplate = loadPrompt('apply_recipe');
@@ -840,7 +844,10 @@ async function applyRecipeDirectly(
       package_manager: project.hasPackageManager ? 'detected' : 'none',
       recipe_variant: variant,
       fix_content: combinedContent,
-      recipe_provides: recipe.getProvides().map(key => `   - ${key}`).join('\n'),
+      recipe_provides: recipe
+        .getProvides()
+        .map((key) => `   - ${key}`)
+        .join('\n'),
     });
 
     Logger.debug(
@@ -880,7 +887,7 @@ async function applyRecipeDirectly(
           },
           'Recipe application failed'
         );
-      }
+      },
     };
 
     const operationResult = await executeCodeChangesOperation(
@@ -898,6 +905,28 @@ async function applyRecipeDirectly(
             'Glob',
             'Grep',
           ],
+          disallowedTools: [
+            'Bash(git commit:*)',
+            'Bash(git push:*)',
+            'Bash(git merge:*)',
+            'Bash(git rebase:*)',
+            'Bash(git reset:*)',
+            'Bash(git branch -D:*)',
+            'Bash(git branch -d:*)',
+            'Bash(git tag -d:*)',
+            'Bash(git clean -f:*)',
+            'Bash(git rm:*)',
+            'Bash(git mv:*)',
+            'Bash(git stash drop:*)',
+            'Bash(git stash clear:*)',
+            'Bash(git remote add:*)',
+            'Bash(git remote remove:*)',
+            'Bash(git remote rm:*)',
+            'Bash(sudo:*)',
+            'Bash(rm:*)',
+            'Bash(chmod:*)',
+            'Bash(chown:*)',
+          ],
           permissionMode: 'bypassPermissions',
         },
       }),
@@ -913,7 +942,8 @@ async function applyRecipeDirectly(
         projectPath,
         recipeId: recipe.getId(),
         success: false,
-        error: operationResult.error || 'Recipe application failed during execution',
+        error:
+          operationResult.error || 'Recipe application failed during execution',
         costUsd: executionCost,
       };
     }
@@ -949,4 +979,3 @@ async function applyRecipeDirectly(
     };
   }
 }
-

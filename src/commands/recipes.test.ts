@@ -718,7 +718,7 @@ outputs:
 
     it('should apply recipe successfully', async () => {
       setupStandardApplyScenario();
-      
+
       mockReadFileSync.mockImplementation((filePath: string) => {
         if (filePath.includes('prompt.md')) {
           return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
@@ -849,20 +849,32 @@ outputs:
       });
 
       const mockProgress = jest.fn();
-      const result = await performRecipesApply({
-        recipe: 'test-recipe',
-        progress: false,
-      }, mockProgress);
+      const result = await performRecipesApply(
+        {
+          recipe: 'test-recipe',
+          progress: false,
+        },
+        mockProgress
+      );
 
       expect(result).toBeDefined();
       expect(result.summary.successfulProjects).toBe(1);
-      
+
       expect(mockProgress).toHaveBeenCalledWith('Loading recipe...');
-      expect(mockProgress).toHaveBeenCalledWith('Validating recipe structure...');
+      expect(mockProgress).toHaveBeenCalledWith(
+        'Validating recipe structure...'
+      );
       expect(mockProgress).toHaveBeenCalledWith('Ensuring analysis data...');
-      expect(mockProgress).toHaveBeenCalledWith('Checking recipe dependencies...');
-      expect(mockProgress).toHaveBeenCalledWith('Filtering applicable projects...');
-      expect(mockProgress).toHaveBeenCalledWith('Reading src/package.json', false);
+      expect(mockProgress).toHaveBeenCalledWith(
+        'Checking recipe dependencies...'
+      );
+      expect(mockProgress).toHaveBeenCalledWith(
+        'Filtering applicable projects...'
+      );
+      expect(mockProgress).toHaveBeenCalledWith(
+        'Reading src/package.json',
+        false
+      );
       expect(mockProgress).toHaveBeenCalledWith('', true);
       expect(mockProgress).toHaveBeenCalledWith('', false);
       expect(mockProgress).toHaveBeenCalledWith('Writing .eslintrc.js', false);
@@ -872,7 +884,7 @@ outputs:
       setupStandardFileSystemMocks();
       setupStandardRecipeYamlMock();
       setupSuccessfulQueryMock();
-      
+
       mockExistsSync.mockImplementation((path) => {
         if (path.includes('analysis.json')) return false;
         if (path.includes('.chorenzo/recipes')) return true;
@@ -1989,21 +2001,118 @@ outputs:
       });
 
       const mockProgress = jest.fn();
-      const result = await performRecipesApply({
-        recipe: 'test-recipe',
-        progress: false,
-      }, mockProgress);
+      const result = await performRecipesApply(
+        {
+          recipe: 'test-recipe',
+          progress: false,
+        },
+        mockProgress
+      );
 
       expect(result).toBeDefined();
       expect(result.summary.successfulProjects).toBe(1);
-      
+
       expect(mockProgress).toHaveBeenCalledWith('Loading recipe...');
-      expect(mockProgress).toHaveBeenCalledWith('Validating recipe structure...');
+      expect(mockProgress).toHaveBeenCalledWith(
+        'Validating recipe structure...'
+      );
       expect(mockProgress).toHaveBeenCalledWith('Ensuring analysis data...');
-      expect(mockProgress).toHaveBeenCalledWith('Checking recipe dependencies...');
-      expect(mockProgress).toHaveBeenCalledWith('Filtering applicable projects...');
-      expect(mockProgress).toHaveBeenCalledWith('Initializing the chorenzo engine', false);
+      expect(mockProgress).toHaveBeenCalledWith(
+        'Checking recipe dependencies...'
+      );
+      expect(mockProgress).toHaveBeenCalledWith(
+        'Filtering applicable projects...'
+      );
+      expect(mockProgress).toHaveBeenCalledWith(
+        'Initializing the chorenzo engine',
+        false
+      );
     });
 
+    it('should configure disallowedTools to block dangerous commands', async () => {
+      setupStandardApplyScenario();
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+        }
+        if (filePath.includes('apply_recipe.md')) {
+          return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        return '';
+      });
+
+      mockQuery.mockImplementation(async function* () {
+        yield {
+          type: 'result',
+          subtype: 'success',
+          result: 'Execution completed successfully',
+          total_cost_usd: 0.05,
+        };
+      });
+
+      const result = await performRecipesApply({
+        recipe: 'test-recipe',
+        progress: false,
+      });
+
+      expect(mockQuery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          options: expect.objectContaining({
+            disallowedTools: expect.arrayContaining([
+              'Bash(git commit:*)',
+              'Bash(git push:*)',
+              'Bash(sudo:*)',
+              'Bash(rm:*)',
+              'Bash(chmod:*)',
+            ]),
+          }),
+        })
+      );
+      expect(result.summary.successfulProjects).toBe(1);
+    });
+
+    it('should allow safe commands during recipe execution', async () => {
+      setupStandardApplyScenario();
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+        }
+        if (filePath.includes('apply_recipe.md')) {
+          return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        return '';
+      });
+
+      mockQuery.mockImplementation(async function* () {
+        yield {
+          type: 'assistant',
+          message: {
+            content: [
+              {
+                type: 'tool_use',
+                name: 'Bash',
+                input: { command: 'npm install' },
+              },
+            ],
+          },
+        };
+        yield {
+          type: 'result',
+          subtype: 'success',
+          result: 'Execution completed successfully',
+          total_cost_usd: 0.05,
+        };
+      });
+
+      const result = await performRecipesApply({
+        recipe: 'test-recipe',
+        progress: false,
+      });
+
+      expect(result).toBeDefined();
+      expect(result.summary.successfulProjects).toBe(1);
+    });
   });
 });

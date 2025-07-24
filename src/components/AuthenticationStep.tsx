@@ -99,11 +99,10 @@ export const AuthenticationStep: React.FC<AuthenticationStepProps> = ({
     return (
       <Box flexDirection="column">
         <Text>
-          Chorenzo requires Claude Code authentication to function properly.
+          <Text bold>Chorenzo</Text> requires <Text bold>Claude Code</Text>{' '}
+          authentication to function.
         </Text>
-        <Newline />
         <Text>Please choose an authentication method:</Text>
-        <Newline />
         <SelectInput items={authOptions} onSelect={handleAuthMethodSelect} />
       </Box>
     );

@@ -11,6 +11,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { readJson, writeJson } from '../utils/json.utils';
+import { Logger } from '../utils/logger.utils';
 
 interface AnalysisStepProps {
   options: {
@@ -178,8 +179,14 @@ export const AnalysisStep: React.FC<AnalysisStepProps> = ({
     if (fs.existsSync(statePath)) {
       try {
         state = await readJson<State>(statePath);
-      } catch {
-        console.warn('Failed to read existing state file, using defaults');
+      } catch (error) {
+        Logger.warn(
+          {
+            event: 'state_read_failed',
+            error: error instanceof Error ? error.message : String(error),
+          },
+          'Failed to read existing state file, using defaults'
+        );
       }
     }
 

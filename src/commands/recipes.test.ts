@@ -99,6 +99,51 @@ describe('Recipes Command Integration Tests', () => {
   let performRecipesValidate: typeof import('./recipes').performRecipesValidate;
   let performRecipesApply: typeof import('./recipes').performRecipesApply;
 
+  const createMockReadYaml = (
+    options: {
+      recipeId?: string;
+      category?: string;
+      variants?: Array<{ id: string; fix_prompt: string }>;
+      requires?: Array<{ key: string; equals: string }>;
+      provides?: string[];
+    } = {}
+  ) => {
+    const {
+      recipeId = 'test-recipe',
+      category = 'test',
+      variants = [{ id: 'basic', fix_prompt: 'fixes/basic.md' }],
+      requires = [],
+      provides = ['test-functionality'],
+    } = options;
+
+    return (filePath: string) => {
+      if (filePath.includes('config.yaml')) {
+        return Promise.resolve({
+          libraries: {
+            'test-recipe': {
+              repo: 'https://github.com/test/test-recipe.git',
+              ref: 'main',
+            },
+          },
+        });
+      }
+      return Promise.resolve({
+        id: recipeId,
+        category,
+        summary: 'Test recipe',
+        ecosystems: [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants,
+          },
+        ],
+        provides,
+        requires,
+      });
+    };
+  };
+
   const setupDefaultMocks = () => {
     mockHomedir.mockImplementation(() => '/test/home');
     mockTmpdir.mockImplementation(() => '/tmp');
@@ -135,37 +180,7 @@ outputs:
       once: jest.fn(),
       emit: jest.fn(),
     }));
-    mockReadYaml.mockImplementation((filePath: string) => {
-      if (filePath.includes('config.yaml')) {
-        return Promise.resolve({
-          libraries: {
-            'test-recipe': {
-              repo: 'https://github.com/test/test-recipe.git',
-              ref: 'main',
-            },
-          },
-        });
-      }
-      return Promise.resolve({
-        id: 'test-recipe',
-        category: 'test',
-        summary: 'Test recipe',
-        ecosystems: [
-          {
-            id: 'javascript',
-            default_variant: 'basic',
-            variants: [
-              {
-                id: 'basic',
-                fix_prompt: 'fixes/basic.md',
-              },
-            ],
-          },
-        ],
-        provides: ['test-functionality'],
-        requires: [],
-      });
-    });
+    mockReadYaml.mockImplementation(createMockReadYaml());
     mockRmSync.mockImplementation(() => {});
   };
 
@@ -557,32 +572,12 @@ outputs:
         return '';
       });
 
-      mockReadYaml.mockImplementation((filePath: string) => {
-        if (filePath.includes('config.yaml')) {
-          return Promise.resolve({
-            libraries: {
-              'test-recipe': {
-                repo: 'https://github.com/test/test-recipe.git',
-                ref: 'main',
-              },
-            },
-          });
-        }
-        return Promise.resolve({
-          id: 'snake_case_recipe',
-          category: 'test',
-          summary: 'Test recipe',
-          ecosystems: [
-            {
-              id: 'javascript',
-              default_variant: 'basic',
-              variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
-            },
-          ],
+      mockReadYaml.mockImplementation(
+        createMockReadYaml({
+          recipeId: 'snake_case_recipe',
           provides: ['test_feature'],
-          requires: [],
-        });
-      });
+        })
+      );
 
       const result = await performRecipesValidate(options);
 
@@ -615,32 +610,12 @@ outputs:
         return '';
       });
 
-      mockReadYaml.mockImplementation((filePath: string) => {
-        if (filePath.includes('config.yaml')) {
-          return Promise.resolve({
-            libraries: {
-              'test-recipe': {
-                repo: 'https://github.com/test/test-recipe.git',
-                ref: 'main',
-              },
-            },
-          });
-        }
-        return Promise.resolve({
-          id: 'test-recipe',
+      mockReadYaml.mockImplementation(
+        createMockReadYaml({
           category: 'BadCategory',
-          summary: 'Test recipe',
-          ecosystems: [
-            {
-              id: 'javascript',
-              default_variant: 'basic',
-              variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
-            },
-          ],
           provides: ['test_feature'],
-          requires: [],
-        });
-      });
+        })
+      );
 
       const result = await performRecipesValidate(options);
 
@@ -724,32 +699,11 @@ outputs:
     };
 
     const setupStandardRecipeYamlMock = () => {
-      mockReadYaml.mockImplementation((filePath: string) => {
-        if (filePath.includes('config.yaml')) {
-          return Promise.resolve({
-            libraries: {
-              'test-recipe': {
-                repo: 'https://github.com/test/test-recipe.git',
-                ref: 'main',
-              },
-            },
-          });
-        }
-        return Promise.resolve({
-          id: 'test-recipe',
-          category: 'test',
-          summary: 'Test recipe',
-          ecosystems: [
-            {
-              id: 'javascript',
-              default_variant: 'basic',
-              variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
-            },
-          ],
+      mockReadYaml.mockImplementation(
+        createMockReadYaml({
           provides: ['test_feature.exists'],
-          requires: [],
-        });
-      });
+        })
+      );
     };
 
     const setupSuccessfulQueryMock = () => {
@@ -1046,32 +1000,12 @@ outputs:
         return '';
       });
 
-      mockReadYaml.mockImplementation((filePath: string) => {
-        if (filePath.includes('config.yaml')) {
-          return Promise.resolve({
-            libraries: {
-              'test-recipe': {
-                repo: 'https://github.com/test/test-recipe.git',
-                ref: 'main',
-              },
-            },
-          });
-        }
-        return Promise.resolve({
-          id: 'test-recipe',
-          category: 'test',
-          summary: 'Test recipe',
-          ecosystems: [
-            {
-              id: 'javascript',
-              default_variant: 'basic',
-              variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
-            },
-          ],
+      mockReadYaml.mockImplementation(
+        createMockReadYaml({
           provides: ['test_feature.exists'],
           requires: [{ key: 'prerequisite.exists', equals: 'true' }],
-        });
-      });
+        })
+      );
 
       await expect(
         performRecipesApply({
@@ -1113,35 +1047,15 @@ outputs:
         return '';
       });
 
-      mockReadYaml.mockImplementation((filePath: string) => {
-        if (filePath.includes('config.yaml')) {
-          return Promise.resolve({
-            libraries: {
-              'test-recipe': {
-                repo: 'https://github.com/test/test-recipe.git',
-                ref: 'main',
-              },
-            },
-          });
-        }
-        return Promise.resolve({
-          id: 'test-recipe',
-          category: 'test',
-          summary: 'Test recipe',
-          ecosystems: [
-            {
-              id: 'javascript',
-              default_variant: 'basic',
-              variants: [
-                { id: 'basic', fix_prompt: 'Basic fix' },
-                { id: 'advanced', fix_prompt: 'Advanced fix' },
-              ],
-            },
+      mockReadYaml.mockImplementation(
+        createMockReadYaml({
+          variants: [
+            { id: 'basic', fix_prompt: 'Basic fix' },
+            { id: 'advanced', fix_prompt: 'Advanced fix' },
           ],
           provides: ['test_feature.exists'],
-          requires: [],
-        });
-      });
+        })
+      );
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
@@ -1415,32 +1329,12 @@ outputs:
         return Promise.resolve({});
       });
 
-      mockReadYaml.mockImplementation((filePath: string) => {
-        if (filePath.includes('config.yaml')) {
-          return Promise.resolve({
-            libraries: {
-              'test-recipe': {
-                repo: 'https://github.com/test/test-recipe.git',
-                ref: 'main',
-              },
-            },
-          });
-        }
-        return Promise.resolve({
-          id: 'test-recipe',
-          category: 'test',
-          summary: 'Test recipe',
-          ecosystems: [
-            {
-              id: 'javascript',
-              default_variant: 'basic',
-              variants: [{ id: 'basic', fix_prompt: 'Basic fix' }],
-            },
-          ],
+      mockReadYaml.mockImplementation(
+        createMockReadYaml({
           provides: ['test_feature.exists'],
           requires: [{ key: 'prerequisite.version', equals: '2.0.0' }],
-        });
-      });
+        })
+      );
 
       await expect(
         performRecipesApply({

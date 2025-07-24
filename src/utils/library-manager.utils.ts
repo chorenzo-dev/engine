@@ -7,9 +7,9 @@ import {
   cloneRepository,
   GitError,
 } from './git-operations.utils';
-import { readYaml } from './yaml.utils';
 import { retry } from './retry.utils';
 import { Logger } from './logger.utils';
+import { chorenzoConfig } from './chorenzo-config.utils';
 import type { Config } from '../commands/init';
 
 export class LibraryManagerError extends Error {
@@ -23,34 +23,9 @@ export class LibraryManagerError extends Error {
 }
 
 export class LibraryManager {
-  private readonly configDir: string;
-  private readonly recipesDir: string;
-  private readonly configPath: string;
-
-  constructor() {
-    this.configDir = path.join(os.homedir(), '.chorenzo');
-    this.recipesDir = path.join(this.configDir, 'recipes');
-    this.configPath = path.join(this.configDir, 'config.yaml');
-  }
-
-  async getConfig(): Promise<Config> {
-    try {
-      return await readYaml<Config>(this.configPath);
-    } catch (error) {
-      throw new LibraryManagerError(
-        `Failed to read config: ${error instanceof Error ? error.message : String(error)}`,
-        'CONFIG_READ_ERROR'
-      );
-    }
-  }
-
-  getLibraryPath(libraryName: string): string {
-    return path.join(this.recipesDir, libraryName);
-  }
-
   isRemoteLibrary(recipePath: string): string | null {
     const normalizedPath = path.normalize(recipePath);
-    const recipesDir = path.normalize(this.recipesDir);
+    const recipesDir = path.normalize(chorenzoConfig.recipesDir);
 
     if (!normalizedPath.startsWith(recipesDir)) {
       return null;
@@ -81,7 +56,7 @@ export class LibraryManager {
 
     const libraryPath = this.getLibraryPath(libraryName);
 
-    if (!fs.existsSync(libraryPath)) {
+    if (!chorenzoConfig.libraryExists(libraryName)) {
       Logger.info(
         { library: libraryName },
         'Library not found locally, cloning...'
@@ -136,6 +111,126 @@ export class LibraryManager {
         );
       }
     }
+  }
+
+  async findRecipeByName(recipeName: string): Promise<string[]> {
+    const foundPaths: string[] = [];
+
+    const searchDirectory = async (dir: string): Promise<void> => {
+      if (!fs.existsSync(dir)) {
+        return;
+      }
+
+      try {
+        const entries = fs.readdirSync(dir);
+
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry);
+
+          if (!fs.statSync(fullPath).isDirectory()) {
+            continue;
+          }
+
+          if (entry === recipeName) {
+            const metadataPath = path.join(fullPath, 'metadata.yaml');
+            if (fs.existsSync(metadataPath)) {
+              foundPaths.push(fullPath);
+            }
+          } else {
+            await searchDirectory(fullPath);
+          }
+        }
+      } catch (error) {
+        Logger.warn(
+          {
+            directory: dir,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          'Failed to search directory for recipes'
+        );
+      }
+    };
+
+    await searchDirectory(chorenzoConfig.recipesDir);
+    return foundPaths;
+  }
+
+  async validateGitRepository(
+    gitUrl: string
+  ): Promise<{ valid: boolean; error?: string }> {
+    const tempDir = path.join(os.tmpdir(), `chorenzo-validate-${Date.now()}`);
+
+    try {
+      await checkGitAvailable();
+      await cloneRepository(gitUrl, tempDir, 'HEAD');
+
+      fs.rmSync(tempDir, { recursive: true, force: true });
+      return { valid: true };
+    } catch (error) {
+      if (fs.existsSync(tempDir)) {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+      return {
+        valid: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  async cloneLibraries(onProgress?: (message: string) => void): Promise<void> {
+    await checkGitAvailable();
+
+    const config = await this.getConfig();
+
+    for (const [libName, libConfig] of Object.entries(config.libraries)) {
+      if (chorenzoConfig.libraryExists(libName)) {
+        onProgress?.(`Skipping ${libName} (already exists)`);
+        continue;
+      }
+
+      const libPath = this.getLibraryPath(libName);
+
+      onProgress?.(`Cloning ${libName} from ${libConfig.repo}...`);
+
+      try {
+        await retry(
+          () => cloneRepository(libConfig.repo, libPath, libConfig.ref),
+          {
+            maxAttempts: 2,
+            onRetry: (attempt) => {
+              onProgress?.(
+                `Retrying clone of ${libName} (attempt ${attempt + 1})...`
+              );
+            },
+          }
+        );
+        onProgress?.(`Successfully cloned ${libName}`);
+      } catch {
+        onProgress?.(
+          `Warning: Failed to clone ${libName} after retry, skipping...`
+        );
+      }
+    }
+  }
+
+  private async getConfig(): Promise<Config> {
+    try {
+      return await chorenzoConfig.readConfig();
+    } catch (error) {
+      throw new LibraryManagerError(
+        `Failed to read config: ${error instanceof Error ? error.message : String(error)}`,
+        'CONFIG_READ_ERROR'
+      );
+    }
+  }
+
+  private getLibraryPath(libraryName: string): string {
+    return chorenzoConfig.getLibraryPath(libraryName);
+  }
+
+  private async getAllLibraryNames(): Promise<string[]> {
+    const config = await this.getConfig();
+    return Object.keys(config.libraries);
   }
 }
 

@@ -31,9 +31,6 @@ import { Recipe, RecipeDependency } from '../types/recipe';
 import { libraryManager } from '../utils/library-manager.utils';
 import { WorkspaceAnalysis, ProjectAnalysis } from '../types/analysis';
 
-const CHORENZO_DIR = path.join(os.homedir(), '.chorenzo');
-const RECIPES_DIR = path.join(CHORENZO_DIR, 'recipes');
-
 export enum InputType {
   RecipeName = 'recipe-name',
   RecipeFolder = 'recipe-folder',
@@ -207,34 +204,7 @@ function detectInputType(target: string): InputType {
 }
 
 async function findRecipeByName(recipeName: string): Promise<string[]> {
-  const recipePaths: string[] = [];
-
-  async function searchDirectory(dir: string): Promise<void> {
-    if (!fs.existsSync(dir)) {
-      return;
-    }
-
-    const entries = fs.readdirSync(dir);
-
-    for (const entry of entries) {
-      const entryPath = path.join(dir, entry);
-      const stat = fs.statSync(entryPath);
-
-      if (stat.isDirectory()) {
-        if (entry === recipeName) {
-          const metadataPath = path.join(entryPath, 'metadata.yaml');
-          if (fs.existsSync(metadataPath)) {
-            recipePaths.push(entryPath);
-          }
-        } else {
-          await searchDirectory(entryPath);
-        }
-      }
-    }
-  }
-
-  await searchDirectory(RECIPES_DIR);
-  return recipePaths;
+  return await libraryManager.findRecipeByName(recipeName);
 }
 
 async function validateRecipeByName(
@@ -615,7 +585,7 @@ async function loadRecipe(recipeName: string): Promise<Recipe> {
         foundPaths = await findRecipeByName(resolvedTarget);
         if (foundPaths.length === 0) {
           throw new ApplyError(
-            `Recipe '${recipeName}' not found in ~/.chorenzo/recipes even after refreshing libraries`,
+            `Recipe '${recipeName}' not found in recipe libraries even after refreshing`,
             'RECIPE_NOT_FOUND'
           );
         }

@@ -28,10 +28,8 @@ import {
   ApplyValidationCallback,
 } from '../types/apply';
 import { Recipe, RecipeDependency } from '../types/recipe';
+import { libraryManager } from '../utils/library-manager.utils';
 import { WorkspaceAnalysis, ProjectAnalysis } from '../types/analysis';
-
-const CHORENZO_DIR = path.join(os.homedir(), '.chorenzo');
-const RECIPES_DIR = path.join(CHORENZO_DIR, 'recipes');
 
 export enum InputType {
   RecipeName = 'recipe-name',
@@ -206,34 +204,7 @@ function detectInputType(target: string): InputType {
 }
 
 async function findRecipeByName(recipeName: string): Promise<string[]> {
-  const recipePaths: string[] = [];
-
-  async function searchDirectory(dir: string): Promise<void> {
-    if (!fs.existsSync(dir)) {
-      return;
-    }
-
-    const entries = fs.readdirSync(dir);
-
-    for (const entry of entries) {
-      const entryPath = path.join(dir, entry);
-      const stat = fs.statSync(entryPath);
-
-      if (stat.isDirectory()) {
-        if (entry === recipeName) {
-          const metadataPath = path.join(entryPath, 'metadata.yaml');
-          if (fs.existsSync(metadataPath)) {
-            recipePaths.push(entryPath);
-          }
-        } else {
-          await searchDirectory(entryPath);
-        }
-      }
-    }
-  }
-
-  await searchDirectory(RECIPES_DIR);
-  return recipePaths;
+  return await libraryManager.findRecipeByName(recipeName);
 }
 
 async function validateRecipeByName(
@@ -602,13 +573,24 @@ async function loadRecipe(recipeName: string): Promise<Recipe> {
 
   switch (inputType) {
     case InputType.RecipeName: {
-      const foundPaths = await findRecipeByName(resolvedTarget);
+      let foundPaths = await findRecipeByName(resolvedTarget);
+
       if (foundPaths.length === 0) {
-        throw new ApplyError(
-          `Recipe '${recipeName}' not found in ~/.chorenzo/recipes`,
-          'RECIPE_NOT_FOUND'
+        Logger.info(
+          { recipe: recipeName },
+          'Recipe not found locally, refreshing all libraries...'
         );
+        await libraryManager.refreshAllLibraries();
+
+        foundPaths = await findRecipeByName(resolvedTarget);
+        if (foundPaths.length === 0) {
+          throw new ApplyError(
+            `Recipe '${recipeName}' not found in recipe libraries even after refreshing`,
+            'RECIPE_NOT_FOUND'
+          );
+        }
       }
+
       if (foundPaths.length > 1) {
         const pathsList = foundPaths.map((p) => `  - ${p}`).join('\n');
         throw new ApplyError(
@@ -616,17 +598,39 @@ async function loadRecipe(recipeName: string): Promise<Recipe> {
           'MULTIPLE_RECIPES_FOUND'
         );
       }
-      return await parseRecipeFromDirectory(foundPaths[0]);
+
+      const recipePath = foundPaths[0];
+      const libraryName = libraryManager.isRemoteLibrary(recipePath);
+      if (libraryName) {
+        Logger.info(
+          { recipe: recipeName, library: libraryName },
+          'Recipe is from remote library, refreshing...'
+        );
+        await libraryManager.refreshLibrary(libraryName);
+      }
+
+      return await parseRecipeFromDirectory(recipePath);
     }
 
-    case InputType.RecipeFolder:
+    case InputType.RecipeFolder: {
       if (!fs.existsSync(resolvedTarget)) {
         throw new ApplyError(
           `Recipe folder does not exist: ${resolvedTarget}`,
           'RECIPE_NOT_FOUND'
         );
       }
+
+      const libraryName = libraryManager.isRemoteLibrary(resolvedTarget);
+      if (libraryName) {
+        Logger.info(
+          { recipe: recipeName, library: libraryName },
+          'Recipe is from remote library, refreshing...'
+        );
+        await libraryManager.refreshLibrary(libraryName);
+      }
+
       return await parseRecipeFromDirectory(resolvedTarget);
+    }
 
     default:
       throw new ApplyError(

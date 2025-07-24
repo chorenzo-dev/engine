@@ -1,96 +1,8 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-import {
-  checkGitAvailable,
-  cloneRepository,
-  GitError,
-} from '../utils/git-operations.utils';
-import { retry } from '../utils/retry.utils';
-import { readYaml, writeYaml, YamlError } from '../utils/yaml.utils';
-import { writeJson } from '../utils/json.utils';
+import { GitError } from '../utils/git-operations.utils';
+import { YamlError } from '../utils/yaml.utils';
 import { Logger } from '../utils/logger.utils';
-
-class ChorenzoConfig {
-  get dir(): string {
-    return path.join(os.homedir(), '.chorenzo');
-  }
-
-  get configPath(): string {
-    return path.join(this.dir, 'config.yaml');
-  }
-
-  get statePath(): string {
-    return path.join(this.dir, 'state.json');
-  }
-
-  get recipesDir(): string {
-    return path.join(this.dir, 'recipes');
-  }
-
-  createRecipesDir(): void {
-    fs.mkdirSync(this.recipesDir, { recursive: true });
-  }
-
-  configExists(): boolean {
-    return fs.existsSync(this.configPath);
-  }
-
-  async writeDefaultConfig(): Promise<void> {
-    const defaultConfig: Config = {
-      libraries: {
-        core: {
-          repo: 'https://github.com/chorenzo-dev/recipes-core.git',
-          ref: 'main',
-        },
-      },
-    };
-    await writeYaml(this.configPath, defaultConfig);
-  }
-
-  async readConfig(): Promise<Config> {
-    return await readYaml<Config>(this.configPath);
-  }
-
-  stateExists(): boolean {
-    return fs.existsSync(this.statePath);
-  }
-
-  async writeDefaultState(): Promise<void> {
-    const defaultState: State = {
-      last_checked: '1970-01-01T00:00:00Z',
-    };
-    await writeJson(this.statePath, defaultState);
-  }
-
-  removeRecipesDir(): void {
-    if (fs.existsSync(this.recipesDir)) {
-      fs.rmSync(this.recipesDir, { recursive: true, force: true });
-    }
-  }
-
-  removeConfigFile(): void {
-    if (fs.existsSync(this.configPath)) {
-      fs.unlinkSync(this.configPath);
-    }
-  }
-
-  removeStateFile(): void {
-    if (fs.existsSync(this.statePath)) {
-      fs.unlinkSync(this.statePath);
-    }
-  }
-
-  getLibraryPath(libName: string): string {
-    return path.join(this.recipesDir, libName);
-  }
-
-  libraryExists(libName: string): boolean {
-    return fs.existsSync(this.getLibraryPath(libName));
-  }
-}
-
-const chorenzoConfig = new ChorenzoConfig();
+import { chorenzoConfig } from '../utils/chorenzo-config.utils';
+import { libraryManager } from '../utils/library-manager.utils';
 
 export interface InitOptions {
   reset?: boolean;
@@ -148,11 +60,11 @@ export async function performInit(
     onProgress?.('Setting up configuration files...');
     await setupConfigFiles();
 
-    onProgress?.('Reading configuration...');
-    const config = await readConfig();
+    onProgress?.('Validating configuration...');
+    await validateConfig();
 
     onProgress?.('Cloning recipe libraries...');
-    await cloneLibraries(config, onProgress);
+    await libraryManager.cloneLibraries(onProgress);
 
     onProgress?.('Initialization complete!');
   } catch (error) {
@@ -190,7 +102,7 @@ async function setupConfigFiles(): Promise<void> {
   }
 }
 
-async function readConfig(): Promise<Config> {
+async function validateConfig(): Promise<void> {
   try {
     const config = await chorenzoConfig.readConfig();
 
@@ -200,8 +112,6 @@ async function readConfig(): Promise<Config> {
         'INVALID_CONFIG'
       );
     }
-
-    return config;
   } catch (error) {
     if (error instanceof InitError) {
       throw error;
@@ -216,42 +126,5 @@ async function readConfig(): Promise<Config> {
       `Failed to read config.yaml: ${error instanceof Error ? error.message : String(error)}`,
       'CONFIG_READ_ERROR'
     );
-  }
-}
-
-async function cloneLibraries(
-  config: Config,
-  onProgress?: ProgressCallback
-): Promise<void> {
-  await checkGitAvailable();
-
-  for (const [libName, libConfig] of Object.entries(config.libraries)) {
-    if (chorenzoConfig.libraryExists(libName)) {
-      onProgress?.(`Skipping ${libName} (already exists)`);
-      continue;
-    }
-
-    const libPath = chorenzoConfig.getLibraryPath(libName);
-
-    onProgress?.(`Cloning ${libName} from ${libConfig.repo}...`);
-
-    try {
-      await retry(
-        () => cloneRepository(libConfig.repo, libPath, libConfig.ref),
-        {
-          maxAttempts: 2,
-          onRetry: (attempt) => {
-            onProgress?.(
-              `Retrying clone of ${libName} (attempt ${attempt + 1})...`
-            );
-          },
-        }
-      );
-      onProgress?.(`Successfully cloned ${libName}`);
-    } catch {
-      onProgress?.(
-        `Warning: Failed to clone ${libName} after retry, skipping...`
-      );
-    }
   }
 }

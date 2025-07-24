@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text, Newline } from 'ink';
 import { AuthenticationStep } from '../components/AuthenticationStep';
-import { WorkspaceSetupStep } from '../components/WorkspaceSetupStep';
 import { AnalysisStep } from '../components/AnalysisStep';
-import { checkClaudeCodeAuth } from '../utils/claude.utils';
 import { AnalysisResult } from '../commands/analyze';
+import { performInit, InitError } from '../commands/init';
 
 interface InitContainerProps {
   options: {
@@ -19,7 +18,7 @@ interface InitContainerProps {
 }
 
 type Step =
-  | 'checking_auth'
+  | 'checking_init'
   | 'authentication'
   | 'workspace_setup'
   | 'analysis'
@@ -31,31 +30,31 @@ export const InitContainer: React.FC<InitContainerProps> = ({
   onComplete,
   onError,
 }) => {
-  const [currentStep, setCurrentStep] = useState<Step>('checking_auth');
+  const [currentStep, setCurrentStep] = useState<Step>('checking_init');
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const runInit = async () => {
       try {
-        const isAuthenticated = await checkClaudeCodeAuth();
-        if (isAuthenticated) {
-          setCurrentStep('workspace_setup');
-        } else {
-          setCurrentStep('authentication');
-        }
+        await performInit(options);
+        setCurrentStep('analysis');
       } catch (error) {
-        setError(error instanceof Error ? error.message : String(error));
-        setCurrentStep('error');
+        if (error instanceof InitError && error.code === 'AUTH_REQUIRED') {
+          setCurrentStep('authentication');
+        } else {
+          setError(error instanceof Error ? error.message : String(error));
+          setCurrentStep('error');
+        }
       }
     };
 
-    if (currentStep === 'checking_auth') {
-      checkAuth();
+    if (currentStep === 'checking_init') {
+      runInit();
     }
-  }, [currentStep]);
+  }, [currentStep, options]);
 
   const handleAuthComplete = () => {
-    setCurrentStep('workspace_setup');
+    setCurrentStep('checking_init'); // Retry init after auth
   };
 
   const handleAuthError = (errorMessage: string) => {
@@ -67,14 +66,6 @@ export const InitContainer: React.FC<InitContainerProps> = ({
     process.exit(0);
   };
 
-  const handleSetupComplete = () => {
-    setCurrentStep('analysis');
-  };
-
-  const handleSetupError = (error: Error) => {
-    onError(error);
-  };
-
   const handleAnalysisComplete = (result?: AnalysisResult) => {
     setCurrentStep('complete');
     onComplete(result);
@@ -84,7 +75,7 @@ export const InitContainer: React.FC<InitContainerProps> = ({
     onError(error);
   };
 
-  if (currentStep === 'checking_auth') {
+  if (currentStep === 'checking_init') {
     return (
       <Box flexDirection="column">
         <Text color="blue">🔍 Checking Claude Code authentication...</Text>
@@ -99,18 +90,6 @@ export const InitContainer: React.FC<InitContainerProps> = ({
           onAuthComplete={handleAuthComplete}
           onAuthError={handleAuthError}
           onQuit={handleQuit}
-        />
-      </Box>
-    );
-  }
-
-  if (currentStep === 'workspace_setup') {
-    return (
-      <Box flexDirection="column">
-        <WorkspaceSetupStep
-          options={{ reset: options.reset }}
-          onSetupComplete={handleSetupComplete}
-          onSetupError={handleSetupError}
         />
       </Box>
     );

@@ -12,6 +12,7 @@ const mockReadJson = jest.fn<(path: string) => Promise<unknown>>();
 const mockCheckGitAvailable = jest.fn<() => Promise<void>>();
 const mockCloneRepository =
   jest.fn<(repo: string, path: string, ref: string) => Promise<void>>();
+const mockQuery = jest.fn<() => AsyncGenerator<unknown, void, unknown>>();
 
 jest.unstable_mockModule('os', () => ({
   homedir: mockHomedir,
@@ -58,6 +59,10 @@ jest.unstable_mockModule('../utils/git-operations.utils', () => ({
   },
 }));
 
+jest.unstable_mockModule('@anthropic-ai/claude-code', () => ({
+  query: mockQuery,
+}));
+
 describe('Init Command Integration Tests', () => {
   let performInit: typeof import('./init').performInit;
 
@@ -82,6 +87,9 @@ describe('Init Command Integration Tests', () => {
     mockReadJson.mockImplementation(() => Promise.resolve({}));
     mockCheckGitAvailable.mockImplementation(() => Promise.resolve(undefined));
     mockCloneRepository.mockImplementation(() => Promise.resolve(undefined));
+    mockQuery.mockImplementation(async function* () {
+      yield { type: 'result', is_error: false };
+    });
   };
 
   beforeEach(async () => {

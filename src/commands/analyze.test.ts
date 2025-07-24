@@ -23,6 +23,10 @@ jest.unstable_mockModule('../utils/json.utils', () => ({
   readJson: jest.fn<() => Promise<unknown>>(),
 }));
 
+jest.unstable_mockModule('@anthropic-ai/claude-code', () => ({
+  query: mockQuery,
+}));
+
 describe('Analyze Command Integration Tests', () => {
   let performAnalysis: (progress?: (message: string) => void) => Promise<{
     analysis: WorkspaceAnalysis | null;
@@ -36,6 +40,10 @@ describe('Analyze Command Integration Tests', () => {
     jest.restoreAllMocks();
 
     mockProgress = jest.fn();
+
+    mockQuery.mockImplementation(async function* () {
+      yield { type: 'result', is_error: false };
+    });
 
     const analyzeModule = await import('./analyze');
     performAnalysis = analyzeModule.performAnalysis;

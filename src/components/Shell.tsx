@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { AnalysisProgress } from './AnalysisProgress';
-import { InitWithAnalysis } from './InitWithAnalysis';
+import { InitContainer } from '../containers/InitContainer';
 import { ApplyProgress } from './ApplyProgress';
 import { DebugProgress } from './DebugProgress';
 import { ApplyDisplay } from './ApplyDisplay';
@@ -250,7 +250,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       }
 
       return (
-        <InitWithAnalysis
+        <InitContainer
           options={{
             reset: options.reset,
             noAnalyze: options.noAnalyze,

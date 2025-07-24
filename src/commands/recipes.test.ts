@@ -15,6 +15,7 @@ const mockStatSync = jest.fn<(path: string) => fs.Stats>();
 const mockReaddirSync = jest.fn<(path: string) => string[]>();
 const mockReadFileSync = jest.fn<(path: string, encoding?: string) => string>();
 const mockReadYaml = jest.fn<(path: string) => Promise<unknown>>();
+const mockWriteYaml = jest.fn<(path: string, data: unknown) => Promise<void>>();
 const mockParseYaml = jest.fn<(content: string) => unknown>();
 const mockReadJson = jest.fn<(path: string) => Promise<unknown>>();
 const mockWriteJson = jest.fn<(path: string, data: unknown) => Promise<void>>();
@@ -47,6 +48,7 @@ jest.unstable_mockModule('fs', () => ({
 
 jest.unstable_mockModule('../utils/yaml.utils', () => ({
   readYaml: mockReadYaml,
+  writeYaml: mockWriteYaml,
   parseYaml: mockParseYaml,
 }));
 
@@ -65,6 +67,10 @@ jest.unstable_mockModule('./analyze', () => ({
 
 jest.unstable_mockModule('../utils/git-operations.utils', () => ({
   cloneRepository: mockCloneRepository,
+}));
+
+jest.unstable_mockModule('@anthropic-ai/claude-code', () => ({
+  query: mockQuery,
 }));
 
 describe('Recipes Command Integration Tests', () => {
@@ -130,6 +136,10 @@ outputs:
     );
     mockCloneRepository.mockImplementation(() => Promise.resolve());
     mockRmSync.mockImplementation(() => {});
+    mockWriteYaml.mockImplementation(() => Promise.resolve());
+    mockQuery.mockImplementation(async function* () {
+      yield { type: 'result', is_error: false };
+    });
   };
 
   beforeEach(async () => {
@@ -607,6 +617,10 @@ outputs:
       });
       mockReadJson.mockResolvedValue({});
       mockWriteJson.mockResolvedValue(undefined);
+      mockWriteYaml.mockResolvedValue(undefined);
+      mockQuery.mockImplementation(async function* () {
+        yield { type: 'result', is_error: false };
+      });
     };
 
     const setupStandardFileSystemMocks = () => {
@@ -736,7 +750,7 @@ outputs:
 
       expect(result).toBeDefined();
       expect(result.summary.successfulProjects).toBe(1);
-      expect(mockQuery).toHaveBeenCalledTimes(1);
+      expect(mockQuery).toHaveBeenCalledTimes(2);
     });
 
     it('should verify progress events and thinking state during recipe application', async () => {
@@ -1223,6 +1237,8 @@ outputs:
       mockQuery.mockImplementation(async function* () {
         queryCallCount++;
         if (queryCallCount === 1) {
+          yield { type: 'result', is_error: false };
+        } else if (queryCallCount === 2) {
           yield {
             type: 'result',
             subtype: 'success',

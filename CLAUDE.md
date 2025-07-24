@@ -1,8 +1,8 @@
 ## Testing Principles
 
-- Create integration tests that exercise end-to-end functionality
+- Only write integration tests that exercise end-to-end functionality, starting from commands under @/commands
 - Only mock external dependencies and side effects (filesystem, APIs, external tools)
-- Test internal logic through integration rather than unit testing individual functions
+- Do not write unit tests for individual internal functions; test internal logic only through integration tests that begin with @/commands
 
 ## Code Writing Guidelines
 

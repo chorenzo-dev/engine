@@ -17,6 +17,7 @@ import {
   executeCodeChangesOperation,
   CodeChangesEventHandlers,
 } from '../utils/code-changes-events.utils';
+import { loadAndSetupAuth } from '../utils/claude.utils';
 import {
   ApplyOptions,
   ApplyRecipeResult,
@@ -466,6 +467,9 @@ export async function performRecipesApply(
   let totalCostUsd = 0;
 
   try {
+    onProgress?.('Checking authentication...');
+    await loadAndSetupAuth();
+
     onProgress?.('Loading recipe...');
     const recipe = await loadRecipe(options.recipe);
 

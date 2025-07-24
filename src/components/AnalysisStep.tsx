@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput, useStdin } from 'ink';
-import { performInit } from '../commands/init';
 import { performAnalysis, AnalysisResult } from '../commands/analyze';
 import { AnalysisDisplay } from './AnalysisDisplay';
 import {
@@ -13,16 +12,15 @@ import * as path from 'path';
 import * as os from 'os';
 import { readJson, writeJson } from '../utils/json.utils';
 
-interface InitWithAnalysisProps {
+interface AnalysisStepProps {
   options: {
-    reset?: boolean;
     noAnalyze?: boolean;
     yes?: boolean;
     progress?: boolean;
     cost?: boolean;
   };
-  onComplete: (result?: AnalysisResult) => void;
-  onError: (error: Error) => void;
+  onAnalysisComplete: (result?: AnalysisResult) => void;
+  onAnalysisError: (error: Error) => void;
 }
 
 interface LastAnalysis {
@@ -35,16 +33,14 @@ interface State {
   last_analysis?: LastAnalysis;
 }
 
-export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
+export const AnalysisStep: React.FC<AnalysisStepProps> = ({
   options,
-  onComplete,
-  onError,
+  onAnalysisComplete,
+  onAnalysisError,
 }) => {
-  const [phase, setPhase] = useState<
-    'init' | 'confirm' | 'analysis' | 'complete'
-  >('init');
-  const [initComplete, setInitComplete] = useState(false);
-  const [step, setStep] = useState<string>('');
+  const [phase, setPhase] = useState<'confirm' | 'analysis' | 'complete'>(
+    'confirm'
+  );
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
     null
   );
@@ -74,7 +70,7 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
             setAnalysisStartTime(Date.now());
           } else {
             setPhase('complete');
-            onComplete();
+            onAnalysisComplete();
           }
           setUserResponse('');
         } else if (key.backspace) {
@@ -85,46 +81,21 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
       } else if (phase === 'analysis' && key.ctrl && input === 'c') {
         setAnalysisAborted(true);
         setPhase('complete');
-        onComplete();
+        onAnalysisComplete();
       }
     },
     { isActive: shouldUseInput }
   );
 
   useEffect(() => {
-    if (phase === 'init' && !initComplete) {
-      const runInit = async () => {
-        try {
-          await performInit({ reset: options.reset }, (step) => {
-            setStep(step);
-          });
-          setInitComplete(true);
-
-          if (options.noAnalyze) {
-            setPhase('complete');
-            onComplete();
-          } else if (options.yes || !shouldUseInput) {
-            setPhase('analysis');
-            setAnalysisStartTime(Date.now());
-          } else {
-            setPhase('confirm');
-          }
-        } catch (err) {
-          onError(err instanceof Error ? err : new Error(String(err)));
-        }
-      };
-      runInit();
+    if (options.noAnalyze) {
+      setPhase('complete');
+      onAnalysisComplete();
+    } else if (options.yes || !shouldUseInput) {
+      setPhase('analysis');
+      setAnalysisStartTime(Date.now());
     }
-  }, [
-    phase,
-    initComplete,
-    options.reset,
-    options.noAnalyze,
-    options.yes,
-    shouldUseInput,
-    onComplete,
-    onError,
-  ]);
+  }, [options.noAnalyze, options.yes, shouldUseInput, onAnalysisComplete]);
 
   useEffect(() => {
     if (phase === 'analysis' && !analysisAborted) {
@@ -140,7 +111,6 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
           });
 
           const result = await performAnalysis((step) => {
-            setStep(step);
             progressOperation(operationId, step);
           });
 
@@ -155,13 +125,13 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
           await Promise.all([updateGitignore(), updateGlobalState()]);
 
           setPhase('complete');
-          onComplete(result);
+          onAnalysisComplete(result);
         } catch (err) {
           errorOperation(
             operationId,
             err instanceof Error ? err.message : String(err)
           );
-          onError(err instanceof Error ? err : new Error(String(err)));
+          onAnalysisError(err instanceof Error ? err : new Error(String(err)));
         }
       };
       runAnalysis();
@@ -169,8 +139,8 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
   }, [
     phase,
     analysisAborted,
-    onComplete,
-    onError,
+    onAnalysisComplete,
+    onAnalysisError,
     startOperation,
     progressOperation,
     completeOperation,
@@ -221,18 +191,9 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
     await writeJson(statePath, state);
   };
 
-  if (phase === 'init') {
-    return (
-      <Box flexDirection="column">
-        <Text color="blue">🔧 {step || 'Initializing workspace...'}</Text>
-      </Box>
-    );
-  }
-
   if (phase === 'confirm') {
     return (
       <Box flexDirection="column">
-        <Text color="green">✅ Initialization complete!</Text>
         <Text color="blue">
           🛈 Run code-base analysis now? (y/N) {userResponse}
         </Text>
@@ -243,7 +204,6 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
   if (phase === 'analysis') {
     return (
       <Box flexDirection="column">
-        <Text color="green">✅ Initialization complete!</Text>
         <CodeChangesProgress operations={operations} showLogs />
         {showLongRunningMessage && (
           <Text color="yellow">
@@ -258,7 +218,6 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
     if (analysisAborted) {
       return (
         <Box flexDirection="column">
-          <Text color="green">✅ Initialization complete!</Text>
           <Text color="yellow">⚠️ Analysis aborted by user</Text>
         </Box>
       );
@@ -267,17 +226,12 @@ export const InitWithAnalysis: React.FC<InitWithAnalysisProps> = ({
     if (analysisResult) {
       return (
         <Box flexDirection="column">
-          <Text color="green">✅ Initialization complete!</Text>
           <AnalysisDisplay result={analysisResult} showCost={options.cost} />
         </Box>
       );
     }
 
-    return (
-      <Box flexDirection="column">
-        <Text color="green">✅ Initialization complete!</Text>
-      </Box>
-    );
+    return null;
   }
 
   return null;

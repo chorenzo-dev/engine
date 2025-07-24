@@ -11,7 +11,6 @@ import {
   executeCodeChangesOperation,
   CodeChangesEventHandlers,
 } from '../utils/code-changes-events.utils';
-import { loadAndSetupAuth, AuthError } from '../utils/claude.utils';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -53,15 +52,6 @@ export async function performAnalysis(
     },
     'Workspace analysis started'
   );
-
-  onProgress?.('Checking authentication...');
-  const isAuthenticated = await loadAndSetupAuth();
-  if (!isAuthenticated) {
-    throw new AuthError(
-      'Claude Code is not authenticated. Please run "chorenzo init" to set up authentication.',
-      'AUTH_REQUIRED'
-    );
-  }
 
   onProgress?.('Finding git repository...');
   const workspaceRoot = findGitRoot();

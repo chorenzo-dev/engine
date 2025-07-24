@@ -63,18 +63,16 @@ async function setupEnvironmentForAuth(authConfig: AuthConfig): Promise<void> {
   }
 }
 
-export async function loadAndSetupAuth(): Promise<boolean> {
+export async function loadAndSetupAuth(): Promise<void> {
   try {
     if (!chorenzoConfig.configExists()) {
-      return await checkClaudeCodeAuth();
+      return;
     }
 
     const config = await chorenzoConfig.readConfig();
     if (config.auth) {
       await setupEnvironmentForAuth(config.auth);
-      return await checkClaudeCodeAuth();
     }
-    return await checkClaudeCodeAuth();
   } catch (error) {
     Logger.debug(
       {
@@ -83,7 +81,6 @@ export async function loadAndSetupAuth(): Promise<boolean> {
       },
       'Failed to load and setup authentication'
     );
-    return false;
   }
 }
 

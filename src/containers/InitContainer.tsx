@@ -3,7 +3,7 @@ import { Box, Text, Newline } from 'ink';
 import { AuthenticationStep } from '../components/AuthenticationStep';
 import { WorkspaceSetupStep } from '../components/WorkspaceSetupStep';
 import { AnalysisStep } from '../components/AnalysisStep';
-import { loadAndSetupAuth } from '../utils/claude.utils';
+import { checkClaudeCodeAuth } from '../utils/claude.utils';
 import { AnalysisResult } from '../commands/analyze';
 
 interface InitContainerProps {
@@ -37,7 +37,7 @@ export const InitContainer: React.FC<InitContainerProps> = ({
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const isAuthenticated = await loadAndSetupAuth();
+        const isAuthenticated = await checkClaudeCodeAuth();
         if (isAuthenticated) {
           setCurrentStep('workspace_setup');
         } else {

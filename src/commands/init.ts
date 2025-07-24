@@ -6,9 +6,9 @@ import {
 import { retry } from '../utils/retry.utils';
 import { YamlError } from '../utils/yaml.utils';
 import { Logger } from '../utils/logger.utils';
-import { checkClaudeCodeAuth } from '../utils/claude.utils';
 import { chorenzoConfig } from '../utils/config.utils';
 import { ChorenzoConfig as Config } from '../types/config';
+import { checkClaudeCodeAuth } from '../utils/claude.utils';
 
 export interface InitOptions {
   reset?: boolean;

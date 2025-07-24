@@ -117,8 +117,10 @@ export const InitContainer: React.FC<InitContainerProps> = ({
     return (
       <Box flexDirection="column">
         <Text color="red">❌ Error:</Text>
-        <Text color="red">{error}</Text>
-        <Newline />
+        <Text color="red">
+          {error}
+          <Newline />
+        </Text>
         <Text>Please run 'chorenzo init' again to retry.</Text>
       </Box>
     );

@@ -111,18 +111,28 @@ export const AuthenticationStep: React.FC<AuthenticationStepProps> = ({
   if (phase === 'claude_setup') {
     return (
       <Box flexDirection="column">
-        <Text color="blue">📖 Please follow these steps:</Text>
+        <Text color="blue">
+          📖 Please follow these steps:
+          <Newline />
+        </Text>
         <Text>1. Install Claude Code by following the setup guide:</Text>
         <Text color="cyan">
-          {' '}
+          {'   '}
           https://docs.anthropic.com/en/docs/claude-code/setup
+          <Newline />
         </Text>
         <Text>2. Authenticate using one of these methods:</Text>
         <Text> • Log in with your Claude subscription</Text>
         <Text> • Connect through Anthropic Console</Text>
-        <Text> • Configure for enterprise (Bedrock/Vertex AI)</Text>
-        <Text>3. Run 'chorenzo init' again after authentication</Text>
-        <Newline />
+        <Text>
+          {' '}
+          • Configure for enterprise (Bedrock/Vertex AI)
+          <Newline />
+        </Text>
+        <Text>
+          3. Run 'chorenzo init' again after authentication
+          <Newline />
+        </Text>
         <Text color="yellow">Exiting...</Text>
       </Box>
     );
@@ -135,7 +145,9 @@ export const AuthenticationStep: React.FC<AuthenticationStepProps> = ({
         <Text color="gray">
           (Get one from https://console.anthropic.com/settings/keys)
         </Text>
-        <Newline />
+        <Text>
+          <Newline />
+        </Text>
         <Box>
           <Text>API Key: </Text>
           <TextInput
@@ -145,7 +157,9 @@ export const AuthenticationStep: React.FC<AuthenticationStepProps> = ({
             mask="*"
           />
         </Box>
-        <Newline />
+        <Text>
+          <Newline />
+        </Text>
         {anthropicKey && !validateApiKey(anthropicKey) && (
           <Text color="red">
             Invalid API key format. Should start with sk-ant-
@@ -158,8 +172,10 @@ export const AuthenticationStep: React.FC<AuthenticationStepProps> = ({
   if (phase === 'bedrock_setup') {
     return (
       <Box flexDirection="column">
-        <Text color="blue">📖 AWS Bedrock Setup:</Text>
-        <Newline />
+        <Text color="blue">
+          📖 AWS Bedrock Setup:
+          <Newline />
+        </Text>
         <Text>1. Set up AWS credentials using your preferred method:</Text>
         <Text> • AWS CLI: aws configure</Text>
         <Text>
@@ -167,13 +183,21 @@ export const AuthenticationStep: React.FC<AuthenticationStepProps> = ({
           • Environment variables: AWS_REGION, AWS_ACCESS_KEY_ID,
           AWS_SECRET_ACCESS_KEY
         </Text>
-        <Text> • IAM roles or AWS SSO</Text>
-        <Newline />
+        <Text>
+          {' '}
+          • IAM roles or AWS SSO
+          <Newline />
+        </Text>
         <Text>2. Set Claude Code to use Bedrock:</Text>
-        <Text color="cyan"> export CLAUDE_CODE_USE_BEDROCK=1</Text>
-        <Newline />
-        <Text>3. Run 'chorenzo init' again after setup</Text>
-        <Newline />
+        <Text color="cyan">
+          {' '}
+          export CLAUDE_CODE_USE_BEDROCK=1
+          <Newline />
+        </Text>
+        <Text>
+          3. Run 'chorenzo init' again after setup
+          <Newline />
+        </Text>
         <Text color="yellow">Exiting...</Text>
       </Box>
     );
@@ -182,22 +206,32 @@ export const AuthenticationStep: React.FC<AuthenticationStepProps> = ({
   if (phase === 'vertex_setup') {
     return (
       <Box flexDirection="column">
-        <Text color="blue">📖 Google Vertex AI Setup:</Text>
-        <Newline />
+        <Text color="blue">
+          📖 Google Vertex AI Setup:
+          <Newline />
+        </Text>
         <Text>1. Set up GCP authentication:</Text>
         <Text> • gcloud auth application-default login</Text>
-        <Text> • Service account key file</Text>
-        <Newline />
+        <Text>
+          {' '}
+          • Service account key file
+          <Newline />
+        </Text>
         <Text>2. Set required environment variables:</Text>
         <Text color="cyan"> export CLAUDE_CODE_USE_VERTEX=1</Text>
         <Text color="cyan">
           {' '}
           export ANTHROPIC_VERTEX_PROJECT_ID=your-project-id
         </Text>
-        <Text color="cyan"> export CLOUD_ML_REGION=us-central1</Text>
-        <Newline />
-        <Text>3. Run 'chorenzo init' again after setup</Text>
-        <Newline />
+        <Text color="cyan">
+          {' '}
+          export CLOUD_ML_REGION=us-central1
+          <Newline />
+        </Text>
+        <Text>
+          3. Run 'chorenzo init' again after setup
+          <Newline />
+        </Text>
         <Text color="yellow">Exiting...</Text>
       </Box>
     );

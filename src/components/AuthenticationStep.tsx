@@ -112,18 +112,15 @@ export const AuthenticationStep: React.FC<AuthenticationStepProps> = ({
     return (
       <Box flexDirection="column">
         <Text color="blue">📖 Please follow these steps:</Text>
-        <Newline />
         <Text>1. Install Claude Code by following the setup guide:</Text>
         <Text color="cyan">
           {' '}
           https://docs.anthropic.com/en/docs/claude-code/setup
         </Text>
-        <Newline />
         <Text>2. Authenticate using one of these methods:</Text>
         <Text> • Log in with your Claude subscription</Text>
         <Text> • Connect through Anthropic Console</Text>
         <Text> • Configure for enterprise (Bedrock/Vertex AI)</Text>
-        <Newline />
         <Text>3. Run 'chorenzo init' again after authentication</Text>
         <Newline />
         <Text color="yellow">Exiting...</Text>

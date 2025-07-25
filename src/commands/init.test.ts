@@ -9,6 +9,15 @@ const mockWriteYaml = jest.fn<(path: string, data: unknown) => Promise<void>>();
 const mockReadYaml = jest.fn<(path: string) => Promise<unknown>>();
 const mockWriteJson = jest.fn<(path: string, data: unknown) => Promise<void>>();
 const mockReadJson = jest.fn<(path: string) => Promise<unknown>>();
+const mockSpawnSync = jest.fn<
+  () => {
+    error?: Error;
+    status: number;
+    stdout?: string;
+    stderr?: string;
+    signal?: string;
+  }
+>();
 const mockCheckGitAvailable = jest.fn<() => Promise<void>>();
 const mockCloneRepository =
   jest.fn<(repo: string, path: string, ref: string) => Promise<void>>();
@@ -24,6 +33,10 @@ jest.unstable_mockModule('fs', () => ({
   existsSync: mockExistsSync,
   rmSync: mockRmSync,
   unlinkSync: mockUnlinkSync,
+}));
+
+jest.unstable_mockModule('child_process', () => ({
+  spawnSync: mockSpawnSync,
 }));
 
 jest.unstable_mockModule('../utils/yaml.utils', () => ({
@@ -90,6 +103,13 @@ describe('Init Command Integration Tests', () => {
     mockQuery.mockImplementation(async function* () {
       yield { type: 'result', is_error: false };
     });
+    mockSpawnSync.mockImplementation(() => ({
+      error: undefined,
+      status: 0,
+      stdout: 'Claude CLI is working',
+      stderr: '',
+      signal: undefined,
+    }));
   };
 
   beforeEach(async () => {

@@ -618,9 +618,6 @@ outputs:
       mockReadJson.mockResolvedValue({});
       mockWriteJson.mockResolvedValue(undefined);
       mockWriteYaml.mockResolvedValue(undefined);
-      mockQuery.mockImplementation(async function* () {
-        yield { type: 'result', is_error: false };
-      });
     };
 
     const setupStandardFileSystemMocks = () => {
@@ -750,7 +747,7 @@ outputs:
 
       expect(result).toBeDefined();
       expect(result.summary.successfulProjects).toBe(1);
-      expect(mockQuery).toHaveBeenCalledTimes(2);
+      expect(mockQuery).toHaveBeenCalledTimes(1);
     });
 
     it('should verify progress events and thinking state during recipe application', async () => {

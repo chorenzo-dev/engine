@@ -15,68 +15,23 @@ export class AuthError extends Error {
 
 export async function checkClaudeCodeAuth(): Promise<boolean> {
   try {
-    Logger.debug(
-      {
-        event: 'auth_check_start',
-        env: {
-          ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,
-          ANTHROPIC_AUTH_TOKEN: !!process.env.ANTHROPIC_AUTH_TOKEN,
-          AWS_BEARER_TOKEN_BEDROCK: !!process.env.AWS_BEARER_TOKEN_BEDROCK,
-          CLAUDE_CODE_USE_BEDROCK: process.env.CLAUDE_CODE_USE_BEDROCK,
-          CLAUDE_CODE_USE_VERTEX: process.env.CLAUDE_CODE_USE_VERTEX,
-          CLAUDECODE: process.env.CLAUDECODE,
-        },
-      },
-      'Starting Claude Code authentication check'
-    );
-
     if (process.env.ANTHROPIC_API_KEY) {
-      Logger.debug(
-        {
-          event: 'auth_check_anthropic_api_key',
-        },
-        'Found ANTHROPIC_API_KEY environment variable'
-      );
       return true;
     }
 
     if (process.env.ANTHROPIC_AUTH_TOKEN) {
-      Logger.debug(
-        {
-          event: 'auth_check_anthropic_auth_token',
-        },
-        'Found ANTHROPIC_AUTH_TOKEN environment variable'
-      );
       return true;
     }
 
     if (process.env.AWS_BEARER_TOKEN_BEDROCK) {
-      Logger.debug(
-        {
-          event: 'auth_check_bedrock_token',
-        },
-        'Found AWS_BEARER_TOKEN_BEDROCK environment variable'
-      );
       return true;
     }
 
     if (process.env.CLAUDE_CODE_USE_BEDROCK === '1') {
-      Logger.debug(
-        {
-          event: 'auth_check_bedrock_enabled',
-        },
-        'Found CLAUDE_CODE_USE_BEDROCK=1 environment variable'
-      );
       return true;
     }
 
     if (process.env.CLAUDE_CODE_USE_VERTEX === '1') {
-      Logger.debug(
-        {
-          event: 'auth_check_vertex_enabled',
-        },
-        'Found CLAUDE_CODE_USE_VERTEX=1 environment variable'
-      );
       return true;
     }
 
@@ -87,14 +42,6 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
     });
 
     if (cliResult.error || cliResult.status !== 0) {
-      Logger.debug(
-        {
-          event: 'auth_check_no_claude_cli',
-          error: cliResult.error?.message,
-          exitCode: cliResult.status,
-        },
-        'Claude CLI not available or not working'
-      );
       return false;
     }
 
@@ -108,26 +55,10 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
     const output = (testResult.stdout || '') + (testResult.stderr || '');
 
     if (testResult.signal === 'SIGTERM') {
-      Logger.debug(
-        {
-          event: 'auth_check_cli_timeout',
-          timeout: 30000,
-        },
-        'Claude CLI command timed out after 30s - likely not authenticated'
-      );
       return false;
     }
 
     if (output.includes('Invalid API key') || output.includes('/login')) {
-      Logger.debug(
-        {
-          event: 'auth_check_cli_not_authenticated',
-          stdout: testResult.stdout,
-          stderr: testResult.stderr,
-          exitCode: testResult.status,
-        },
-        'Claude CLI reports authentication required'
-      );
       return false;
     }
 
@@ -137,15 +68,6 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       output.includes('claude login') ||
       output.includes('Invalid API key')
     ) {
-      Logger.debug(
-        {
-          event: 'auth_check_cli_not_authenticated',
-          stdout: testResult.stdout,
-          stderr: testResult.stderr,
-          exitCode: testResult.status,
-        },
-        'Claude CLI reports not authenticated'
-      );
       return false;
     }
 
@@ -154,35 +76,11 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       testResult.stdout &&
       testResult.stdout.length > 0
     ) {
-      Logger.debug(
-        {
-          event: 'auth_check_cli_success',
-          exitCode: testResult.status,
-          outputLength: testResult.stdout.length,
-        },
-        'Claude CLI authentication verified'
-      );
       return true;
     }
 
-    Logger.debug(
-      {
-        event: 'auth_check_cli_failed',
-        stdout: testResult.stdout,
-        stderr: testResult.stderr,
-        exitCode: testResult.status,
-      },
-      'Claude CLI check failed'
-    );
     return false;
-  } catch (error) {
-    Logger.debug(
-      {
-        event: 'auth_check_failed',
-        error: error instanceof Error ? error.message : String(error),
-      },
-      'Claude Code authentication check failed'
-    );
+  } catch {
     return false;
   }
 }
@@ -218,7 +116,7 @@ export async function loadAndSetupAuth(): Promise<void> {
       await setupEnvironmentForAuth(config.auth);
     }
   } catch (error) {
-    Logger.debug(
+    Logger.warn(
       {
         event: 'auth_setup_failed',
         error: error instanceof Error ? error.message : String(error),

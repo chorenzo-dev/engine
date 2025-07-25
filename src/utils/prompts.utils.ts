@@ -18,6 +18,20 @@ export function loadPrompt(promptName: string): string {
   }
 }
 
+export function loadTemplate(
+  templateName: string,
+  extension: string = 'md'
+): string {
+  const templatePath = join(PROMPTS_DIR, `${templateName}.${extension}`);
+  try {
+    return readFileSync(templatePath, 'utf-8');
+  } catch (error) {
+    throw new Error(
+      `Failed to load template ${templateName}.${extension}: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
 export function renderPrompt(
   template: string,
   variables: Record<string, string>

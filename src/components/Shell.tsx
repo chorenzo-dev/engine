@@ -9,14 +9,21 @@ import { performAnalysis, AnalysisResult } from '../commands/analyze';
 import {
   performRecipesValidate,
   performRecipesApply,
+  performRecipesGenerate,
   type ValidationCallback,
   type ValidationResult,
+  type GenerateResult as RecipeGenerateResult,
 } from '../commands/recipes';
 import { AnalysisDisplay } from './AnalysisDisplay';
 import { ApplyOptions, ApplyRecipeResult } from '../types/apply';
 
 interface ShellProps {
-  command: 'analyze' | 'init' | 'recipes-validate' | 'recipes-apply';
+  command:
+    | 'analyze'
+    | 'init'
+    | 'recipes-validate'
+    | 'recipes-apply'
+    | 'recipes-generate';
   options: {
     progress?: boolean;
     reset?: boolean;
@@ -28,6 +35,7 @@ interface ShellProps {
     project?: string;
     debug?: boolean;
     cost?: boolean;
+    name?: string;
   };
 }
 
@@ -35,7 +43,8 @@ type ShellState =
   | { command: 'analyze'; result: AnalysisResult | null }
   | { command: 'init'; result: AnalysisResult | null }
   | { command: 'recipes-validate'; result: ValidationResult | null }
-  | { command: 'recipes-apply'; result: ApplyRecipeResult | null };
+  | { command: 'recipes-apply'; result: ApplyRecipeResult | null }
+  | { command: 'recipes-generate'; result: RecipeGenerateResult | null };
 
 export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   const [commandState, setCommandState] = useState<ShellState>(
@@ -152,6 +161,37 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       };
       runRecipesApply();
     }
+
+    if (
+      command === 'recipes-generate' &&
+      options.progress === false &&
+      !isComplete &&
+      !error
+    ) {
+      const runRecipesGenerate = async () => {
+        try {
+          const generateResult = await performRecipesGenerate(
+            {
+              name: options.name,
+              progress: options.progress,
+              cost: options.cost,
+            },
+            (step) => {
+              setSimpleStep(step);
+            }
+          );
+
+          setCommandState({
+            command: 'recipes-generate',
+            result: generateResult,
+          });
+          setIsComplete(true);
+        } catch (err) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      };
+      runRecipesGenerate();
+    }
   }, [
     command,
     options.progress,
@@ -161,6 +201,8 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     options.variant,
     options.project,
     options.yes,
+    options.name,
+    options.cost,
     isComplete,
     error,
   ]);
@@ -431,6 +473,46 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           setError(error);
         }}
       />
+    );
+  }
+
+  if (command === 'recipes-generate') {
+    if (options.progress === false) {
+      if (error) {
+        return (
+          <Box flexDirection="column">
+            <Text color="red">❌ Error: {error.message}</Text>
+          </Box>
+        );
+      }
+
+      if (
+        isComplete &&
+        commandState.command === 'recipes-generate' &&
+        commandState.result
+      ) {
+        return (
+          <Box flexDirection="column">
+            <Text color="green">✅ Recipe generated successfully!</Text>
+            <Text>Path: {commandState.result.recipePath}</Text>
+            <Text>Name: {commandState.result.recipeName}</Text>
+          </Box>
+        );
+      }
+
+      return (
+        <Box flexDirection="column">
+          <Text color="blue">🎯 {simpleStep || 'Generating recipe...'}</Text>
+        </Box>
+      );
+    }
+
+    return (
+      <Box flexDirection="column">
+        <Text color="yellow">
+          Recipe generation with progress UI not yet implemented
+        </Text>
+      </Box>
     );
   }
 

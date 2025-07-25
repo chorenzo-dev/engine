@@ -1,0 +1,16 @@
+id: {{ recipe_id }}
+category: {{ category }}
+summary: {{ summary }}
+
+ecosystems:
+  - id: javascript
+    default_variant: default
+    variants:
+      - id: default
+        fix_prompt: fixes/javascript_default.md
+
+provides:
+  - {{ recipe_id }}.exists
+  - {{ recipe_id }}.configured
+
+requires: []

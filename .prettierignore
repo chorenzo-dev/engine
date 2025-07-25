@@ -4,3 +4,5 @@ coverage/
 *.min.js
 *.min.css
 CHANGELOG.md
+src/prompts/recipe_*.yaml
+src/prompts/recipe_*.md

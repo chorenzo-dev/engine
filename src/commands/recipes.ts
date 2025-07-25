@@ -10,7 +10,7 @@ import { cloneRepository } from '../utils/git-operations.utils';
 import { normalizeRepoIdentifier } from '../utils/git.utils';
 import { performAnalysis } from './analyze';
 import { readJson } from '../utils/json.utils';
-import { loadPrompt, renderPrompt } from '../utils/prompts.utils';
+import { loadPrompt, loadTemplate, renderPrompt } from '../utils/prompts.utils';
 import { workspaceConfig } from '../utils/workspace-config.utils';
 import { Logger } from '../utils/logger.utils';
 import {
@@ -50,6 +50,26 @@ export interface RecipesOptions {
 
 export interface ValidateOptions extends RecipesOptions {
   target: string;
+}
+
+export interface GenerateOptions extends RecipesOptions {
+  name?: string;
+  cost?: boolean;
+  magicGenerate?: boolean;
+  category?: string;
+  summary?: string;
+  location?: string;
+}
+
+export interface GenerateResult {
+  recipePath: string;
+  recipeName: string;
+  success: boolean;
+  error?: string;
+  metadata?: {
+    costUsd: number;
+    durationSeconds: number;
+  };
 }
 
 export interface ValidationMessage {
@@ -981,5 +1001,98 @@ async function applyRecipeDirectly(
       error: error instanceof Error ? error.message : String(error),
       costUsd: 0,
     };
+  }
+}
+
+function validateRecipeId(recipeName: string): string {
+  if (!recipeName || recipeName.trim().length === 0) {
+    throw new RecipesError(
+      'Recipe name cannot be empty',
+      'INVALID_RECIPE_NAME'
+    );
+  }
+
+  const trimmed = recipeName.trim();
+  const invalidChars = trimmed.match(/[^a-zA-Z0-9\s-]/g);
+
+  if (invalidChars) {
+    const uniqueInvalidChars = [...new Set(invalidChars)].join(', ');
+    throw new RecipesError(
+      `Recipe name contains invalid characters: ${uniqueInvalidChars}. Only letters, numbers, spaces, and dashes are allowed.`,
+      'INVALID_RECIPE_NAME'
+    );
+  }
+
+  return trimmed.replace(/\s+/g, '-').toLowerCase();
+}
+
+export async function performRecipesGenerate(
+  options: GenerateOptions,
+  onProgress?: ProgressCallback
+): Promise<GenerateResult> {
+  const startTime = new Date();
+  let totalCostUsd = 0;
+
+  try {
+    onProgress?.('Starting recipe generation...');
+
+    const recipeName = options.name || 'example-recipe';
+    const recipeId = validateRecipeId(recipeName);
+    const category = options.category || 'general';
+    const summary = options.summary || `Set up ${recipeName} for the project.`;
+
+    const recipePath = path.join(process.cwd(), recipeId);
+
+    onProgress?.(`Creating recipe directory: ${recipePath}`);
+
+    fs.mkdirSync(recipePath, { recursive: true });
+    fs.mkdirSync(path.join(recipePath, 'fixes'), { recursive: true });
+
+    onProgress?.('Creating recipe files...');
+
+    const templateVars = {
+      recipe_id: recipeId,
+      recipe_name: recipeName,
+      category,
+      summary,
+    };
+
+    const metadataTemplate = loadTemplate('recipe_metadata', 'yaml');
+    const metadataContent = renderPrompt(metadataTemplate, templateVars);
+    fs.writeFileSync(path.join(recipePath, 'metadata.yaml'), metadataContent);
+
+    const promptTemplate = loadTemplate('recipe_prompt');
+    const promptContent = renderPrompt(promptTemplate, templateVars);
+    fs.writeFileSync(path.join(recipePath, 'prompt.md'), promptContent);
+
+    const fixTemplate = loadTemplate('recipe_fix');
+    const fixContent = renderPrompt(fixTemplate, templateVars);
+    fs.writeFileSync(
+      path.join(recipePath, 'fixes', 'javascript_default.md'),
+      fixContent
+    );
+
+    const endTime = new Date();
+    const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
+
+    onProgress?.('Recipe generation complete!');
+
+    return {
+      recipePath,
+      recipeName: recipeId,
+      success: true,
+      metadata: {
+        costUsd: totalCostUsd,
+        durationSeconds,
+      },
+    };
+  } catch (error) {
+    if (error instanceof RecipesError) {
+      throw error;
+    }
+    throw new RecipesError(
+      `Recipe generation failed: ${error instanceof Error ? error.message : String(error)}`,
+      'GENERATION_FAILED'
+    );
   }
 }

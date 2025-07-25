@@ -139,4 +139,33 @@ Examples:
     );
   });
 
+recipesCommand
+  .command('generate [name]')
+  .description('Generate a new recipe')
+  .option('--no-progress', 'Disable progress UI')
+  .option('--cost', 'Show LLM cost information')
+  .addHelpText(
+    'after',
+    `
+Arguments:  
+  name      Recipe name (optional, will prompt if not provided)
+
+Examples:
+  $ chorenzo recipes generate                               # Interactive generation
+  $ chorenzo recipes generate code-formatting               # Generate with name
+`
+  )
+  .action(async (name, options) => {
+    render(
+      React.createElement(Shell, {
+        command: 'recipes-generate',
+        options: {
+          name,
+          progress: options.progress,
+          cost: options.cost,
+        },
+      })
+    );
+  });
+
 program.parse();

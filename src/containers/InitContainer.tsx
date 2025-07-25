@@ -54,7 +54,7 @@ export const InitContainer: React.FC<InitContainerProps> = ({
   }, [currentStep, options]);
 
   const handleAuthComplete = () => {
-    setCurrentStep('checking_init'); // Retry init after auth
+    setCurrentStep('checking_init');
   };
 
   const handleAuthError = (errorMessage: string) => {

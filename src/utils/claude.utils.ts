@@ -15,7 +15,6 @@ export class AuthError extends Error {
 
 export async function checkClaudeCodeAuth(): Promise<boolean> {
   try {
-    // Log all environment variables that might affect auth
     Logger.debug(
       {
         event: 'auth_check_start',
@@ -31,7 +30,6 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       'Starting Claude Code authentication check'
     );
 
-    // 1. Check for Anthropic API Key (official Claude Code env var)
     if (process.env.ANTHROPIC_API_KEY) {
       Logger.debug(
         {
@@ -42,7 +40,6 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       return true;
     }
 
-    // 2. Check for Anthropic Auth Token (official Claude Code env var)
     if (process.env.ANTHROPIC_AUTH_TOKEN) {
       Logger.debug(
         {
@@ -53,7 +50,6 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       return true;
     }
 
-    // 3. Check for AWS Bedrock token (official Claude Code env var)
     if (process.env.AWS_BEARER_TOKEN_BEDROCK) {
       Logger.debug(
         {
@@ -64,7 +60,6 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       return true;
     }
 
-    // 4. Check if Bedrock is configured (official Claude Code env var)
     if (process.env.CLAUDE_CODE_USE_BEDROCK === '1') {
       Logger.debug(
         {
@@ -75,7 +70,6 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       return true;
     }
 
-    // 5. Check if Vertex AI is configured (official Claude Code env var)
     if (process.env.CLAUDE_CODE_USE_VERTEX === '1') {
       Logger.debug(
         {
@@ -86,7 +80,6 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       return true;
     }
 
-    // 6. Check if Claude CLI is installed and authenticated
     const cliResult = spawnSync('claude', ['--version'], {
       encoding: 'utf8',
       timeout: 2000,
@@ -105,7 +98,6 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       return false;
     }
 
-    // 7. Try a minimal Claude CLI test
     const testResult = spawnSync('claude', ['-p', 'status'], {
       encoding: 'utf8',
       timeout: 30000,
@@ -115,7 +107,6 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
 
     const output = (testResult.stdout || '') + (testResult.stderr || '');
 
-    // If command timed out, assume not authenticated
     if (testResult.signal === 'SIGTERM') {
       Logger.debug(
         {
@@ -140,7 +131,6 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       return false;
     }
 
-    // Check for authentication errors
     if (
       output.includes('not authenticated') ||
       output.includes('Please run') ||
@@ -159,7 +149,6 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       return false;
     }
 
-    // Exit code 0 with output indicates success
     if (
       testResult.status === 0 &&
       testResult.stdout &&
@@ -176,7 +165,6 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       return true;
     }
 
-    // Any other case is a failure
     Logger.debug(
       {
         event: 'auth_check_cli_failed',

@@ -499,6 +499,13 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
             <Text color="green">✅ Recipe generated successfully!</Text>
             <Text>Path: {commandState.result.recipePath}</Text>
             <Text>Name: {commandState.result.recipeName}</Text>
+            {commandState.result.metadata && options.cost && (
+              <Text>
+                Cost: ${commandState.result.metadata.costUsd.toFixed(4)} |
+                Duration:{' '}
+                {commandState.result.metadata.durationSeconds.toFixed(1)}s
+              </Text>
+            )}
           </Box>
         );
       }
@@ -528,7 +535,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           <Text color="green">✅ Recipe generated successfully!</Text>
           <Text>Path: {commandState.result.recipePath}</Text>
           <Text>Name: {commandState.result.recipeName}</Text>
-          {commandState.result.metadata && (
+          {commandState.result.metadata && options.cost && (
             <Text>
               Cost: ${commandState.result.metadata.costUsd.toFixed(4)} |
               Duration:{' '}

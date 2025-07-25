@@ -7,7 +7,7 @@ export interface ConfigLibrary {
   ref: string;
 }
 
-export interface ChorenzoConfig {
+export interface Config {
   libraries: {
     [key: string]: ConfigLibrary;
   };

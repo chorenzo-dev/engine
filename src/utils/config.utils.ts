@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { readYaml, writeYaml } from './yaml.utils';
 import { writeJson } from './json.utils';
-import { ChorenzoConfig as ConfigType, State } from '../types/config';
+import { Config, State } from '../types/config';
 
 export class ChorenzoConfig {
   get dir(): string {
@@ -31,7 +31,7 @@ export class ChorenzoConfig {
   }
 
   async writeDefaultConfig(): Promise<void> {
-    const defaultConfig: ConfigType = {
+    const defaultConfig: Config = {
       libraries: {
         core: {
           repo: 'https://github.com/chorenzo-dev/recipes-core.git',
@@ -42,11 +42,11 @@ export class ChorenzoConfig {
     await writeYaml(this.configPath, defaultConfig);
   }
 
-  async readConfig(): Promise<ConfigType> {
-    return await readYaml<ConfigType>(this.configPath);
+  async readConfig(): Promise<Config> {
+    return await readYaml<Config>(this.configPath);
   }
 
-  async writeConfig(config: ConfigType): Promise<void> {
+  async writeConfig(config: Config): Promise<void> {
     await writeYaml(this.configPath, config);
   }
 

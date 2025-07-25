@@ -38,7 +38,7 @@ export enum InputType {
   GitUrl = 'git-url',
 }
 
-export type ProgressCallback = (step: string) => void;
+export type ProgressCallback = (step: string, isThinking?: boolean) => void;
 export type ValidationCallback = (
   type: 'info' | 'success' | 'error' | 'warning',
   message: string
@@ -1057,20 +1057,84 @@ export async function performRecipesGenerate(
       summary,
     };
 
-    const metadataTemplate = loadTemplate('recipe_metadata', 'yaml');
-    const metadataContent = renderPrompt(metadataTemplate, templateVars);
-    fs.writeFileSync(path.join(recipePath, 'metadata.yaml'), metadataContent);
+    if (options.magicGenerate) {
+      onProgress?.('Generating recipe content with AI...');
 
-    const promptTemplate = loadTemplate('recipe_prompt');
-    const promptContent = renderPrompt(promptTemplate, templateVars);
-    fs.writeFileSync(path.join(recipePath, 'prompt.md'), promptContent);
+      const recipeDocsPath = path.join(process.cwd(), 'docs', 'recipes.md');
+      let recipeGuidelines = '';
 
-    const fixTemplate = loadTemplate('recipe_fix');
-    const fixContent = renderPrompt(fixTemplate, templateVars);
-    fs.writeFileSync(
-      path.join(recipePath, 'fixes', 'javascript_default.md'),
-      fixContent
-    );
+      if (fs.existsSync(recipeDocsPath)) {
+        recipeGuidelines = fs.readFileSync(recipeDocsPath, 'utf-8');
+      }
+
+      const magicPromptTemplate = loadPrompt('recipe_magic_generate');
+      const magicPrompt = renderPrompt(magicPromptTemplate, {
+        recipe_name: recipeName,
+        summary,
+        category,
+        recipe_id: recipeId,
+        recipe_path: recipePath,
+        recipe_guidelines: recipeGuidelines,
+      });
+
+      const operationStartTime = new Date();
+      const handlers: CodeChangesEventHandlers = {
+        onProgress: (step) => {
+          onProgress?.(step, false);
+        },
+        onThinkingStateChange: (isThinking) => {
+          if (isThinking) {
+            onProgress?.('AI is thinking...', false);
+          }
+        },
+        onComplete: (result, metadata) => {
+          totalCostUsd = metadata?.costUsd || 0;
+        },
+        onError: (error) => {
+          throw new RecipesError(
+            `Magic generation failed: ${error.message}`,
+            'MAGIC_GENERATION_FAILED'
+          );
+        },
+      };
+
+      const operationResult = await executeCodeChangesOperation(
+        query({
+          prompt: magicPrompt,
+          options: {
+            model: 'sonnet',
+            allowedTools: ['Write'],
+            permissionMode: 'bypassPermissions',
+          },
+        }),
+        handlers,
+        operationStartTime
+      );
+
+      if (!operationResult.success) {
+        throw new RecipesError(
+          operationResult.error || 'Magic generation failed',
+          'MAGIC_GENERATION_FAILED'
+        );
+      }
+
+      totalCostUsd = operationResult.metadata.costUsd;
+    } else {
+      const metadataTemplate = loadTemplate('recipe_metadata', 'yaml');
+      const metadataContent = renderPrompt(metadataTemplate, templateVars);
+      fs.writeFileSync(path.join(recipePath, 'metadata.yaml'), metadataContent);
+
+      const promptTemplate = loadTemplate('recipe_prompt');
+      const promptContent = renderPrompt(promptTemplate, templateVars);
+      fs.writeFileSync(path.join(recipePath, 'prompt.md'), promptContent);
+
+      const fixTemplate = loadTemplate('recipe_fix');
+      const fixContent = renderPrompt(fixTemplate, templateVars);
+      fs.writeFileSync(
+        path.join(recipePath, 'fixes', 'javascript_default.md'),
+        fixContent
+      );
+    }
 
     const endTime = new Date();
     const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;

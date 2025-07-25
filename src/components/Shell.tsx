@@ -5,6 +5,7 @@ import { InitWithAnalysis } from './InitWithAnalysis';
 import { ApplyProgress } from './ApplyProgress';
 import { DebugProgress } from './DebugProgress';
 import { ApplyDisplay } from './ApplyDisplay';
+import { RecipeGenerateProgress } from './RecipeGenerateProgress';
 import { performAnalysis, AnalysisResult } from '../commands/analyze';
 import {
   performRecipesValidate,
@@ -509,12 +510,51 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       );
     }
 
+    if (error) {
+      return (
+        <Box flexDirection="column">
+          <Text color="red">❌ Error: {error.message}</Text>
+        </Box>
+      );
+    }
+
+    if (
+      isComplete &&
+      commandState.command === 'recipes-generate' &&
+      commandState.result
+    ) {
+      return (
+        <Box flexDirection="column">
+          <Text color="green">✅ Recipe generated successfully!</Text>
+          <Text>Path: {commandState.result.recipePath}</Text>
+          <Text>Name: {commandState.result.recipeName}</Text>
+          {commandState.result.metadata && (
+            <Text>
+              Cost: ${commandState.result.metadata.costUsd.toFixed(4)} |
+              Duration:{' '}
+              {commandState.result.metadata.durationSeconds.toFixed(1)}s
+            </Text>
+          )}
+        </Box>
+      );
+    }
+
     return (
-      <Box flexDirection="column">
-        <Text color="yellow">
-          Recipe generation with progress UI not yet implemented
-        </Text>
-      </Box>
+      <RecipeGenerateProgress
+        options={{
+          name: options.name,
+          progress: options.progress,
+          cost: options.cost,
+          magicGenerate: options.magicGenerate,
+        }}
+        onComplete={(result) => {
+          setCommandState({ command: 'recipes-generate', result });
+          setIsComplete(true);
+        }}
+        onError={(error) => {
+          setError(error);
+        }}
+      />
     );
   }
 

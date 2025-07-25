@@ -188,10 +188,11 @@ export const AuthenticationStep: React.FC<AuthenticationStepProps> = ({
           • IAM roles or AWS SSO
           <Newline />
         </Text>
-        <Text>2. Set Claude Code to use Bedrock:</Text>
+        <Text>2. Set required environment variables:</Text>
+        <Text color="cyan"> export CLAUDE_CODE_USE_BEDROCK=1</Text>
         <Text color="cyan">
           {' '}
-          export CLAUDE_CODE_USE_BEDROCK=1
+          export AWS_REGION=us-east-1 # or your preferred region
           <Newline />
         </Text>
         <Text>
@@ -225,7 +226,7 @@ export const AuthenticationStep: React.FC<AuthenticationStepProps> = ({
         </Text>
         <Text color="cyan">
           {' '}
-          export CLOUD_ML_REGION=us-central1
+          export CLOUD_ML_REGION=us-east5 # or your preferred region
           <Newline />
         </Text>
         <Text>

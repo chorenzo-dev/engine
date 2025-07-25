@@ -1036,8 +1036,16 @@ export async function performRecipesGenerate(
   try {
     onProgress?.('Starting recipe generation...');
 
-    const recipeName = options.name || 'example-recipe';
-    const recipeId = validateRecipeId(recipeName);
+    if (!options.name) {
+      throw new RecipesError(
+        'Recipe name is required. Use: chorenzo recipes generate <name>',
+        'MISSING_RECIPE_NAME'
+      );
+    }
+
+    const recipeName = options.name;
+    const recipeId = validateRecipeId(options.name);
+
     const category = options.category || 'general';
     const summary = options.summary || `Set up ${recipeName} for the project.`;
 

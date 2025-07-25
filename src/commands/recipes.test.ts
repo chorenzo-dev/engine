@@ -2245,4 +2245,203 @@ outputs:
       expect(result.summary.successfulProjects).toBe(1);
     });
   });
+
+  describe('Recipe Generation', () => {
+    let performRecipesGenerate: typeof import('./recipes').performRecipesGenerate;
+
+    beforeEach(async () => {
+      jest.clearAllMocks();
+      setupDefaultMocks();
+      const recipesModule = await import('./recipes');
+      performRecipesGenerate = recipesModule.performRecipesGenerate;
+    });
+
+    const setupGenerateMocks = () => {
+      mockExistsSync.mockImplementation((path) => {
+        if (path.includes('docs/recipes.md')) return true;
+        return false;
+      });
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('docs/recipes.md')) {
+          return '# Recipe Guidelines\nFollow these principles...';
+        }
+        if (filePath.includes('recipe_magic_generate.md')) {
+          return 'Generate recipe for: {{ recipe_name }}\nSummary: {{ summary }}';
+        }
+        if (filePath.includes('recipe_metadata.yaml')) {
+          return 'id: {{ recipe_id }}\ncategory: {{ category }}';
+        }
+        if (filePath.includes('recipe_prompt.md')) {
+          return '## Goal\n{{ summary }}';
+        }
+        if (filePath.includes('recipe_fix.md')) {
+          return '# {{ recipe_name }}\nSetup instructions';
+        }
+        return 'mock file content';
+      });
+    };
+
+    it('should generate recipe with basic template when magic is false', async () => {
+      setupGenerateMocks();
+
+      const result = await performRecipesGenerate({
+        name: 'test-recipe',
+        category: 'general',
+        summary: 'Test recipe for testing',
+        magicGenerate: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.recipeName).toBe('test-recipe');
+      expect(result.recipePath).toContain('test-recipe');
+      expect(mockMkdirSync).toHaveBeenCalledWith(
+        expect.stringContaining('test-recipe'),
+        { recursive: true }
+      );
+      expect(mockMkdirSync).toHaveBeenCalledWith(
+        expect.stringContaining('fixes'),
+        { recursive: true }
+      );
+      expect(mockWriteFileSync).toHaveBeenCalledTimes(3);
+    });
+
+    it('should validate recipe name and convert spaces to dashes', async () => {
+      setupGenerateMocks();
+
+      const result = await performRecipesGenerate({
+        name: 'eslint setup',
+        magicGenerate: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.recipeName).toBe('eslint-setup');
+      expect(result.recipePath).toContain('eslint-setup');
+    });
+
+    it('should reject recipe names with invalid characters', async () => {
+      setupGenerateMocks();
+
+      await expect(
+        performRecipesGenerate({
+          name: 'test@recipe!',
+          magicGenerate: false,
+        })
+      ).rejects.toThrow('Recipe name contains invalid characters');
+    });
+
+    it('should reject empty recipe names', async () => {
+      setupGenerateMocks();
+
+      await expect(
+        performRecipesGenerate({
+          name: '',
+          magicGenerate: false,
+        })
+      ).rejects.toThrow('Recipe name is required');
+    });
+
+    it('should require recipe name to be provided', async () => {
+      setupGenerateMocks();
+
+      await expect(
+        performRecipesGenerate({
+          magicGenerate: false,
+        })
+      ).rejects.toThrow('Recipe name is required');
+    });
+
+    it('should handle template rendering correctly', async () => {
+      setupGenerateMocks();
+
+      await performRecipesGenerate({
+        name: 'render-test',
+        category: 'test-category',
+        summary: 'Test summary',
+        magicGenerate: false,
+      });
+
+      expect(mockWriteFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('metadata.yaml'),
+        expect.stringContaining('render-test')
+      );
+      expect(mockWriteFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('prompt.md'),
+        expect.stringContaining('Test summary')
+      );
+      expect(mockWriteFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('javascript_default.md'),
+        expect.stringContaining('render-test')
+      );
+    });
+
+    it('should call progress callback during generation', async () => {
+      setupGenerateMocks();
+      const mockProgress = jest.fn();
+
+      await performRecipesGenerate(
+        {
+          name: 'progress-recipe',
+          magicGenerate: false,
+        },
+        mockProgress
+      );
+
+      expect(mockProgress).toHaveBeenCalledWith(
+        'Starting recipe generation...'
+      );
+      expect(mockProgress).toHaveBeenCalledWith(
+        expect.stringContaining('Creating recipe directory')
+      );
+      expect(mockProgress).toHaveBeenCalledWith('Creating recipe files...');
+      expect(mockProgress).toHaveBeenCalledWith('Recipe generation complete!');
+    });
+
+    it('should populate template variables correctly', async () => {
+      setupGenerateMocks();
+
+      await performRecipesGenerate({
+        name: 'template test',
+        category: 'testing',
+        summary: 'Test template variables',
+        magicGenerate: false,
+      });
+
+      const metadataCall = mockWriteFileSync.mock.calls.find(
+        (call: unknown[]) =>
+          typeof call[0] === 'string' && call[0].includes('metadata.yaml')
+      );
+      const promptCall = mockWriteFileSync.mock.calls.find(
+        (call: unknown[]) =>
+          typeof call[0] === 'string' && call[0].includes('prompt.md')
+      );
+      const fixCall = mockWriteFileSync.mock.calls.find(
+        (call: unknown[]) =>
+          typeof call[0] === 'string' &&
+          call[0].includes('javascript_default.md')
+      );
+
+      expect(metadataCall).toBeDefined();
+      expect(promptCall).toBeDefined();
+      expect(fixCall).toBeDefined();
+    });
+
+    it('should create correct directory structure', async () => {
+      setupGenerateMocks();
+
+      await performRecipesGenerate({
+        name: 'structure-test',
+        magicGenerate: false,
+      });
+
+      expect(mockMkdirSync).toHaveBeenCalledWith(
+        expect.stringContaining('structure-test'),
+        { recursive: true }
+      );
+      expect(mockMkdirSync).toHaveBeenCalledWith(
+        expect.stringContaining('structure-test/fixes'),
+        { recursive: true }
+      );
+    });
+  });
 });

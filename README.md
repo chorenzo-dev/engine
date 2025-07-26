@@ -75,7 +75,12 @@ npx chorenzo recipes apply code-formatting --cost
 npx chorenzo recipes apply linting --cost --debug
 ```
 
-Chorenzo uses atomic, composable automation recipes to handle workspace setup and configuration. See our [recipes documentation](docs/recipes.md) for detailed information about creating and using recipes.
+Chorenzo uses atomic, composable automation recipes to handle workspace setup and configuration. Recipes operate at two levels:
+
+- **Workspace-level**: Apply globally to the entire workspace (e.g., git hooks, workspace config)
+- **Project-level**: Apply to individual projects in monorepos (e.g., framework setup, project config)
+
+See our [recipes documentation](docs/recipes.md) for detailed information about creating and using recipes.
 
 ### Help
 

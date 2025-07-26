@@ -2,6 +2,28 @@
 
 Chorenzo uses atomic, composable automation recipes to handle workspace setup and configuration.
 
+## Recipe Levels
+
+Recipes operate at two distinct levels:
+
+### Workspace-Level Recipes
+
+Apply to the entire workspace and execute once per workspace:
+
+- **Use case**: Global configuration, workspace-wide tools, root-level dependencies
+- **Examples**: Git hooks, workspace package manager setup, global linting rules
+- **State storage**: Values stored under `workspace` field in state.json
+- **Ecosystem matching**: Must support the workspace's primary ecosystem
+
+### Project-Level Recipes
+
+Apply to individual projects and execute once per applicable project:
+
+- **Use case**: Project-specific configuration, per-project dependencies, build setup
+- **Examples**: Framework setup, project-specific linting, test configuration
+- **State storage**: Values stored under `projects.{project_path}` in state.json
+- **Ecosystem matching**: Must support each project's individual ecosystem
+
 ## Recipe Structure
 
 Each recipe is a self-contained folder with a specific structure:
@@ -25,6 +47,7 @@ Minimal manifest declaring the recipe's identity, supported ecosystems, and depe
 id: recipe_id # Must match folder name (kebab-case)
 category: category_id # Grouping for UI display
 summary: One-sentence description of what this recipe does.
+level: project # Required: 'workspace' or 'project'
 
 ecosystems: # Languages/runtimes this recipe supports
   - id: javascript
@@ -97,6 +120,37 @@ How to verify the tool is working correctly.
 6. **Machine-First Language**: Use declarative, definitive instructions without human-oriented phrasing
 7. **Minimal Configuration**: Only specify non-default settings when necessary
 8. **Respect Existing Ignore Files**: Most tools respect .gitignore; only add ignore patterns for files not already gitignored
+9. **Level Awareness**: Choose the appropriate level (workspace vs project) based on the recipe's scope
+
+## State Management
+
+Recipe state is stored in `.chorenzo/state.json` with a hierarchical structure:
+
+```json
+{
+  "workspace": {
+    "git-hooks.configured": true,
+    "workspace-eslint.enabled": true
+  },
+  "projects": {
+    "frontend": {
+      "react-setup.configured": true,
+      "typescript.enabled": true
+    },
+    "backend": {
+      "node-api.configured": true,
+      "express.setup": "complete"
+    }
+  }
+}
+```
+
+### State Structure
+
+- **Workspace state**: Shared across the entire workspace under the `workspace` key
+- **Project state**: Per-project values under `projects.{relative_path}`
+- **Key naming**: Use recipe ID as prefix (e.g., `recipe-id.property`)
+- **Value types**: Primitives (boolean, string, number) for reliable dependency checking
 
 ## Example Recipe
 
@@ -105,10 +159,11 @@ See `code_quality/code_formatting/` for a complete example implementing code for
 ## Contributing
 
 1. Create a folder matching your recipe ID (kebab-case)
-2. Add `metadata.yaml` with at least: id, summary, ecosystems, provides
+2. Add `metadata.yaml` with at least: id, summary, level, ecosystems, provides
 3. Write `prompt.md` with Goal, Investigation, and Expected Output sections
 4. Add variant-specific fix prompts under `fixes/`
 5. Ensure all paths in metadata.yaml match actual file locations
+6. Choose the appropriate level: `workspace` for global tools, `project` for per-project setup
 
 ## Recipe Validation
 

@@ -2256,6 +2256,103 @@ outputs:
       ).rejects.toThrow('Recipe name is required');
     });
 
+    it('should allow only letters, numbers, and dashes in recipe names', async () => {
+      setupGenerateMocks();
+
+      const result = await performRecipesGenerate({
+        name: 'test-recipe-123',
+        magicGenerate: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.recipeName).toBe('test-recipe-123');
+    });
+
+    it('should reject recipe names with special characters', async () => {
+      setupGenerateMocks();
+
+      const invalidNames = [
+        'test@recipe',
+        'recipe!',
+        'test#recipe',
+        'recipe$',
+        'test%recipe',
+        'recipe^',
+        'test&recipe',
+        'recipe*',
+        'test(recipe)',
+        'recipe+',
+        'test=recipe',
+        'recipe|',
+        'test\\recipe',
+        'recipe/',
+        'test:recipe',
+        'recipe;',
+        'test"recipe',
+        "recipe'",
+        'test<recipe>',
+        'recipe?',
+        'test.recipe',
+        'recipe,',
+      ];
+
+      for (const name of invalidNames) {
+        await expect(
+          performRecipesGenerate({
+            name,
+            magicGenerate: false,
+          })
+        ).rejects.toThrow('Recipe name contains invalid characters');
+      }
+    });
+
+    it('should convert spaces to dashes and lowercase', async () => {
+      setupGenerateMocks();
+
+      const result = await performRecipesGenerate({
+        name: 'My Recipe Name',
+        magicGenerate: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.recipeName).toBe('my-recipe-name');
+    });
+
+    it('should handle multiple consecutive spaces', async () => {
+      setupGenerateMocks();
+
+      const result = await performRecipesGenerate({
+        name: 'test    multiple   spaces',
+        magicGenerate: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.recipeName).toBe('test-multiple-spaces');
+    });
+
+    it('should trim whitespace from recipe names', async () => {
+      setupGenerateMocks();
+
+      const result = await performRecipesGenerate({
+        name: '  trimmed-name  ',
+        magicGenerate: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.recipeName).toBe('trimmed-name');
+    });
+
+    it('should reject names with only spaces', async () => {
+      setupGenerateMocks();
+
+      await expect(
+        performRecipesGenerate({
+          name: '   ',
+          magicGenerate: false,
+        })
+      ).rejects.toThrow('Recipe name cannot be empty');
+    });
+
     it('should handle template rendering correctly', async () => {
       setupGenerateMocks();
 

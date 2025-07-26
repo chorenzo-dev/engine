@@ -1014,17 +1014,18 @@ function validateRecipeId(recipeName: string): string {
   }
 
   const trimmed = recipeName.trim();
-  const invalidChars = trimmed.match(/[^a-zA-Z0-9\s-]/g);
+  const normalized = trimmed.replace(/\s+/g, '-').toLowerCase();
+  const invalidChars = normalized.match(/[^a-zA-Z0-9-]/g);
 
   if (invalidChars) {
     const uniqueInvalidChars = [...new Set(invalidChars)].join(', ');
     throw new RecipesError(
-      `Recipe name contains invalid characters: ${uniqueInvalidChars}. Only letters, numbers, spaces, and dashes are allowed.`,
+      `Recipe name contains invalid characters: ${uniqueInvalidChars}. Only letters, numbers, and dashes are allowed.`,
       'INVALID_RECIPE_NAME'
     );
   }
 
-  return trimmed.replace(/\s+/g, '-').toLowerCase();
+  return normalized;
 }
 
 export async function performRecipesGenerate(

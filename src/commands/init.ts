@@ -1,14 +1,10 @@
-import {
-  checkGitAvailable,
-  cloneRepository,
-  GitError,
-} from '../utils/git-operations.utils';
-import { retry } from '../utils/retry.utils';
+import { GitError } from '../utils/git-operations.utils';
 import { YamlError } from '../utils/yaml.utils';
 import { Logger } from '../utils/logger.utils';
-import { chorenzoConfig } from '../utils/config.utils';
-import { Config } from '../types/config';
+import { chorenzoConfig } from '../utils/chorenzo-config.utils';
+import { libraryManager } from '../utils/library-manager.utils';
 import { checkClaudeCodeAuth } from '../utils/claude.utils';
+export type { Config } from '../types/config';
 
 export interface InitOptions {
   reset?: boolean;
@@ -61,11 +57,11 @@ export async function performInit(
     onProgress?.('Setting up configuration files...');
     await setupConfigFiles();
 
-    onProgress?.('Reading configuration...');
-    const config = await readConfig();
+    onProgress?.('Validating configuration...');
+    await validateConfig();
 
     onProgress?.('Cloning recipe libraries...');
-    await cloneLibraries(config, onProgress);
+    await libraryManager.cloneLibraries(onProgress);
 
     onProgress?.('Initialization complete!');
   } catch (error) {
@@ -103,7 +99,7 @@ async function setupConfigFiles(): Promise<void> {
   }
 }
 
-async function readConfig(): Promise<Config> {
+async function validateConfig(): Promise<void> {
   try {
     const config = await chorenzoConfig.readConfig();
 
@@ -113,8 +109,6 @@ async function readConfig(): Promise<Config> {
         'INVALID_CONFIG'
       );
     }
-
-    return config;
   } catch (error) {
     if (error instanceof InitError) {
       throw error;
@@ -129,42 +123,5 @@ async function readConfig(): Promise<Config> {
       `Failed to read config.yaml: ${error instanceof Error ? error.message : String(error)}`,
       'CONFIG_READ_ERROR'
     );
-  }
-}
-
-async function cloneLibraries(
-  config: Config,
-  onProgress?: ProgressCallback
-): Promise<void> {
-  await checkGitAvailable();
-
-  for (const [libName, libConfig] of Object.entries(config.libraries)) {
-    if (chorenzoConfig.libraryExists(libName)) {
-      onProgress?.(`Skipping ${libName} (already exists)`);
-      continue;
-    }
-
-    const libPath = chorenzoConfig.getLibraryPath(libName);
-
-    onProgress?.(`Cloning ${libName} from ${libConfig.repo}...`);
-
-    try {
-      await retry(
-        () => cloneRepository(libConfig.repo, libPath, libConfig.ref),
-        {
-          maxAttempts: 2,
-          onRetry: (attempt) => {
-            onProgress?.(
-              `Retrying clone of ${libName} (attempt ${attempt + 1})...`
-            );
-          },
-        }
-      );
-      onProgress?.(`Successfully cloned ${libName}`);
-    } catch {
-      onProgress?.(
-        `Warning: Failed to clone ${libName} after retry, skipping...`
-      );
-    }
   }
 }

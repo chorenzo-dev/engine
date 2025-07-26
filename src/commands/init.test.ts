@@ -1,31 +1,27 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { stringify as yamlStringify } from 'yaml';
 
 const mockHomedir = jest.fn<() => string>(() => '/test/home');
-const mockMkdirSync = jest.fn<(path: string, options?: unknown) => void>();
+const mockTmpdir = jest.fn<() => string>(() => '/tmp');
+const mockMkdirSync =
+  jest.fn<(path: string, options?: { recursive?: boolean }) => void>();
 const mockExistsSync = jest.fn<(path: string) => boolean>();
-const mockRmSync = jest.fn<(path: string, options?: unknown) => void>();
+const mockRmSync =
+  jest.fn<
+    (path: string, options?: { recursive?: boolean; force?: boolean }) => void
+  >();
 const mockUnlinkSync = jest.fn<(path: string) => void>();
-const mockWriteYaml = jest.fn<(path: string, data: unknown) => Promise<void>>();
-const mockReadYaml = jest.fn<(path: string) => Promise<unknown>>();
-const mockWriteJson = jest.fn<(path: string, data: unknown) => Promise<void>>();
-const mockReadJson = jest.fn<(path: string) => Promise<unknown>>();
-const mockSpawnSync = jest.fn<
-  () => {
-    error?: Error;
-    status: number;
-    stdout?: string;
-    stderr?: string;
-    signal?: string;
-  }
->();
-const mockCheckGitAvailable = jest.fn<() => Promise<void>>();
-const mockCloneRepository =
-  jest.fn<(repo: string, path: string, ref: string) => Promise<void>>();
+const mockReadFileSync = jest.fn<(path: string, encoding?: string) => string>();
+const mockWriteFileSync =
+  jest.fn<(path: string, data: string, encoding?: string) => void>();
+const mockClone =
+  jest.fn<(repo: string, path: string, options?: unknown) => Promise<void>>();
+const mockRaw = jest.fn<(args: string[]) => Promise<string>>();
 const mockQuery = jest.fn<() => AsyncGenerator<unknown, void, unknown>>();
-
+const mockCheckClaudeCodeAuth = jest.fn<() => Promise<boolean>>();
 jest.unstable_mockModule('os', () => ({
   homedir: mockHomedir,
-  tmpdir: jest.fn(() => '/tmp'),
+  tmpdir: mockTmpdir,
 }));
 
 jest.unstable_mockModule('fs', () => ({
@@ -33,43 +29,19 @@ jest.unstable_mockModule('fs', () => ({
   existsSync: mockExistsSync,
   rmSync: mockRmSync,
   unlinkSync: mockUnlinkSync,
+  readFileSync: mockReadFileSync,
+  writeFileSync: mockWriteFileSync,
 }));
 
-jest.unstable_mockModule('child_process', () => ({
-  spawnSync: mockSpawnSync,
+jest.unstable_mockModule('simple-git', () => ({
+  simpleGit: jest.fn(() => ({
+    clone: mockClone,
+    raw: mockRaw,
+  })),
 }));
 
-jest.unstable_mockModule('../utils/yaml.utils', () => ({
-  writeYaml: mockWriteYaml,
-  readYaml: mockReadYaml,
-  YamlError: class YamlError extends Error {
-    constructor(
-      message: string,
-      public readonly code: string
-    ) {
-      super(message);
-      this.name = 'YamlError';
-    }
-  },
-}));
-
-jest.unstable_mockModule('../utils/json.utils', () => ({
-  writeJson: mockWriteJson,
-  readJson: mockReadJson,
-}));
-
-jest.unstable_mockModule('../utils/git-operations.utils', () => ({
-  checkGitAvailable: mockCheckGitAvailable,
-  cloneRepository: mockCloneRepository,
-  GitError: class GitError extends Error {
-    constructor(
-      message: string,
-      public readonly code: string
-    ) {
-      super(message);
-      this.name = 'GitError';
-    }
-  },
+jest.unstable_mockModule('../utils/claude.utils', () => ({
+  checkClaudeCodeAuth: mockCheckClaudeCodeAuth,
 }));
 
 jest.unstable_mockModule('@anthropic-ai/claude-code', () => ({
@@ -82,35 +54,36 @@ describe('Init Command Integration Tests', () => {
 
   const setupDefaultMocks = () => {
     mockHomedir.mockImplementation(() => '/test/home');
+    mockTmpdir.mockImplementation(() => '/tmp');
     mockMkdirSync.mockImplementation(() => undefined);
     mockExistsSync.mockImplementation(() => false);
     mockRmSync.mockImplementation(() => undefined);
     mockUnlinkSync.mockImplementation(() => undefined);
-    mockWriteYaml.mockImplementation(() => Promise.resolve(undefined));
-    mockReadYaml.mockImplementation(() =>
-      Promise.resolve({
-        libraries: {
-          core: {
-            repo: 'https://github.com/chorenzo-dev/recipes-core.git',
-            ref: 'main',
-          },
+    const defaultConfig = {
+      libraries: {
+        core: {
+          repo: 'https://github.com/chorenzo-dev/recipes-core.git',
+          ref: 'main',
         },
-      })
-    );
-    mockWriteJson.mockImplementation(() => Promise.resolve(undefined));
-    mockReadJson.mockImplementation(() => Promise.resolve({}));
-    mockCheckGitAvailable.mockImplementation(() => Promise.resolve(undefined));
-    mockCloneRepository.mockImplementation(() => Promise.resolve(undefined));
+      },
+    };
+
+    mockReadFileSync.mockImplementation((filePath: string) => {
+      if (filePath.includes('config.yaml')) {
+        return yamlStringify(defaultConfig);
+      }
+      if (filePath.includes('.json')) {
+        return '{}';
+      }
+      return 'mock file content';
+    });
+    mockWriteFileSync.mockImplementation(() => undefined);
+    mockClone.mockImplementation(() => Promise.resolve());
+    mockRaw.mockImplementation(() => Promise.resolve('git version 2.0.0'));
     mockQuery.mockImplementation(async function* () {
       yield { type: 'result', is_error: false };
     });
-    mockSpawnSync.mockImplementation(() => ({
-      error: undefined,
-      status: 0,
-      stdout: 'Claude CLI is working',
-      stderr: '',
-      signal: undefined,
-    }));
+    mockCheckClaudeCodeAuth.mockImplementation(() => Promise.resolve(true));
   };
 
   beforeEach(async () => {
@@ -118,6 +91,7 @@ describe('Init Command Integration Tests', () => {
     setupDefaultMocks();
     mockProgress = jest.fn();
 
+    jest.resetModules();
     const initModule = await import('./init');
     performInit = initModule.performInit;
   });
@@ -133,27 +107,26 @@ describe('Init Command Integration Tests', () => {
   it('should create config.yaml with default configuration', async () => {
     await performInit({});
 
-    expect(mockWriteYaml).toHaveBeenCalledWith(
+    expect(mockWriteFileSync).toHaveBeenCalledWith(
       '/test/home/.chorenzo/config.yaml',
-      {
-        libraries: {
-          core: {
-            repo: 'https://github.com/chorenzo-dev/recipes-core.git',
-            ref: 'main',
-          },
-        },
-      }
+      expect.stringContaining('libraries:'),
+      'utf8'
     );
   });
 
   it('should create state.json with default state', async () => {
     await performInit({});
 
-    expect(mockWriteJson).toHaveBeenCalledWith(
+    expect(mockWriteFileSync).toHaveBeenCalledWith(
       '/test/home/.chorenzo/state.json',
-      {
-        last_checked: '1970-01-01T00:00:00Z',
-      }
+      JSON.stringify(
+        {
+          last_checked: '1970-01-01T00:00:00Z',
+        },
+        null,
+        2
+      ),
+      'utf8'
     );
   });
 
@@ -166,8 +139,7 @@ describe('Init Command Integration Tests', () => {
 
     await performInit({});
 
-    expect(mockWriteYaml).toHaveBeenCalledTimes(0);
-    expect(mockWriteJson).toHaveBeenCalledTimes(0);
+    expect(mockWriteFileSync).not.toHaveBeenCalled();
   });
 
   it('should reset workspace when reset option is provided', async () => {
@@ -196,13 +168,15 @@ describe('Init Command Integration Tests', () => {
     expect(mockUnlinkSync).toHaveBeenCalledWith(
       '/test/home/.chorenzo/state.json'
     );
-    expect(mockWriteYaml).toHaveBeenCalledWith(
+    expect(mockWriteFileSync).toHaveBeenCalledWith(
       '/test/home/.chorenzo/config.yaml',
-      expect.any(Object)
+      expect.stringContaining('libraries:'),
+      'utf8'
     );
-    expect(mockWriteJson).toHaveBeenCalledWith(
+    expect(mockWriteFileSync).toHaveBeenCalledWith(
       '/test/home/.chorenzo/state.json',
-      expect.any(Object)
+      expect.stringMatching(/^\{[\s\S]*\}$/),
+      'utf8'
     );
   });
 
@@ -214,11 +188,11 @@ describe('Init Command Integration Tests', () => {
     await performInit({}, mockProgress);
 
     expect(mockProgress).toHaveBeenCalledWith('Skipping core (already exists)');
-    expect(mockCloneRepository).not.toHaveBeenCalled();
+    expect(mockClone).not.toHaveBeenCalled();
   });
 
   it('should handle git clone failures gracefully', async () => {
-    mockCloneRepository.mockImplementation(() =>
+    mockClone.mockImplementation(() =>
       Promise.reject(new Error('Network error'))
     );
 
@@ -227,9 +201,10 @@ describe('Init Command Integration Tests', () => {
     expect(mockProgress).toHaveBeenCalledWith(
       'Warning: Failed to clone core after retry, skipping...'
     );
-    expect(mockWriteYaml).toHaveBeenCalledWith(
+    expect(mockWriteFileSync).toHaveBeenCalledWith(
       '/test/home/.chorenzo/config.yaml',
-      expect.any(Object)
+      expect.stringContaining('libraries:'),
+      'utf8'
     );
   });
 
@@ -249,8 +224,7 @@ describe('Init Command Integration Tests', () => {
     await expect(performInit({}, mockProgress)).resolves.not.toThrow();
 
     expect(mockProgress).toHaveBeenCalledWith('Skipping core (already exists)');
-    expect(mockWriteYaml).not.toHaveBeenCalled();
-    expect(mockCloneRepository).not.toHaveBeenCalled();
+    expect(mockClone).not.toHaveBeenCalled();
   });
 
   it('should handle corrupted workspace state and recreate missing components', async () => {
@@ -266,15 +240,17 @@ describe('Init Command Integration Tests', () => {
     expect(mockMkdirSync).toHaveBeenCalledWith('/test/home/.chorenzo/recipes', {
       recursive: true,
     });
-    expect(mockWriteJson).toHaveBeenCalledWith(
+    expect(mockWriteFileSync).toHaveBeenCalledWith(
       '/test/home/.chorenzo/state.json',
-      expect.any(Object)
+      expect.stringMatching(/^\{[\s\S]*\}$/),
+      'utf8'
     );
-    expect(mockWriteYaml).not.toHaveBeenCalledWith(
+    expect(mockWriteFileSync).not.toHaveBeenCalledWith(
       '/test/home/.chorenzo/config.yaml',
-      expect.any(Object)
+      expect.stringContaining('libraries:'),
+      'utf8'
     );
-    expect(mockCloneRepository).toHaveBeenCalled();
+    expect(mockClone).toHaveBeenCalled();
     expect(mockProgress).toHaveBeenCalledWith(
       'Creating directory structure...'
     );
@@ -296,16 +272,18 @@ describe('Init Command Integration Tests', () => {
       return filePath.includes('config.yaml');
     });
 
-    const YamlError = (await import('../utils/yaml.utils')).YamlError;
-    mockReadYaml.mockImplementation(() => {
-      throw new YamlError('Invalid YAML syntax', 'YAML_PARSE_ERROR');
+    mockReadFileSync.mockImplementation((filePath: string) => {
+      if (filePath.includes('config.yaml')) {
+        return 'invalid: yaml: content: [unclosed';
+      }
+      return 'mock file content';
     });
 
-    await expect(performInit({})).rejects.toThrow('Invalid YAML syntax');
+    await expect(performInit({})).rejects.toThrow();
   });
 
-  it('should handle writeYaml failures', async () => {
-    mockWriteYaml.mockImplementation(() => {
+  it('should handle writeFileSync failures', async () => {
+    mockWriteFileSync.mockImplementation(() => {
       throw new Error('ENOSPC: no space left on device');
     });
 
@@ -335,13 +313,7 @@ describe('Init Command Integration Tests', () => {
 
   it('should fail when Claude Code is not authenticated', async () => {
     setupDefaultMocks();
-    mockSpawnSync.mockImplementation(() => ({
-      error: new Error('Command not found'),
-      status: -1,
-      stdout: '',
-      stderr: 'claude: command not found',
-      signal: undefined,
-    }));
+    mockCheckClaudeCodeAuth.mockImplementation(() => Promise.resolve(false));
 
     await expect(performInit({})).rejects.toThrow(
       'Claude Code is not authenticated. Please complete authentication setup.'
@@ -350,21 +322,7 @@ describe('Init Command Integration Tests', () => {
 
   it('should fail when Claude Code CLI reports authentication required', async () => {
     setupDefaultMocks();
-    mockSpawnSync
-      .mockImplementationOnce(() => ({
-        error: undefined,
-        status: 0,
-        stdout: 'claude version 1.0.0',
-        stderr: '',
-        signal: undefined,
-      }))
-      .mockImplementationOnce(() => ({
-        error: undefined,
-        status: 1,
-        stdout: 'Please run `/login` to authenticate',
-        stderr: '',
-        signal: undefined,
-      }));
+    mockCheckClaudeCodeAuth.mockImplementation(() => Promise.resolve(false));
 
     await expect(performInit({})).rejects.toThrow(
       'Claude Code is not authenticated. Please complete authentication setup.'

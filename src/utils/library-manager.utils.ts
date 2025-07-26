@@ -10,7 +10,7 @@ import {
 import { retry } from './retry.utils';
 import { Logger } from './logger.utils';
 import { chorenzoConfig } from './chorenzo-config.utils';
-import type { Config } from '../commands/init';
+import type { Config, ConfigLibrary } from '../types/config';
 
 export class LibraryManagerError extends Error {
   constructor(
@@ -182,7 +182,10 @@ export class LibraryManager {
 
     const config = await this.getConfig();
 
-    for (const [libName, libConfig] of Object.entries(config.libraries)) {
+    for (const [libName, libConfig] of Object.entries(config.libraries) as [
+      string,
+      ConfigLibrary,
+    ][]) {
       if (chorenzoConfig.libraryExists(libName)) {
         onProgress?.(`Skipping ${libName} (already exists)`);
         continue;

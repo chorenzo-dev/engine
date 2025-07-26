@@ -3,24 +3,11 @@ import { YamlError } from '../utils/yaml.utils';
 import { Logger } from '../utils/logger.utils';
 import { chorenzoConfig } from '../utils/chorenzo-config.utils';
 import { libraryManager } from '../utils/library-manager.utils';
+import { checkClaudeCodeAuth } from '../utils/claude.utils';
+export type { Config } from '../types/config';
 
 export interface InitOptions {
   reset?: boolean;
-}
-
-export interface ConfigLibrary {
-  repo: string;
-  ref: string;
-}
-
-export interface Config {
-  libraries: {
-    [key: string]: ConfigLibrary;
-  };
-}
-
-export interface State {
-  last_checked: string;
 }
 
 export type ProgressCallback = (step: string) => void;
@@ -52,6 +39,16 @@ export async function performInit(
     if (options.reset) {
       onProgress?.('Resetting workspace...');
       await resetWorkspace();
+    }
+
+    onProgress?.('Checking Claude Code authentication...');
+    const isAuthenticated = await checkClaudeCodeAuth();
+
+    if (!isAuthenticated) {
+      throw new InitError(
+        'Claude Code is not authenticated. Please complete authentication setup.',
+        'AUTH_REQUIRED'
+      );
     }
 
     onProgress?.('Creating directory structure...');

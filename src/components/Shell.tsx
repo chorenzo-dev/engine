@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { AnalysisProgress } from './AnalysisProgress';
-import { InitWithAnalysis } from './InitWithAnalysis';
+import { InitContainer } from '../containers/InitContainer';
 import { ApplyProgress } from './ApplyProgress';
 import { DebugProgress } from './DebugProgress';
 import { ApplyDisplay } from './ApplyDisplay';
@@ -222,52 +222,50 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   }
 
   if (command === 'init') {
-    if (options.progress === false) {
-      if (error) {
-        return (
-          <Box flexDirection="column">
-            <Text color="red">❌ Error: {error.message}</Text>
-          </Box>
-        );
-      }
-
-      if (isComplete) {
-        return (
-          <Box flexDirection="column">
-            <Text color="green">✅ Initialization complete!</Text>
-            {commandState.command === 'init' &&
-            commandState.result &&
-            commandState.result.analysis ? (
-              <Box marginTop={1}>
-                <AnalysisDisplay
-                  result={commandState.result}
-                  showCost={options.cost}
-                />
-              </Box>
-            ) : null}
-          </Box>
-        );
-      }
-
+    if (error) {
       return (
-        <InitWithAnalysis
-          options={{
-            reset: options.reset,
-            noAnalyze: options.noAnalyze,
-            yes: options.yes,
-            progress: options.progress,
-            cost: options.cost,
-          }}
-          onComplete={(result) => {
-            setCommandState({ command: 'init', result: result || null });
-            setIsComplete(true);
-          }}
-          onError={(error) => {
-            setError(error);
-          }}
-        />
+        <Box flexDirection="column">
+          <Text color="red">❌ Error: {error.message}</Text>
+        </Box>
       );
     }
+
+    if (isComplete) {
+      return (
+        <Box flexDirection="column">
+          <Text color="green">✅ Initialization complete!</Text>
+          {commandState.command === 'init' &&
+          commandState.result &&
+          commandState.result.analysis ? (
+            <Box marginTop={1}>
+              <AnalysisDisplay
+                result={commandState.result}
+                showCost={options.cost}
+              />
+            </Box>
+          ) : null}
+        </Box>
+      );
+    }
+
+    return (
+      <InitContainer
+        options={{
+          reset: options.reset,
+          noAnalyze: options.noAnalyze,
+          yes: options.yes,
+          progress: options.progress,
+          cost: options.cost,
+        }}
+        onComplete={(result) => {
+          setCommandState({ command: 'init', result: result || null });
+          setIsComplete(true);
+        }}
+        onError={(error) => {
+          setError(error);
+        }}
+      />
+    );
   }
 
   if (command === 'recipes-validate') {

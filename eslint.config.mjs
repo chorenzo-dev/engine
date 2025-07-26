@@ -36,6 +36,13 @@ export default [
     rules: {
       ...js.configs.recommended.rules,
       ...tseslint.configs.recommended.rules,
+      '@typescript-eslint/naming-convention': [
+        'error',
+        {
+          selector: 'enumMember',
+          format: ['PascalCase'],
+        },
+      ],
     },
   },
 ];

@@ -18,7 +18,15 @@ const mockClone =
   jest.fn<(repo: string, path: string, options?: unknown) => Promise<void>>();
 const mockRaw = jest.fn<(args: string[]) => Promise<string>>();
 const mockQuery = jest.fn<() => AsyncGenerator<unknown, void, unknown>>();
-const mockCheckClaudeCodeAuth = jest.fn<() => Promise<boolean>>();
+const mockSpawnSync = jest.fn<
+  () => {
+    error?: Error;
+    status: number;
+    stdout?: string;
+    stderr?: string;
+    signal?: string;
+  }
+>();
 jest.unstable_mockModule('os', () => ({
   homedir: mockHomedir,
   tmpdir: mockTmpdir,
@@ -40,8 +48,8 @@ jest.unstable_mockModule('simple-git', () => ({
   })),
 }));
 
-jest.unstable_mockModule('../utils/claude.utils', () => ({
-  checkClaudeCodeAuth: mockCheckClaudeCodeAuth,
+jest.unstable_mockModule('child_process', () => ({
+  spawnSync: mockSpawnSync,
 }));
 
 jest.unstable_mockModule('@anthropic-ai/claude-code', () => ({
@@ -83,7 +91,13 @@ describe('Init Command Integration Tests', () => {
     mockQuery.mockImplementation(async function* () {
       yield { type: 'result', is_error: false };
     });
-    mockCheckClaudeCodeAuth.mockImplementation(() => Promise.resolve(true));
+    mockSpawnSync.mockImplementation(() => ({
+      error: undefined,
+      status: 0,
+      stdout: 'Claude CLI is working',
+      stderr: '',
+      signal: undefined,
+    }));
   };
 
   beforeEach(async () => {
@@ -313,7 +327,13 @@ describe('Init Command Integration Tests', () => {
 
   it('should fail when Claude Code is not authenticated', async () => {
     setupDefaultMocks();
-    mockCheckClaudeCodeAuth.mockImplementation(() => Promise.resolve(false));
+    mockSpawnSync.mockImplementation(() => ({
+      error: new Error('Command not found'),
+      status: -1,
+      stdout: '',
+      stderr: 'claude: command not found',
+      signal: undefined,
+    }));
 
     await expect(performInit({})).rejects.toThrow(
       'Claude Code is not authenticated. Please complete authentication setup.'
@@ -322,7 +342,21 @@ describe('Init Command Integration Tests', () => {
 
   it('should fail when Claude Code CLI reports authentication required', async () => {
     setupDefaultMocks();
-    mockCheckClaudeCodeAuth.mockImplementation(() => Promise.resolve(false));
+    mockSpawnSync
+      .mockImplementationOnce(() => ({
+        error: undefined,
+        status: 0,
+        stdout: 'claude version 1.0.0',
+        stderr: '',
+        signal: undefined,
+      }))
+      .mockImplementationOnce(() => ({
+        error: undefined,
+        status: 1,
+        stdout: 'Please run `/login` to authenticate',
+        stderr: '',
+        signal: undefined,
+      }));
 
     await expect(performInit({})).rejects.toThrow(
       'Claude Code is not authenticated. Please complete authentication setup.'

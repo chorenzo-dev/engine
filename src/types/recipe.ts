@@ -20,10 +20,13 @@ export interface RecipeDependency {
   equals: string;
 }
 
+export type RecipeLevel = 'workspace' | 'project';
+
 export interface RecipeMetadata {
   id: string;
   category: string;
   summary: string;
+  level: RecipeLevel;
   ecosystems: RecipeEcosystem[];
   provides: string[];
   requires: RecipeDependency[];
@@ -87,6 +90,18 @@ export class Recipe {
 
   getRequires(): RecipeDependency[] {
     return this.metadata.requires;
+  }
+
+  getLevel(): RecipeLevel {
+    return this.metadata.level;
+  }
+
+  isWorkspaceLevel(): boolean {
+    return this.metadata.level === 'workspace';
+  }
+
+  isProjectLevel(): boolean {
+    return this.metadata.level === 'project';
   }
 
   hasEcosystem(ecosystemId: string): boolean {

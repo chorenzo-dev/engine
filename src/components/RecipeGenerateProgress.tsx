@@ -18,17 +18,18 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
   onComplete,
   onError,
 }) => {
-  const [phase, setPhase] = useState<'input' | 'generating' | 'complete'>(
-    () => {
-      if (options.name) {
-        return 'generating';
-      }
-      return 'input';
+  const [phase, setPhase] = useState<
+    'input' | 'choice' | 'generating' | 'complete'
+  >(() => {
+    if (options.name) {
+      return 'choice';
     }
-  );
+    return 'input';
+  });
   const [step, setStep] = useState<string>('');
   const [userInput, setUserInput] = useState<string>('');
   const [recipeName, setRecipeName] = useState<string>(options.name || '');
+  const [useMagic, setUseMagic] = useState<boolean>(false);
   const { isRawModeSupported } = useStdin();
 
   const shouldUseInput = options.progress !== false && isRawModeSupported;
@@ -37,7 +38,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
     if (phase === 'input') {
       if (options.name) {
         setRecipeName(options.name);
-        setPhase('generating');
+        setPhase('choice');
       } else if (!shouldUseInput) {
         onError(
           new Error(
@@ -45,6 +46,8 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
           )
         );
       }
+    } else if (phase === 'choice' && !shouldUseInput) {
+      setPhase('generating');
     }
   }, [phase, options.name, shouldUseInput, onError]);
 
@@ -55,10 +58,26 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
           const name = userInput.trim();
           if (name) {
             setRecipeName(name);
-            setPhase('generating');
             setUserInput('');
+            setPhase('choice');
           }
-        } else if (key.backspace) {
+        } else if (key.backspace || key.delete) {
+          setUserInput((prev) => prev.slice(0, -1));
+        } else if (input) {
+          setUserInput((prev) => prev + input);
+        }
+      } else if (phase === 'choice') {
+        if (key.return) {
+          const response = userInput.toLowerCase();
+          if (response === 'y' || response === 'yes') {
+            setUseMagic(true);
+            setPhase('generating');
+          } else {
+            setUseMagic(false);
+            setPhase('generating');
+          }
+          setUserInput('');
+        } else if (key.backspace || key.delete) {
           setUserInput((prev) => prev.slice(0, -1));
         } else if (input) {
           setUserInput((prev) => prev + input);
@@ -80,6 +99,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
             {
               ...options,
               name: recipeName,
+              magicGenerate: useMagic,
             },
             progressCallback
           );
@@ -92,13 +112,24 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
       };
       runGenerate();
     }
-  }, [phase, recipeName, options, onComplete, onError]);
+  }, [phase, recipeName, useMagic, options, onComplete, onError]);
 
   if (phase === 'input' && shouldUseInput) {
     return (
       <Box flexDirection="column">
         <Text color="blue">🎯 Recipe name: {userInput}</Text>
         <Text color="gray">Enter a name for your recipe and press Enter</Text>
+      </Box>
+    );
+  }
+
+  if (phase === 'choice' && shouldUseInput) {
+    return (
+      <Box flexDirection="column">
+        <Text color="blue">
+          🛈 Do you want me to generate the recipe automatically using AI? (y/N){' '}
+          {userInput}
+        </Text>
       </Box>
     );
   }

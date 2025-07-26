@@ -37,7 +37,6 @@ interface ShellProps {
     debug?: boolean;
     cost?: boolean;
     name?: string;
-    magicGenerate?: boolean;
   };
 }
 
@@ -177,7 +176,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
               name: options.name,
               progress: options.progress,
               cost: options.cost,
-              magicGenerate: options.magicGenerate,
             },
             (step) => {
               setSimpleStep(step);
@@ -552,7 +550,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           name: options.name,
           progress: options.progress,
           cost: options.cost,
-          magicGenerate: options.magicGenerate,
         }}
         onComplete={(result) => {
           setCommandState({ command: 'recipes-generate', result });

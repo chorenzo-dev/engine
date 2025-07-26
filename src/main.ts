@@ -144,7 +144,6 @@ recipesCommand
   .description('Generate a new recipe')
   .option('--no-progress', 'Disable progress UI')
   .option('--cost', 'Show LLM cost information')
-  .option('--magic', 'Use AI to generate recipe content')
   .addHelpText(
     'after',
     `
@@ -154,7 +153,6 @@ Arguments:
 Examples:
   $ chorenzo recipes generate                               # Interactive generation
   $ chorenzo recipes generate code-formatting               # Generate with name
-  $ chorenzo recipes generate eslint-setup --magic          # AI-powered generation
 `
   )
   .action(async (name, options) => {
@@ -165,7 +163,6 @@ Examples:
           name,
           progress: options.progress,
           cost: options.cost,
-          magicGenerate: options.magic,
         },
       })
     );

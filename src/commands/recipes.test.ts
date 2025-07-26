@@ -2348,5 +2348,94 @@ outputs:
         { recursive: true }
       );
     });
+
+    it('should use current directory as default save location', async () => {
+      setupGenerateMocks();
+
+      const result = await performRecipesGenerate({
+        name: 'default-location',
+        magicGenerate: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.recipePath).toContain('default-location');
+      expect(result.recipePath).not.toContain('/custom/path');
+      expect(mockMkdirSync).toHaveBeenCalledWith(
+        expect.stringContaining('default-location'),
+        { recursive: true }
+      );
+    });
+
+    it('should use custom save location when provided', async () => {
+      setupGenerateMocks();
+
+      const result = await performRecipesGenerate({
+        name: 'custom-location',
+        saveLocation: '/custom/path',
+        magicGenerate: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.recipePath).toBe('/custom/path/custom-location');
+      expect(mockMkdirSync).toHaveBeenCalledWith(
+        '/custom/path/custom-location',
+        { recursive: true }
+      );
+    });
+
+    it('should expand tilde in save location', async () => {
+      setupGenerateMocks();
+      mockHomedir.mockReturnValue('/test/home');
+
+      const result = await performRecipesGenerate({
+        name: 'tilde-location',
+        saveLocation: '~/my-recipes',
+        magicGenerate: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.recipePath).toBe('/test/home/my-recipes/tilde-location');
+      expect(mockMkdirSync).toHaveBeenCalledWith(
+        '/test/home/my-recipes/tilde-location',
+        { recursive: true }
+      );
+    });
+
+    it('should handle nested tilde paths correctly', async () => {
+      setupGenerateMocks();
+      mockHomedir.mockReturnValue('/test/home');
+
+      const result = await performRecipesGenerate({
+        name: 'nested-tilde',
+        saveLocation: '~/.chorenzo/recipes/custom',
+        magicGenerate: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.recipePath).toBe(
+        '/test/home/.chorenzo/recipes/custom/nested-tilde'
+      );
+      expect(mockMkdirSync).toHaveBeenCalledWith(
+        '/test/home/.chorenzo/recipes/custom/nested-tilde',
+        { recursive: true }
+      );
+    });
+
+    it('should handle relative paths in save location', async () => {
+      setupGenerateMocks();
+
+      const result = await performRecipesGenerate({
+        name: 'relative-location',
+        saveLocation: './custom-recipes',
+        magicGenerate: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.recipePath).toContain('custom-recipes/relative-location');
+      expect(mockMkdirSync).toHaveBeenCalledWith(
+        expect.stringContaining('custom-recipes/relative-location'),
+        { recursive: true }
+      );
+    });
   });
 });

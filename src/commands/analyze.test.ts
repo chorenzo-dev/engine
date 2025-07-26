@@ -23,15 +23,14 @@ const mockReadFileSync = jest.fn<(path: string, encoding?: string) => string>();
 const mockWriteFileSync =
   jest.fn<(path: string, data: string, encoding: string) => void>();
 const mockExistsSync = jest.fn<(path: string) => boolean>();
-const mockStatSync =
-  jest.fn<
-    (path: string) => {
-      isDirectory: () => boolean;
-      isFile: () => boolean;
-      size: number;
-      mtime: Date;
-    }
-  >();
+const mockStatSync = jest.fn<
+  (path: string) => {
+    isDirectory: () => boolean;
+    isFile: () => boolean;
+    size: number;
+    mtime: Date;
+  }
+>();
 const mockMkdirSync =
   jest.fn<(path: string, options?: { recursive?: boolean }) => void>();
 const mockReaddirSync = jest.fn<(path: string) => string[]>();
@@ -42,17 +41,14 @@ const mockRmSync =
 const mockUnlinkSync = jest.fn<(path: string) => void>();
 const mockRenameSync = jest.fn<(oldPath: string, newPath: string) => void>();
 
-const mockStat =
-  jest.fn<
-    (
-      path: string
-    ) => Promise<{
-      isDirectory: () => boolean;
-      isFile: () => boolean;
-      size: number;
-      mtime: Date;
-    }>
-  >();
+const mockStat = jest.fn<
+  (path: string) => Promise<{
+    isDirectory: () => boolean;
+    isFile: () => boolean;
+    size: number;
+    mtime: Date;
+  }>
+>();
 const mockReaddir = jest.fn<(path: string) => Promise<string[]>>();
 const mockAccess = jest.fn<(path: string) => Promise<void>>();
 

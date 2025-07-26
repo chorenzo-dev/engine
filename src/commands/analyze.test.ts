@@ -7,20 +7,76 @@ import {
   jest,
 } from '@jest/globals';
 import * as path from 'path';
+import * as fs from 'fs';
 import type { WorkspaceAnalysis } from '../types/analysis';
 import type { OperationMetadata } from '../types/common';
 import { setupFixture } from '../test-utils/fixture-loader';
 
+const frameworksYamlPath = path.join(
+  process.cwd(),
+  'src/resources/frameworks.yaml'
+);
+const frameworksYamlContent = fs.readFileSync(frameworksYamlPath, 'utf8');
+
 const mockQuery = jest.fn<() => AsyncGenerator<unknown, void, unknown>>();
-const mockWriteJson = jest.fn<(path: string, data: unknown) => Promise<void>>();
+const mockReadFileSync = jest.fn<(path: string, encoding?: string) => string>();
+const mockWriteFileSync =
+  jest.fn<(path: string, data: string, encoding: string) => void>();
+const mockExistsSync = jest.fn<(path: string) => boolean>();
+const mockStatSync = jest.fn<
+  (path: string) => {
+    isDirectory: () => boolean;
+    isFile: () => boolean;
+    size: number;
+    mtime: Date;
+  }
+>();
+const mockMkdirSync =
+  jest.fn<(path: string, options?: { recursive?: boolean }) => void>();
+const mockReaddirSync = jest.fn<(path: string) => string[]>();
+const mockRmSync =
+  jest.fn<
+    (path: string, options?: { recursive?: boolean; force?: boolean }) => void
+  >();
+const mockUnlinkSync = jest.fn<(path: string) => void>();
+const mockRenameSync = jest.fn<(oldPath: string, newPath: string) => void>();
+
+const mockStat = jest.fn<
+  (path: string) => Promise<{
+    isDirectory: () => boolean;
+    isFile: () => boolean;
+    size: number;
+    mtime: Date;
+  }>
+>();
+const mockReaddir = jest.fn<(path: string) => Promise<string[]>>();
+const mockAccess = jest.fn<(path: string) => Promise<void>>();
 
 jest.unstable_mockModule('@anthropic-ai/claude-code', () => ({
   query: mockQuery,
 }));
 
-jest.unstable_mockModule('../utils/json.utils', () => ({
-  writeJson: mockWriteJson,
-  readJson: jest.fn<() => Promise<unknown>>(),
+jest.unstable_mockModule('fs', () => ({
+  readFileSync: mockReadFileSync,
+  writeFileSync: mockWriteFileSync,
+  existsSync: mockExistsSync,
+  statSync: mockStatSync,
+  mkdirSync: mockMkdirSync,
+  readdirSync: mockReaddirSync,
+  rmSync: mockRmSync,
+  unlinkSync: mockUnlinkSync,
+  renameSync: mockRenameSync,
+}));
+
+jest.unstable_mockModule('fs/promises', () => ({
+  default: {
+    stat: mockStat,
+    readdir: mockReaddir,
+    access: mockAccess,
+  },
+  stat: mockStat,
+  readdir: mockReaddir,
+  access: mockAccess,
 }));
 
 describe('Analyze Command Integration Tests', () => {
@@ -31,11 +87,71 @@ describe('Analyze Command Integration Tests', () => {
   }>;
   let mockProgress: jest.MockedFunction<(message: string) => void>;
 
+  const setupDefaultMocks = () => {
+    mockExistsSync.mockImplementation((filePath: string) => {
+      if (
+        filePath.includes('.gitignore') ||
+        filePath.includes('package.json') ||
+        filePath.includes('.git') ||
+        filePath.includes('src/') ||
+        filePath.includes('test-fixtures/') ||
+        filePath.includes('frameworks.yaml') ||
+        filePath.includes('resources')
+      ) {
+        return true;
+      }
+      return false;
+    });
+
+    mockReadFileSync.mockImplementation((filePath: string) => {
+      if (filePath.includes('.gitignore')) {
+        return 'node_modules/\n.env\n*.log';
+      }
+      if (filePath.includes('package.json')) {
+        return JSON.stringify({ name: 'test-app', version: '1.0.0' });
+      }
+      if (filePath.includes('frameworks.yaml')) {
+        return frameworksYamlContent;
+      }
+      return 'mock file content';
+    });
+
+    mockStatSync.mockImplementation((filePath: string) => ({
+      isDirectory: () => filePath.endsWith('/') || !filePath.includes('.'),
+      isFile: () => filePath.includes('.'),
+      size: 1024,
+      mtime: new Date(),
+    }));
+
+    mockStat.mockImplementation(async (filePath: string) => ({
+      isDirectory: () => filePath.endsWith('/') || !filePath.includes('.'),
+      isFile: () => filePath.includes('.'),
+      size: 1024,
+      mtime: new Date(),
+    }));
+
+    mockReaddir.mockImplementation(async (dirPath: string) => {
+      if (dirPath.includes('simple-express')) {
+        return ['package.json', 'src', 'index.js'];
+      }
+      return ['file1.js', 'file2.js'];
+    });
+
+    mockAccess.mockImplementation(async () => {
+      return Promise.resolve();
+    });
+
+    mockWriteFileSync.mockImplementation(() => {});
+
+    mockMkdirSync.mockImplementation(() => {});
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
 
     mockProgress = jest.fn();
+    setupDefaultMocks();
 
     const analyzeModule = await import('./analyze');
     performAnalysis = analyzeModule.performAnalysis;
@@ -113,9 +229,10 @@ describe('Analyze Command Integration Tests', () => {
     );
     expect(mockProgress).toHaveBeenCalledWith('Validating frameworks...');
 
-    expect(mockWriteJson).toHaveBeenCalledWith(
+    expect(mockWriteFileSync).toHaveBeenCalledWith(
       path.join(process.cwd(), '.chorenzo', 'analysis.json'),
-      result.analysis
+      JSON.stringify(result.analysis, null, 2),
+      'utf8'
     );
   });
 
@@ -171,7 +288,7 @@ describe('Analyze Command Integration Tests', () => {
     expect(result.analysis).toBeNull();
     expect(result.metadata).toBeDefined();
     expect(result.metadata?.subtype).toBe('error');
-    expect(mockWriteJson).not.toHaveBeenCalled();
+    expect(mockWriteFileSync).not.toHaveBeenCalled();
   });
 
   it('should handle git repository not found', async () => {
@@ -203,9 +320,10 @@ describe('Analyze Command Integration Tests', () => {
     const result = await performAnalysis();
 
     expect(result.analysis).toBeDefined();
-    expect(mockWriteJson).toHaveBeenCalledWith(
+    expect(mockWriteFileSync).toHaveBeenCalledWith(
       path.join(process.cwd(), '.chorenzo', 'analysis.json'),
-      expect.any(Object)
+      expect.stringMatching(/^\{[\s\S]*\}$/),
+      'utf8'
     );
   });
 
@@ -397,9 +515,10 @@ describe('Analyze Command Integration Tests', () => {
     );
     expect(mockProgress).toHaveBeenCalledWith('Validating frameworks...');
 
-    expect(mockWriteJson).toHaveBeenCalledWith(
+    expect(mockWriteFileSync).toHaveBeenCalledWith(
       path.join(process.cwd(), '.chorenzo', 'analysis.json'),
-      result.analysis
+      JSON.stringify(result.analysis, null, 2),
+      'utf8'
     );
   });
   it('should convert snake_case to camelCase in analysis results', async () => {
@@ -473,7 +592,7 @@ describe('Analyze Command Integration Tests', () => {
     expect(result.analysis).toBeNull();
     expect(result.metadata?.subtype).toBe('error');
     expect(result.metadata?.error).toContain('Invalid JSON response');
-    expect(mockWriteJson).not.toHaveBeenCalled();
+    expect(mockWriteFileSync).not.toHaveBeenCalled();
   });
 
   it('should filter out TodoWrite and TodoRead progress events', async () => {
@@ -569,7 +688,7 @@ describe('Analyze Command Integration Tests', () => {
     expect(result.analysis).toBeNull();
     expect(result.metadata?.subtype).toBe('error');
     expect(result.metadata?.error).toContain('missing required fields');
-    expect(mockWriteJson).not.toHaveBeenCalled();
+    expect(mockWriteFileSync).not.toHaveBeenCalled();
   });
 
   it('should handle empty workspace with no code files', async () => {
@@ -594,7 +713,7 @@ describe('Analyze Command Integration Tests', () => {
     expect(result.analysis).toBeNull();
     expect(result.metadata?.subtype).toBe('error');
     expect(result.metadata?.error).toContain('No projects found in workspace');
-    expect(mockWriteJson).not.toHaveBeenCalled();
+    expect(mockWriteFileSync).not.toHaveBeenCalled();
   });
 
   it('should verify chorenzo directory operations show initialization progress', async () => {

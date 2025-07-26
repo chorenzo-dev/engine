@@ -76,6 +76,27 @@ describe('Recipes Command Integration Tests', () => {
   let performRecipesValidate: typeof import('./recipes').performRecipesValidate;
   let performRecipesApply: typeof import('./recipes').performRecipesApply;
 
+  const setupLocationMocks = (
+    fileStructure: Record<string, boolean>,
+    directoryStructure: Record<string, string[]>
+  ) => {
+    mockExistsSync.mockImplementation((filePath: string) => {
+      return fileStructure[filePath] || false;
+    });
+
+    mockStatSync.mockImplementation(
+      (filePath: string) =>
+        ({
+          isDirectory: () => !filePath.includes('.'),
+          isFile: () => filePath.includes('.'),
+        }) as fs.Stats
+    );
+
+    mockReaddirSync.mockImplementation((dirPath: string) => {
+      return directoryStructure[dirPath] || [];
+    });
+  };
+
   const createMockYamlData = (
     options: {
       recipeId?: string;
@@ -2473,9 +2494,9 @@ outputs:
       });
 
       expect(result.success).toBe(true);
-      expect(result.recipePath).toBe('/custom/path/custom-location');
+      expect(result.recipePath).toBe('/custom/path/general/custom-location');
       expect(mockMkdirSync).toHaveBeenCalledWith(
-        '/custom/path/custom-location',
+        '/custom/path/general/custom-location',
         { recursive: true }
       );
     });
@@ -2491,9 +2512,11 @@ outputs:
       });
 
       expect(result.success).toBe(true);
-      expect(result.recipePath).toBe('/test/home/my-recipes/tilde-location');
+      expect(result.recipePath).toBe(
+        '/test/home/my-recipes/general/tilde-location'
+      );
       expect(mockMkdirSync).toHaveBeenCalledWith(
-        '/test/home/my-recipes/tilde-location',
+        '/test/home/my-recipes/general/tilde-location',
         { recursive: true }
       );
     });
@@ -2510,10 +2533,10 @@ outputs:
 
       expect(result.success).toBe(true);
       expect(result.recipePath).toBe(
-        '/test/home/.chorenzo/recipes/custom/nested-tilde'
+        '/test/home/.chorenzo/recipes/custom/general/nested-tilde'
       );
       expect(mockMkdirSync).toHaveBeenCalledWith(
-        '/test/home/.chorenzo/recipes/custom/nested-tilde',
+        '/test/home/.chorenzo/recipes/custom/general/nested-tilde',
         { recursive: true }
       );
     });
@@ -2528,10 +2551,177 @@ outputs:
       });
 
       expect(result.success).toBe(true);
-      expect(result.recipePath).toContain('custom-recipes/relative-location');
+      expect(result.recipePath).toContain(
+        'custom-recipes/general/relative-location'
+      );
       expect(mockMkdirSync).toHaveBeenCalledWith(
-        expect.stringContaining('custom-recipes/relative-location'),
+        expect.stringContaining('custom-recipes/general/relative-location'),
         { recursive: true }
+      );
+    });
+
+    it('should use provided category', async () => {
+      setupGenerateMocks();
+
+      const result = await performRecipesGenerate({
+        name: 'test-recipe',
+        category: 'development',
+        magicGenerate: false,
+      });
+
+      expect(result.success).toBe(true);
+      const metadataCall = mockWriteFileSync.mock.calls.find(
+        (call: unknown[]) =>
+          typeof call[0] === 'string' && call[0].includes('metadata.yaml')
+      );
+      expect(metadataCall).toBeDefined();
+      expect(metadataCall![1]).toContain('development');
+    });
+
+    it('should default to general category when none provided', async () => {
+      setupGenerateMocks();
+
+      const result = await performRecipesGenerate({
+        name: 'test-recipe',
+        magicGenerate: false,
+      });
+
+      expect(result.success).toBe(true);
+      const metadataCall = mockWriteFileSync.mock.calls.find(
+        (call: unknown[]) =>
+          typeof call[0] === 'string' && call[0].includes('metadata.yaml')
+      );
+      expect(metadataCall).toBeDefined();
+      expect(metadataCall![1]).toContain('general');
+    });
+
+    it('should handle custom category names with same validation as recipe names', async () => {
+      setupGenerateMocks();
+
+      const result = await performRecipesGenerate({
+        name: 'test-recipe',
+        category: 'my-custom-category-123',
+        magicGenerate: false,
+      });
+
+      expect(result.success).toBe(true);
+      const metadataCall = mockWriteFileSync.mock.calls.find(
+        (call: unknown[]) =>
+          typeof call[0] === 'string' && call[0].includes('metadata.yaml')
+      );
+      expect(metadataCall).toBeDefined();
+      expect(metadataCall![1]).toContain('my-custom-category-123');
+    });
+
+    it('should create recipe in category subfolder for library root location', async () => {
+      setupGenerateMocks();
+      setupLocationMocks(
+        {
+          '/test/library': true,
+          '/test/library/development': true,
+          '/test/library/development/existing-recipe': true,
+          '/test/library/development/existing-recipe/metadata.yaml': true,
+        },
+        {
+          '/test/library': ['development'],
+          '/test/library/development': ['existing-recipe'],
+        }
+      );
+
+      const result = await performRecipesGenerate({
+        name: 'new-recipe',
+        category: 'testing',
+        saveLocation: '/test/library',
+        magicGenerate: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.recipePath).toBe('/test/library/testing/new-recipe');
+      expect(mockMkdirSync).toHaveBeenCalledWith(
+        '/test/library/testing/new-recipe',
+        { recursive: true }
+      );
+    });
+
+    it('should create recipe directly in category folder location', async () => {
+      setupGenerateMocks();
+      setupLocationMocks(
+        {
+          '/test/library/development': true,
+          '/test/library/development/existing-recipe': true,
+          '/test/library/development/existing-recipe/metadata.yaml': true,
+        },
+        {
+          '/test/library/development': ['existing-recipe'],
+        }
+      );
+
+      const result = await performRecipesGenerate({
+        name: 'new-recipe',
+        category: 'development',
+        saveLocation: '/test/library/development',
+        magicGenerate: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.recipePath).toBe('/test/library/development/new-recipe');
+      expect(mockMkdirSync).toHaveBeenCalledWith(
+        '/test/library/development/new-recipe',
+        { recursive: true }
+      );
+    });
+
+    it('should throw error for mixed hierarchy in save location', async () => {
+      setupGenerateMocks();
+      setupLocationMocks(
+        {
+          '/test/mixed': true,
+          '/test/mixed/development': true,
+          '/test/mixed/recipe1': true,
+          '/test/mixed/development/recipe2': true,
+          '/test/mixed/recipe1/metadata.yaml': true,
+          '/test/mixed/development/recipe2/metadata.yaml': true,
+        },
+        {
+          '/test/mixed': ['development', 'recipe1'],
+          '/test/mixed/development': ['recipe2'],
+        }
+      );
+
+      await expect(
+        performRecipesGenerate({
+          name: 'new-recipe',
+          saveLocation: '/test/mixed',
+          magicGenerate: false,
+        })
+      ).rejects.toThrow(
+        'Invalid hierarchy: location contains both recipe folders and category folders'
+      );
+    });
+
+    it('should throw error for unknown hierarchy in save location', async () => {
+      setupGenerateMocks();
+      setupLocationMocks(
+        {
+          '/test/unknown': true,
+          '/test/unknown/folder1': true,
+          '/test/unknown/folder2': true,
+        },
+        {
+          '/test/unknown': ['folder1', 'folder2'],
+          '/test/unknown/folder1': [],
+          '/test/unknown/folder2': [],
+        }
+      );
+
+      await expect(
+        performRecipesGenerate({
+          name: 'new-recipe',
+          saveLocation: '/test/unknown',
+          magicGenerate: false,
+        })
+      ).rejects.toThrow(
+        'Invalid hierarchy: unable to determine structure of location'
       );
     });
   });

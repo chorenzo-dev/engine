@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput, useStdin } from 'ink';
+import SelectInput from 'ink-select-input';
+import TextInput from 'ink-text-input';
 import {
   performRecipesGenerate,
   type GenerateOptions,
   type GenerateResult,
   type ProgressCallback,
 } from '../commands/recipes';
+import { libraryManager } from '../utils/library-manager.utils';
 
 interface RecipeGenerateProgressProps {
   options: GenerateOptions;
@@ -19,7 +22,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
   onError,
 }) => {
   const [phase, setPhase] = useState<
-    'input' | 'choice' | 'generating' | 'complete'
+    'input' | 'choice' | 'category' | 'generating' | 'complete'
   >(() => {
     if (options.name) {
       return 'choice';
@@ -30,9 +33,34 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
   const [userInput, setUserInput] = useState<string>('');
   const [recipeName, setRecipeName] = useState<string>(options.name || '');
   const [useMagic, setUseMagic] = useState<boolean>(false);
+  const [category, setCategory] = useState<string>('');
+  const [categoryInput, setCategoryInput] = useState<string>('');
+  const [showCustomCategory, setShowCustomCategory] = useState<boolean>(false);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const { isRawModeSupported } = useStdin();
 
   const shouldUseInput = options.progress !== false && isRawModeSupported;
+
+  const categoryOptions = [
+    ...availableCategories.map((cat) => ({ label: cat, value: cat })),
+    { label: 'Enter custom category', value: 'custom' },
+  ];
+
+  const handleCategorySelect = (item: { label: string; value: string }) => {
+    if (item.value === 'custom') {
+      setShowCustomCategory(true);
+    } else {
+      setCategory(item.value);
+      setPhase('generating');
+    }
+  };
+
+  const handleCustomCategorySubmit = () => {
+    if (categoryInput.trim()) {
+      setCategory(categoryInput.trim());
+      setPhase('generating');
+    }
+  };
 
   useEffect(() => {
     if (phase === 'input') {
@@ -47,9 +75,36 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
         );
       }
     } else if (phase === 'choice' && !shouldUseInput) {
+      setPhase('category');
+    } else if (phase === 'category' && !shouldUseInput) {
+      setCategory('general');
       setPhase('generating');
     }
   }, [phase, options.name, shouldUseInput, onError]);
+
+  useEffect(() => {
+    if (phase === 'category') {
+      const loadCategories = async () => {
+        try {
+          const saveLocation = options.saveLocation || process.cwd();
+          const analysis = libraryManager.analyzeLocation(saveLocation);
+
+          if (analysis.type === 'category_folder') {
+            setCategory(analysis.categoryName!);
+            setPhase('generating');
+            return;
+          }
+
+          const categories =
+            await libraryManager.getAllCategories(saveLocation);
+          setAvailableCategories(categories);
+        } catch (error) {
+          onError(error instanceof Error ? error : new Error(String(error)));
+        }
+      };
+      loadCategories();
+    }
+  }, [phase, options.saveLocation, onError]);
 
   useInput(
     (input, key) => {
@@ -71,12 +126,11 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
           const response = userInput.toLowerCase();
           if (response === 'y' || response === 'yes') {
             setUseMagic(true);
-            setPhase('generating');
           } else {
             setUseMagic(false);
-            setPhase('generating');
           }
           setUserInput('');
+          setPhase('category');
         } else if (key.backspace || key.delete) {
           setUserInput((prev) => prev.slice(0, -1));
         } else if (input) {
@@ -88,7 +142,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
   );
 
   useEffect(() => {
-    if (phase === 'generating' && recipeName) {
+    if (phase === 'generating' && recipeName && category) {
       const runGenerate = async () => {
         try {
           const progressCallback: ProgressCallback = (step) => {
@@ -100,6 +154,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
               ...options,
               name: recipeName,
               magicGenerate: useMagic,
+              category,
             },
             progressCallback
           );
@@ -112,7 +167,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
       };
       runGenerate();
     }
-  }, [phase, recipeName, useMagic, options, onComplete, onError]);
+  }, [phase, recipeName, useMagic, category, options, onComplete, onError]);
 
   if (phase === 'input' && shouldUseInput) {
     return (
@@ -130,6 +185,31 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
           🛈 Do you want me to generate the recipe automatically using AI? (y/N){' '}
           {userInput}
         </Text>
+      </Box>
+    );
+  }
+
+  if (phase === 'category' && shouldUseInput) {
+    if (showCustomCategory) {
+      return (
+        <Box flexDirection="column">
+          <Text color="blue">📂 Enter custom category:</Text>
+          <Box marginTop={1}>
+            <Text>Category: </Text>
+            <TextInput
+              value={categoryInput}
+              onChange={setCategoryInput}
+              onSubmit={handleCustomCategorySubmit}
+            />
+          </Box>
+        </Box>
+      );
+    }
+
+    return (
+      <Box flexDirection="column">
+        <Text color="blue">📂 Choose a category for your recipe:</Text>
+        <SelectInput items={categoryOptions} onSelect={handleCategorySelect} />
       </Box>
     );
   }

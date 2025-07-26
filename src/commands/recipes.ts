@@ -1054,7 +1054,15 @@ export async function performRecipesGenerate(
     const baseLocation = options.saveLocation
       ? resolvePath(options.saveLocation)
       : process.cwd();
-    const recipePath = path.join(baseLocation, recipeId);
+
+    const analysis = libraryManager.analyzeLocation(baseLocation);
+    let recipePath: string;
+
+    if (analysis.type === 'category_folder') {
+      recipePath = path.join(baseLocation, recipeId);
+    } else {
+      recipePath = path.join(baseLocation, category, recipeId);
+    }
 
     onProgress?.(`Creating recipe directory: ${recipePath}`);
 

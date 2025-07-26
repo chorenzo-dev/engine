@@ -235,6 +235,120 @@ export class LibraryManager {
     const config = await this.getConfig();
     return Object.keys(config.libraries);
   }
+
+  analyzeLocation(locationPath: string): {
+    type: 'empty' | 'library_root' | 'category_folder' | 'invalid';
+    categoryName?: string;
+    categories?: string[];
+  } {
+    if (!fs.existsSync(locationPath)) {
+      return { type: 'empty' };
+    }
+
+    const stat = fs.statSync(locationPath);
+    if (!stat.isDirectory()) {
+      throw new LibraryManagerError(
+        `Location is not a directory: ${locationPath}`,
+        'INVALID_LOCATION'
+      );
+    }
+
+    const entries = fs.readdirSync(locationPath);
+    if (entries.length === 0) {
+      return { type: 'empty' };
+    }
+
+    const subfolders = entries.filter((entry) => {
+      const entryPath = path.join(locationPath, entry);
+      try {
+        return fs.statSync(entryPath).isDirectory();
+      } catch {
+        return false;
+      }
+    });
+
+    if (subfolders.length === 0) {
+      return { type: 'empty' };
+    }
+
+    let recipeCount = 0;
+    let categoryCount = 0;
+
+    for (const subfolder of subfolders) {
+      const subfolderPath = path.join(locationPath, subfolder);
+
+      if (this.isRecipeFolder(subfolderPath)) {
+        recipeCount++;
+      } else if (this.isCategoryFolder(subfolderPath)) {
+        categoryCount++;
+      }
+    }
+
+    if (recipeCount > 0 && categoryCount > 0) {
+      throw new LibraryManagerError(
+        `Invalid hierarchy: location contains both recipe folders and category folders: ${locationPath}`,
+        'MIXED_HIERARCHY'
+      );
+    }
+
+    if (recipeCount > 0) {
+      const categoryName = path.basename(locationPath);
+      return { type: 'category_folder', categoryName };
+    }
+
+    if (categoryCount > 0) {
+      const categories = subfolders.filter((subfolder) =>
+        this.isCategoryFolder(path.join(locationPath, subfolder))
+      );
+      return { type: 'library_root', categories };
+    }
+
+    throw new LibraryManagerError(
+      `Invalid hierarchy: unable to determine structure of location: ${locationPath}`,
+      'UNKNOWN_HIERARCHY'
+    );
+  }
+
+  private isRecipeFolder(folderPath: string): boolean {
+    const metadataPath = path.join(folderPath, 'metadata.yaml');
+    const promptPath = path.join(folderPath, 'prompt.md');
+    return fs.existsSync(metadataPath) || fs.existsSync(promptPath);
+  }
+
+  private isCategoryFolder(folderPath: string): boolean {
+    const entries = fs.readdirSync(folderPath);
+    const subfolders = entries.filter((entry) => {
+      const entryPath = path.join(folderPath, entry);
+      try {
+        return fs.statSync(entryPath).isDirectory();
+      } catch {
+        return false;
+      }
+    });
+
+    return subfolders.some((subfolder) =>
+      this.isRecipeFolder(path.join(folderPath, subfolder))
+    );
+  }
+
+  async getAllCategories(searchPath?: string): Promise<string[]> {
+    const recipesDir = searchPath || chorenzoConfig.recipesDir;
+    const analysis = this.analyzeLocation(recipesDir);
+
+    if (analysis.type === 'empty') {
+      return [];
+    }
+
+    if (analysis.type === 'category_folder') {
+      return [analysis.categoryName!];
+    }
+
+    if (analysis.type === 'library_root' && analysis.categories) {
+      return analysis.categories.sort();
+    }
+
+    return [];
+  }
 }
 
 export const libraryManager = new LibraryManager();

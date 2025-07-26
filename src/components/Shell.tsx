@@ -550,6 +550,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           name: options.name,
           progress: options.progress,
           cost: options.cost,
+          saveLocation: options.saveLocation,
         }}
         onComplete={(result) => {
           setCommandState({ command: 'recipes-generate', result });

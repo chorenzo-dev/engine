@@ -1,0 +1,26 @@
+State Management:
+
+After successfully completing the recipe application, you MUST update the state.json file located at {{ workspace_root }}/.chorenzo/state.json to track what this recipe provides.
+
+1. Read the current state.json file (create it if it doesn't exist with {})
+2. Add/update the following keys under the "workspace" field:
+   {{ recipe_provides }}
+
+   Set appropriate values for each key based on what you actually accomplished during the recipe execution.
+
+3. Write the updated state back to state.json with keys in alphabetical order
+
+Example structure:
+
+```json
+{
+  "projects": {
+    "frontend": {
+      "other-recipe.configured": true
+    }
+  },
+  "workspace": {
+    "{{ recipe_id }}.configured": true
+  }
+}
+```

@@ -30,6 +30,7 @@ import {
 import { Recipe, RecipeDependency } from '../types/recipe';
 import { libraryManager } from '../utils/library-manager.utils';
 import { WorkspaceAnalysis, ProjectAnalysis } from '../types/analysis';
+import { stateManager } from '../utils/state-manager.utils';
 
 export enum InputType {
   RecipeName = 'recipe-name',
@@ -466,30 +467,25 @@ export async function performRecipesApply(
       throw new ApplyError(errorMsg, 'DEPENDENCIES_NOT_SATISFIED');
     }
 
-    onProgress?.('Filtering applicable projects...');
-    const applicableProjects = filterApplicableProjects(
-      analysis,
-      recipe,
-      options.project
-    );
-
-    if (applicableProjects.length === 0) {
-      throw new ApplyError(
-        `No applicable projects found for recipe '${recipe.getId()}'`,
-        'NO_APPLICABLE_PROJECTS'
-      );
-    }
-
     onProgress?.('Initializing the chorenzo engine');
     const executionResults: ExecutionResult[] = [];
-    for (const project of applicableProjects) {
+
+    if (recipe.isWorkspaceLevel()) {
+      const workspaceEcosystem = analysis.workspaceEcosystem || 'unknown';
+      if (!recipe.hasEcosystem(workspaceEcosystem)) {
+        throw new ApplyError(
+          `Workspace-level recipe '${recipe.getId()}' does not support workspace ecosystem '${workspaceEcosystem}'`,
+          'ECOSYSTEM_NOT_SUPPORTED'
+        );
+      }
+
       const variant =
         options.variant ||
-        recipe.getDefaultVariant(project.ecosystem || 'unknown') ||
+        recipe.getDefaultVariant(workspaceEcosystem) ||
         'default';
-      const executionResult = await applyRecipeDirectly(
+
+      const executionResult = await applyWorkspaceRecipe(
         recipe,
-        project,
         variant,
         analysis,
         onProgress
@@ -499,15 +495,55 @@ export async function performRecipesApply(
       executionResults.push(executionResult);
 
       if (executionResult.success) {
-        onValidation?.(
-          'success',
-          `Successfully applied to ${executionResult.projectPath}`
-        );
+        onValidation?.('success', `Successfully applied workspace recipe`);
       } else {
         onValidation?.(
           'error',
-          `Failed to apply to ${executionResult.projectPath}: ${executionResult.error}`
+          `Failed to apply workspace recipe: ${executionResult.error}`
         );
+      }
+    } else {
+      onProgress?.('Filtering applicable projects...');
+      const applicableProjects = filterApplicableProjects(
+        analysis,
+        recipe,
+        options.project
+      );
+
+      if (applicableProjects.length === 0) {
+        throw new ApplyError(
+          `No applicable projects found for recipe '${recipe.getId()}'`,
+          'NO_APPLICABLE_PROJECTS'
+        );
+      }
+
+      for (const project of applicableProjects) {
+        const variant =
+          options.variant ||
+          recipe.getDefaultVariant(project.ecosystem || 'unknown') ||
+          'default';
+        const executionResult = await applyProjectRecipe(
+          recipe,
+          project,
+          variant,
+          analysis,
+          onProgress
+        );
+
+        totalCostUsd += executionResult.costUsd;
+        executionResults.push(executionResult);
+
+        if (executionResult.success) {
+          onValidation?.(
+            'success',
+            `Successfully applied to ${executionResult.projectPath}`
+          );
+        } else {
+          onValidation?.(
+            'error',
+            `Failed to apply to ${executionResult.projectPath}: ${executionResult.error}`
+          );
+        }
       }
     }
 
@@ -516,7 +552,7 @@ export async function performRecipesApply(
     const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
 
     const summary = {
-      totalProjects: applicableProjects.length,
+      totalProjects: executionResults.length,
       successfulProjects: executionResults.filter((e) => e.success).length,
       failedProjects: executionResults.filter((e) => !e.success).length,
       skippedProjects: 0,
@@ -670,15 +706,9 @@ async function ensureAnalysisData(): Promise<WorkspaceAnalysis> {
 }
 
 async function readCurrentState(): Promise<RecipeState> {
-  const statePath = workspaceConfig.getStatePath();
-
-  if (!fs.existsSync(statePath)) {
-    return {};
-  }
-
   try {
-    const rawState = await readJson(statePath);
-    return (rawState as RecipeState) || {};
+    const workspaceState = stateManager.getWorkspaceState();
+    return (workspaceState.workspace || {}) as RecipeState;
   } catch (error) {
     throw new ApplyError(
       `Failed to read state file: ${error instanceof Error ? error.message : String(error)}`,
@@ -762,7 +792,95 @@ function filterApplicableProjects(
   });
 }
 
-async function applyRecipeDirectly(
+function generateApplicationInstructions(
+  recipe: Recipe,
+  project?: ProjectAnalysis
+): string {
+  if (recipe.isWorkspaceLevel()) {
+    return loadPrompt('apply_recipe_workspace_application_instructions');
+  } else {
+    if (!project) {
+      throw new Error('Project information required for project-level recipe');
+    }
+
+    const workspaceRoot = workspaceConfig.getWorkspaceRoot();
+    const relativePath = path.relative(workspaceRoot, project.path);
+
+    const template = loadPrompt(
+      'apply_recipe_project_application_instructions'
+    );
+    return renderPrompt(template, {
+      project_path: relativePath,
+      project_ecosystem: project.ecosystem || 'unknown',
+      project_language: project.language || 'unknown',
+      project_type: project.type || 'unknown',
+    });
+  }
+}
+
+function generateStateManagementInstructions(
+  recipe: Recipe,
+  project?: ProjectAnalysis
+): string {
+  const workspaceRoot = workspaceConfig.getWorkspaceRoot();
+  const provides = recipe
+    .getProvides()
+    .map((key) => `   - ${key}`)
+    .join('\n');
+
+  if (recipe.isWorkspaceLevel()) {
+    const template = loadPrompt('apply_recipe_workspace_state_management');
+    return renderPrompt(template, {
+      workspace_root: workspaceRoot,
+      recipe_provides: provides,
+      recipe_id: recipe.getId(),
+    });
+  } else {
+    if (!project) {
+      throw new Error('Project information required for project-level recipe');
+    }
+
+    const relativePath = path.relative(workspaceRoot, project.path);
+    const template = loadPrompt('apply_recipe_project_state_management');
+    return renderPrompt(template, {
+      workspace_root: workspaceRoot,
+      recipe_provides: provides,
+      recipe_id: recipe.getId(),
+      project_relative_path: relativePath,
+    });
+  }
+}
+
+async function applyWorkspaceRecipe(
+  recipe: Recipe,
+  variant: string,
+  analysis: WorkspaceAnalysis,
+  onProgress?: ApplyProgressCallback
+): Promise<ExecutionResult> {
+  const targetEcosystem = analysis.workspaceEcosystem || 'unknown';
+
+  Logger.info(
+    {
+      event: 'workspace_recipe_application_started',
+      recipe: recipe.getId(),
+      variant,
+    },
+    'Starting workspace recipe application'
+  );
+
+  return executeRecipe(
+    recipe,
+    variant,
+    targetEcosystem,
+    'workspace',
+    analysis,
+    onProgress,
+    'workspace_recipe_application',
+    undefined
+  );
+}
+
+async function applyProjectRecipe(
   recipe: Recipe,
   project: ProjectAnalysis,
   variant: string,
@@ -770,60 +888,82 @@ async function applyRecipeDirectly(
   onProgress?: ApplyProgressCallback
 ): Promise<ExecutionResult> {
   const projectPath = project.path === '.' ? 'workspace' : project.path;
-  const workspaceRoot = workspaceConfig.getWorkspaceRoot();
+  const targetEcosystem = project.ecosystem || 'unknown';
 
   Logger.info(
     {
-      event: 'recipe_application_started',
+      event: 'project_recipe_application_started',
       recipe: recipe.getId(),
       project: project.path,
       variant,
     },
-    'Starting direct recipe application'
+    'Starting project recipe application'
   );
+
+  return executeRecipe(
+    recipe,
+    variant,
+    targetEcosystem,
+    projectPath,
+    analysis,
+    onProgress,
+    'project_recipe_application',
+    project
+  );
+}
+
+async function executeRecipe(
+  recipe: Recipe,
+  variant: string,
+  targetEcosystem: string,
+  projectPath: string,
+  analysis: WorkspaceAnalysis,
+  onProgress?: ApplyProgressCallback,
+  logEventPrefix?: string,
+  project?: ProjectAnalysis
+): Promise<ExecutionResult> {
+  const workspaceRoot = workspaceConfig.getWorkspaceRoot();
 
   try {
     const ecosystem = recipe
       .getEcosystems()
-      .find((eco) => eco.id === project.ecosystem);
+      .find((eco) => eco.id === targetEcosystem);
     if (!ecosystem) {
       Logger.warn(
         {
           event: 'ecosystem_not_supported',
-          ecosystem: project.ecosystem,
+          ecosystem: targetEcosystem,
           recipe: recipe.getId(),
         },
-        `Recipe does not support ecosystem: ${project.ecosystem}`
+        `Recipe does not support ecosystem: ${targetEcosystem}`
       );
       return {
         projectPath,
         recipeId: recipe.getId(),
         success: false,
-        error: `Recipe '${recipe.getId()}' does not support ecosystem '${project.ecosystem}'`,
+        error: `Recipe '${recipe.getId()}' does not support ecosystem '${targetEcosystem}'`,
         costUsd: 0,
       };
     }
 
-    const variants = recipe.getVariantsForEcosystem(
-      project.ecosystem || 'unknown'
-    );
+    const variants = recipe.getVariantsForEcosystem(targetEcosystem);
     const variantObj = variants.find((v) => v.id === variant);
 
     if (!variantObj) {
       Logger.warn(
         {
           event: 'variant_not_found',
-          ecosystem: project.ecosystem,
+          ecosystem: targetEcosystem,
           variant,
           recipe: recipe.getId(),
         },
-        `Variant '${variant}' not found for ecosystem ${project.ecosystem}`
+        `Variant '${variant}' not found for ecosystem ${targetEcosystem}`
       );
       return {
         projectPath,
         recipeId: recipe.getId(),
         success: false,
-        error: `Variant '${variant}' not found for ecosystem '${project.ecosystem}'`,
+        error: `Variant '${variant}' not found for ecosystem '${targetEcosystem}'`,
         costUsd: 0,
       };
     }
@@ -835,23 +975,24 @@ async function applyRecipeDirectly(
     const promptTemplate = loadPrompt('apply_recipe');
     const combinedContent = recipePrompt.content + '\n\n' + fixContent;
 
+    const applicationInstructions = generateApplicationInstructions(
+      recipe,
+      project
+    );
+    const stateManagementInstructions = generateStateManagementInstructions(
+      recipe,
+      project
+    );
+
     const applicationPrompt = renderPrompt(promptTemplate, {
       recipe_id: recipe.getId(),
-      project_path: project.path,
       recipe_summary: recipe.getSummary(),
-      project_type: project.type || 'unknown',
-      project_language: project.language || 'unknown',
-      project_framework: project.framework || 'unknown',
-      project_ecosystem: project.ecosystem || 'unknown',
       workspace_root: workspaceRoot,
       is_monorepo: analysis.isMonorepo ? 'true' : 'false',
-      package_manager: project.hasPackageManager ? 'detected' : 'none',
       recipe_variant: variant,
       fix_content: combinedContent,
-      recipe_provides: recipe
-        .getProvides()
-        .map((key) => `   - ${key}`)
-        .join('\n'),
+      application_instructions: applicationInstructions,
+      state_management_instructions: stateManagementInstructions,
     });
 
     Logger.debug(
@@ -859,7 +1000,7 @@ async function applyRecipeDirectly(
         event: 'claude_execution_start',
         prompt_length: applicationPrompt.length,
       },
-      'Starting Claude execution for direct recipe application'
+      'Starting Claude execution for recipe application'
     );
 
     let executionCost = 0;
@@ -886,7 +1027,7 @@ async function applyRecipeDirectly(
       onError: (error) => {
         Logger.error(
           {
-            event: 'recipe_application_failed',
+            event: `${logEventPrefix}_failed`,
             error: error.message,
           },
           'Recipe application failed'
@@ -954,7 +1095,7 @@ async function applyRecipeDirectly(
 
     Logger.info(
       {
-        event: 'recipe_application_completed',
+        event: `${logEventPrefix}_completed`,
       },
       'Recipe application completed successfully'
     );
@@ -968,7 +1109,7 @@ async function applyRecipeDirectly(
   } catch (error) {
     Logger.error(
       {
-        event: 'recipe_application_error',
+        event: `${logEventPrefix}_error`,
         error: error instanceof Error ? error.message : String(error),
       },
       'Error during recipe application'

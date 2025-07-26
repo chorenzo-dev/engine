@@ -3,6 +3,6 @@ export interface ProjectState {
 }
 
 export interface WorkspaceState {
-  [key: string]: unknown;
+  workspace?: Record<string, unknown>;
   projects?: Record<string, ProjectState>;
 }

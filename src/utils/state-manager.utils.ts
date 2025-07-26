@@ -1,54 +1,67 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { readJson, writeJson } from './json.utils';
 import { workspaceConfig } from './workspace-config.utils';
 import { WorkspaceState } from '../types/state';
 
 export class WorkspaceStateManager {
-  private state: WorkspaceState = {};
   private statePath: string;
 
   constructor() {
     this.statePath = workspaceConfig.getStatePath();
   }
 
-  async loadState(): Promise<void> {
-    try {
-      if (fs.existsSync(this.statePath)) {
-        this.state = await readJson<WorkspaceState>(this.statePath);
-        if (!this.state.projects) {
-          this.state.projects = {};
-        }
-      } else {
-        this.state = { projects: {} };
-      }
-    } catch {
-      this.state = { projects: {} };
-    }
-  }
-
-  async saveState(): Promise<void> {
-    workspaceConfig.ensureChorenzoDir();
-    const sortedState = this.sortStateKeys(this.state);
-    await writeJson(this.statePath, sortedState);
+  getWorkspaceState(): WorkspaceState {
+    return this.loadState();
   }
 
   setWorkspaceValue(key: string, value: unknown): void {
-    this.state[key] = value;
+    const state = this.loadState();
+    if (!state.workspace) {
+      state.workspace = {};
+    }
+    state.workspace[key] = value;
+    this.saveState(state);
   }
 
   setProjectValue(projectPath: string, key: string, value: unknown): void {
+    const state = this.loadState();
     const relativePath = path.relative(
       workspaceConfig.getWorkspaceRoot(),
       projectPath
     );
-    if (!this.state.projects) {
-      this.state.projects = {};
+    if (!state.projects) {
+      state.projects = {};
     }
-    if (!this.state.projects[relativePath]) {
-      this.state.projects[relativePath] = {};
+    if (!state.projects[relativePath]) {
+      state.projects[relativePath] = {};
     }
-    this.state.projects[relativePath][key] = value;
+    state.projects[relativePath][key] = value;
+    this.saveState(state);
+  }
+
+  private loadState(): WorkspaceState {
+    try {
+      if (fs.existsSync(this.statePath)) {
+        const rawState = JSON.parse(fs.readFileSync(this.statePath, 'utf-8'));
+        if (!rawState.workspace) {
+          rawState.workspace = {};
+        }
+        if (!rawState.projects) {
+          rawState.projects = {};
+        }
+        return rawState;
+      } else {
+        return { workspace: {}, projects: {} };
+      }
+    } catch {
+      return { workspace: {}, projects: {} };
+    }
+  }
+
+  private saveState(state: WorkspaceState): void {
+    workspaceConfig.ensureChorenzoDir();
+    const sortedState = this.sortStateKeys(state);
+    fs.writeFileSync(this.statePath, JSON.stringify(sortedState, null, 2));
   }
 
   private sortStateKeys(obj: unknown): unknown {

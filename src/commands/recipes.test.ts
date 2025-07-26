@@ -80,6 +80,7 @@ describe('Recipes Command Integration Tests', () => {
     options: {
       recipeId?: string;
       category?: string;
+      level?: 'workspace' | 'project';
       variants?: Array<{ id: string; fix_prompt: string }>;
       requires?: Array<{ key: string; equals: string }>;
       provides?: string[];
@@ -88,6 +89,7 @@ describe('Recipes Command Integration Tests', () => {
     const {
       recipeId = 'test-recipe',
       category = 'test',
+      level = 'project',
       variants = [{ id: 'basic', fix_prompt: 'fixes/basic.md' }],
       requires = [],
       provides = ['test-functionality'],
@@ -106,6 +108,7 @@ describe('Recipes Command Integration Tests', () => {
         id: recipeId,
         category,
         summary: 'Test recipe',
+        level,
         ecosystems: [
           {
             id: 'javascript',
@@ -150,6 +153,22 @@ outputs:
         return yamlStringify(mockYamlData.config);
       } else if (filePath.includes('metadata.yaml')) {
         return yamlStringify(mockYamlData.metadata);
+      } else if (
+        filePath.includes('apply_recipe_workspace_application_instructions.md')
+      ) {
+        return 'Apply this workspace-level recipe...';
+      } else if (
+        filePath.includes('apply_recipe_project_application_instructions.md')
+      ) {
+        return 'Apply this project-level recipe to {{ project_path }}...';
+      } else if (
+        filePath.includes('apply_recipe_workspace_state_management.md')
+      ) {
+        return 'Update workspace state at {{ workspace_root }}/.chorenzo/state.json...';
+      } else if (
+        filePath.includes('apply_recipe_project_state_management.md')
+      ) {
+        return 'Update project state for {{ project_relative_path }} at {{ workspace_root }}/.chorenzo/state.json...';
       } else if (filePath.includes('.json')) {
         return '{}';
       }
@@ -186,6 +205,7 @@ outputs:
       id: 'recipe',
       category: 'test',
       summary: 'Test recipe',
+      level: 'project',
       ecosystems: [
         {
           id: 'javascript',
@@ -277,6 +297,7 @@ outputs:
           id: 'recipe1',
           category: 'test',
           summary: 'Recipe 1',
+          level: 'project',
           ecosystems: [
             {
               id: 'javascript',
@@ -292,6 +313,7 @@ outputs:
           id: 'recipe2',
           category: 'test',
           summary: 'Recipe 2',
+          level: 'project',
           ecosystems: [
             {
               id: 'python',
@@ -387,6 +409,7 @@ outputs:
           id: 'nested-recipe',
           category: 'test',
           summary: 'Nested recipe',
+          level: 'project',
           ecosystems: [
             {
               id: 'javascript',
@@ -459,6 +482,7 @@ outputs:
           id: 'test-recipe',
           category: 'test',
           summary: 'Test recipe',
+          level: 'project',
           ecosystems: [
             {
               id: 'javascript',
@@ -720,6 +744,7 @@ outputs:
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
+            workspaceEcosystem: 'javascript',
             projects: [
               {
                 path: '.',
@@ -799,6 +824,7 @@ outputs:
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
+            workspaceEcosystem: 'javascript',
             projects: [
               {
                 path: '.',
@@ -937,6 +963,7 @@ outputs:
         analysis: {
           isMonorepo: false,
           hasWorkspacePackageManager: false,
+          workspaceEcosystem: 'javascript',
           projects: [
             {
               path: '.',
@@ -995,6 +1022,7 @@ outputs:
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
+            workspaceEcosystem: 'javascript',
             projects: [
               {
                 path: '.',
@@ -1019,11 +1047,10 @@ outputs:
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
         if (filePath.includes('state.json'))
           return JSON.stringify({
-            'prerequisite.exists': {
-              value: false,
-              source: 'other-recipe',
-              timestamp: '2024-01-01T00:00:00Z',
+            workspace: {
+              'prerequisite.exists': false,
             },
+            projects: {},
           });
         return '';
       });
@@ -1049,6 +1076,7 @@ outputs:
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
+            workspaceEcosystem: 'javascript',
             projects: [
               {
                 path: '.',
@@ -1102,6 +1130,7 @@ outputs:
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
+            workspaceEcosystem: 'javascript',
             projects: [
               {
                 path: '.',
@@ -1175,6 +1204,7 @@ outputs:
           return JSON.stringify({
             isMonorepo: true,
             hasWorkspacePackageManager: true,
+            workspaceEcosystem: 'javascript',
             projects: [
               {
                 path: 'frontend',
@@ -1266,6 +1296,7 @@ outputs:
           return JSON.stringify({
             isMonorepo: true,
             hasWorkspacePackageManager: true,
+            workspaceEcosystem: 'javascript',
             projects: [
               {
                 path: 'project1',
@@ -1365,6 +1396,7 @@ outputs:
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
+            workspaceEcosystem: 'javascript',
             projects: [
               {
                 path: '.',
@@ -1389,7 +1421,10 @@ outputs:
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
         if (filePath.includes('state.json')) {
           return JSON.stringify({
-            'prerequisite.version': '1.0.0',
+            workspace: {
+              'prerequisite.version': '1.0.0',
+            },
+            projects: {},
           });
         }
         return '';
@@ -1470,6 +1505,7 @@ outputs:
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
+            workspaceEcosystem: 'python',
             projects: [
               {
                 path: '.',
@@ -1559,6 +1595,7 @@ outputs:
         analysis: {
           isMonorepo: false,
           hasWorkspacePackageManager: false,
+          workspaceEcosystem: 'javascript',
           projects: [
             {
               path: '.',
@@ -1693,6 +1730,7 @@ outputs:
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
+            workspaceEcosystem: 'javascript',
             projects: [
               {
                 path: '.',
@@ -1777,6 +1815,7 @@ outputs:
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
+            workspaceEcosystem: 'javascript',
             projects: [
               {
                 path: '.',
@@ -1819,7 +1858,7 @@ outputs:
       );
     });
 
-    it('should handle state file read errors', async () => {
+    it('should handle state file read errors gracefully', async () => {
       mockExistsSync.mockImplementation((path) => {
         if (path.includes('analysis.json')) return true;
         if (path.includes('state.json')) return true;
@@ -1855,6 +1894,7 @@ outputs:
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
+            workspaceEcosystem: 'javascript',
             projects: [
               {
                 path: '.',
@@ -1883,12 +1923,22 @@ outputs:
         return '';
       });
 
-      await expect(
-        performRecipesApply({
-          recipe: 'test-recipe',
-          progress: false,
-        })
-      ).rejects.toThrow('Failed to read state file');
+      mockQuery.mockImplementation(async function* () {
+        yield {
+          type: 'result',
+          subtype: 'success',
+          result: 'Execution completed successfully',
+          total_cost_usd: 0.05,
+        };
+      });
+
+      const result = await performRecipesApply({
+        recipe: 'test-recipe',
+        progress: false,
+      });
+
+      expect(result).toBeDefined();
+      expect(result.summary.totalProjects).toBe(1);
     });
 
     it('should handle empty recipe application result', async () => {
@@ -1927,6 +1977,7 @@ outputs:
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
+            workspaceEcosystem: 'javascript',
             projects: [
               {
                 path: '.',
@@ -2009,6 +2060,7 @@ outputs:
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
+            workspaceEcosystem: 'javascript',
             projects: [
               {
                 path: '.',
@@ -2143,6 +2195,174 @@ outputs:
 
       expect(result).toBeDefined();
       expect(result.summary.successfulProjects).toBe(1);
+    });
+
+    it('should apply workspace-level recipe successfully', async () => {
+      mockExistsSync.mockImplementation((path) => {
+        if (path.includes('analysis.json')) return true;
+        if (path.includes('state.json')) return false;
+        if (path.includes('.chorenzo/recipes')) return true;
+        if (path.includes('workspace-recipe')) return true;
+        if (path.includes('metadata.yaml')) return true;
+        if (path.includes('prompt.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
+        return true;
+      });
+
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
+
+      mockReaddirSync.mockImplementation((dirPath) => {
+        if (dirPath.includes('.chorenzo/recipes')) {
+          return ['workspace-recipe'];
+        }
+        return [];
+      });
+
+      const mockYamlData = createMockYamlData({
+        recipeId: 'workspace-recipe',
+        level: 'workspace',
+        provides: ['workspace_feature.exists'],
+      });
+      (mockYamlData.config.libraries as Record<string, unknown>)[
+        'workspace-recipe'
+      ] = {
+        repo: 'https://github.com/test/workspace-recipe.git',
+        ref: 'main',
+      };
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('analysis.json')) {
+          return JSON.stringify({
+            isMonorepo: false,
+            hasWorkspacePackageManager: false,
+            workspaceEcosystem: 'javascript',
+            projects: [
+              {
+                path: '.',
+                language: 'javascript',
+                ecosystem: 'javascript',
+                type: 'web_app',
+                dependencies: [],
+                hasPackageManager: true,
+              },
+            ],
+          });
+        }
+        if (filePath.includes('config.yaml')) {
+          return yamlStringify(mockYamlData.config);
+        }
+        if (filePath.includes('metadata.yaml')) {
+          return yamlStringify(mockYamlData.metadata);
+        }
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+        if (filePath.includes('apply_recipe.md'))
+          return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        return '';
+      });
+
+      mockQuery.mockImplementation(async function* () {
+        yield {
+          type: 'result',
+          subtype: 'success',
+          result: 'Execution completed successfully',
+          total_cost_usd: 0.05,
+        };
+      });
+
+      const result = await performRecipesApply({
+        recipe: 'workspace-recipe',
+        progress: false,
+      });
+
+      expect(result).toBeDefined();
+      expect(result.summary.successfulProjects).toBe(1);
+      expect(result.summary.totalProjects).toBe(1);
+      expect(result.executionResults[0].projectPath).toBe('workspace');
+    });
+
+    it('should handle workspace recipe with unsupported ecosystem', async () => {
+      mockExistsSync.mockImplementation((path) => {
+        if (path.includes('analysis.json')) return true;
+        if (path.includes('state.json')) return false;
+        if (path.includes('.chorenzo/recipes')) return true;
+        if (path.includes('workspace-recipe')) return true;
+        if (path.includes('metadata.yaml')) return true;
+        if (path.includes('prompt.md')) return true;
+        if (path.includes('apply_recipe.md')) return true;
+        return true;
+      });
+
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
+
+      mockReaddirSync.mockImplementation((dirPath) => {
+        if (dirPath.includes('.chorenzo/recipes')) {
+          return ['workspace-recipe'];
+        }
+        return [];
+      });
+
+      const mockYamlData = createMockYamlData({
+        recipeId: 'workspace-recipe',
+        level: 'workspace',
+        provides: ['workspace_feature.exists'],
+      });
+      (mockYamlData.config.libraries as Record<string, unknown>)[
+        'workspace-recipe'
+      ] = {
+        repo: 'https://github.com/test/workspace-recipe.git',
+        ref: 'main',
+      };
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('analysis.json')) {
+          return JSON.stringify({
+            isMonorepo: false,
+            hasWorkspacePackageManager: false,
+            workspaceEcosystem: 'python',
+            projects: [
+              {
+                path: '.',
+                language: 'python',
+                ecosystem: 'python',
+                type: 'script',
+                dependencies: [],
+                hasPackageManager: true,
+              },
+            ],
+          });
+        }
+        if (filePath.includes('config.yaml')) {
+          return yamlStringify(mockYamlData.config);
+        }
+        if (filePath.includes('metadata.yaml')) {
+          return yamlStringify(mockYamlData.metadata);
+        }
+        if (filePath.includes('prompt.md'))
+          return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+        if (filePath.includes('apply_recipe.md'))
+          return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        return '';
+      });
+
+      await expect(
+        performRecipesApply({
+          recipe: 'workspace-recipe',
+          progress: false,
+        })
+      ).rejects.toThrow('does not support workspace ecosystem');
     });
   });
 });

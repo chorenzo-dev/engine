@@ -79,6 +79,10 @@ jest.unstable_mockModule('fs/promises', () => ({
   access: mockAccess,
 }));
 
+jest.unstable_mockModule('@anthropic-ai/claude-code', () => ({
+  query: mockQuery,
+}));
+
 describe('Analyze Command Integration Tests', () => {
   let performAnalysis: (progress?: (message: string) => void) => Promise<{
     analysis: WorkspaceAnalysis | null;
@@ -152,6 +156,10 @@ describe('Analyze Command Integration Tests', () => {
 
     mockProgress = jest.fn();
     setupDefaultMocks();
+
+    mockQuery.mockImplementation(async function* () {
+      yield { type: 'result', is_error: false };
+    });
 
     const analyzeModule = await import('./analyze');
     performAnalysis = analyzeModule.performAnalysis;

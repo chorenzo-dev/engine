@@ -3,11 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { readYaml, writeYaml } from './yaml.utils';
 import { writeJson } from './json.utils';
-import type { Config } from '../types/config';
-
-interface State {
-  last_checked: string;
-}
+import { Config, State } from '../types/config';
 
 export class ChorenzoConfig {
   get dir(): string {
@@ -48,6 +44,10 @@ export class ChorenzoConfig {
 
   async readConfig(): Promise<Config> {
     return await readYaml<Config>(this.configPath);
+  }
+
+  async writeConfig(config: Config): Promise<void> {
+    await writeYaml(this.configPath, config);
   }
 
   stateExists(): boolean {

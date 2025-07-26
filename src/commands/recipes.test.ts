@@ -163,6 +163,9 @@ outputs:
       emit: jest.fn(),
     }));
     mockRmSync.mockImplementation(() => {});
+    mockQuery.mockImplementation(async function* () {
+      yield { type: 'result', is_error: false };
+    });
   };
 
   beforeEach(async () => {
@@ -1305,6 +1308,8 @@ outputs:
       mockQuery.mockImplementation(async function* () {
         queryCallCount++;
         if (queryCallCount === 1) {
+          yield { type: 'result', is_error: false };
+        } else if (queryCallCount === 2) {
           yield {
             type: 'result',
             subtype: 'success',

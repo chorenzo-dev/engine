@@ -53,7 +53,7 @@ class Logger {
 
       this.instance = pino(
         {
-          level: 'info',
+          level: process.env.DEBUG ? 'debug' : 'info',
         },
         logStream
       );

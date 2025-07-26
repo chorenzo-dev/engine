@@ -144,15 +144,20 @@ recipesCommand
   .description('Generate a new recipe')
   .option('--no-progress', 'Disable progress UI')
   .option('--cost', 'Show LLM cost information')
+  .option('--location <path>', 'Custom save location for the recipe')
   .addHelpText(
     'after',
     `
 Arguments:  
   name      Recipe name (optional, will prompt if not provided)
 
+Options:
+  --location <path>    Custom path to save recipe (supports ~ for home directory)
+
 Examples:
   $ chorenzo recipes generate                               # Interactive generation
   $ chorenzo recipes generate code-formatting               # Generate with name
+  $ chorenzo recipes generate linting --location ~/my-recipes   # Custom location
 `
   )
   .action(async (name, options) => {
@@ -163,6 +168,7 @@ Examples:
           name,
           progress: options.progress,
           cost: options.cost,
+          saveLocation: options.location,
         },
       })
     );

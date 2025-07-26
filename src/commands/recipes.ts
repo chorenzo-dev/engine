@@ -59,6 +59,7 @@ export interface GenerateOptions extends RecipesOptions {
   category?: string;
   summary?: string;
   location?: string;
+  saveLocation?: string;
 }
 
 export interface GenerateResult {
@@ -1049,7 +1050,10 @@ export async function performRecipesGenerate(
     const category = options.category || 'general';
     const summary = options.summary || `Set up ${recipeName} for the project.`;
 
-    const recipePath = path.join(process.cwd(), recipeId);
+    const baseLocation = options.saveLocation
+      ? resolvePath(options.saveLocation)
+      : process.cwd();
+    const recipePath = path.join(baseLocation, recipeId);
 
     onProgress?.(`Creating recipe directory: ${recipePath}`);
 

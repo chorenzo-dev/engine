@@ -37,6 +37,7 @@ interface ShellProps {
     debug?: boolean;
     cost?: boolean;
     name?: string;
+    saveLocation?: string;
   };
 }
 
@@ -176,6 +177,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
               name: options.name,
               progress: options.progress,
               cost: options.cost,
+              saveLocation: options.saveLocation,
             },
             (step) => {
               setSimpleStep(step);

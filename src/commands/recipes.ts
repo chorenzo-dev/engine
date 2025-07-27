@@ -32,6 +32,15 @@ import { libraryManager } from '../utils/library-manager.utils';
 import { WorkspaceAnalysis, ProjectAnalysis } from '../types/analysis';
 import { stateManager } from '../utils/state-manager.utils';
 import { WorkspaceState } from '../types/state';
+import {
+  isReservedKeyword,
+  isWorkspaceKeyword,
+  isProjectKeyword,
+  loadWorkspaceAnalysis,
+  getWorkspaceCharacteristic,
+  getProjectCharacteristic,
+  findProjectByPath,
+} from '../utils/project-characteristics.utils';
 
 export enum InputType {
   RecipeName = 'recipe-name',
@@ -457,7 +466,7 @@ export async function performRecipesApply(
 
     onProgress?.('Checking recipe dependencies...');
     const currentState = await readCurrentState();
-    const dependencyCheck = validateDependencies(recipe, currentState);
+    const dependencyCheck = await validateDependencies(recipe, currentState);
 
     if (!dependencyCheck.satisfied) {
       const errorMsg = formatDependencyError(
@@ -744,28 +753,61 @@ async function readCurrentState(): Promise<RecipeState> {
   }
 }
 
-function validateDependencies(
+async function validateDependencies(
   recipe: Recipe,
-  currentState: RecipeState
-): DependencyValidationResult {
+  currentState: RecipeState,
+  projectPath?: string
+): Promise<DependencyValidationResult> {
   const missing: RecipeDependency[] = [];
   const conflicting: Array<{ key: string; required: string; current: string }> =
     [];
 
-  for (const dependency of recipe.getRequires()) {
-    const stateValue = currentState[dependency.key];
+  let analysis: WorkspaceAnalysis | null = null;
+  let project: ProjectAnalysis | undefined;
 
-    if (stateValue === undefined) {
-      missing.push(dependency);
-    } else {
-      const currentValue = String(stateValue);
-      if (currentValue !== dependency.equals) {
-        conflicting.push({
-          key: dependency.key,
-          required: dependency.equals,
-          current: currentValue,
-        });
+  for (const dependency of recipe.getRequires()) {
+    let currentValue: string | undefined;
+
+    if (isReservedKeyword(dependency.key)) {
+      if (!analysis) {
+        analysis = await loadWorkspaceAnalysis();
+        if (!analysis) {
+          missing.push(dependency);
+          continue;
+        }
       }
+
+      if (isWorkspaceKeyword(dependency.key)) {
+        currentValue = getWorkspaceCharacteristic(analysis, dependency.key);
+      } else if (isProjectKeyword(dependency.key)) {
+        if (!projectPath) {
+          missing.push(dependency);
+          continue;
+        }
+
+        if (!project) {
+          project = findProjectByPath(analysis, projectPath);
+          if (!project) {
+            missing.push(dependency);
+            continue;
+          }
+        }
+
+        currentValue = getProjectCharacteristic(project, dependency.key);
+      }
+    } else {
+      const stateValue = currentState[dependency.key];
+      currentValue = stateValue ? String(stateValue) : undefined;
+    }
+
+    if (currentValue === undefined) {
+      missing.push(dependency);
+    } else if (currentValue !== dependency.equals) {
+      conflicting.push({
+        key: dependency.key,
+        required: dependency.equals,
+        current: currentValue,
+      });
     }
   }
 
@@ -1168,13 +1210,13 @@ async function applyWorkspacePreferredRecipe(
   const workspaceState = stateManager.getWorkspaceState();
   const workspaceRecipeState = (workspaceState.workspace || {}) as RecipeState;
 
-  const canApplyAtWorkspace = canApplyRecipeAtWorkspace(
+  const canApplyAtWorkspace = await canApplyRecipeAtWorkspace(
     recipe,
     analysis,
     workspaceRecipeState
   );
 
-  const applicableProjects = getApplicableProjectsForWorkspacePreferred(
+  const applicableProjects = await getApplicableProjectsForWorkspacePreferred(
     recipe,
     analysis,
     workspaceEcosystem,
@@ -1250,52 +1292,62 @@ async function applyWorkspacePreferredRecipe(
   return { workspaceResult, projectResults };
 }
 
-function canApplyRecipeAtWorkspace(
+async function canApplyRecipeAtWorkspace(
   recipe: Recipe,
   analysis: WorkspaceAnalysis,
   currentState: RecipeState
-): boolean {
+): Promise<boolean> {
   const workspaceEcosystem = analysis.workspaceEcosystem || 'unknown';
 
   if (!recipe.hasEcosystem(workspaceEcosystem)) {
     return false;
   }
 
-  const requires = recipe.getRequires();
-  for (const requirement of requires) {
-    const stateValue = currentState[requirement.key];
-    if (stateValue !== requirement.equals) {
-      return false;
-    }
-  }
-
-  return true;
+  const dependencyCheck = await validateDependencies(recipe, currentState);
+  return dependencyCheck.satisfied;
 }
 
-function getApplicableProjectsForWorkspacePreferred(
+async function getApplicableProjectsForWorkspacePreferred(
   recipe: Recipe,
   analysis: WorkspaceAnalysis,
   workspaceEcosystem: string,
   workspaceState: WorkspaceState,
   projectFilter?: string
-): ProjectAnalysis[] {
+): Promise<ProjectAnalysis[]> {
   const workspaceRecipeState = (workspaceState.workspace || {}) as RecipeState;
+  const applicableProjects: ProjectAnalysis[] = [];
 
-  return analysis.projects.filter((project) => {
+  for (const project of analysis.projects) {
     if (projectFilter && !project.path.includes(projectFilter)) {
-      return false;
+      continue;
     }
 
     if (!project.ecosystem) {
-      return false;
+      continue;
     }
 
     if (!recipe.hasEcosystem(project.ecosystem)) {
-      return false;
+      continue;
     }
 
     if (project.ecosystem !== workspaceEcosystem) {
-      return true;
+      const relativePath = path.relative(
+        workspaceConfig.getWorkspaceRoot(),
+        project.path
+      );
+      const projectState = (workspaceState.projects?.[relativePath] ||
+        {}) as RecipeState;
+
+      const dependencyCheck = await validateDependencies(
+        recipe,
+        projectState,
+        project.path
+      );
+
+      if (dependencyCheck.satisfied) {
+        applicableProjects.push(project);
+      }
+      continue;
     }
 
     const relativePath = path.relative(
@@ -1306,18 +1358,37 @@ function getApplicableProjectsForWorkspacePreferred(
       {}) as RecipeState;
 
     const requires = recipe.getRequires();
-    for (const requirement of requires) {
-      const workspaceValue = workspaceRecipeState[requirement.key];
-      const projectValue = projectState[requirement.key];
+    let shouldInclude = false;
 
-      if (
-        workspaceValue !== requirement.equals &&
-        projectValue === requirement.equals
-      ) {
-        return true;
+    for (const requirement of requires) {
+      if (isReservedKeyword(requirement.key)) {
+        const dependencyCheck = await validateDependencies(
+          recipe,
+          projectState,
+          project.path
+        );
+        if (dependencyCheck.satisfied) {
+          shouldInclude = true;
+          break;
+        }
+      } else {
+        const workspaceValue = workspaceRecipeState[requirement.key];
+        const projectValue = projectState[requirement.key];
+
+        if (
+          workspaceValue !== requirement.equals &&
+          projectValue === requirement.equals
+        ) {
+          shouldInclude = true;
+          break;
+        }
       }
     }
 
-    return false;
-  });
+    if (shouldInclude) {
+      applicableProjects.push(project);
+    }
+  }
+
+  return applicableProjects;
 }

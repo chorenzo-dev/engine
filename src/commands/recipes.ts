@@ -1433,6 +1433,7 @@ export async function performRecipesGenerate(
         onComplete: (result, metadata) => {
           totalCostUsd = metadata?.costUsd || 0;
         },
+        showChorenzoOperations: true,
         onError: (error) => {
           throw new RecipesError(
             `Magic generation failed: ${error.message}`,

@@ -69,6 +69,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
     | 'category'
     | 'summary'
     | 'choice'
+    | 'instructions'
     | 'generating'
     | 'complete'
   >(getNextPhase);
@@ -83,6 +84,9 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
   const [summaryInput, setSummaryInput] = useState<string>('');
   const [customLocationInput, setCustomLocationInput] = useState<string>('');
   const [showCustomLocation, setShowCustomLocation] = useState<boolean>(false);
+  const [additionalInstructions, setAdditionalInstructions] =
+    useState<string>('');
+  const [instructionsInput, setInstructionsInput] = useState<string>('');
   const { isRawModeSupported } = useStdin();
 
   const shouldUseInput = options.progress !== false && isRawModeSupported;
@@ -266,15 +270,28 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
           const response = userInput.toLowerCase();
           if (response === 'y' || response === 'yes') {
             setUseMagic(true);
+            setUserInput('');
+            setPhase('instructions');
           } else {
             setUseMagic(false);
+            setUserInput('');
+            setPhase('generating');
           }
-          setUserInput('');
-          setPhase('generating');
         } else if (key.backspace || key.delete) {
           setUserInput((prev) => prev.slice(0, -1));
         } else if (input) {
           setUserInput((prev) => prev + input);
+        }
+      } else if (phase === 'instructions') {
+        if (key.return) {
+          const instructions = instructionsInput.trim();
+          setAdditionalInstructions(instructions);
+          setInstructionsInput('');
+          setPhase('generating');
+        } else if (key.backspace || key.delete) {
+          setInstructionsInput((prev) => prev.slice(0, -1));
+        } else if (input) {
+          setInstructionsInput((prev) => prev + input);
         }
       }
     },
@@ -311,6 +328,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
               category,
               summary,
               saveLocation: collectedOptions.saveLocation,
+              additionalInstructions,
             },
             progressCallback
           );
@@ -435,6 +453,20 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
         <Text color="blue">📝 Recipe summary: {summaryInput}</Text>
         <Text color="gray">
           Enter a one-sentence summary of what this recipe does and press Enter
+        </Text>
+      </Box>
+    );
+  }
+
+  if (phase === 'instructions' && shouldUseInput) {
+    return (
+      <Box flexDirection="column">
+        <Text color="blue">
+          💡 Additional instructions (optional): {instructionsInput}
+        </Text>
+        <Text color="gray">
+          Enter any additional instructions for the AI, or press Enter to
+          continue
         </Text>
       </Box>
     );

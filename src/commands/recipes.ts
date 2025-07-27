@@ -75,6 +75,7 @@ export interface GenerateOptions extends RecipesOptions {
   summary?: string;
   location?: string;
   saveLocation?: string;
+  additionalInstructions?: string;
 }
 
 export interface GenerateResult {
@@ -1413,6 +1414,10 @@ export async function performRecipesGenerate(
       }
 
       const magicPromptTemplate = loadPrompt('recipe_magic_generate');
+      const additionalInstructionsText = options.additionalInstructions
+        ? `\nAdditional Instructions: ${options.additionalInstructions}`
+        : '';
+
       const magicPrompt = renderPrompt(magicPromptTemplate, {
         recipe_name: recipeName,
         summary,
@@ -1420,6 +1425,7 @@ export async function performRecipesGenerate(
         recipe_id: recipeId,
         recipe_path: recipePath,
         recipe_guidelines: recipeGuidelines,
+        additional_instructions: additionalInstructionsText,
       });
 
       const operationStartTime = new Date();

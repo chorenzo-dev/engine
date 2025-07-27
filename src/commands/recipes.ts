@@ -31,6 +31,7 @@ import { Recipe, RecipeDependency } from '../types/recipe';
 import { libraryManager } from '../utils/library-manager.utils';
 import { WorkspaceAnalysis, ProjectAnalysis } from '../types/analysis';
 import { stateManager } from '../utils/state-manager.utils';
+import { WorkspaceState } from '../types/state';
 
 export enum InputType {
   RecipeName = 'recipe-name',
@@ -1164,18 +1165,20 @@ async function applyWorkspacePreferredRecipe(
   onValidation?: (level: 'info' | 'error' | 'success', message: string) => void
 ): Promise<WorkspacePreferredResult> {
   const workspaceEcosystem = analysis.workspaceEcosystem || 'unknown';
-  const currentState = await readCurrentState();
+  const workspaceState = stateManager.getWorkspaceState();
+  const workspaceRecipeState = (workspaceState.workspace || {}) as RecipeState;
 
   const canApplyAtWorkspace = canApplyRecipeAtWorkspace(
     recipe,
     analysis,
-    currentState
+    workspaceRecipeState
   );
 
   const applicableProjects = getApplicableProjectsForWorkspacePreferred(
     recipe,
     analysis,
     workspaceEcosystem,
+    workspaceState,
     options.project
   );
 
@@ -1273,8 +1276,11 @@ function getApplicableProjectsForWorkspacePreferred(
   recipe: Recipe,
   analysis: WorkspaceAnalysis,
   workspaceEcosystem: string,
+  workspaceState: WorkspaceState,
   projectFilter?: string
 ): ProjectAnalysis[] {
+  const workspaceRecipeState = (workspaceState.workspace || {}) as RecipeState;
+
   return analysis.projects.filter((project) => {
     if (projectFilter && !project.path.includes(projectFilter)) {
       return false;
@@ -1290,6 +1296,26 @@ function getApplicableProjectsForWorkspacePreferred(
 
     if (project.ecosystem !== workspaceEcosystem) {
       return true;
+    }
+
+    const relativePath = path.relative(
+      workspaceConfig.getWorkspaceRoot(),
+      project.path
+    );
+    const projectState = (workspaceState.projects?.[relativePath] ||
+      {}) as RecipeState;
+
+    const requires = recipe.getRequires();
+    for (const requirement of requires) {
+      const workspaceValue = workspaceRecipeState[requirement.key];
+      const projectValue = projectState[requirement.key];
+
+      if (
+        workspaceValue !== requirement.equals &&
+        projectValue === requirement.equals
+      ) {
+        return true;
+      }
     }
 
     return false;

@@ -84,12 +84,14 @@ jest.unstable_mockModule('@anthropic-ai/claude-code', () => ({
 }));
 
 describe('Analyze Command Integration Tests', () => {
-  let performAnalysis: (progress?: (message: string) => void) => Promise<{
+  let performAnalysis: (
+    progress?: (message: string | null) => void
+  ) => Promise<{
     analysis: WorkspaceAnalysis | null;
     metadata?: Partial<OperationMetadata>;
     unrecognizedFrameworks?: string[];
   }>;
-  let mockProgress: jest.MockedFunction<(message: string) => void>;
+  let mockProgress: jest.MockedFunction<(message: string | null) => void>;
 
   const setupDefaultMocks = () => {
     mockExistsSync.mockImplementation((filePath: string) => {
@@ -405,8 +407,8 @@ describe('Analyze Command Integration Tests', () => {
       'Analyzing workspace with Claude...'
     );
     expect(mockProgress).toHaveBeenCalledWith('Reading package.json', false);
-    expect(mockProgress).toHaveBeenCalledWith('', true);
-    expect(mockProgress).toHaveBeenCalledWith('', false);
+    expect(mockProgress).toHaveBeenCalledWith(null, true);
+    expect(mockProgress).toHaveBeenCalledWith(null, false);
     expect(mockProgress).toHaveBeenCalledWith('Listing /workspace', false);
     expect(mockProgress).toHaveBeenCalledWith('Validating frameworks...');
   });

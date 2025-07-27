@@ -1069,8 +1069,8 @@ outputs:
         'Reading src/package.json',
         false
       );
-      expect(mockProgress).toHaveBeenCalledWith('', true);
-      expect(mockProgress).toHaveBeenCalledWith('', false);
+      expect(mockProgress).toHaveBeenCalledWith(null, true);
+      expect(mockProgress).toHaveBeenCalledWith(null, false);
       expect(mockProgress).toHaveBeenCalledWith('Writing .eslintrc.js', false);
     });
 

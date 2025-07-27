@@ -74,7 +74,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       const runSimpleAnalysis = async () => {
         try {
           const analysisResult = await performAnalysis((step) => {
-            setSimpleStep(step);
+            if (step) {
+              setSimpleStep(step);
+            }
           });
           setCommandState({ command: 'analyze', result: analysisResult });
           setIsComplete(true);
@@ -116,7 +118,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
               progress: options.progress,
             },
             (step) => {
-              setSimpleStep(step);
+              if (step) {
+                setSimpleStep(step);
+              }
             },
             handleValidation
           );
@@ -153,7 +157,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
               progress: options.progress,
             },
             (step) => {
-              setSimpleStep(step);
+              if (step) {
+                setSimpleStep(step);
+              }
             }
           );
 
@@ -184,7 +190,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
               summary: options.summary,
             },
             (step) => {
-              setSimpleStep(step);
+              if (step) {
+                setSimpleStep(step);
+              }
             }
           );
 

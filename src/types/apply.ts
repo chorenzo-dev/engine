@@ -58,7 +58,7 @@ export class ApplyError extends Error {
 }
 
 export type ApplyProgressCallback = (
-  step: string,
+  step: string | null,
   isThinking?: boolean
 ) => void;
 export type ApplyValidationCallback = (

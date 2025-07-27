@@ -50,7 +50,10 @@ export enum InputType {
   GitUrl = 'git-url',
 }
 
-export type ProgressCallback = (step: string, isThinking?: boolean) => void;
+export type ProgressCallback = (
+  step: string | null,
+  isThinking?: boolean
+) => void;
 export type ValidationCallback = (
   type: 'info' | 'success' | 'error' | 'warning',
   message: string
@@ -1177,7 +1180,7 @@ async function executeRecipe(
         onProgress?.(step, false);
       },
       onThinkingStateChange: (isThinking) => {
-        onProgress?.('', isThinking);
+        onProgress?.(null, isThinking);
       },
       onComplete: (result, metadata) => {
         executionCost = metadata?.costUsd || 0;
@@ -1425,9 +1428,7 @@ export async function performRecipesGenerate(
           onProgress?.(step, false);
         },
         onThinkingStateChange: (isThinking) => {
-          if (isThinking) {
-            onProgress?.('AI is thinking...', false);
-          }
+          onProgress?.(null, isThinking);
         },
         onComplete: (result, metadata) => {
           totalCostUsd = metadata?.costUsd || 0;
@@ -1512,7 +1513,7 @@ async function applyWorkspacePreferredRecipe(
   recipe: Recipe,
   analysis: WorkspaceAnalysis,
   options: ApplyOptions,
-  onProgress?: (message: string) => void,
+  onProgress?: ApplyProgressCallback,
   onValidation?: (level: 'info' | 'error' | 'success', message: string) => void
 ): Promise<WorkspacePreferredResult> {
   const workspaceEcosystem = analysis.workspaceEcosystem || 'unknown';
@@ -1537,7 +1538,7 @@ async function applyWorkspacePreferredRecipe(
   const projectResults: ExecutionResult[] = [];
 
   if (canApplyAtWorkspace) {
-    onProgress?.('Applying recipe at workspace level...');
+    onProgress?.('Applying recipe at workspace level...', false);
 
     const variant =
       options.variant ||
@@ -1565,7 +1566,8 @@ async function applyWorkspacePreferredRecipe(
     onProgress?.(
       applicableProjects.length === analysis.projects.length
         ? 'Applying recipe at project level...'
-        : `Applying recipe to ${applicableProjects.length} specific projects...`
+        : `Applying recipe to ${applicableProjects.length} specific projects...`,
+      false
     );
 
     for (const project of applicableProjects) {

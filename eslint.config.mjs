@@ -43,7 +43,7 @@ export default [
           format: ['PascalCase'],
         },
       ],
-      'curly': ['error', 'all'],
+      curly: ['error', 'all'],
     },
   },
 ];

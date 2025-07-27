@@ -4,6 +4,7 @@ import SelectInput from 'ink-select-input';
 import TextInput from 'ink-text-input';
 import {
   performRecipesGenerate,
+  validateCategoryName,
   type GenerateOptions,
   type GenerateResult,
   type ProgressCallback,
@@ -57,8 +58,13 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
 
   const handleCustomCategorySubmit = () => {
     if (categoryInput.trim()) {
-      setCategory(categoryInput.trim());
-      setPhase('generating');
+      try {
+        const validatedCategory = validateCategoryName(categoryInput);
+        setCategory(validatedCategory);
+        setPhase('generating');
+      } catch (error) {
+        onError(error instanceof Error ? error : new Error(String(error)));
+      }
     }
   };
 
@@ -75,10 +81,11 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
         );
       }
     } else if (phase === 'choice' && !shouldUseInput) {
-      setPhase('category');
-    } else if (phase === 'category' && !shouldUseInput) {
-      setCategory('general');
-      setPhase('generating');
+      onError(
+        new Error(
+          'Category selection requires interactive mode. Use --category to specify a category'
+        )
+      );
     }
   }, [phase, options.name, shouldUseInput, onError]);
 

@@ -145,6 +145,7 @@ recipesCommand
   .option('--no-progress', 'Disable progress UI')
   .option('--cost', 'Show LLM cost information')
   .option('--location <path>', 'Custom save location for the recipe')
+  .option('--category <category>', 'Recipe category')
   .addHelpText(
     'after',
     `
@@ -153,11 +154,13 @@ Arguments:
 
 Options:
   --location <path>    Custom path to save recipe (supports ~ for home directory)
+  --category <name>    Recipe category (required in non-interactive mode)
 
 Examples:
   $ chorenzo recipes generate                               # Interactive generation
   $ chorenzo recipes generate code-formatting               # Generate with name
-  $ chorenzo recipes generate linting --location ~/my-recipes   # Custom location
+  $ chorenzo recipes generate linting --category tools      # With category
+  $ chorenzo recipes generate linting --location ~/my-recipes --category tools   # Custom location
 `
   )
   .action(async (name, options) => {
@@ -169,6 +172,7 @@ Examples:
           progress: options.progress,
           cost: options.cost,
           saveLocation: options.location,
+          category: options.category,
         },
       })
     );

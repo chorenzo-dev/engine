@@ -2237,6 +2237,7 @@ outputs:
 
       const result = await performRecipesGenerate({
         name: 'eslint setup',
+        category: 'linting',
         magicGenerate: false,
       });
 
@@ -2251,6 +2252,7 @@ outputs:
       await expect(
         performRecipesGenerate({
           name: 'test@recipe!',
+          category: 'test',
           magicGenerate: false,
         })
       ).rejects.toThrow('Recipe name contains invalid characters');
@@ -2262,6 +2264,7 @@ outputs:
       await expect(
         performRecipesGenerate({
           name: '',
+          category: 'test',
           magicGenerate: false,
         })
       ).rejects.toThrow('Recipe name is required');
@@ -2282,6 +2285,7 @@ outputs:
 
       const result = await performRecipesGenerate({
         name: 'test-recipe-123',
+        category: 'utilities',
         magicGenerate: false,
       });
 
@@ -2321,6 +2325,7 @@ outputs:
         await expect(
           performRecipesGenerate({
             name,
+            category: 'test',
             magicGenerate: false,
           })
         ).rejects.toThrow('Recipe name contains invalid characters');
@@ -2332,6 +2337,7 @@ outputs:
 
       const result = await performRecipesGenerate({
         name: 'My Recipe Name',
+        category: 'general',
         magicGenerate: false,
       });
 
@@ -2344,6 +2350,7 @@ outputs:
 
       const result = await performRecipesGenerate({
         name: 'test    multiple   spaces',
+        category: 'formatting',
         magicGenerate: false,
       });
 
@@ -2356,6 +2363,7 @@ outputs:
 
       const result = await performRecipesGenerate({
         name: '  trimmed-name  ',
+        category: 'cleanup',
         magicGenerate: false,
       });
 
@@ -2369,6 +2377,7 @@ outputs:
       await expect(
         performRecipesGenerate({
           name: '   ',
+          category: 'test',
           magicGenerate: false,
         })
       ).rejects.toThrow('Recipe name cannot be empty');
@@ -2405,6 +2414,7 @@ outputs:
       await performRecipesGenerate(
         {
           name: 'progress-recipe',
+          category: 'monitoring',
           magicGenerate: false,
         },
         mockProgress
@@ -2454,6 +2464,7 @@ outputs:
 
       await performRecipesGenerate({
         name: 'structure-test',
+        category: 'testing',
         magicGenerate: false,
       });
 
@@ -2472,6 +2483,7 @@ outputs:
 
       const result = await performRecipesGenerate({
         name: 'default-location',
+        category: 'location',
         magicGenerate: false,
       });
 
@@ -2490,13 +2502,14 @@ outputs:
       const result = await performRecipesGenerate({
         name: 'custom-location',
         saveLocation: '/custom/path',
+        category: 'utilities',
         magicGenerate: false,
       });
 
       expect(result.success).toBe(true);
-      expect(result.recipePath).toBe('/custom/path/general/custom-location');
+      expect(result.recipePath).toBe('/custom/path/utilities/custom-location');
       expect(mockMkdirSync).toHaveBeenCalledWith(
-        '/custom/path/general/custom-location',
+        '/custom/path/utilities/custom-location',
         { recursive: true }
       );
     });
@@ -2508,15 +2521,16 @@ outputs:
       const result = await performRecipesGenerate({
         name: 'tilde-location',
         saveLocation: '~/my-recipes',
+        category: 'tools',
         magicGenerate: false,
       });
 
       expect(result.success).toBe(true);
       expect(result.recipePath).toBe(
-        '/test/home/my-recipes/general/tilde-location'
+        '/test/home/my-recipes/tools/tilde-location'
       );
       expect(mockMkdirSync).toHaveBeenCalledWith(
-        '/test/home/my-recipes/general/tilde-location',
+        '/test/home/my-recipes/tools/tilde-location',
         { recursive: true }
       );
     });
@@ -2528,15 +2542,16 @@ outputs:
       const result = await performRecipesGenerate({
         name: 'nested-tilde',
         saveLocation: '~/.chorenzo/recipes/custom',
+        category: 'integrations',
         magicGenerate: false,
       });
 
       expect(result.success).toBe(true);
       expect(result.recipePath).toBe(
-        '/test/home/.chorenzo/recipes/custom/general/nested-tilde'
+        '/test/home/.chorenzo/recipes/custom/integrations/nested-tilde'
       );
       expect(mockMkdirSync).toHaveBeenCalledWith(
-        '/test/home/.chorenzo/recipes/custom/general/nested-tilde',
+        '/test/home/.chorenzo/recipes/custom/integrations/nested-tilde',
         { recursive: true }
       );
     });
@@ -2547,15 +2562,16 @@ outputs:
       const result = await performRecipesGenerate({
         name: 'relative-location',
         saveLocation: './custom-recipes',
+        category: 'features',
         magicGenerate: false,
       });
 
       expect(result.success).toBe(true);
       expect(result.recipePath).toContain(
-        'custom-recipes/general/relative-location'
+        'custom-recipes/features/relative-location'
       );
       expect(mockMkdirSync).toHaveBeenCalledWith(
-        expect.stringContaining('custom-recipes/general/relative-location'),
+        expect.stringContaining('custom-recipes/features/relative-location'),
         { recursive: true }
       );
     });
@@ -2578,21 +2594,15 @@ outputs:
       expect(metadataCall![1]).toContain('development');
     });
 
-    it('should default to general category when none provided', async () => {
+    it('should require category when none provided', async () => {
       setupGenerateMocks();
 
-      const result = await performRecipesGenerate({
-        name: 'test-recipe',
-        magicGenerate: false,
-      });
-
-      expect(result.success).toBe(true);
-      const metadataCall = mockWriteFileSync.mock.calls.find(
-        (call: unknown[]) =>
-          typeof call[0] === 'string' && call[0].includes('metadata.yaml')
-      );
-      expect(metadataCall).toBeDefined();
-      expect(metadataCall![1]).toContain('general');
+      await expect(
+        performRecipesGenerate({
+          name: 'test-recipe',
+          magicGenerate: false,
+        })
+      ).rejects.toThrow('Category is required');
     });
 
     it('should handle custom category names with same validation as recipe names', async () => {
@@ -2692,6 +2702,7 @@ outputs:
         performRecipesGenerate({
           name: 'new-recipe',
           saveLocation: '/test/mixed',
+          category: 'test',
           magicGenerate: false,
         })
       ).rejects.toThrow(
@@ -2718,10 +2729,40 @@ outputs:
         performRecipesGenerate({
           name: 'new-recipe',
           saveLocation: '/test/unknown',
+          category: 'test',
           magicGenerate: false,
         })
       ).rejects.toThrow(
         'Invalid hierarchy: unable to determine structure of location'
+      );
+    });
+
+    it('should validate category names in performRecipesGenerate', async () => {
+      setupGenerateMocks();
+
+      await expect(
+        performRecipesGenerate({
+          name: 'test-recipe',
+          category: 'invalid@category',
+          magicGenerate: false,
+        })
+      ).rejects.toThrow('Category name contains invalid characters: @');
+    });
+
+    it('should normalize category names in performRecipesGenerate', async () => {
+      setupGenerateMocks();
+
+      const result = await performRecipesGenerate({
+        name: 'test-recipe',
+        category: 'Test Category',
+        magicGenerate: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.recipePath).toContain('test-category');
+      expect(mockMkdirSync).toHaveBeenCalledWith(
+        expect.stringContaining('test-category/test-recipe'),
+        { recursive: true }
       );
     });
   });

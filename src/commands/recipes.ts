@@ -1028,6 +1028,29 @@ function validateRecipeId(recipeName: string): string {
   return normalized;
 }
 
+export function validateCategoryName(categoryName: string): string {
+  if (!categoryName || categoryName.trim().length === 0) {
+    throw new RecipesError(
+      'Category name cannot be empty',
+      'INVALID_CATEGORY_NAME'
+    );
+  }
+
+  const trimmed = categoryName.trim();
+  const normalized = trimmed.replace(/\s+/g, '-').toLowerCase();
+  const invalidChars = normalized.match(/[^a-zA-Z0-9-]/g);
+
+  if (invalidChars) {
+    const uniqueInvalidChars = [...new Set(invalidChars)].join(', ');
+    throw new RecipesError(
+      `Category name contains invalid characters: ${uniqueInvalidChars}. Only letters, numbers, and dashes are allowed.`,
+      'INVALID_CATEGORY_NAME'
+    );
+  }
+
+  return normalized;
+}
+
 export async function performRecipesGenerate(
   options: GenerateOptions,
   onProgress?: ProgressCallback
@@ -1048,7 +1071,13 @@ export async function performRecipesGenerate(
     const recipeName = options.name;
     const recipeId = validateRecipeId(options.name);
 
-    const category = options.category || 'general';
+    if (!options.category) {
+      throw new RecipesError(
+        'Category is required. Use --category or provide via interactive prompt',
+        'MISSING_CATEGORY'
+      );
+    }
+    const category = validateCategoryName(options.category);
     const summary = options.summary || `Set up ${recipeName} for the project.`;
 
     const baseLocation = options.saveLocation

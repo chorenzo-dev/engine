@@ -38,6 +38,7 @@ interface ShellProps {
     cost?: boolean;
     name?: string;
     saveLocation?: string;
+    category?: string;
   };
 }
 
@@ -178,6 +179,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
               progress: options.progress,
               cost: options.cost,
               saveLocation: options.saveLocation,
+              category: options.category,
             },
             (step) => {
               setSimpleStep(step);
@@ -551,6 +553,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           progress: options.progress,
           cost: options.cost,
           saveLocation: options.saveLocation,
+          category: options.category,
         }}
         onComplete={(result) => {
           setCommandState({ command: 'recipes-generate', result });

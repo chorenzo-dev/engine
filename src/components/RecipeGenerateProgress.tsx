@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Text, useInput, useStdin } from 'ink';
+import { Box, Text, useStdin } from 'ink';
 import SelectInput from 'ink-select-input';
 import TextInput from 'ink-text-input';
 import {
@@ -233,71 +233,6 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
     }
   }, [phase]);
 
-  useInput(
-    (input, key) => {
-      if (phase === 'name') {
-        if (key.return) {
-          const name = userInput.trim();
-          if (name) {
-            setRecipeName(name);
-            const updatedOptions = { ...collectedOptions, name };
-            setCollectedOptions(updatedOptions);
-            setUserInput('');
-            setPhase(getNextPhase(updatedOptions));
-          }
-        } else if (key.backspace || key.delete) {
-          setUserInput((prev) => prev.slice(0, -1));
-        } else if (input) {
-          setUserInput((prev) => prev + input);
-        }
-      } else if (phase === 'summary') {
-        if (key.return) {
-          const summary = summaryInput.trim();
-          if (summary) {
-            setSummary(summary);
-            const updatedOptions = { ...collectedOptions, summary };
-            setCollectedOptions(updatedOptions);
-            setSummaryInput('');
-            setPhase(getNextPhase(updatedOptions));
-          }
-        } else if (key.backspace || key.delete) {
-          setSummaryInput((prev) => prev.slice(0, -1));
-        } else if (input) {
-          setSummaryInput((prev) => prev + input);
-        }
-      } else if (phase === 'choice') {
-        if (key.return) {
-          const response = userInput.toLowerCase();
-          if (response === 'y' || response === 'yes') {
-            setUseMagic(true);
-            setUserInput('');
-            setPhase('instructions');
-          } else {
-            setUseMagic(false);
-            setUserInput('');
-            setPhase('generating');
-          }
-        } else if (key.backspace || key.delete) {
-          setUserInput((prev) => prev.slice(0, -1));
-        } else if (input) {
-          setUserInput((prev) => prev + input);
-        }
-      } else if (phase === 'instructions') {
-        if (key.return) {
-          const instructions = instructionsInput.trim();
-          setAdditionalInstructions(instructions);
-          setInstructionsInput('');
-          setPhase('generating');
-        } else if (key.backspace || key.delete) {
-          setInstructionsInput((prev) => prev.slice(0, -1));
-        } else if (input) {
-          setInstructionsInput((prev) => prev + input);
-        }
-      }
-    },
-    { isActive: shouldUseInput }
-  );
-
   useEffect(() => {
     if (phase === 'generating' && recipeName && category && summary) {
       const runGenerate = async () => {
@@ -380,8 +315,24 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
   if (phase === 'name' && shouldUseInput) {
     return (
       <Box flexDirection="column">
-        <Text color="blue">🎯 Recipe name: {userInput}</Text>
-        <Text color="gray">Enter a name for your recipe and press Enter</Text>
+        <Box>
+          <Text color="blue">🎯 Recipe name: </Text>
+          <TextInput
+            value={userInput}
+            onChange={setUserInput}
+            onSubmit={() => {
+              const name = userInput.trim();
+              if (name) {
+                setRecipeName(name);
+                const updatedOptions = { ...collectedOptions, name };
+                setCollectedOptions(updatedOptions);
+                setUserInput('');
+                setPhase(getNextPhase(updatedOptions));
+              }
+            }}
+            showCursor
+          />
+        </Box>
       </Box>
     );
   }
@@ -390,13 +341,13 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
     if (showCustomLocation) {
       return (
         <Box flexDirection="column">
-          <Text color="blue">📁 Enter custom location:</Text>
-          <Box marginTop={1}>
-            <Text>Location: </Text>
+          <Box>
+            <Text color="blue">📁 Custom location: </Text>
             <TextInput
               value={customLocationInput}
               onChange={setCustomLocationInput}
               onSubmit={handleCustomLocationSubmit}
+              showCursor
             />
           </Box>
         </Box>
@@ -414,10 +365,29 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
   if (phase === 'choice' && shouldUseInput) {
     return (
       <Box flexDirection="column">
-        <Text color="blue">
-          🛈 Do you want me to generate the recipe automatically using AI? (y/N){' '}
-          {userInput}
-        </Text>
+        <Box>
+          <Text color="blue">
+            🛈 Do you want me to generate the recipe automatically using AI?
+            (y/N){' '}
+          </Text>
+          <TextInput
+            value={userInput}
+            onChange={setUserInput}
+            onSubmit={() => {
+              const response = userInput.toLowerCase();
+              if (response === 'y' || response === 'yes') {
+                setUseMagic(true);
+                setUserInput('');
+                setPhase('instructions');
+              } else {
+                setUseMagic(false);
+                setUserInput('');
+                setPhase('generating');
+              }
+            }}
+            showCursor
+          />
+        </Box>
       </Box>
     );
   }
@@ -426,13 +396,13 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
     if (showCustomCategory) {
       return (
         <Box flexDirection="column">
-          <Text color="blue">📂 Enter custom category:</Text>
-          <Box marginTop={1}>
-            <Text>Category: </Text>
+          <Box>
+            <Text color="blue">📂 Custom category: </Text>
             <TextInput
               value={categoryInput}
               onChange={setCategoryInput}
               onSubmit={handleCustomCategorySubmit}
+              showCursor
             />
           </Box>
         </Box>
@@ -450,9 +420,26 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
   if (phase === 'summary' && shouldUseInput) {
     return (
       <Box flexDirection="column">
-        <Text color="blue">📝 Recipe summary: {summaryInput}</Text>
-        <Text color="gray">
-          Enter a one-sentence summary of what this recipe does and press Enter
+        <Box>
+          <Text color="blue">📝 Recipe summary: </Text>
+          <TextInput
+            value={summaryInput}
+            onChange={setSummaryInput}
+            onSubmit={() => {
+              const summary = summaryInput.trim();
+              if (summary) {
+                setSummary(summary);
+                const updatedOptions = { ...collectedOptions, summary };
+                setCollectedOptions(updatedOptions);
+                setSummaryInput('');
+                setPhase(getNextPhase(updatedOptions));
+              }
+            }}
+            showCursor
+          />
+        </Box>
+        <Text color="gray" dimColor>
+          Enter a one-sentence summary of what this recipe does
         </Text>
       </Box>
     );
@@ -461,12 +448,22 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
   if (phase === 'instructions' && shouldUseInput) {
     return (
       <Box flexDirection="column">
-        <Text color="blue">
-          💡 Additional instructions (optional): {instructionsInput}
-        </Text>
-        <Text color="gray">
-          Enter any additional instructions for the AI, or press Enter to
-          continue
+        <Box>
+          <Text color="blue">💡 Additional instructions (optional):</Text>
+          <TextInput
+            value={instructionsInput}
+            onChange={setInstructionsInput}
+            onSubmit={() => {
+              const instructions = instructionsInput.trim();
+              setAdditionalInstructions(instructions);
+              setInstructionsInput('');
+              setPhase('generating');
+            }}
+            showCursor
+          />
+        </Box>
+        <Text color="gray" dimColor>
+          Press Enter to continue without additional instructions
         </Text>
       </Box>
     );

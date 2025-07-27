@@ -146,6 +146,7 @@ recipesCommand
   .option('--cost', 'Show LLM cost information')
   .option('--location <path>', 'Custom save location for the recipe')
   .option('--category <category>', 'Recipe category')
+  .option('--summary <summary>', 'Recipe summary')
   .addHelpText(
     'after',
     `
@@ -155,12 +156,13 @@ Arguments:
 Options:
   --location <path>    Custom path to save recipe (supports ~ for home directory)
   --category <name>    Recipe category (required in non-interactive mode)
+  --summary <text>     Recipe summary (required in non-interactive mode)
 
 Examples:
   $ chorenzo recipes generate                               # Interactive generation
   $ chorenzo recipes generate code-formatting               # Generate with name
-  $ chorenzo recipes generate linting --category tools      # With category
-  $ chorenzo recipes generate linting --location ~/my-recipes --category tools   # Custom location
+  $ chorenzo recipes generate linting --category tools --summary "Set up ESLint and Prettier with TypeScript support for consistent code formatting"
+  $ chorenzo recipes generate testing --location ~/my-recipes --category development --summary "Configure Jest testing framework with coverage reporting and TypeScript integration"
 `
   )
   .action(async (name, options) => {
@@ -173,6 +175,7 @@ Examples:
           cost: options.cost,
           saveLocation: options.location,
           category: options.category,
+          summary: options.summary,
         },
       })
     );

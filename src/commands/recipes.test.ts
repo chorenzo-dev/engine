@@ -2238,6 +2238,7 @@ outputs:
       const result = await performRecipesGenerate({
         name: 'eslint setup',
         category: 'linting',
+        summary: 'Setup ESLint for project',
         magicGenerate: false,
       });
 
@@ -2253,6 +2254,7 @@ outputs:
         performRecipesGenerate({
           name: 'test@recipe!',
           category: 'test',
+          summary: 'Test summary',
           magicGenerate: false,
         })
       ).rejects.toThrow('Recipe name contains invalid characters');
@@ -2265,6 +2267,7 @@ outputs:
         performRecipesGenerate({
           name: '',
           category: 'test',
+          summary: 'Test summary',
           magicGenerate: false,
         })
       ).rejects.toThrow('Recipe name is required');
@@ -2286,6 +2289,7 @@ outputs:
       const result = await performRecipesGenerate({
         name: 'test-recipe-123',
         category: 'utilities',
+        summary: 'Test recipe utilities',
         magicGenerate: false,
       });
 
@@ -2326,6 +2330,7 @@ outputs:
           performRecipesGenerate({
             name,
             category: 'test',
+            summary: 'Test summary',
             magicGenerate: false,
           })
         ).rejects.toThrow('Recipe name contains invalid characters');
@@ -2338,6 +2343,7 @@ outputs:
       const result = await performRecipesGenerate({
         name: 'My Recipe Name',
         category: 'general',
+        summary: 'Test recipe name conversion',
         magicGenerate: false,
       });
 
@@ -2351,6 +2357,7 @@ outputs:
       const result = await performRecipesGenerate({
         name: 'test    multiple   spaces',
         category: 'formatting',
+        summary: 'Test multiple spaces handling',
         magicGenerate: false,
       });
 
@@ -2364,6 +2371,7 @@ outputs:
       const result = await performRecipesGenerate({
         name: '  trimmed-name  ',
         category: 'cleanup',
+        summary: 'Test whitespace trimming',
         magicGenerate: false,
       });
 
@@ -2378,6 +2386,7 @@ outputs:
         performRecipesGenerate({
           name: '   ',
           category: 'test',
+          summary: 'Test summary',
           magicGenerate: false,
         })
       ).rejects.toThrow('Recipe name cannot be empty');
@@ -2415,6 +2424,7 @@ outputs:
         {
           name: 'progress-recipe',
           category: 'monitoring',
+          summary: 'Test progress callbacks',
           magicGenerate: false,
         },
         mockProgress
@@ -2465,6 +2475,7 @@ outputs:
       await performRecipesGenerate({
         name: 'structure-test',
         category: 'testing',
+        summary: 'Test directory structure',
         magicGenerate: false,
       });
 
@@ -2484,6 +2495,7 @@ outputs:
       const result = await performRecipesGenerate({
         name: 'default-location',
         category: 'location',
+        summary: 'Test default location',
         magicGenerate: false,
       });
 
@@ -2503,6 +2515,7 @@ outputs:
         name: 'custom-location',
         saveLocation: '/custom/path',
         category: 'utilities',
+        summary: 'Test custom location',
         magicGenerate: false,
       });
 
@@ -2522,6 +2535,7 @@ outputs:
         name: 'tilde-location',
         saveLocation: '~/my-recipes',
         category: 'tools',
+        summary: 'Test tilde expansion',
         magicGenerate: false,
       });
 
@@ -2543,6 +2557,7 @@ outputs:
         name: 'nested-tilde',
         saveLocation: '~/.chorenzo/recipes/custom',
         category: 'integrations',
+        summary: 'Test nested tilde paths',
         magicGenerate: false,
       });
 
@@ -2563,6 +2578,7 @@ outputs:
         name: 'relative-location',
         saveLocation: './custom-recipes',
         category: 'features',
+        summary: 'Test relative paths',
         magicGenerate: false,
       });
 
@@ -2582,6 +2598,7 @@ outputs:
       const result = await performRecipesGenerate({
         name: 'test-recipe',
         category: 'development',
+        summary: 'Test development recipe',
         magicGenerate: false,
       });
 
@@ -2605,12 +2622,118 @@ outputs:
       ).rejects.toThrow('Category is required');
     });
 
+    it('should require summary when none provided', async () => {
+      setupGenerateMocks();
+      await expect(
+        performRecipesGenerate({
+          name: 'test-recipe',
+          category: 'development',
+          magicGenerate: false,
+        })
+      ).rejects.toThrow('Summary is required');
+    });
+
+    it('should use provided summary', async () => {
+      setupGenerateMocks();
+      const result = await performRecipesGenerate({
+        name: 'test-recipe',
+        category: 'development',
+        summary: 'Custom summary for testing',
+        magicGenerate: false,
+      });
+      expect(result.success).toBe(true);
+      const promptCall = mockWriteFileSync.mock.calls.find(
+        (call: unknown[]) =>
+          typeof call[0] === 'string' && call[0].includes('prompt.md')
+      );
+      expect(promptCall).toBeDefined();
+      expect(promptCall![1]).toContain('Custom summary for testing');
+    });
+
+    it('should handle multiline summary correctly', async () => {
+      setupGenerateMocks();
+      const multilineSummary = 'First line\nSecond line\nThird line';
+      const result = await performRecipesGenerate({
+        name: 'multiline-test',
+        category: 'testing',
+        summary: multilineSummary,
+        magicGenerate: false,
+      });
+      expect(result.success).toBe(true);
+      const promptCall = mockWriteFileSync.mock.calls.find(
+        (call: unknown[]) =>
+          typeof call[0] === 'string' && call[0].includes('prompt.md')
+      );
+      expect(promptCall).toBeDefined();
+      expect(promptCall![1]).toContain(multilineSummary);
+    });
+
+    it('should handle summary with special characters', async () => {
+      setupGenerateMocks();
+      const specialSummary = 'Summary with @special #characters & symbols!';
+      const result = await performRecipesGenerate({
+        name: 'special-chars',
+        category: 'testing',
+        summary: specialSummary,
+        magicGenerate: false,
+      });
+      expect(result.success).toBe(true);
+      const promptCall = mockWriteFileSync.mock.calls.find(
+        (call: unknown[]) =>
+          typeof call[0] === 'string' && call[0].includes('prompt.md')
+      );
+      expect(promptCall).toBeDefined();
+      expect(promptCall![1]).toContain(specialSummary);
+    });
+
+    it('should trim whitespace from summary', async () => {
+      setupGenerateMocks();
+      const result = await performRecipesGenerate({
+        name: 'trim-test',
+        category: 'testing',
+        summary: '   Trimmed summary   ',
+        magicGenerate: false,
+      });
+      expect(result.success).toBe(true);
+      const promptCall = mockWriteFileSync.mock.calls.find(
+        (call: unknown[]) =>
+          typeof call[0] === 'string' && call[0].includes('prompt.md')
+      );
+      expect(promptCall).toBeDefined();
+      expect(promptCall![1]).toContain('Trimmed summary');
+    });
+
+    it('should reject empty summary string', async () => {
+      setupGenerateMocks();
+      await expect(
+        performRecipesGenerate({
+          name: 'test-recipe',
+          category: 'development',
+          summary: '',
+          magicGenerate: false,
+        })
+      ).rejects.toThrow('Summary is required');
+    });
+
+    it('should reject summary with only whitespace', async () => {
+      setupGenerateMocks();
+      await expect(
+        performRecipesGenerate({
+          name: 'test-recipe',
+          category: 'development',
+          summary: '   ',
+          magicGenerate: false,
+        })
+      ).rejects.toThrow('Summary is required');
+    });
+
     it('should handle custom category names with same validation as recipe names', async () => {
       setupGenerateMocks();
 
       const result = await performRecipesGenerate({
         name: 'test-recipe',
         category: 'my-custom-category-123',
+        summary: 'Test custom category validation',
         magicGenerate: false,
       });
 
@@ -2642,6 +2765,7 @@ outputs:
         name: 'new-recipe',
         category: 'testing',
         saveLocation: '/test/library',
+        summary: 'Test library root location',
         magicGenerate: false,
       });
 
@@ -2670,6 +2794,7 @@ outputs:
         name: 'new-recipe',
         category: 'development',
         saveLocation: '/test/library/development',
+        summary: 'Test category folder location',
         magicGenerate: false,
       });
 
@@ -2703,6 +2828,7 @@ outputs:
           name: 'new-recipe',
           saveLocation: '/test/mixed',
           category: 'test',
+          summary: 'Test mixed hierarchy error',
           magicGenerate: false,
         })
       ).rejects.toThrow(
@@ -2730,6 +2856,7 @@ outputs:
           name: 'new-recipe',
           saveLocation: '/test/unknown',
           category: 'test',
+          summary: 'Test unknown hierarchy error',
           magicGenerate: false,
         })
       ).rejects.toThrow(
@@ -2744,6 +2871,7 @@ outputs:
         performRecipesGenerate({
           name: 'test-recipe',
           category: 'invalid@category',
+          summary: 'Test invalid category',
           magicGenerate: false,
         })
       ).rejects.toThrow('Category name contains invalid characters: @');
@@ -2755,6 +2883,7 @@ outputs:
       const result = await performRecipesGenerate({
         name: 'test-recipe',
         category: 'Test Category',
+        summary: 'Test category normalization',
         magicGenerate: false,
       });
 

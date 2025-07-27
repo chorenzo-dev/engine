@@ -23,7 +23,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
   onError,
 }) => {
   const [phase, setPhase] = useState<
-    'input' | 'choice' | 'category' | 'generating' | 'complete'
+    'input' | 'choice' | 'category' | 'summary' | 'generating' | 'complete'
   >(() => {
     if (options.name) {
       return 'choice';
@@ -38,6 +38,8 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
   const [categoryInput, setCategoryInput] = useState<string>('');
   const [showCustomCategory, setShowCustomCategory] = useState<boolean>(false);
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [summary, setSummary] = useState<string>('');
+  const [summaryInput, setSummaryInput] = useState<string>('');
   const { isRawModeSupported } = useStdin();
 
   const shouldUseInput = options.progress !== false && isRawModeSupported;
@@ -52,7 +54,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
       setShowCustomCategory(true);
     } else {
       setCategory(item.value);
-      setPhase('generating');
+      setPhase('summary');
     }
   };
 
@@ -61,7 +63,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
       try {
         const validatedCategory = validateCategoryName(categoryInput);
         setCategory(validatedCategory);
-        setPhase('generating');
+        setPhase('summary');
       } catch (error) {
         onError(error instanceof Error ? error : new Error(String(error)));
       }
@@ -86,6 +88,12 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
           'Category selection requires interactive mode. Use --category to specify a category'
         )
       );
+    } else if (phase === 'summary' && !shouldUseInput) {
+      onError(
+        new Error(
+          'Summary selection requires interactive mode. Use --summary to specify a summary'
+        )
+      );
     }
   }, [phase, options.name, shouldUseInput, onError]);
 
@@ -98,7 +106,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
 
           if (analysis.type === 'category_folder') {
             setCategory(analysis.categoryName!);
-            setPhase('generating');
+            setPhase('summary');
             return;
           }
 
@@ -143,13 +151,26 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
         } else if (input) {
           setUserInput((prev) => prev + input);
         }
+      } else if (phase === 'summary') {
+        if (key.return) {
+          const summary = summaryInput.trim();
+          if (summary) {
+            setSummary(summary);
+            setSummaryInput('');
+            setPhase('generating');
+          }
+        } else if (key.backspace || key.delete) {
+          setSummaryInput((prev) => prev.slice(0, -1));
+        } else if (input) {
+          setSummaryInput((prev) => prev + input);
+        }
       }
     },
     { isActive: shouldUseInput }
   );
 
   useEffect(() => {
-    if (phase === 'generating' && recipeName && category) {
+    if (phase === 'generating' && recipeName && category && summary) {
       const runGenerate = async () => {
         try {
           const progressCallback: ProgressCallback = (step) => {
@@ -162,6 +183,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
               name: recipeName,
               magicGenerate: useMagic,
               category,
+              summary,
             },
             progressCallback
           );
@@ -174,7 +196,16 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
       };
       runGenerate();
     }
-  }, [phase, recipeName, useMagic, category, options, onComplete, onError]);
+  }, [
+    phase,
+    recipeName,
+    useMagic,
+    category,
+    summary,
+    options,
+    onComplete,
+    onError,
+  ]);
 
   if (phase === 'input' && shouldUseInput) {
     return (
@@ -217,6 +248,17 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
       <Box flexDirection="column">
         <Text color="blue">📂 Choose a category for your recipe:</Text>
         <SelectInput items={categoryOptions} onSelect={handleCategorySelect} />
+      </Box>
+    );
+  }
+
+  if (phase === 'summary' && shouldUseInput) {
+    return (
+      <Box flexDirection="column">
+        <Text color="blue">📝 Recipe summary: {summaryInput}</Text>
+        <Text color="gray">
+          Enter a one-sentence summary of what this recipe does and press Enter
+        </Text>
       </Box>
     );
   }

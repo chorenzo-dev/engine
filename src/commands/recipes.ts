@@ -1078,7 +1078,14 @@ export async function performRecipesGenerate(
       );
     }
     const category = validateCategoryName(options.category);
-    const summary = options.summary || `Set up ${recipeName} for the project.`;
+
+    if (!options.summary || !options.summary.trim()) {
+      throw new RecipesError(
+        'Summary is required. Use --summary or provide via interactive prompt',
+        'MISSING_SUMMARY'
+      );
+    }
+    const summary = options.summary.trim();
 
     const baseLocation = options.saveLocation
       ? resolvePath(options.saveLocation)

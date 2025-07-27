@@ -385,7 +385,9 @@ function formatToolMessage(toolName: string, input: ToolInput): string | null {
 }
 
 function getRelativePath(filePath: string | undefined): string | undefined {
-  if (!filePath) return filePath;
+  if (!filePath) {
+    return filePath;
+  }
 
   const workspaceRoot = workspaceConfig.getWorkspaceRoot();
 
@@ -406,7 +408,9 @@ function getRelativePath(filePath: string | undefined): string | undefined {
 }
 
 function isChorenzoPath(filePath: string): boolean {
-  if (!filePath) return false;
+  if (!filePath) {
+    return false;
+  }
 
   return filePath.includes('.chorenzo');
 }

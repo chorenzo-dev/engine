@@ -914,8 +914,12 @@ async function filterApplicableProjects(
   const workspaceState = stateManager.getWorkspaceState();
 
   for (const project of projects) {
-    if (!project.ecosystem) continue;
-    if (!recipe.hasEcosystem(project.ecosystem)) continue;
+    if (!project.ecosystem) {
+      continue;
+    }
+    if (!recipe.hasEcosystem(project.ecosystem)) {
+      continue;
+    }
 
     const relativePath = path.relative(
       workspaceConfig.getWorkspaceRoot(),

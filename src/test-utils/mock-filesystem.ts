@@ -11,8 +11,9 @@ export function mockFileSystemForFixture(fixture: TestFixture) {
     readFileSync: jest.fn((path: string) => {
       const normalizedPath = path.replace(/^\/workspace\/[^/]+\//, '');
       const content = fixture.files.get(normalizedPath);
-      if (!content)
+      if (!content) {
         throw new Error(`ENOENT: no such file or directory, open '${path}'`);
+      }
       return content;
     }),
 

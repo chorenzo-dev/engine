@@ -91,13 +91,19 @@ function formatProjectType(type: ProjectAnalysis['type']): string {
 }
 
 function getPackageManager(project: ProjectAnalysis): string {
-  if (!project.hasPackageManager) return 'None';
-  if (project.ecosystem === 'javascript') return 'npm/yarn/pnpm';
+  if (!project.hasPackageManager) {
+    return 'None';
+  }
+  if (project.ecosystem === 'javascript') {
+    return 'npm/yarn/pnpm';
+  }
   return project.ecosystem || 'Unknown';
 }
 
 function formatCiCd(ciCd?: CiCdSystem): string {
-  if (!ciCd || ciCd === 'none') return 'None';
+  if (!ciCd || ciCd === 'none') {
+    return 'None';
+  }
 
   return ciCd
     .split('_')

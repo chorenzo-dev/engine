@@ -123,7 +123,21 @@ Chorenzo uses atomic, composable automation recipes to handle workspace setup an
 - **Project-only**: Apply exclusively to individual projects (e.g., framework setup, project config)
 - **Workspace-preferred**: Apply at workspace level when possible, fall back to projects for mixed ecosystems
 
-See our [recipes documentation](docs/recipes.md) for detailed information about creating and using recipes.
+Recipes can conditionally apply based on project and workspace characteristics from your analysis.json:
+
+```yaml
+# Recipe that only applies to Python projects
+requires:
+  - key: project.ecosystem
+    equals: python
+
+# Recipe that requires a monorepo workspace
+requires:
+  - key: workspace.is_monorepo
+    equals: true
+```
+
+See our [recipes documentation](docs/recipes.md) for detailed information about creating and using recipes, including the full list of available project characteristics.
 
 ### Help
 

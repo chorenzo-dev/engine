@@ -43,7 +43,9 @@ export const DebugProgress: React.FC<DebugProgressProps> = ({
   };
 
   useEffect(() => {
-    if (hasStarted) return;
+    if (hasStarted) {
+      return;
+    }
 
     const runApply = async () => {
       setHasStarted(true);

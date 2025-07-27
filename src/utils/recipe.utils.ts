@@ -9,6 +9,7 @@ import {
   RecipeValidationResult,
   RecipeLibrary,
 } from '../types/recipe';
+import { isReservedKeyword } from './project-characteristics.utils';
 
 export class RecipeParsingError extends Error {
   constructor(
@@ -333,6 +334,16 @@ export function validateRecipe(recipe: Recipe): RecipeValidationResult {
         'Recipe category should use kebab-case (lowercase letters, numbers, and hyphens only)',
       field: 'category',
     });
+  }
+
+  for (const providedKey of recipe.metadata.provides) {
+    if (isReservedKeyword(providedKey)) {
+      errors.push({
+        type: 'metadata',
+        message: `Recipe provides list cannot contain reserved keywords: ${providedKey}. Reserved keywords (workspace.*, project.*) can only be used in requires field.`,
+        field: 'provides',
+      });
+    }
   }
 
   return {

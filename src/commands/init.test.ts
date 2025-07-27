@@ -159,7 +159,9 @@ describe('Init Command Integration Tests', () => {
   it('should reset workspace when reset option is provided', async () => {
     let unlinkCalls = 0;
     mockExistsSync.mockImplementation((filePath: string) => {
-      if (filePath.includes('recipes')) return true;
+      if (filePath.includes('recipes')) {
+        return true;
+      }
       if (filePath.includes('config.yaml') || filePath.includes('state.json')) {
         return unlinkCalls < 2;
       }
@@ -243,9 +245,15 @@ describe('Init Command Integration Tests', () => {
 
   it('should handle corrupted workspace state and recreate missing components', async () => {
     mockExistsSync.mockImplementation((filePath: string) => {
-      if (filePath.includes('config.yaml')) return true;
-      if (filePath.includes('state.yaml')) return false;
-      if (filePath.includes('/core')) return false;
+      if (filePath.includes('config.yaml')) {
+        return true;
+      }
+      if (filePath.includes('state.yaml')) {
+        return false;
+      }
+      if (filePath.includes('/core')) {
+        return false;
+      }
       return false;
     });
 

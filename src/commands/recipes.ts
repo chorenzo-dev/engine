@@ -814,7 +814,9 @@ function filterApplicableProjects(
   }
 
   return projects.filter((project) => {
-    if (!project.ecosystem) return false;
+    if (!project.ecosystem) {
+      return false;
+    }
     return recipe.hasEcosystem(project.ecosystem);
   });
 }

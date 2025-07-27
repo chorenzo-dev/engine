@@ -11,6 +11,11 @@ import {
 } from '../commands/recipes';
 import { libraryManager } from '../utils/library-manager.utils';
 import { resolvePath } from '../utils/path.utils';
+import {
+  CodeChangesProgress,
+  useCodeChangesProgress,
+} from './CodeChangesProgress';
+import { generateOperationId } from '../utils/code-changes-events.utils';
 
 interface RecipeGenerateProgressProps {
   options: GenerateOptions;
@@ -23,6 +28,15 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
   onComplete,
   onError,
 }) => {
+  const {
+    operations,
+    startOperation,
+    progressOperation,
+    completeOperation,
+    errorOperation,
+    updateOperation,
+  } = useCodeChangesProgress();
+
   const [collectedOptions, setCollectedOptions] = useState({
     name: options.name || '',
     saveLocation: options.saveLocation || '',
@@ -49,7 +63,6 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
     | 'generating'
     | 'complete'
   >(getNextPhase);
-  const [step, setStep] = useState<string>('');
   const [userInput, setUserInput] = useState<string>('');
   const [recipeName, setRecipeName] = useState<string>(options.name || '');
   const [useMagic, setUseMagic] = useState<boolean>(false);
@@ -261,9 +274,23 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
   useEffect(() => {
     if (phase === 'generating' && recipeName && category && summary) {
       const runGenerate = async () => {
+        const operationId = generateOperationId('generate');
+
         try {
-          const progressCallback: ProgressCallback = (step) => {
-            setStep(step);
+          startOperation({
+            id: operationId,
+            type: 'generate',
+            description: `Generating recipe: ${recipeName}`,
+            status: 'in_progress',
+          });
+
+          const progressCallback: ProgressCallback = (step, isThinking) => {
+            if (step) {
+              progressOperation(operationId, step);
+            }
+            if (isThinking !== undefined) {
+              updateOperation(operationId, { isThinking });
+            }
           };
 
           const result = await performRecipesGenerate(
@@ -278,10 +305,17 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
             progressCallback
           );
 
+          completeOperation(operationId, {
+            costUsd: result.metadata?.costUsd || 0,
+            durationSeconds: result.metadata?.durationSeconds || 0,
+          });
+
           setPhase('complete');
           onComplete(result);
         } catch (err) {
-          onError(err instanceof Error ? err : new Error(String(err)));
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          errorOperation(operationId, errorMessage);
+          onError(err instanceof Error ? err : new Error(errorMessage));
         }
       };
       runGenerate();
@@ -293,8 +327,14 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
     category,
     summary,
     options,
+    collectedOptions.saveLocation,
     onComplete,
     onError,
+    startOperation,
+    progressOperation,
+    completeOperation,
+    errorOperation,
+    updateOperation,
   ]);
 
   if (phase === 'name' && shouldUseInput) {
@@ -381,7 +421,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
   if (phase === 'generating') {
     return (
       <Box flexDirection="column">
-        <Text color="blue">🎯 {step || 'Generating recipe...'}</Text>
+        <CodeChangesProgress operations={operations} />
       </Box>
     );
   }

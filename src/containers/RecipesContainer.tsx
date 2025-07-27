@@ -6,7 +6,6 @@ import { ApplyDisplay } from '../components/ApplyDisplay';
 import {
   performRecipesValidate,
   performRecipesApply,
-  type ValidationCallback,
   type ValidationResult,
 } from '../commands/recipes';
 import { ApplyOptions, ApplyRecipeResult } from '../types/apply';
@@ -53,23 +52,6 @@ export const RecipesContainer: React.FC<RecipesContainerProps> = ({
 
       const runRecipesValidate = async () => {
         try {
-          const handleValidation: ValidationCallback = (type, message) => {
-            switch (type) {
-              case 'success':
-                console.log(`✅ ${message}`);
-                break;
-              case 'error':
-                console.error(`❌ ${message}`);
-                break;
-              case 'warning':
-                console.warn(`⚠️ ${message}`);
-                break;
-              case 'info':
-                console.info(`📊 ${message}`);
-                break;
-            }
-          };
-
           const validationResult = await performRecipesValidate(
             {
               target: options.target!,
@@ -77,8 +59,7 @@ export const RecipesContainer: React.FC<RecipesContainerProps> = ({
             },
             (step) => {
               setSimpleStep(step);
-            },
-            handleValidation
+            }
           );
 
           setValidationResult(validationResult);

@@ -100,8 +100,7 @@ export class RecipesError extends Error {
 
 export async function performRecipesValidate(
   options: ValidateOptions,
-  onProgress?: ProgressCallback,
-  onValidation?: ValidationCallback
+  onProgress?: ProgressCallback
 ): Promise<ValidationResult> {
   if (!options.target) {
     throw new RecipesError(
@@ -116,7 +115,6 @@ export async function performRecipesValidate(
   const messages: ValidationMessage[] = [];
   const handleValidation: ValidationCallback = (type, message) => {
     messages.push({ type, text: message });
-    onValidation?.(type, message);
   };
 
   try {

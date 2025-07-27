@@ -24,19 +24,29 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
 }) => {
   const [collectedOptions, setCollectedOptions] = useState({
     name: options.name || '',
+    saveLocation: options.saveLocation || '',
     category: options.category || '',
     summary: options.summary || '',
   });
 
-  const getNextPhase = () => {
-    if (!collectedOptions.name) return 'name';
-    if (!collectedOptions.category) return 'category';
-    if (!collectedOptions.summary) return 'summary';
+  const getNextPhase = (
+    options: typeof collectedOptions = collectedOptions
+  ) => {
+    if (!options.name) return 'name';
+    if (!options.saveLocation) return 'location';
+    if (!options.category) return 'category';
+    if (!options.summary) return 'summary';
     return 'choice';
   };
 
   const [phase, setPhase] = useState<
-    'name' | 'category' | 'summary' | 'choice' | 'generating' | 'complete'
+    | 'name'
+    | 'location'
+    | 'category'
+    | 'summary'
+    | 'choice'
+    | 'generating'
+    | 'complete'
   >(getNextPhase);
   const [step, setStep] = useState<string>('');
   const [userInput, setUserInput] = useState<string>('');
@@ -48,14 +58,53 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [summary, setSummary] = useState<string>('');
   const [summaryInput, setSummaryInput] = useState<string>('');
+  const [customLocationInput, setCustomLocationInput] = useState<string>('');
+  const [showCustomLocation, setShowCustomLocation] = useState<boolean>(false);
   const { isRawModeSupported } = useStdin();
 
   const shouldUseInput = options.progress !== false && isRawModeSupported;
+
+  const locationOptions = [
+    { label: 'This workspace', value: 'workspace' },
+    { label: 'This machine (~/.chorenzo/recipes/local)', value: 'machine' },
+    { label: 'Choose location', value: 'custom' },
+  ];
 
   const categoryOptions = [
     ...availableCategories.map((cat) => ({ label: cat, value: cat })),
     { label: 'Enter custom category', value: 'custom' },
   ];
+
+  const handleLocationSelect = (item: { label: string; value: string }) => {
+    if (item.value === 'custom') {
+      setShowCustomLocation(true);
+    } else {
+      let selectedLocation = '';
+      if (item.value === 'workspace') {
+        selectedLocation = process.cwd();
+      } else if (item.value === 'machine') {
+        selectedLocation = '~/.chorenzo/recipes/local';
+      }
+      setCollectedOptions((prev) => ({
+        ...prev,
+        saveLocation: selectedLocation,
+      }));
+      const updatedOptions = {
+        ...collectedOptions,
+        saveLocation: selectedLocation,
+      };
+      setPhase(getNextPhase(updatedOptions));
+    }
+  };
+
+  const handleCustomLocationSubmit = () => {
+    if (customLocationInput.trim()) {
+      const location = customLocationInput.trim();
+      setCollectedOptions((prev) => ({ ...prev, saveLocation: location }));
+      const updatedOptions = { ...collectedOptions, saveLocation: location };
+      setPhase(getNextPhase(updatedOptions));
+    }
+  };
 
   const handleCategorySelect = (item: { label: string; value: string }) => {
     if (item.value === 'custom') {
@@ -63,7 +112,8 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
     } else {
       setCategory(item.value);
       setCollectedOptions((prev) => ({ ...prev, category: item.value }));
-      setPhase(getNextPhase());
+      const updatedOptions = { ...collectedOptions, category: item.value };
+      setPhase(getNextPhase(updatedOptions));
     }
   };
 
@@ -76,7 +126,11 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
           ...prev,
           category: validatedCategory,
         }));
-        setPhase(getNextPhase());
+        const updatedOptions = {
+          ...collectedOptions,
+          category: validatedCategory,
+        };
+        setPhase(getNextPhase(updatedOptions));
       } catch (error) {
         onError(error instanceof Error ? error : new Error(String(error)));
       }
@@ -95,6 +149,12 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
           )
         );
       }
+    } else if (phase === 'location' && !shouldUseInput) {
+      onError(
+        new Error(
+          'Location selection requires interactive mode. Use --location to specify a location'
+        )
+      );
     } else if (phase === 'category' && !shouldUseInput) {
       onError(
         new Error(
@@ -116,8 +176,8 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
     if (phase === 'category') {
       const loadCategories = async () => {
         try {
-          const saveLocation = options.saveLocation || process.cwd();
-          const analysis = libraryManager.analyzeLocation(saveLocation);
+          const location = collectedOptions.saveLocation || process.cwd();
+          const analysis = libraryManager.analyzeLocation(location);
 
           if (analysis.type === 'category_folder') {
             setCategory(analysis.categoryName!);
@@ -125,12 +185,15 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
               ...prev,
               category: analysis.categoryName!,
             }));
-            setPhase(getNextPhase());
+            const updatedOptions = {
+              ...collectedOptions,
+              category: analysis.categoryName!,
+            };
+            setPhase(getNextPhase(updatedOptions));
             return;
           }
 
-          const categories =
-            await libraryManager.getAllCategories(saveLocation);
+          const categories = await libraryManager.getAllCategories(location);
           setAvailableCategories(categories);
         } catch (error) {
           onError(error instanceof Error ? error : new Error(String(error)));
@@ -138,7 +201,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
       };
       loadCategories();
     }
-  }, [phase, options.saveLocation, onError]);
+  }, [phase, collectedOptions.saveLocation, onError]);
 
   useInput(
     (input, key) => {
@@ -149,7 +212,8 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
             setRecipeName(name);
             setCollectedOptions((prev) => ({ ...prev, name }));
             setUserInput('');
-            setPhase(getNextPhase());
+            const updatedOptions = { ...collectedOptions, name };
+            setPhase(getNextPhase(updatedOptions));
           }
         } else if (key.backspace || key.delete) {
           setUserInput((prev) => prev.slice(0, -1));
@@ -163,7 +227,8 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
             setSummary(summary);
             setCollectedOptions((prev) => ({ ...prev, summary }));
             setSummaryInput('');
-            setPhase(getNextPhase());
+            const updatedOptions = { ...collectedOptions, summary };
+            setPhase(getNextPhase(updatedOptions));
           }
         } else if (key.backspace || key.delete) {
           setSummaryInput((prev) => prev.slice(0, -1));
@@ -233,6 +298,31 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
       <Box flexDirection="column">
         <Text color="blue">🎯 Recipe name: {userInput}</Text>
         <Text color="gray">Enter a name for your recipe and press Enter</Text>
+      </Box>
+    );
+  }
+
+  if (phase === 'location' && shouldUseInput) {
+    if (showCustomLocation) {
+      return (
+        <Box flexDirection="column">
+          <Text color="blue">📁 Enter custom location:</Text>
+          <Box marginTop={1}>
+            <Text>Location: </Text>
+            <TextInput
+              value={customLocationInput}
+              onChange={setCustomLocationInput}
+              onSubmit={handleCustomLocationSubmit}
+            />
+          </Box>
+        </Box>
+      );
+    }
+
+    return (
+      <Box flexDirection="column">
+        <Text color="blue">📁 Choose where to save the recipe:</Text>
+        <SelectInput items={locationOptions} onSelect={handleLocationSelect} />
       </Box>
     );
   }

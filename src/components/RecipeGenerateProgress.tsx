@@ -10,6 +10,7 @@ import {
   type ProgressCallback,
 } from '../commands/recipes';
 import { libraryManager } from '../utils/library-manager.utils';
+import { resolvePath } from '../utils/path.utils';
 
 interface RecipeGenerateProgressProps {
   options: GenerateOptions;
@@ -176,7 +177,9 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
     if (phase === 'category') {
       const loadCategories = async () => {
         try {
-          const location = collectedOptions.saveLocation || process.cwd();
+          const location = resolvePath(
+            collectedOptions.saveLocation || process.cwd()
+          );
           const analysis = libraryManager.analyzeLocation(location);
 
           if (analysis.type === 'category_folder') {

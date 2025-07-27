@@ -13,6 +13,7 @@ import { readJson } from '../utils/json.utils';
 import { loadPrompt, loadTemplate, renderPrompt } from '../utils/prompts.utils';
 import { workspaceConfig } from '../utils/workspace-config.utils';
 import { Logger } from '../utils/logger.utils';
+import { resolvePath } from '../utils/path.utils';
 import {
   executeCodeChangesOperation,
   CodeChangesEventHandlers,
@@ -186,13 +187,6 @@ export async function performRecipesValidate(
       'VALIDATION_FAILED'
     );
   }
-}
-
-function resolvePath(target: string): string {
-  if (target.startsWith('~/')) {
-    return path.join(os.homedir(), target.slice(2));
-  }
-  return target;
 }
 
 function detectInputType(target: string): InputType {

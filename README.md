@@ -92,7 +92,7 @@ requires:
 # Recipe that requires a monorepo workspace
 requires:
   - key: workspace.is_monorepo
-    equals: "true"
+    equals: true
 ```
 
 See our [recipes documentation](docs/recipes.md) for detailed information about creating and using recipes, including the full list of available project characteristics.

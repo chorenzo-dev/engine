@@ -222,7 +222,7 @@ requires:
 # Recipe that requires a monorepo workspace
 requires:
   - key: workspace.is_monorepo
-    equals: "true"
+    equals: true
 
 # Recipe that applies to React projects in JavaScript ecosystem
 requires:

@@ -1,19 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Box, Text } from 'ink';
 import { InitContainer } from '../containers/InitContainer';
 import { AnalyzeContainer } from '../containers/AnalyzeContainer';
-import { ApplyProgress } from './ApplyProgress';
-import { DebugProgress } from './DebugProgress';
-import { ApplyDisplay } from './ApplyDisplay';
+import { RecipesContainer } from '../containers/RecipesContainer';
 import { AnalysisResult } from '../commands/analyze';
-import {
-  performRecipesValidate,
-  performRecipesApply,
-  type ValidationCallback,
-  type ValidationResult,
-} from '../commands/recipes';
+import { type ValidationResult } from '../commands/recipes';
 import { AnalysisDisplay } from './AnalysisDisplay';
-import { ApplyOptions, ApplyRecipeResult } from '../types/apply';
+import { ApplyDisplay } from './ApplyDisplay';
+import { ApplyRecipeResult } from '../types/apply';
 
 interface ShellProps {
   command: 'analyze' | 'init' | 'recipes-validate' | 'recipes-apply';
@@ -47,103 +41,8 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   );
   const [error, setError] = useState<Error | null>(null);
   const [isComplete, setIsComplete] = useState(false);
-  const [simpleStep, setSimpleStep] = useState<string>('');
   const [validationResult, setValidationResult] =
     useState<ValidationResult | null>(null);
-
-  useEffect(() => {
-    if (command === 'recipes-validate' && !isComplete && !error) {
-      if (!options.target) {
-        setError(new Error('Target parameter is required'));
-        return;
-      }
-
-      const runRecipesValidate = async () => {
-        try {
-          const handleValidation: ValidationCallback = (type, message) => {
-            switch (type) {
-              case 'success':
-                console.log(`✅ ${message}`);
-                break;
-              case 'error':
-                console.error(`❌ ${message}`);
-                break;
-              case 'warning':
-                console.warn(`⚠️ ${message}`);
-                break;
-              case 'info':
-                console.info(`📊 ${message}`);
-                break;
-            }
-          };
-
-          const result = await performRecipesValidate(
-            {
-              target: options.target!,
-              progress: options.progress,
-            },
-            (step) => {
-              setSimpleStep(step);
-            },
-            handleValidation
-          );
-
-          setValidationResult(result);
-          setIsComplete(true);
-        } catch (err) {
-          setError(err instanceof Error ? err : new Error(String(err)));
-        }
-      };
-      runRecipesValidate();
-    }
-
-    if (
-      command === 'recipes-apply' &&
-      options.progress === false &&
-      !options.debug &&
-      !isComplete &&
-      !error
-    ) {
-      if (!options.recipe) {
-        setError(new Error('Recipe parameter is required'));
-        return;
-      }
-
-      const runRecipesApply = async () => {
-        try {
-          const applyResult = await performRecipesApply(
-            {
-              recipe: options.recipe!,
-              variant: options.variant,
-              project: options.project,
-              yes: options.yes,
-              progress: options.progress,
-            },
-            (step) => {
-              setSimpleStep(step);
-            }
-          );
-
-          setCommandState({ command: 'recipes-apply', result: applyResult });
-          setIsComplete(true);
-        } catch (err) {
-          setError(err instanceof Error ? err : new Error(String(err)));
-        }
-      };
-      runRecipesApply();
-    }
-  }, [
-    command,
-    options.progress,
-    options.reset,
-    options.target,
-    options.recipe,
-    options.variant,
-    options.project,
-    options.yes,
-    isComplete,
-    error,
-  ]);
 
   if (command === 'analyze') {
     if (error) {
@@ -278,79 +177,24 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     }
 
     return (
-      <Box flexDirection="column">
-        <Text color="blue">🔍 {simpleStep || 'Validating recipe...'}</Text>
-      </Box>
+      <RecipesContainer
+        command="validate"
+        options={{
+          target: options.target,
+          progress: options.progress,
+        }}
+        onComplete={(result) => {
+          setValidationResult(result as ValidationResult);
+          setIsComplete(true);
+        }}
+        onError={(error) => {
+          setError(error);
+        }}
+      />
     );
   }
 
   if (command === 'recipes-apply') {
-    if (!options.recipe) {
-      return (
-        <Box flexDirection="column">
-          <Text color="red">❌ Error: Recipe parameter is required</Text>
-        </Box>
-      );
-    }
-
-    if (options.debug) {
-      if (error) {
-        return (
-          <Box flexDirection="column">
-            <Text color="red">❌ Error: {error.message}</Text>
-          </Box>
-        );
-      }
-
-      const applyOptions: ApplyOptions = {
-        recipe: options.recipe,
-        variant: options.variant,
-        project: options.project,
-        yes: options.yes,
-        progress: options.progress,
-        cost: options.cost,
-      };
-
-      return (
-        <DebugProgress
-          options={applyOptions}
-          onComplete={(applyResult) => {
-            setCommandState({ command: 'recipes-apply', result: applyResult });
-            setIsComplete(true);
-          }}
-          onError={(error) => {
-            setError(error);
-          }}
-        />
-      );
-    }
-
-    if (options.progress === false) {
-      if (error) {
-        return (
-          <Box flexDirection="column">
-            <Text color="red">❌ Error: {error.message}</Text>
-          </Box>
-        );
-      }
-
-      if (
-        isComplete &&
-        commandState.command === 'recipes-apply' &&
-        commandState.result
-      ) {
-        return (
-          <ApplyDisplay result={commandState.result} showCost={options.cost} />
-        );
-      }
-
-      return (
-        <Box flexDirection="column">
-          <Text color="blue">🔧 {simpleStep || 'Applying recipe...'}</Text>
-        </Box>
-      );
-    }
-
     if (error) {
       return (
         <Box flexDirection="column">
@@ -369,20 +213,23 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       );
     }
 
-    const applyOptions: ApplyOptions = {
-      recipe: options.recipe,
-      variant: options.variant,
-      project: options.project,
-      yes: options.yes,
-      progress: options.progress,
-      cost: options.cost,
-    };
-
     return (
-      <ApplyProgress
-        options={applyOptions}
-        onComplete={(applyResult) => {
-          setCommandState({ command: 'recipes-apply', result: applyResult });
+      <RecipesContainer
+        command="apply"
+        options={{
+          recipe: options.recipe,
+          variant: options.variant,
+          project: options.project,
+          yes: options.yes,
+          progress: options.progress,
+          debug: options.debug,
+          cost: options.cost,
+        }}
+        onComplete={(result) => {
+          setCommandState({
+            command: 'recipes-apply',
+            result: result as ApplyRecipeResult,
+          });
           setIsComplete(true);
         }}
         onError={(error) => {

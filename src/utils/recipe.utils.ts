@@ -171,6 +171,7 @@ function validateMetadata(metadata: unknown, metadataPath: string): void {
     'id',
     'category',
     'summary',
+    'level',
     'ecosystems',
     'provides',
     'requires',
@@ -192,6 +193,11 @@ function validateMetadata(metadata: unknown, metadataPath: string): void {
 
   if (!Array.isArray(metadataObj.requires)) {
     throw new Error('requires must be an array');
+  }
+
+  const validLevels = ['workspace-only', 'project-only', 'workspace-preferred'];
+  if (!validLevels.includes(metadataObj.level as string)) {
+    throw new Error(`level must be one of: ${validLevels.join(', ')}`);
   }
 
   for (const ecosystem of metadataObj.ecosystems as Array<

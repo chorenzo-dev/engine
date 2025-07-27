@@ -92,7 +92,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
   const shouldUseInput = options.progress !== false && isRawModeSupported;
 
   const locationOptions = [
-    { label: 'This workspace', value: 'workspace' },
+    { label: `Current folder (${process.cwd()})`, value: 'workspace' },
     { label: 'This machine (~/.chorenzo/recipes/local)', value: 'machine' },
     { label: 'Choose location', value: 'custom' },
   ];

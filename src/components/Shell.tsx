@@ -519,7 +519,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       );
     }
 
-    if (error) {
+    if (error && isComplete) {
       return (
         <Box flexDirection="column">
           <Text color="red">❌ Error: {error.message}</Text>
@@ -562,8 +562,27 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           setCommandState({ command: 'recipes-generate', result });
           setIsComplete(true);
         }}
-        onError={(error) => {
-          setError(error);
+        onError={(error, collectedOptions) => {
+          if (collectedOptions && collectedOptions.name) {
+            let cliCommand = `npx chorenzo recipes generate "${collectedOptions.name}"`;
+            if (collectedOptions.category) {
+              cliCommand += ` --category "${collectedOptions.category}"`;
+            }
+            if (collectedOptions.summary) {
+              cliCommand += ` --summary "${collectedOptions.summary}"`;
+            }
+            if (collectedOptions.saveLocation) {
+              cliCommand += ` --location "${collectedOptions.saveLocation}"`;
+            }
+
+            const enhancedError = new Error(
+              `${error.message}\n\nCLI command to retry:\n${cliCommand}`
+            );
+            setError(enhancedError);
+          } else {
+            setError(error);
+          }
+          setIsComplete(true);
         }}
       />
     );

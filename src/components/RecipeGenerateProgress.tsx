@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Text, useInput, useStdin } from 'ink';
 import SelectInput from 'ink-select-input';
 import TextInput from 'ink-text-input';
@@ -20,7 +20,7 @@ import { generateOperationId } from '../utils/code-changes-events.utils';
 interface RecipeGenerateProgressProps {
   options: GenerateOptions;
   onComplete: (result: GenerateResult) => void;
-  onError: (error: Error) => void;
+  onError: (error: Error, collectedOptions?: GenerateOptions) => void;
 }
 
 export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
@@ -44,15 +44,16 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
     summary: options.summary || '',
   });
 
-  const getNextPhase = (
-    options: typeof collectedOptions = collectedOptions
-  ) => {
-    if (!options.name) return 'name';
-    if (!options.saveLocation) return 'location';
-    if (!options.category) return 'category';
-    if (!options.summary) return 'summary';
-    return 'choice';
-  };
+  const getNextPhase = useCallback(
+    (options: typeof collectedOptions = collectedOptions) => {
+      if (!options.name) return 'name';
+      if (!options.saveLocation) return 'location';
+      if (!options.category) return 'category';
+      if (!options.summary) return 'summary';
+      return 'choice';
+    },
+    []
+  );
 
   const [phase, setPhase] = useState<
     | 'name'
@@ -99,14 +100,11 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
       } else if (item.value === 'machine') {
         selectedLocation = '~/.chorenzo/recipes/local';
       }
-      setCollectedOptions((prev) => ({
-        ...prev,
-        saveLocation: selectedLocation,
-      }));
       const updatedOptions = {
         ...collectedOptions,
         saveLocation: selectedLocation,
       };
+      setCollectedOptions(updatedOptions);
       setPhase(getNextPhase(updatedOptions));
     }
   };
@@ -114,8 +112,8 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
   const handleCustomLocationSubmit = () => {
     if (customLocationInput.trim()) {
       const location = customLocationInput.trim();
-      setCollectedOptions((prev) => ({ ...prev, saveLocation: location }));
       const updatedOptions = { ...collectedOptions, saveLocation: location };
+      setCollectedOptions(updatedOptions);
       setPhase(getNextPhase(updatedOptions));
     }
   };
@@ -125,8 +123,8 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
       setShowCustomCategory(true);
     } else {
       setCategory(item.value);
-      setCollectedOptions((prev) => ({ ...prev, category: item.value }));
       const updatedOptions = { ...collectedOptions, category: item.value };
+      setCollectedOptions(updatedOptions);
       setPhase(getNextPhase(updatedOptions));
     }
   };
@@ -136,14 +134,11 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
       try {
         const validatedCategory = validateCategoryName(categoryInput);
         setCategory(validatedCategory);
-        setCollectedOptions((prev) => ({
-          ...prev,
-          category: validatedCategory,
-        }));
         const updatedOptions = {
           ...collectedOptions,
           category: validatedCategory,
         };
+        setCollectedOptions(updatedOptions);
         setPhase(getNextPhase(updatedOptions));
       } catch (error) {
         onError(error instanceof Error ? error : new Error(String(error)));
@@ -155,7 +150,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
     if (phase === 'name') {
       if (collectedOptions.name) {
         setRecipeName(collectedOptions.name);
-        setPhase(getNextPhase());
+        setPhase(getNextPhase(collectedOptions));
       } else if (!shouldUseInput) {
         onError(
           new Error(
@@ -184,7 +179,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
     } else if (phase === 'choice' && !shouldUseInput) {
       onError(new Error('Magic generation choice requires interactive mode'));
     }
-  }, [phase, collectedOptions, shouldUseInput, onError]);
+  }, [phase, collectedOptions.name, shouldUseInput]);
 
   useEffect(() => {
     if (phase === 'category') {
@@ -197,14 +192,11 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
 
           if (analysis.type === 'category_folder') {
             setCategory(analysis.categoryName!);
-            setCollectedOptions((prev) => ({
-              ...prev,
-              category: analysis.categoryName!,
-            }));
             const updatedOptions = {
               ...collectedOptions,
               category: analysis.categoryName!,
             };
+            setCollectedOptions(updatedOptions);
             setPhase(getNextPhase(updatedOptions));
             return;
           }
@@ -212,12 +204,22 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
           const categories = await libraryManager.getAllCategories(location);
           setAvailableCategories(categories);
         } catch (error) {
-          onError(error instanceof Error ? error : new Error(String(error)));
+          const collectedData: GenerateOptions = {
+            name: collectedOptions.name,
+            category: collectedOptions.category,
+            summary: collectedOptions.summary,
+            saveLocation: collectedOptions.saveLocation,
+            magicGenerate: false,
+          };
+          onError(
+            error instanceof Error ? error : new Error(String(error)),
+            collectedData
+          );
         }
       };
       loadCategories();
     }
-  }, [phase, collectedOptions.saveLocation, onError]);
+  }, [phase]);
 
   useInput(
     (input, key) => {
@@ -226,9 +228,9 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
           const name = userInput.trim();
           if (name) {
             setRecipeName(name);
-            setCollectedOptions((prev) => ({ ...prev, name }));
-            setUserInput('');
             const updatedOptions = { ...collectedOptions, name };
+            setCollectedOptions(updatedOptions);
+            setUserInput('');
             setPhase(getNextPhase(updatedOptions));
           }
         } else if (key.backspace || key.delete) {
@@ -241,9 +243,9 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
           const summary = summaryInput.trim();
           if (summary) {
             setSummary(summary);
-            setCollectedOptions((prev) => ({ ...prev, summary }));
-            setSummaryInput('');
             const updatedOptions = { ...collectedOptions, summary };
+            setCollectedOptions(updatedOptions);
+            setSummaryInput('');
             setPhase(getNextPhase(updatedOptions));
           }
         } else if (key.backspace || key.delete) {
@@ -315,7 +317,19 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : String(err);
           errorOperation(operationId, errorMessage);
-          onError(err instanceof Error ? err : new Error(errorMessage));
+
+          const collectedData: GenerateOptions = {
+            name: recipeName,
+            category,
+            summary,
+            saveLocation: collectedOptions.saveLocation,
+            magicGenerate: useMagic,
+          };
+
+          onError(
+            err instanceof Error ? err : new Error(errorMessage),
+            collectedData
+          );
         }
       };
       runGenerate();

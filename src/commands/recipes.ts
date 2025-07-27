@@ -466,7 +466,10 @@ export async function performRecipesApply(
 
     onProgress?.('Checking recipe dependencies...');
     const currentState = await readCurrentState();
-    const dependencyCheck = await validateDependencies(recipe, currentState);
+    const dependencyCheck = await validateWorkspaceDependencies(
+      recipe,
+      currentState
+    );
 
     if (!dependencyCheck.satisfied) {
       const errorMsg = formatDependencyError(
@@ -540,7 +543,7 @@ export async function performRecipesApply(
       }
     } else {
       onProgress?.('Filtering applicable projects...');
-      const applicableProjects = filterApplicableProjects(
+      const applicableProjects = await filterApplicableProjects(
         analysis,
         recipe,
         options.project
@@ -753,6 +756,58 @@ async function readCurrentState(): Promise<RecipeState> {
   }
 }
 
+async function validateWorkspaceDependencies(
+  recipe: Recipe,
+  currentState: RecipeState
+): Promise<DependencyValidationResult> {
+  const missing: RecipeDependency[] = [];
+  const conflicting: Array<{ key: string; required: string; current: string }> =
+    [];
+
+  let analysis: WorkspaceAnalysis | null = null;
+
+  for (const dependency of recipe.getRequires()) {
+    let currentValue: string | undefined;
+
+    if (isReservedKeyword(dependency.key)) {
+      if (isProjectKeyword(dependency.key)) {
+        continue;
+      }
+
+      if (!analysis) {
+        analysis = await loadWorkspaceAnalysis();
+        if (!analysis) {
+          missing.push(dependency);
+          continue;
+        }
+      }
+
+      if (isWorkspaceKeyword(dependency.key)) {
+        currentValue = getWorkspaceCharacteristic(analysis, dependency.key);
+      }
+    } else {
+      const stateValue = currentState[dependency.key];
+      currentValue = stateValue ? String(stateValue) : undefined;
+    }
+
+    if (currentValue === undefined) {
+      missing.push(dependency);
+    } else if (currentValue !== dependency.equals) {
+      conflicting.push({
+        key: dependency.key,
+        required: dependency.equals,
+        current: currentValue,
+      });
+    }
+  }
+
+  return {
+    satisfied: missing.length === 0 && conflicting.length === 0,
+    missing,
+    conflicting,
+  };
+}
+
 async function validateDependencies(
   recipe: Recipe,
   currentState: RecipeState,
@@ -842,11 +897,11 @@ function formatDependencyError(
   return lines.join('\n');
 }
 
-function filterApplicableProjects(
+async function filterApplicableProjects(
   analysis: WorkspaceAnalysis,
   recipe: Recipe,
   projectFilter?: string
-): ProjectAnalysis[] {
+): Promise<ProjectAnalysis[]> {
   let projects = analysis.projects;
 
   if (projectFilter) {
@@ -855,10 +910,32 @@ function filterApplicableProjects(
     );
   }
 
-  return projects.filter((project) => {
-    if (!project.ecosystem) return false;
-    return recipe.hasEcosystem(project.ecosystem);
-  });
+  const applicableProjects: ProjectAnalysis[] = [];
+  const workspaceState = stateManager.getWorkspaceState();
+
+  for (const project of projects) {
+    if (!project.ecosystem) continue;
+    if (!recipe.hasEcosystem(project.ecosystem)) continue;
+
+    const relativePath = path.relative(
+      workspaceConfig.getWorkspaceRoot(),
+      project.path
+    );
+    const projectState = (workspaceState.projects?.[relativePath] ||
+      {}) as RecipeState;
+
+    const dependencyCheck = await validateDependencies(
+      recipe,
+      projectState,
+      project.path
+    );
+
+    if (dependencyCheck.satisfied) {
+      applicableProjects.push(project);
+    }
+  }
+
+  return applicableProjects;
 }
 
 function generateApplicationInstructions(

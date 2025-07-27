@@ -304,7 +304,7 @@ export class LibraryManager {
     }
 
     throw new LibraryManagerError(
-      `Invalid hierarchy: unable to determine structure of location: ${locationPath}`,
+      `Location "${locationPath}" contains folders but none are recognized as recipe categories or recipes. Choose an empty directory or an existing recipe library instead.`,
       'UNKNOWN_HIERARCHY'
     );
   }

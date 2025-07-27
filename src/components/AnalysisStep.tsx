@@ -57,6 +57,7 @@ export const AnalysisStep: React.FC<AnalysisStepProps> = ({
     progressOperation,
     completeOperation,
     errorOperation,
+    updateOperation,
   } = useCodeChangesProgress();
 
   const shouldUseInput = options.progress !== false && isRawModeSupported;
@@ -111,8 +112,13 @@ export const AnalysisStep: React.FC<AnalysisStepProps> = ({
             status: 'in_progress',
           });
 
-          const result = await performAnalysis((step) => {
-            progressOperation(operationId, step);
+          const result = await performAnalysis((step, isThinking) => {
+            if (step) {
+              progressOperation(operationId, step);
+            }
+            if (isThinking !== undefined) {
+              updateOperation(operationId, { isThinking });
+            }
           });
 
           setAnalysisResult(result);
@@ -146,6 +152,7 @@ export const AnalysisStep: React.FC<AnalysisStepProps> = ({
     progressOperation,
     completeOperation,
     errorOperation,
+    updateOperation,
   ]);
 
   useEffect(() => {

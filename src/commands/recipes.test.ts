@@ -726,6 +726,60 @@ outputs:
         )
       ).toBe(true);
     });
+
+    it('should reject reserved keywords in provides field', async () => {
+      const options = { target: '/path/to/test-recipe' };
+
+      mockExistsSync.mockImplementation(() => true);
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
+      mockReaddirSync.mockImplementation(() => []);
+
+      const mockYamlData = createMockYamlData({
+        provides: ['workspace.reserved', 'project.also_reserved', 'valid.key'],
+      });
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        }
+        if (filePath.includes('metadata.yaml')) {
+          return yamlStringify(mockYamlData.metadata);
+        }
+        return '';
+      });
+
+      const result = await performRecipesValidate(options);
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'error' &&
+            msg.text.includes(
+              'Recipe provides list cannot contain reserved keywords: workspace.reserved'
+            )
+        )
+      ).toBe(true);
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'error' &&
+            msg.text.includes(
+              'Recipe provides list cannot contain reserved keywords: project.also_reserved'
+            )
+        )
+      ).toBe(true);
+
+      const errorMessages = result.messages.filter(
+        (msg) => msg.type === 'error'
+      );
+      expect(errorMessages).toHaveLength(3);
+    });
   });
 
   describe('Apply Command Integration', () => {
@@ -2997,7 +3051,7 @@ outputs:
         const mockYamlData = createMockYamlData({
           recipeId: 'project-only-recipe',
           level: 'project-only' as const,
-          provides: ['project.feature'],
+          provides: ['project-only-recipe.feature'],
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'project-only-recipe'
@@ -3060,7 +3114,7 @@ outputs:
         const mockYamlData = createMockYamlData({
           recipeId: 'workspace-only-recipe',
           level: 'workspace-only' as const,
-          provides: ['workspace.feature'],
+          provides: ['workspace-only-recipe.feature'],
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'workspace-only-recipe'
@@ -3114,6 +3168,343 @@ outputs:
         expect(result.executionResults).toHaveLength(1);
         expect(result.executionResults[0].success).toBe(true);
         expect(result.executionResults[0].projectPath).toBe('workspace');
+      });
+
+      it('should apply recipe with project.ecosystem requirement', async () => {
+        setupStandardApplyScenario();
+        setupHierarchicalLevelMocks('project-ecosystem-recipe');
+
+        const mockYamlData = createMockYamlData({
+          recipeId: 'project-ecosystem-recipe',
+          level: 'project-only' as const,
+          requires: [{ key: 'project.ecosystem', equals: 'python' }],
+          provides: ['project-ecosystem-recipe.configured'],
+        });
+
+        mockYamlData.metadata.ecosystems = [
+          {
+            id: 'python',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'fixes/basic.md' }],
+          },
+        ];
+        (mockYamlData.config.libraries as Record<string, unknown>)[
+          'project-ecosystem-recipe'
+        ] = {
+          repo: 'https://github.com/test/project-ecosystem-recipe.git',
+          ref: 'main',
+        };
+
+        mockReadFileSync.mockImplementation((filePath: string) => {
+          if (filePath.includes('analysis.json')) {
+            return JSON.stringify({
+              isMonorepo: true,
+              hasWorkspacePackageManager: true,
+              workspaceEcosystem: 'javascript',
+              projects: [
+                {
+                  path: '/workspace/python-app',
+                  language: 'python',
+                  ecosystem: 'python',
+                  type: 'web_app',
+                  dependencies: [],
+                  hasPackageManager: true,
+                },
+                {
+                  path: '/workspace/js-app',
+                  language: 'javascript',
+                  ecosystem: 'javascript',
+                  type: 'web_app',
+                  dependencies: [],
+                  hasPackageManager: true,
+                },
+              ],
+            });
+          }
+          if (filePath.includes('config.yaml')) {
+            return yamlStringify(mockYamlData.config);
+          }
+          if (filePath.includes('metadata.yaml')) {
+            return yamlStringify(mockYamlData.metadata);
+          }
+          if (filePath.includes('prompt.md')) {
+            return '## Goal\nAdd formatter\n\n## Investigation\nCheck formatter\n\n## Expected Output\nFormatter configured';
+          }
+          if (
+            filePath.includes(
+              'apply_recipe_project_application_instructions.md'
+            )
+          ) {
+            return 'Apply {{ recipe_id }} to {{ project_path }}...';
+          }
+          return '';
+        });
+
+        mockQuery.mockImplementation(async function* () {
+          yield {
+            type: 'assistant',
+            message: {
+              content: [{ type: 'text', text: 'Recipe applied successfully' }],
+            },
+          };
+        });
+
+        const result = await performRecipesApply({
+          recipe: 'project-ecosystem-recipe',
+          progress: false,
+        });
+
+        expect(result.executionResults).toHaveLength(1);
+        expect(result.executionResults[0].projectPath).toContain('python-app');
+      });
+
+      it('should apply recipe with project.type requirement', async () => {
+        setupStandardApplyScenario();
+        setupHierarchicalLevelMocks('project-type-recipe');
+
+        const mockYamlData = createMockYamlData({
+          recipeId: 'project-type-recipe',
+          level: 'project-only' as const,
+          requires: [{ key: 'project.type', equals: 'api_server' }],
+          provides: ['project-type-recipe.configured'],
+        });
+
+        mockYamlData.metadata.ecosystems = [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'fixes/basic.md' }],
+          },
+        ];
+        (mockYamlData.config.libraries as Record<string, unknown>)[
+          'project-type-recipe'
+        ] = {
+          repo: 'https://github.com/test/project-type-recipe.git',
+          ref: 'main',
+        };
+
+        mockReadFileSync.mockImplementation((filePath: string) => {
+          if (filePath.includes('analysis.json')) {
+            return JSON.stringify({
+              isMonorepo: true,
+              hasWorkspacePackageManager: true,
+              workspaceEcosystem: 'javascript',
+              projects: [
+                {
+                  path: '/workspace/api',
+                  language: 'javascript',
+                  ecosystem: 'javascript',
+                  type: 'api_server',
+                  dependencies: [],
+                  hasPackageManager: true,
+                },
+                {
+                  path: '/workspace/frontend',
+                  language: 'javascript',
+                  ecosystem: 'javascript',
+                  type: 'web_app',
+                  dependencies: [],
+                  hasPackageManager: true,
+                },
+              ],
+            });
+          }
+          if (filePath.includes('config.yaml')) {
+            return yamlStringify(mockYamlData.config);
+          }
+          if (filePath.includes('metadata.yaml')) {
+            return yamlStringify(mockYamlData.metadata);
+          }
+          if (filePath.includes('prompt.md')) {
+            return '## Goal\nAdd formatter\n\n## Investigation\nCheck formatter\n\n## Expected Output\nFormatter configured';
+          }
+          if (
+            filePath.includes(
+              'apply_recipe_project_application_instructions.md'
+            )
+          ) {
+            return 'Apply {{ recipe_id }} to {{ project_path }}...';
+          }
+          return '';
+        });
+
+        mockQuery.mockImplementation(async function* () {
+          yield {
+            type: 'assistant',
+            message: {
+              content: [{ type: 'text', text: 'Recipe applied successfully' }],
+            },
+          };
+        });
+
+        const result = await performRecipesApply({
+          recipe: 'project-type-recipe',
+          progress: false,
+        });
+
+        expect(result.executionResults).toHaveLength(1);
+        expect(result.executionResults[0].projectPath).toContain('api');
+      });
+
+      it('should apply recipe with workspace.is_monorepo requirement', async () => {
+        setupStandardApplyScenario();
+        setupHierarchicalLevelMocks('workspace-monorepo-recipe');
+
+        const mockYamlData = createMockYamlData({
+          recipeId: 'workspace-monorepo-recipe',
+          level: 'workspace-preferred' as const,
+          requires: [{ key: 'workspace.is_monorepo', equals: 'true' }],
+          provides: ['workspace-monorepo-recipe.configured'],
+        });
+
+        mockYamlData.metadata.ecosystems = [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'fixes/basic.md' }],
+          },
+        ];
+        (mockYamlData.config.libraries as Record<string, unknown>)[
+          'workspace-monorepo-recipe'
+        ] = {
+          repo: 'https://github.com/test/workspace-monorepo-recipe.git',
+          ref: 'main',
+        };
+
+        mockReadFileSync.mockImplementation((filePath: string) => {
+          if (filePath.includes('analysis.json')) {
+            return JSON.stringify({
+              isMonorepo: true,
+              hasWorkspacePackageManager: true,
+              workspaceEcosystem: 'javascript',
+              projects: [
+                {
+                  path: '/workspace/app1',
+                  language: 'javascript',
+                  ecosystem: 'javascript',
+                  type: 'web_app',
+                  dependencies: [],
+                  hasPackageManager: true,
+                },
+                {
+                  path: '/workspace/app2',
+                  language: 'javascript',
+                  ecosystem: 'javascript',
+                  type: 'web_app',
+                  dependencies: [],
+                  hasPackageManager: true,
+                },
+              ],
+            });
+          }
+          if (filePath.includes('config.yaml')) {
+            return yamlStringify(mockYamlData.config);
+          }
+          if (filePath.includes('metadata.yaml')) {
+            return yamlStringify(mockYamlData.metadata);
+          }
+          if (filePath.includes('prompt.md')) {
+            return '## Goal\nAdd formatter\n\n## Investigation\nCheck formatter\n\n## Expected Output\nFormatter configured';
+          }
+          if (
+            filePath.includes(
+              'apply_recipe_workspace_application_instructions.md'
+            )
+          ) {
+            return 'Apply {{ recipe_id }} at workspace level...';
+          }
+          return '';
+        });
+
+        mockQuery.mockImplementation(async function* () {
+          yield {
+            type: 'assistant',
+            message: {
+              content: [{ type: 'text', text: 'Recipe applied successfully' }],
+            },
+          };
+        });
+
+        const result = await performRecipesApply({
+          recipe: 'workspace-monorepo-recipe',
+          progress: false,
+        });
+
+        expect(result.executionResults.length).toBeGreaterThan(0);
+        expect(
+          result.executionResults.some((r) => r.projectPath === 'workspace')
+        ).toBe(true);
+      });
+
+      it('should reject recipe when project characteristics do not match', async () => {
+        setupStandardApplyScenario();
+        setupHierarchicalLevelMocks('project-framework-recipe');
+
+        const mockYamlData = createMockYamlData({
+          recipeId: 'project-framework-recipe',
+          level: 'project-only' as const,
+          requires: [{ key: 'project.framework', equals: 'react' }],
+          provides: ['project-framework-recipe.configured'],
+        });
+
+        mockYamlData.metadata.ecosystems = [
+          {
+            id: 'javascript',
+            default_variant: 'basic',
+            variants: [{ id: 'basic', fix_prompt: 'fixes/basic.md' }],
+          },
+        ];
+        (mockYamlData.config.libraries as Record<string, unknown>)[
+          'project-framework-recipe'
+        ] = {
+          repo: 'https://github.com/test/project-framework-recipe.git',
+          ref: 'main',
+        };
+
+        mockReadFileSync.mockImplementation((filePath: string) => {
+          if (filePath.includes('analysis.json')) {
+            return JSON.stringify({
+              isMonorepo: false,
+              hasWorkspacePackageManager: true,
+              workspaceEcosystem: 'javascript',
+              projects: [
+                {
+                  path: '/workspace/vue-app',
+                  language: 'javascript',
+                  ecosystem: 'javascript',
+                  type: 'web_app',
+                  framework: 'vue',
+                  dependencies: [],
+                  hasPackageManager: true,
+                },
+              ],
+            });
+          }
+          if (filePath.includes('config.yaml')) {
+            return yamlStringify(mockYamlData.config);
+          }
+          if (filePath.includes('metadata.yaml')) {
+            return yamlStringify(mockYamlData.metadata);
+          }
+          if (filePath.includes('prompt.md')) {
+            return '## Goal\nAdd formatter\n\n## Investigation\nCheck formatter\n\n## Expected Output\nFormatter configured';
+          }
+          if (
+            filePath.includes(
+              'apply_recipe_project_application_instructions.md'
+            )
+          ) {
+            return 'Apply {{ recipe_id }} to {{ project_path }}...';
+          }
+          return '';
+        });
+
+        await expect(
+          performRecipesApply({
+            recipe: 'project-framework-recipe',
+            progress: false,
+          })
+        ).rejects.toThrow('No applicable projects found');
       });
     });
   });

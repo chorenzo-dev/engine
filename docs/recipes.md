@@ -77,7 +77,7 @@ provides: # Facts this recipe outputs
   - recipe_id.configured
   - recipe_id.variant
 
-requires: [] # Dependencies (array of {key: fact, equals: value})
+requires: [] # Dependencies (array of {key: fact, equals: value}) or project characteristics
 ```
 
 ### prompt.md
@@ -186,6 +186,58 @@ See `code_quality/code_formatting/` for a complete example implementing code for
    - `workspace-only` for global tools that must never apply per-project
    - `project-only` for per-project setup that must never apply globally
    - `workspace-preferred` for tools that work best globally but handle mixed ecosystems
+
+## Project Characteristics
+
+Recipes can use project and workspace characteristics from analysis.json in their `requires` field to conditionally apply based on project properties:
+
+### Workspace Characteristics
+
+Access workspace-level properties with the `workspace.` prefix:
+
+- `workspace.is_monorepo`: Whether the workspace contains multiple projects (boolean)
+- `workspace.has_workspace_package_manager`: Whether a workspace-level package manager is detected (boolean)
+- `workspace.ecosystem`: Primary ecosystem of the workspace (string)
+- `workspace.cicd`: CI/CD platform detected in the workspace (string)
+
+### Project Characteristics
+
+Access project-level properties with the `project.` prefix:
+
+- `project.language`: Primary programming language (string)
+- `project.type`: Project type (e.g., "library", "application") (string)
+- `project.framework`: Framework used by the project (string)
+- `project.ecosystem`: Project's ecosystem (string)
+- `project.has_package_manager`: Whether the project has a package manager (boolean)
+- `project.dockerized`: Whether the project is containerized (boolean)
+
+### Usage Examples
+
+```yaml
+# Recipe that only applies to Python projects
+requires:
+  - key: project.ecosystem
+    equals: python
+
+# Recipe that requires a monorepo workspace
+requires:
+  - key: workspace.is_monorepo
+    equals: true
+
+# Recipe that applies to React projects in JavaScript ecosystem
+requires:
+  - key: project.ecosystem
+    equals: javascript
+  - key: project.framework
+    equals: react
+```
+
+### Important Notes
+
+- Project characteristics are **read-only** and cannot be provided by recipes
+- Reserved keywords (`workspace.*`, `project.*`) cannot be used in the `provides` field
+- Workspace characteristics are available at both workspace and project levels
+- Project characteristics are only available when applying to specific projects
 
 ## Recipe Validation
 

@@ -20,7 +20,10 @@ export interface RecipeDependency {
   equals: string;
 }
 
-export type RecipeLevel = 'workspace' | 'project';
+export type RecipeLevel =
+  | 'workspace-only'
+  | 'project-only'
+  | 'workspace-preferred';
 
 export interface RecipeMetadata {
   id: string;
@@ -97,11 +100,29 @@ export class Recipe {
   }
 
   isWorkspaceLevel(): boolean {
-    return this.metadata.level === 'workspace';
+    return (
+      this.metadata.level === 'workspace-only' ||
+      this.metadata.level === 'workspace-preferred'
+    );
   }
 
   isProjectLevel(): boolean {
-    return this.metadata.level === 'project';
+    return (
+      this.metadata.level === 'project-only' ||
+      this.metadata.level === 'workspace-preferred'
+    );
+  }
+
+  isWorkspaceOnly(): boolean {
+    return this.metadata.level === 'workspace-only';
+  }
+
+  isProjectOnly(): boolean {
+    return this.metadata.level === 'project-only';
+  }
+
+  isWorkspacePreferred(): boolean {
+    return this.metadata.level === 'workspace-preferred';
   }
 
   hasEcosystem(ecosystemId: string): boolean {

@@ -80,7 +80,7 @@ describe('Recipes Command Integration Tests', () => {
     options: {
       recipeId?: string;
       category?: string;
-      level?: 'workspace' | 'project';
+      level?: 'workspace-only' | 'project-only' | 'workspace-preferred';
       variants?: Array<{ id: string; fix_prompt: string }>;
       requires?: Array<{ key: string; equals: string }>;
       provides?: string[];
@@ -89,7 +89,7 @@ describe('Recipes Command Integration Tests', () => {
     const {
       recipeId = 'test-recipe',
       category = 'test',
-      level = 'project',
+      level = 'project-only',
       variants = [{ id: 'basic', fix_prompt: 'fixes/basic.md' }],
       requires = [],
       provides = ['test-functionality'],
@@ -205,7 +205,7 @@ outputs:
       id: 'recipe',
       category: 'test',
       summary: 'Test recipe',
-      level: 'project',
+      level: 'project-only',
       ecosystems: [
         {
           id: 'javascript',
@@ -297,7 +297,7 @@ outputs:
           id: 'recipe1',
           category: 'test',
           summary: 'Recipe 1',
-          level: 'project',
+          level: 'project-only',
           ecosystems: [
             {
               id: 'javascript',
@@ -313,7 +313,7 @@ outputs:
           id: 'recipe2',
           category: 'test',
           summary: 'Recipe 2',
-          level: 'project',
+          level: 'project-only',
           ecosystems: [
             {
               id: 'python',
@@ -409,7 +409,7 @@ outputs:
           id: 'nested-recipe',
           category: 'test',
           summary: 'Nested recipe',
-          level: 'project',
+          level: 'project-only',
           ecosystems: [
             {
               id: 'javascript',
@@ -482,7 +482,7 @@ outputs:
           id: 'test-recipe',
           category: 'test',
           summary: 'Test recipe',
-          level: 'project',
+          level: 'project-only',
           ecosystems: [
             {
               id: 'javascript',
@@ -2226,7 +2226,7 @@ outputs:
 
       const mockYamlData = createMockYamlData({
         recipeId: 'workspace-recipe',
-        level: 'workspace',
+        level: 'workspace-only',
         provides: ['workspace_feature.exists'],
       });
       (mockYamlData.config.libraries as Record<string, unknown>)[
@@ -2316,7 +2316,7 @@ outputs:
 
       const mockYamlData = createMockYamlData({
         recipeId: 'workspace-recipe',
-        level: 'workspace',
+        level: 'workspace-only',
         provides: ['workspace_feature.exists'],
       });
       (mockYamlData.config.libraries as Record<string, unknown>)[

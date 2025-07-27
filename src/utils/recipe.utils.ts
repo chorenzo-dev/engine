@@ -195,7 +195,7 @@ function validateMetadata(metadata: unknown, metadataPath: string): void {
     throw new Error('requires must be an array');
   }
 
-  const validLevels = ['workspace', 'project'];
+  const validLevels = ['workspace-only', 'project-only', 'workspace-preferred'];
   if (!validLevels.includes(metadataObj.level as string)) {
     throw new Error(`level must be one of: ${validLevels.join(', ')}`);
   }

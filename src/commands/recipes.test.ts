@@ -3542,7 +3542,9 @@ outputs:
 
     const setupGenerateMocks = () => {
       mockExistsSync.mockImplementation((path) => {
-        if (path.includes('docs/recipes.md')) return true;
+        if (path.includes('docs/recipes.md')) {
+          return true;
+        }
         return false;
       });
 
@@ -4218,7 +4220,7 @@ outputs:
           magicGenerate: false,
         })
       ).rejects.toThrow(
-        'Invalid hierarchy: unable to determine structure of location'
+        'Location "/test/unknown" contains folders but none are recognized as recipe categories or recipes'
       );
     });
 

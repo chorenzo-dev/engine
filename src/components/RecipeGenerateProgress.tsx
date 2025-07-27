@@ -46,10 +46,18 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
 
   const getNextPhase = useCallback(
     (options: typeof collectedOptions = collectedOptions) => {
-      if (!options.name) return 'name';
-      if (!options.saveLocation) return 'location';
-      if (!options.category) return 'category';
-      if (!options.summary) return 'summary';
+      if (!options.name) {
+        return 'name';
+      }
+      if (!options.saveLocation) {
+        return 'location';
+      }
+      if (!options.category) {
+        return 'category';
+      }
+      if (!options.summary) {
+        return 'summary';
+      }
       return 'choice';
     },
     []

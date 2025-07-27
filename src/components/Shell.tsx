@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
-import { AnalysisProgress } from './AnalysisProgress';
 import { InitContainer } from '../containers/InitContainer';
+import { AnalyzeContainer } from '../containers/AnalyzeContainer';
 import { ApplyProgress } from './ApplyProgress';
 import { DebugProgress } from './DebugProgress';
 import { ApplyDisplay } from './ApplyDisplay';
-import { performAnalysis, AnalysisResult } from '../commands/analyze';
+import { AnalysisResult } from '../commands/analyze';
 import {
   performRecipesValidate,
   performRecipesApply,
@@ -52,26 +52,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     useState<ValidationResult | null>(null);
 
   useEffect(() => {
-    if (
-      command === 'analyze' &&
-      options.progress === false &&
-      !isComplete &&
-      !error
-    ) {
-      const runSimpleAnalysis = async () => {
-        try {
-          const analysisResult = await performAnalysis((step) => {
-            setSimpleStep(step);
-          });
-          setCommandState({ command: 'analyze', result: analysisResult });
-          setIsComplete(true);
-        } catch (err) {
-          setError(err instanceof Error ? err : new Error(String(err)));
-        }
-      };
-      runSimpleAnalysis();
-    }
-
     if (command === 'recipes-validate' && !isComplete && !error) {
       if (!options.target) {
         setError(new Error('Target parameter is required'));
@@ -166,30 +146,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   ]);
 
   if (command === 'analyze') {
-    if (options.progress === false) {
-      if (error) {
-        return (
-          <Box flexDirection="column">
-            <Text color="red">❌ Error: {error.message}</Text>
-          </Box>
-        );
-      }
-
-      if (
-        isComplete &&
-        commandState.command === 'analyze' &&
-        commandState.result
-      ) {
-        return <AnalysisDisplay result={commandState.result} />;
-      }
-
-      return (
-        <Box flexDirection="column">
-          <Text color="blue">🔍 {simpleStep || 'Analyzing workspace...'}</Text>
-        </Box>
-      );
-    }
-
     if (error) {
       return (
         <Box flexDirection="column">
@@ -209,7 +165,11 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     }
 
     return (
-      <AnalysisProgress
+      <AnalyzeContainer
+        options={{
+          progress: options.progress,
+          cost: options.cost,
+        }}
         onComplete={(result) => {
           setCommandState({ command: 'analyze', result });
           setIsComplete(true);

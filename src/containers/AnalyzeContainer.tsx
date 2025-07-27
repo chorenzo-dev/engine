@@ -71,10 +71,6 @@ export const AnalyzeContainer: React.FC<AnalyzeContainerProps> = ({
     );
   }
 
-  if (isComplete && result) {
-    return <AnalysisDisplay result={result} showCost={options.cost} />;
-  }
-
   return (
     <AnalysisProgress
       onComplete={(analysisResult) => {

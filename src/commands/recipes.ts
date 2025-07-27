@@ -1389,6 +1389,13 @@ export async function performRecipesGenerate(
       recipePath = path.join(baseLocation, category, recipeId);
     }
 
+    if (fs.existsSync(recipePath)) {
+      throw new RecipesError(
+        `Recipe "${recipeId}" already exists at ${recipePath}`,
+        'RECIPE_ALREADY_EXISTS'
+      );
+    }
+
     onProgress?.(`Creating recipe directory: ${recipePath}`);
 
     fs.mkdirSync(recipePath, { recursive: true });

@@ -4254,5 +4254,21 @@ outputs:
         { recursive: true }
       );
     });
+
+    it('should throw error when recipe with same name already exists', async () => {
+      setupGenerateMocks();
+      mockExistsSync.mockImplementation((path: string) => {
+        return path.includes('existing-recipe');
+      });
+
+      await expect(
+        performRecipesGenerate({
+          name: 'existing-recipe',
+          category: 'tools',
+          summary: 'Test duplicate detection',
+          magicGenerate: false,
+        })
+      ).rejects.toThrow('Recipe "existing-recipe" already exists at');
+    });
   });
 });

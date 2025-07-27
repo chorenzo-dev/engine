@@ -273,6 +273,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
               magicGenerate: useMagic,
               category,
               summary,
+              saveLocation: collectedOptions.saveLocation,
             },
             progressCallback
           );

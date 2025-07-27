@@ -2364,5 +2364,400 @@ outputs:
         })
       ).rejects.toThrow('does not support workspace ecosystem');
     });
+
+    describe('Hierarchical Level Tests', () => {
+      const setupHierarchicalLevelMocks = (recipeId: string) => {
+        mockReaddirSync.mockImplementation((dirPath) => {
+          if (dirPath.includes('.chorenzo/recipes')) {
+            return [recipeId];
+          }
+          return [];
+        });
+
+        mockExistsSync.mockImplementation((path) => {
+          if (path.includes('analysis.json')) return true;
+          if (path.includes('state.json')) return false;
+          if (path.includes('.chorenzo/recipes')) return true;
+          if (path.includes(recipeId)) return true;
+          if (path.includes('metadata.yaml')) return true;
+          if (path.includes('prompt.md')) return true;
+          return true;
+        });
+      };
+
+      const setupHierarchicalLevelReadFileSync = (
+        mockYamlData: ReturnType<typeof createMockYamlData>,
+        analysisData: Record<string, unknown>
+      ) => {
+        mockReadFileSync.mockImplementation((filePath: string) => {
+          if (filePath.includes('analysis.json')) {
+            return JSON.stringify(analysisData);
+          }
+          if (filePath.includes('config.yaml')) {
+            return yamlStringify(mockYamlData.config);
+          }
+          if (filePath.includes('metadata.yaml')) {
+            return yamlStringify(mockYamlData.metadata);
+          }
+          if (filePath.includes('prompt.md'))
+            return '## Goal\nAdd formatter\n\n## Investigation\nCheck formatter\n\n## Expected Output\nFormatter configured';
+          if (
+            filePath.includes(
+              'apply_recipe_workspace_application_instructions.md'
+            )
+          )
+            return 'Apply {{ recipe_id }} at workspace level...';
+          if (
+            filePath.includes(
+              'apply_recipe_project_application_instructions.md'
+            )
+          )
+            return 'Apply {{ recipe_id }} to {{ project_path }}...';
+          return '';
+        });
+      };
+
+      it('should apply workspace-preferred recipe at workspace level when ecosystem is supported', async () => {
+        setupStandardApplyScenario();
+        setupHierarchicalLevelMocks('workspace-preferred-recipe');
+
+        const mockYamlData = createMockYamlData({
+          recipeId: 'workspace-preferred-recipe',
+          level: 'workspace-preferred' as const,
+          provides: ['formatter.exists'],
+        });
+        (mockYamlData.config.libraries as Record<string, unknown>)[
+          'workspace-preferred-recipe'
+        ] = {
+          repo: 'https://github.com/test/workspace-preferred-recipe.git',
+          ref: 'main',
+        };
+
+        const analysisData = {
+          isMonorepo: false,
+          hasWorkspacePackageManager: true,
+          workspaceEcosystem: 'javascript',
+          projects: [
+            {
+              path: '/workspace/app',
+              language: 'javascript',
+              ecosystem: 'javascript',
+              type: 'application',
+              dependencies: [],
+              hasPackageManager: true,
+            },
+          ],
+        };
+
+        setupHierarchicalLevelReadFileSync(mockYamlData, analysisData);
+
+        const result = await performRecipesApply({
+          recipe: 'workspace-preferred-recipe',
+          progress: false,
+        });
+
+        expect(result.executionResults).toHaveLength(1);
+        expect(result.executionResults[0].success).toBe(true);
+        expect(result.executionResults[0].projectPath).toBe('workspace');
+      });
+
+      it('should apply workspace-preferred recipe at project level when workspace ecosystem not supported', async () => {
+        setupStandardApplyScenario();
+        setupHierarchicalLevelMocks('workspace-preferred-recipe');
+
+        const mockYamlData = createMockYamlData({
+          recipeId: 'workspace-preferred-recipe',
+          level: 'workspace-preferred' as const,
+          provides: ['formatter.exists'],
+        });
+        (mockYamlData.config.libraries as Record<string, unknown>)[
+          'workspace-preferred-recipe'
+        ] = {
+          repo: 'https://github.com/test/workspace-preferred-recipe.git',
+          ref: 'main',
+        };
+
+        mockYamlData.metadata.ecosystems = [
+          {
+            id: 'python',
+            default_variant: 'black',
+            variants: [{ id: 'black', fix_prompt: 'fixes/black.md' }],
+          },
+        ];
+
+        const analysisData = {
+          isMonorepo: true,
+          hasWorkspacePackageManager: true,
+          workspaceEcosystem: 'javascript',
+          projects: [
+            {
+              path: '/workspace/python-service',
+              language: 'python',
+              ecosystem: 'python',
+              type: 'service',
+              dependencies: [],
+              hasPackageManager: true,
+            },
+          ],
+        };
+
+        setupHierarchicalLevelReadFileSync(mockYamlData, analysisData);
+
+        const result = await performRecipesApply({
+          recipe: 'workspace-preferred-recipe',
+          progress: false,
+        });
+
+        expect(result.executionResults).toHaveLength(1);
+        expect(result.executionResults[0].success).toBe(true);
+        expect(result.executionResults[0].projectPath).toContain(
+          'python-service'
+        );
+      });
+
+      it('should apply workspace-preferred recipe to mixed ecosystems (workspace + projects)', async () => {
+        setupStandardApplyScenario();
+        setupHierarchicalLevelMocks('multi-ecosystem-recipe');
+
+        const mockYamlData = createMockYamlData({
+          recipeId: 'multi-ecosystem-recipe',
+          level: 'workspace-preferred' as const,
+          provides: ['formatter.exists'],
+        });
+        (mockYamlData.config.libraries as Record<string, unknown>)[
+          'multi-ecosystem-recipe'
+        ] = {
+          repo: 'https://github.com/test/multi-ecosystem-recipe.git',
+          ref: 'main',
+        };
+
+        mockYamlData.metadata.ecosystems = [
+          {
+            id: 'javascript',
+            default_variant: 'prettier',
+            variants: [{ id: 'prettier', fix_prompt: 'fixes/prettier.md' }],
+          },
+          {
+            id: 'python',
+            default_variant: 'black',
+            variants: [{ id: 'black', fix_prompt: 'fixes/black.md' }],
+          },
+        ];
+
+        const analysisData = {
+          isMonorepo: true,
+          hasWorkspacePackageManager: true,
+          workspaceEcosystem: 'javascript',
+          projects: [
+            {
+              path: '/workspace/frontend',
+              language: 'javascript',
+              ecosystem: 'javascript',
+              type: 'application',
+              dependencies: [],
+              hasPackageManager: true,
+            },
+            {
+              path: '/workspace/python-service',
+              language: 'python',
+              ecosystem: 'python',
+              type: 'service',
+              dependencies: [],
+              hasPackageManager: true,
+            },
+          ],
+        };
+
+        setupHierarchicalLevelReadFileSync(mockYamlData, analysisData);
+
+        const result = await performRecipesApply({
+          recipe: 'multi-ecosystem-recipe',
+          progress: false,
+        });
+
+        expect(result.executionResults).toHaveLength(2);
+        expect(result.executionResults.every((r) => r.success)).toBe(true);
+        expect(
+          result.executionResults.find((r) => r.projectPath === 'workspace')
+        ).toBeDefined();
+        expect(
+          result.executionResults.find((r) =>
+            r.projectPath.includes('python-service')
+          )
+        ).toBeDefined();
+      });
+
+      it('should handle workspace-preferred recipe with no applicable scope', async () => {
+        setupStandardApplyScenario();
+        setupHierarchicalLevelMocks('unsupported-recipe');
+
+        const mockYamlData = createMockYamlData({
+          recipeId: 'unsupported-recipe',
+          level: 'workspace-preferred' as const,
+          provides: ['feature.exists'],
+        });
+        (mockYamlData.config.libraries as Record<string, unknown>)[
+          'unsupported-recipe'
+        ] = {
+          repo: 'https://github.com/test/unsupported-recipe.git',
+          ref: 'main',
+        };
+
+        mockYamlData.metadata.ecosystems = [
+          {
+            id: 'go',
+            default_variant: 'gofmt',
+            variants: [{ id: 'gofmt', fix_prompt: 'fixes/gofmt.md' }],
+          },
+        ];
+
+        const analysisData = {
+          isMonorepo: false,
+          hasWorkspacePackageManager: true,
+          workspaceEcosystem: 'javascript',
+          projects: [
+            {
+              path: '/workspace/app',
+              language: 'javascript',
+              ecosystem: 'javascript',
+              type: 'application',
+              dependencies: [],
+              hasPackageManager: true,
+            },
+          ],
+        };
+
+        setupHierarchicalLevelReadFileSync(mockYamlData, analysisData);
+
+        await expect(
+          performRecipesApply({
+            recipe: 'unsupported-recipe',
+            progress: false,
+          })
+        ).rejects.toThrow('could not be applied at workspace or project level');
+      });
+
+      it('should handle project-only recipe correctly', async () => {
+        setupStandardApplyScenario();
+        setupHierarchicalLevelMocks('project-only-recipe');
+
+        const mockYamlData = createMockYamlData({
+          recipeId: 'project-only-recipe',
+          level: 'project-only' as const,
+          provides: ['project.feature'],
+        });
+        (mockYamlData.config.libraries as Record<string, unknown>)[
+          'project-only-recipe'
+        ] = {
+          repo: 'https://github.com/test/project-only-recipe.git',
+          ref: 'main',
+        };
+
+        mockReadFileSync.mockImplementation((filePath: string) => {
+          if (filePath.includes('analysis.json')) {
+            return JSON.stringify({
+              isMonorepo: false,
+              hasWorkspacePackageManager: true,
+              workspaceEcosystem: 'javascript',
+              projects: [
+                {
+                  path: '/workspace/app',
+                  language: 'javascript',
+                  ecosystem: 'javascript',
+                  type: 'application',
+                  dependencies: [],
+                  hasPackageManager: true,
+                },
+              ],
+            });
+          }
+          if (filePath.includes('config.yaml')) {
+            return yamlStringify(mockYamlData.config);
+          }
+          if (filePath.includes('metadata.yaml')) {
+            return yamlStringify(mockYamlData.metadata);
+          }
+          if (filePath.includes('prompt.md'))
+            return '## Goal\nAdd project feature\n\n## Investigation\nCheck project\n\n## Expected Output\nProject configured';
+          if (
+            filePath.includes(
+              'apply_recipe_project_application_instructions.md'
+            )
+          )
+            return 'Apply {{ recipe_id }} to {{ project_path }}...';
+          return '';
+        });
+
+        const result = await performRecipesApply({
+          recipe: 'project-only-recipe',
+          progress: false,
+        });
+
+        expect(result.executionResults).toHaveLength(1);
+        expect(result.executionResults[0].success).toBe(true);
+        expect(result.executionResults[0].projectPath).toContain('app');
+      });
+
+      it('should handle workspace-only recipe correctly', async () => {
+        setupStandardApplyScenario();
+        setupHierarchicalLevelMocks('workspace-only-recipe');
+
+        const mockYamlData = createMockYamlData({
+          recipeId: 'workspace-only-recipe',
+          level: 'workspace-only' as const,
+          provides: ['workspace.feature'],
+        });
+        (mockYamlData.config.libraries as Record<string, unknown>)[
+          'workspace-only-recipe'
+        ] = {
+          repo: 'https://github.com/test/workspace-only-recipe.git',
+          ref: 'main',
+        };
+
+        mockReadFileSync.mockImplementation((filePath: string) => {
+          if (filePath.includes('analysis.json')) {
+            return JSON.stringify({
+              isMonorepo: false,
+              hasWorkspacePackageManager: true,
+              workspaceEcosystem: 'javascript',
+              projects: [
+                {
+                  path: '/workspace/app',
+                  language: 'javascript',
+                  ecosystem: 'javascript',
+                  type: 'application',
+                  dependencies: [],
+                  hasPackageManager: true,
+                },
+              ],
+            });
+          }
+          if (filePath.includes('config.yaml')) {
+            return yamlStringify(mockYamlData.config);
+          }
+          if (filePath.includes('metadata.yaml')) {
+            return yamlStringify(mockYamlData.metadata);
+          }
+          if (filePath.includes('prompt.md'))
+            return '## Goal\nAdd workspace feature\n\n## Investigation\nCheck workspace\n\n## Expected Output\nWorkspace configured';
+          if (
+            filePath.includes(
+              'apply_recipe_workspace_application_instructions.md'
+            )
+          )
+            return 'Apply {{ recipe_id }} at workspace level...';
+          return '';
+        });
+
+        const result = await performRecipesApply({
+          recipe: 'workspace-only-recipe',
+          progress: false,
+        });
+
+        expect(result.executionResults).toHaveLength(1);
+        expect(result.executionResults[0].success).toBe(true);
+        expect(result.executionResults[0].projectPath).toBe('workspace');
+      });
+    });
   });
 });

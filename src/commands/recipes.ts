@@ -470,11 +470,11 @@ export async function performRecipesApply(
     onProgress?.('Initializing the chorenzo engine');
     const executionResults: ExecutionResult[] = [];
 
-    if (recipe.isWorkspaceLevel()) {
+    if (recipe.isWorkspaceOnly()) {
       const workspaceEcosystem = analysis.workspaceEcosystem || 'unknown';
       if (!recipe.hasEcosystem(workspaceEcosystem)) {
         throw new ApplyError(
-          `Workspace-level recipe '${recipe.getId()}' does not support workspace ecosystem '${workspaceEcosystem}'`,
+          `Workspace-only recipe '${recipe.getId()}' does not support workspace ecosystem '${workspaceEcosystem}'`,
           'ECOSYSTEM_NOT_SUPPORTED'
         );
       }
@@ -500,6 +500,32 @@ export async function performRecipesApply(
         onValidation?.(
           'error',
           `Failed to apply workspace recipe: ${executionResult.error}`
+        );
+      }
+    } else if (recipe.isWorkspacePreferred()) {
+      const { workspaceResult, projectResults } =
+        await applyWorkspacePreferredRecipe(
+          recipe,
+          analysis,
+          options,
+          onProgress,
+          onValidation
+        );
+
+      if (workspaceResult) {
+        totalCostUsd += workspaceResult.costUsd;
+        executionResults.push(workspaceResult);
+      }
+
+      for (const projectResult of projectResults) {
+        totalCostUsd += projectResult.costUsd;
+        executionResults.push(projectResult);
+      }
+
+      if (executionResults.length === 0) {
+        throw new ApplyError(
+          `Recipe '${recipe.getId()}' could not be applied at workspace or project level`,
+          'NO_APPLICABLE_SCOPE'
         );
       }
     } else {
@@ -796,7 +822,7 @@ function generateApplicationInstructions(
   recipe: Recipe,
   project?: ProjectAnalysis
 ): string {
-  if (recipe.isWorkspaceLevel()) {
+  if (recipe.isWorkspaceLevel() && !project) {
     return loadPrompt('apply_recipe_workspace_application_instructions');
   } else {
     if (!project) {
@@ -828,7 +854,7 @@ function generateStateManagementInstructions(
     .map((key) => `   - ${key}`)
     .join('\n');
 
-  if (recipe.isWorkspaceLevel()) {
+  if (recipe.isWorkspaceLevel() && !project) {
     const template = loadPrompt('apply_recipe_workspace_state_management');
     return renderPrompt(template, {
       workspace_root: workspaceRoot,
@@ -1123,4 +1149,149 @@ async function executeRecipe(
       costUsd: 0,
     };
   }
+}
+
+interface WorkspacePreferredResult {
+  workspaceResult: ExecutionResult | null;
+  projectResults: ExecutionResult[];
+}
+
+async function applyWorkspacePreferredRecipe(
+  recipe: Recipe,
+  analysis: WorkspaceAnalysis,
+  options: ApplyOptions,
+  onProgress?: (message: string) => void,
+  onValidation?: (level: 'info' | 'error' | 'success', message: string) => void
+): Promise<WorkspacePreferredResult> {
+  const workspaceEcosystem = analysis.workspaceEcosystem || 'unknown';
+  const currentState = await readCurrentState();
+
+  const canApplyAtWorkspace = canApplyRecipeAtWorkspace(
+    recipe,
+    analysis,
+    currentState
+  );
+
+  const applicableProjects = getApplicableProjectsForWorkspacePreferred(
+    recipe,
+    analysis,
+    workspaceEcosystem,
+    options.project
+  );
+
+  let workspaceResult: ExecutionResult | null = null;
+  const projectResults: ExecutionResult[] = [];
+
+  if (canApplyAtWorkspace) {
+    onProgress?.('Applying recipe at workspace level...');
+
+    const variant =
+      options.variant ||
+      recipe.getDefaultVariant(workspaceEcosystem) ||
+      'default';
+
+    workspaceResult = await applyWorkspaceRecipe(
+      recipe,
+      variant,
+      analysis,
+      onProgress
+    );
+
+    if (workspaceResult.success) {
+      onValidation?.('success', `Successfully applied workspace recipe`);
+    } else {
+      onValidation?.(
+        'error',
+        `Failed to apply workspace recipe: ${workspaceResult.error}`
+      );
+    }
+  }
+
+  if (applicableProjects.length > 0) {
+    onProgress?.(
+      applicableProjects.length === analysis.projects.length
+        ? 'Applying recipe at project level...'
+        : `Applying recipe to ${applicableProjects.length} specific projects...`
+    );
+
+    for (const project of applicableProjects) {
+      const variant =
+        options.variant ||
+        recipe.getDefaultVariant(project.ecosystem || 'unknown') ||
+        'default';
+
+      const executionResult = await applyProjectRecipe(
+        recipe,
+        project,
+        variant,
+        analysis,
+        onProgress
+      );
+
+      projectResults.push(executionResult);
+
+      if (executionResult.success) {
+        onValidation?.(
+          'success',
+          `Successfully applied to ${executionResult.projectPath}`
+        );
+      } else {
+        onValidation?.(
+          'error',
+          `Failed to apply to ${executionResult.projectPath}: ${executionResult.error}`
+        );
+      }
+    }
+  }
+
+  return { workspaceResult, projectResults };
+}
+
+function canApplyRecipeAtWorkspace(
+  recipe: Recipe,
+  analysis: WorkspaceAnalysis,
+  currentState: RecipeState
+): boolean {
+  const workspaceEcosystem = analysis.workspaceEcosystem || 'unknown';
+
+  if (!recipe.hasEcosystem(workspaceEcosystem)) {
+    return false;
+  }
+
+  const requires = recipe.getRequires();
+  for (const requirement of requires) {
+    const stateValue = currentState[requirement.key];
+    if (stateValue !== requirement.equals) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function getApplicableProjectsForWorkspacePreferred(
+  recipe: Recipe,
+  analysis: WorkspaceAnalysis,
+  workspaceEcosystem: string,
+  projectFilter?: string
+): ProjectAnalysis[] {
+  return analysis.projects.filter((project) => {
+    if (projectFilter && !project.path.includes(projectFilter)) {
+      return false;
+    }
+
+    if (!project.ecosystem) {
+      return false;
+    }
+
+    if (!recipe.hasEcosystem(project.ecosystem)) {
+      return false;
+    }
+
+    if (project.ecosystem !== workspaceEcosystem) {
+      return true;
+    }
+
+    return false;
+  });
 }

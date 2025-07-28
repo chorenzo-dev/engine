@@ -10,7 +10,12 @@ import { cloneRepository } from '../utils/git-operations.utils';
 import { normalizeRepoIdentifier } from '../utils/git.utils';
 import { performAnalysis } from './analyze';
 import { readJson } from '../utils/json.utils';
-import { loadPrompt, loadTemplate, renderPrompt } from '../utils/prompts.utils';
+import {
+  loadPrompt,
+  loadTemplate,
+  renderPrompt,
+  loadRecipeGuidelines,
+} from '../utils/prompts.utils';
 import { workspaceConfig } from '../utils/workspace-config.utils';
 import { Logger } from '../utils/logger.utils';
 import { resolvePath } from '../utils/path.utils';
@@ -29,7 +34,7 @@ import {
   ApplyValidationCallback,
 } from '../types/apply';
 import { Recipe, RecipeDependency } from '../types/recipe';
-import { libraryManager } from '../utils/library-manager.utils';
+import { libraryManager, LocationType } from '../utils/library-manager.utils';
 import { WorkspaceAnalysis, ProjectAnalysis } from '../types/analysis';
 import { stateManager } from '../utils/state-manager.utils';
 import { WorkspaceState } from '../types/state';
@@ -1294,50 +1299,42 @@ async function executeRecipe(
   }
 }
 
-function validateRecipeId(recipeName: string): string {
-  if (!recipeName || recipeName.trim().length === 0) {
+function validateAndNormalizeName(
+  name: string,
+  type: 'recipe' | 'category'
+): string {
+  const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+  const errorCode =
+    type === 'recipe' ? 'INVALID_RECIPE_NAME' : 'INVALID_CATEGORY_NAME';
+
+  if (!name || name.trim().length === 0) {
     throw new RecipesError(
-      'Recipe name cannot be empty',
-      'INVALID_RECIPE_NAME'
+      `${capitalizedType} name cannot be empty`,
+      errorCode
     );
   }
 
-  const trimmed = recipeName.trim();
+  const trimmed = name.trim();
   const normalized = trimmed.replace(/\s+/g, '-').toLowerCase();
   const invalidChars = normalized.match(/[^a-zA-Z0-9-]/g);
 
   if (invalidChars) {
     const uniqueInvalidChars = [...new Set(invalidChars)].join(', ');
     throw new RecipesError(
-      `Recipe name contains invalid characters: ${uniqueInvalidChars}. Only letters, numbers, and dashes are allowed.`,
-      'INVALID_RECIPE_NAME'
+      `${capitalizedType} name contains invalid characters: ${uniqueInvalidChars}. Only letters, numbers, and dashes are allowed.`,
+      errorCode
     );
   }
 
   return normalized;
 }
 
+function validateRecipeId(recipeName: string): string {
+  return validateAndNormalizeName(recipeName, 'recipe');
+}
+
 export function validateCategoryName(categoryName: string): string {
-  if (!categoryName || categoryName.trim().length === 0) {
-    throw new RecipesError(
-      'Category name cannot be empty',
-      'INVALID_CATEGORY_NAME'
-    );
-  }
-
-  const trimmed = categoryName.trim();
-  const normalized = trimmed.replace(/\s+/g, '-').toLowerCase();
-  const invalidChars = normalized.match(/[^a-zA-Z0-9-]/g);
-
-  if (invalidChars) {
-    const uniqueInvalidChars = [...new Set(invalidChars)].join(', ');
-    throw new RecipesError(
-      `Category name contains invalid characters: ${uniqueInvalidChars}. Only letters, numbers, and dashes are allowed.`,
-      'INVALID_CATEGORY_NAME'
-    );
-  }
-
-  return normalized;
+  return validateAndNormalizeName(categoryName, 'category');
 }
 
 export async function performRecipesGenerate(
@@ -1368,13 +1365,13 @@ export async function performRecipesGenerate(
     }
     const category = validateCategoryName(options.category);
 
-    if (!options.summary || !options.summary.trim()) {
+    const summary = options.summary?.trim();
+    if (!summary) {
       throw new RecipesError(
         'Summary is required. Use --summary or provide via interactive prompt',
         'MISSING_SUMMARY'
       );
     }
-    const summary = options.summary.trim();
 
     const baseLocation = options.saveLocation
       ? resolvePath(options.saveLocation)
@@ -1383,7 +1380,7 @@ export async function performRecipesGenerate(
     const analysis = libraryManager.analyzeLocation(baseLocation);
     let recipePath: string;
 
-    if (analysis.type === 'category_folder') {
+    if (analysis.type === LocationType.CategoryFolder) {
       recipePath = path.join(baseLocation, recipeId);
     } else {
       recipePath = path.join(baseLocation, category, recipeId);
@@ -1413,12 +1410,7 @@ export async function performRecipesGenerate(
     if (options.magicGenerate) {
       onProgress?.('Generating recipe content with AI...');
 
-      const recipeDocsPath = path.join(process.cwd(), 'docs', 'recipes.md');
-      let recipeGuidelines = '';
-
-      if (fs.existsSync(recipeDocsPath)) {
-        recipeGuidelines = fs.readFileSync(recipeDocsPath, 'utf-8');
-      }
+      const recipeGuidelines = loadRecipeGuidelines();
 
       const magicPromptTemplate = loadPrompt('recipe_magic_generate');
       const additionalInstructionsText = options.additionalInstructions

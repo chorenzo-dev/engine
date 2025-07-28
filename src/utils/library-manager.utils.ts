@@ -12,6 +12,13 @@ import { Logger } from './logger.utils';
 import { chorenzoConfig } from './chorenzo-config.utils';
 import type { Config, ConfigLibrary } from '../types/config';
 
+export enum LocationType {
+  Empty = 'empty',
+  LibraryRoot = 'library_root',
+  CategoryFolder = 'category_folder',
+  Invalid = 'invalid',
+}
+
 export class LibraryManagerError extends Error {
   constructor(
     message: string,
@@ -237,12 +244,12 @@ export class LibraryManager {
   }
 
   analyzeLocation(locationPath: string): {
-    type: 'empty' | 'library_root' | 'category_folder' | 'invalid';
+    type: LocationType;
     categoryName?: string;
     categories?: string[];
   } {
     if (!fs.existsSync(locationPath)) {
-      return { type: 'empty' };
+      return { type: LocationType.Empty };
     }
 
     const stat = fs.statSync(locationPath);
@@ -255,7 +262,7 @@ export class LibraryManager {
 
     const entries = fs.readdirSync(locationPath);
     if (entries.length === 0) {
-      return { type: 'empty' };
+      return { type: LocationType.Empty };
     }
 
     const subfolders = entries.filter((entry) => {
@@ -268,7 +275,7 @@ export class LibraryManager {
     });
 
     if (subfolders.length === 0) {
-      return { type: 'empty' };
+      return { type: LocationType.Empty };
     }
 
     let recipeCount = 0;
@@ -293,14 +300,14 @@ export class LibraryManager {
 
     if (recipeCount > 0) {
       const categoryName = path.basename(locationPath);
-      return { type: 'category_folder', categoryName };
+      return { type: LocationType.CategoryFolder, categoryName };
     }
 
     if (categoryCount > 0) {
       const categories = subfolders.filter((subfolder) =>
         this.isCategoryFolder(path.join(locationPath, subfolder))
       );
-      return { type: 'library_root', categories };
+      return { type: LocationType.LibraryRoot, categories };
     }
 
     throw new LibraryManagerError(
@@ -335,15 +342,15 @@ export class LibraryManager {
     const recipesDir = searchPath || chorenzoConfig.recipesDir;
     const analysis = this.analyzeLocation(recipesDir);
 
-    if (analysis.type === 'empty') {
+    if (analysis.type === LocationType.Empty) {
       return [];
     }
 
-    if (analysis.type === 'category_folder') {
+    if (analysis.type === LocationType.CategoryFolder) {
       return [analysis.categoryName!];
     }
 
-    if (analysis.type === 'library_root' && analysis.categories) {
+    if (analysis.type === LocationType.LibraryRoot && analysis.categories) {
       return analysis.categories.sort();
     }
 

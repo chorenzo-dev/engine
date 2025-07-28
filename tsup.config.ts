@@ -23,6 +23,10 @@ export default defineConfig({
           from: ['./src/resources/**/*'],
           to: ['./resources'],
         },
+        {
+          from: ['./docs/recipes.md'],
+          to: ['./docs/recipes.md'],
+        },
       ],
     }),
   ],

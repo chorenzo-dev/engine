@@ -9,7 +9,7 @@ import {
   type GenerateResult,
   type ProgressCallback,
 } from '../commands/recipes';
-import { libraryManager } from '../utils/library-manager.utils';
+import { libraryManager, LocationType } from '../utils/library-manager.utils';
 import { resolvePath } from '../utils/path.utils';
 import {
   CodeChangesProgress,
@@ -202,7 +202,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
           );
           const analysis = libraryManager.analyzeLocation(location);
 
-          if (analysis.type === 'category_folder') {
+          if (analysis.type === LocationType.CategoryFolder) {
             setCategory(analysis.categoryName!);
             const updatedOptions = {
               ...collectedOptions,

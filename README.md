@@ -148,7 +148,6 @@ npx chorenzo --help
 # Show help for specific command
 npx chorenzo analyze --help
 npx chorenzo recipes --help
-npx chorenzo recipes generate --help
 ```
 
 ## Requirements

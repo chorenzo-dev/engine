@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -6,6 +6,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROMPTS_DIR = __dirname.endsWith('dist')
   ? join(__dirname, 'prompts')
   : join(__dirname, '..', 'prompts');
+const DOCS_DIR = __dirname.endsWith('dist')
+  ? join(__dirname, 'docs')
+  : join(__dirname, '..', '..', 'docs');
 
 export function loadPrompt(promptName: string): string {
   const promptPath = join(PROMPTS_DIR, `${promptName}.md`);
@@ -45,4 +48,12 @@ export function renderPrompt(
     );
   }
   return rendered;
+}
+
+export function loadRecipeGuidelines(): string {
+  const guidelinesPath = join(DOCS_DIR, 'recipes.md');
+  if (existsSync(guidelinesPath)) {
+    return readFileSync(guidelinesPath, 'utf-8');
+  }
+  return '';
 }

@@ -817,10 +817,10 @@ async function validateWorkspaceDependencies(
 
     if (currentValue === undefined) {
       missing.push(dependency);
-    } else if (currentValue !== dependency.equals) {
+    } else if (currentValue !== String(dependency.equals)) {
       conflicting.push({
         key: dependency.key,
-        required: dependency.equals,
+        required: String(dependency.equals),
         current: currentValue,
       });
     }

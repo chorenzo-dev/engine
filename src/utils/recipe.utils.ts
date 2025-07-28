@@ -1,15 +1,17 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { readYaml } from './yaml.utils';
+
 import {
   Recipe,
+  RecipeLibrary,
   RecipeMetadata,
   RecipePrompt,
   RecipeValidationError,
   RecipeValidationResult,
-  RecipeLibrary,
 } from '~/types/recipe';
+
 import { isReservedKeyword } from './project-characteristics.utils';
+import { readYaml } from './yaml.utils';
 
 export class RecipeParsingError extends Error {
   constructor(

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Text, Newline } from 'ink';
-import { AuthenticationStep } from '~/components/AuthenticationStep';
-import { AnalysisStep } from '~/components/AnalysisStep';
+import { Box, Newline, Text } from 'ink';
+import React, { useEffect, useState } from 'react';
+
 import { AnalysisResult } from '~/commands/analyze';
-import { performInit, InitError } from '~/commands/init';
+import { InitError, performInit } from '~/commands/init';
+import { AnalysisStep } from '~/components/AnalysisStep';
+import { AuthenticationStep } from '~/components/AuthenticationStep';
 
 interface InitContainerProps {
   options: {

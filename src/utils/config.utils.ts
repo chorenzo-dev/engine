@@ -1,9 +1,11 @@
 import * as fs from 'fs';
-import * as path from 'path';
 import * as os from 'os';
-import { readYaml, writeYaml } from './yaml.utils';
-import { writeJson } from './json.utils';
+import * as path from 'path';
+
 import { Config, State } from '~/types/config';
+
+import { writeJson } from './json.utils';
+import { readYaml, writeYaml } from './yaml.utils';
 
 export class ChorenzoConfig {
   get dir(): string {

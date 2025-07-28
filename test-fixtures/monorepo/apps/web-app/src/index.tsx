@@ -1,5 +1,5 @@
-import React from 'react';
 import { Button } from '@monorepo/shared-lib';
+import React from 'react';
 
 export default function HomePage() {
   return (

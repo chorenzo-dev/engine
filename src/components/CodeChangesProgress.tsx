@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Text, Box } from 'ink';
+import { Box, Text } from 'ink';
 import Spinner from 'ink-spinner';
+import React, { useCallback, useEffect, useState } from 'react';
+
 import { OperationMetadata } from '~/types/common';
 
 export interface CodeChangesOperation {

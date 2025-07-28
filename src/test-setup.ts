@@ -1,4 +1,4 @@
-import { jest, beforeEach, afterEach } from '@jest/globals';
+import { afterEach, beforeEach, jest } from '@jest/globals';
 
 beforeEach(() => {
   jest.clearAllMocks();

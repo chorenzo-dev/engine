@@ -1,22 +1,24 @@
-import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Text, useStdin } from 'ink';
 import SelectInput from 'ink-select-input';
 import TextInput from 'ink-text-input';
+import React, { useCallback, useEffect, useState } from 'react';
+
 import {
-  performRecipesGenerate,
-  validateCategoryName,
   type GenerateOptions,
   type GenerateResult,
   type ProgressCallback,
+  performRecipesGenerate,
+  validateCategoryName,
 } from '~/commands/recipes';
-import { libraryManager, LocationType } from '~/utils/library-manager.utils';
-import { resolvePath } from '~/utils/path.utils';
 import { chorenzoConfig } from '~/utils/chorenzo-config.utils';
+import { generateOperationId } from '~/utils/code-changes-events.utils';
+import { LocationType, libraryManager } from '~/utils/library-manager.utils';
+import { resolvePath } from '~/utils/path.utils';
+
 import {
   CodeChangesProgress,
   useCodeChangesProgress,
 } from './CodeChangesProgress';
-import { generateOperationId } from '~/utils/code-changes-events.utils';
 
 interface RecipeGenerateProgressProps {
   options: GenerateOptions;

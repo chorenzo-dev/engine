@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
-import { Box, Text, Newline } from 'ink';
+import { Box, Newline, Text } from 'ink';
 import SelectInput from 'ink-select-input';
 import TextInput from 'ink-text-input';
-import { AuthMethod, AuthConfig } from '~/types/config';
+import React, { useState } from 'react';
+
+import { AuthConfig, AuthMethod } from '~/types/config';
 import {
-  validateApiKey,
   checkClaudeCodeAuth,
-  saveAuthConfig,
   loadAndSetupAuth,
+  saveAuthConfig,
+  validateApiKey,
 } from '~/utils/claude.utils';
 
 interface AuthenticationStepProps {

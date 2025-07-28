@@ -1,9 +1,11 @@
 import * as fs from 'fs';
-import * as path from 'path';
 import * as os from 'os';
-import { readYaml, writeYaml } from './yaml.utils';
-import { writeJson } from './json.utils';
+import * as path from 'path';
+
 import type { Config } from '~/types/config';
+
+import { writeJson } from './json.utils';
+import { readYaml, writeYaml } from './yaml.utils';
 
 interface State {
   last_checked: string;

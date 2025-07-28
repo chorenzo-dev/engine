@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { stringify as yamlStringify } from 'yaml';
 
 const mockHomedir = jest.fn<() => string>(() => '/test/home');

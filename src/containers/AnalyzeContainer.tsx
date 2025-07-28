@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
-import { AnalysisProgress } from '~/components/AnalysisProgress';
+import React, { useEffect, useState } from 'react';
+
+import { AnalysisResult, performAnalysis } from '~/commands/analyze';
 import { AnalysisDisplay } from '~/components/AnalysisDisplay';
-import { performAnalysis, AnalysisResult } from '~/commands/analyze';
+import { AnalysisProgress } from '~/components/AnalysisProgress';
 
 interface AnalyzeContainerProps {
   options: {

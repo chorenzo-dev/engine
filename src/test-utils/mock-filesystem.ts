@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+
 import type { TestFixture } from './fixture-loader';
 
 export function mockFileSystemForFixture(fixture: TestFixture) {

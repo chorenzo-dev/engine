@@ -1,6 +1,7 @@
-import { WorkspaceAnalysis, ProjectAnalysis } from '~/types/analysis';
 import * as fs from 'fs';
 import * as path from 'path';
+
+import { ProjectAnalysis, WorkspaceAnalysis } from '~/types/analysis';
 
 const ANALYSIS_PATH = path.join(process.cwd(), '.chorenzo', 'analysis.json');
 

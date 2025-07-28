@@ -1,53 +1,55 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
 import { query } from '@anthropic-ai/claude-code';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+
+import { ProjectAnalysis, WorkspaceAnalysis } from '~/types/analysis';
+import {
+  ApplyError,
+  ApplyOptions,
+  ApplyProgressCallback,
+  ApplyRecipeResult,
+  ApplyValidationCallback,
+  DependencyValidationResult,
+  ExecutionResult,
+  RecipeState,
+} from '~/types/apply';
+import { Recipe, RecipeDependency } from '~/types/recipe';
+import { WorkspaceState } from '~/types/state';
+import { chorenzoConfig } from '~/utils/chorenzo-config.utils';
+import {
+  CodeChangesEventHandlers,
+  executeCodeChangesOperation,
+} from '~/utils/code-changes-events.utils';
+import { cloneRepository } from '~/utils/git-operations.utils';
+import { normalizeRepoIdentifier } from '~/utils/git.utils';
+import { readJson } from '~/utils/json.utils';
+import { LocationType, libraryManager } from '~/utils/library-manager.utils';
+import { Logger } from '~/utils/logger.utils';
+import { resolvePath } from '~/utils/path.utils';
+import {
+  findProjectByPath,
+  getProjectCharacteristic,
+  getWorkspaceCharacteristic,
+  isProjectKeyword,
+  isReservedKeyword,
+  isWorkspaceKeyword,
+  loadWorkspaceAnalysis,
+} from '~/utils/project-characteristics.utils';
+import {
+  loadDoc,
+  loadPrompt,
+  loadTemplate,
+  renderPrompt,
+} from '~/utils/prompts.utils';
 import {
   parseRecipeFromDirectory,
   parseRecipeLibraryFromDirectory,
 } from '~/utils/recipe.utils';
-import { cloneRepository } from '~/utils/git-operations.utils';
-import { normalizeRepoIdentifier } from '~/utils/git.utils';
-import { performAnalysis } from './analyze';
-import { readJson } from '~/utils/json.utils';
-import {
-  loadPrompt,
-  loadTemplate,
-  renderPrompt,
-  loadDoc,
-} from '~/utils/prompts.utils';
-import { workspaceConfig } from '~/utils/workspace-config.utils';
-import { chorenzoConfig } from '~/utils/chorenzo-config.utils';
-import { Logger } from '~/utils/logger.utils';
-import { resolvePath } from '~/utils/path.utils';
-import {
-  executeCodeChangesOperation,
-  CodeChangesEventHandlers,
-} from '~/utils/code-changes-events.utils';
-import {
-  ApplyOptions,
-  ApplyRecipeResult,
-  ApplyError,
-  RecipeState,
-  DependencyValidationResult,
-  ExecutionResult,
-  ApplyProgressCallback,
-  ApplyValidationCallback,
-} from '~/types/apply';
-import { Recipe, RecipeDependency } from '~/types/recipe';
-import { libraryManager, LocationType } from '~/utils/library-manager.utils';
-import { WorkspaceAnalysis, ProjectAnalysis } from '~/types/analysis';
 import { stateManager } from '~/utils/state-manager.utils';
-import { WorkspaceState } from '~/types/state';
-import {
-  isReservedKeyword,
-  isWorkspaceKeyword,
-  isProjectKeyword,
-  loadWorkspaceAnalysis,
-  getWorkspaceCharacteristic,
-  getProjectCharacteristic,
-  findProjectByPath,
-} from '~/utils/project-characteristics.utils';
+import { workspaceConfig } from '~/utils/workspace-config.utils';
+
+import { performAnalysis } from './analyze';
 
 export enum InputType {
   RecipeName = 'recipe-name',

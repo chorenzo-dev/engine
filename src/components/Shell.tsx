@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
 import { Box, Text } from 'ink';
-import { InitContainer } from '~/containers/InitContainer';
-import { AnalyzeContainer } from '~/containers/AnalyzeContainer';
-import { RecipesContainer } from '~/containers/RecipesContainer';
+import React, { useState } from 'react';
+
 import { AnalysisResult } from '~/commands/analyze';
 import {
-  type ValidationResult,
   type GenerateResult as RecipeGenerateResult,
+  type ValidationResult,
 } from '~/commands/recipes';
+import { AnalyzeContainer } from '~/containers/AnalyzeContainer';
+import { InitContainer } from '~/containers/InitContainer';
+import { RecipesContainer } from '~/containers/RecipesContainer';
+import { ApplyRecipeResult } from '~/types/apply';
+
 import { AnalysisDisplay } from './AnalysisDisplay';
 import { ApplyDisplay } from './ApplyDisplay';
-import { ApplyRecipeResult } from '~/types/apply';
 
 interface ShellProps {
   command:

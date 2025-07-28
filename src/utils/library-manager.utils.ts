@@ -1,16 +1,18 @@
 import * as fs from 'fs';
-import * as path from 'path';
 import * as os from 'os';
+import * as path from 'path';
 import { simpleGit } from 'simple-git';
+
+import type { Config, ConfigLibrary } from '~/types/config';
+
+import { chorenzoConfig } from './chorenzo-config.utils';
 import {
+  GitError,
   checkGitAvailable,
   cloneRepository,
-  GitError,
 } from './git-operations.utils';
-import { retry } from './retry.utils';
 import { Logger } from './logger.utils';
-import { chorenzoConfig } from './chorenzo-config.utils';
-import type { Config, ConfigLibrary } from '~/types/config';
+import { retry } from './retry.utils';
 
 export enum LocationType {
   Empty = 'empty',

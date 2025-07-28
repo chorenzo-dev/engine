@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Text, Box } from 'ink';
+import { Box, Text } from 'ink';
+import React, { useEffect, useState } from 'react';
+
 import { performRecipesApply } from '~/commands/recipes';
 import { ApplyOptions, ApplyRecipeResult } from '~/types/apply';
+import { generateOperationId } from '~/utils/code-changes-events.utils';
+
 import { ApplyDisplay } from './ApplyDisplay';
 import { useCodeChangesProgress } from './CodeChangesProgress';
-import { generateOperationId } from '~/utils/code-changes-events.utils';
 
 interface DebugProgressProps {
   options: ApplyOptions;

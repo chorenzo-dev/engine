@@ -1,9 +1,10 @@
+import { Box, Text } from 'ink';
 import React from 'react';
-import { Text, Box } from 'ink';
+
 import {
-  WorkspaceAnalysis,
-  ProjectAnalysis,
   CiCdSystem,
+  ProjectAnalysis,
+  WorkspaceAnalysis,
 } from '~/types/analysis';
 
 export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({

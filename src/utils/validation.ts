@@ -1,5 +1,6 @@
-import * as path from 'path';
 import * as fs from 'fs';
+import * as path from 'path';
+
 import { Logger } from './logger.utils';
 
 function matchGitIgnorePattern(filePath: string, pattern: string): boolean {

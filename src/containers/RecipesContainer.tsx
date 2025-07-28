@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
-import { ApplyProgress } from '../components/ApplyProgress';
-import { DebugProgress } from '../components/DebugProgress';
-import { ApplyDisplay } from '../components/ApplyDisplay';
-import { RecipeGenerateProgress } from '../components/RecipeGenerateProgress';
+import { ApplyProgress } from '~/components/ApplyProgress';
+import { DebugProgress } from '~/components/DebugProgress';
+import { ApplyDisplay } from '~/components/ApplyDisplay';
+import { RecipeGenerateProgress } from '~/components/RecipeGenerateProgress';
 import {
   performRecipesValidate,
   performRecipesApply,
   performRecipesGenerate,
   type ValidationResult,
   type GenerateResult as RecipeGenerateResult,
-} from '../commands/recipes';
-import { ApplyOptions, ApplyRecipeResult } from '../types/apply';
+} from '~/commands/recipes';
+import { ApplyOptions, ApplyRecipeResult } from '~/types/apply';
 
 interface RecipesContainerProps {
   command: 'validate' | 'apply' | 'generate';

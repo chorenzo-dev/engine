@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import type { WorkspaceAnalysis } from '../types/analysis';
+import type { WorkspaceAnalysis } from '~/types/analysis';
 
 export function mockClaudeAnalysis(analysisResult: WorkspaceAnalysis) {
   const mockQuery = jest.fn().mockImplementation(async function* () {

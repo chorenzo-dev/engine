@@ -10,7 +10,7 @@ import {
 import { retry } from './retry.utils';
 import { Logger } from './logger.utils';
 import { chorenzoConfig } from './chorenzo-config.utils';
-import type { Config, ConfigLibrary } from '../types/config';
+import type { Config, ConfigLibrary } from '~/types/config';
 
 export enum LocationType {
   Empty = 'empty',

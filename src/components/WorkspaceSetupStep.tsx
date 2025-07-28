@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
-import { performInit } from '../commands/init';
+import { performInit } from '~/commands/init';
 
 interface WorkspaceSetupStepProps {
   options: {

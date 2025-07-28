@@ -1,4 +1,4 @@
-import { WorkspaceAnalysis, ProjectAnalysis } from '../types/analysis';
+import { WorkspaceAnalysis, ProjectAnalysis } from '~/types/analysis';
 import * as fs from 'fs';
 import * as path from 'path';
 

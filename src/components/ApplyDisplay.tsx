@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, Box } from 'ink';
-import { ApplyRecipeResult } from '../types/apply';
+import { ApplyRecipeResult } from '~/types/apply';
 
 interface ApplyDisplayProps {
   result: ApplyRecipeResult;

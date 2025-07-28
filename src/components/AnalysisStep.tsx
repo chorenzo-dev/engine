@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput, useStdin } from 'ink';
-import { performAnalysis, AnalysisResult } from '../commands/analyze';
+import { performAnalysis, AnalysisResult } from '~/commands/analyze';
 import { AnalysisDisplay } from './AnalysisDisplay';
 import {
   CodeChangesProgress,
   useCodeChangesProgress,
 } from './CodeChangesProgress';
-import { generateOperationId } from '../utils/code-changes-events.utils';
+import { generateOperationId } from '~/utils/code-changes-events.utils';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { readJson, writeJson } from '../utils/json.utils';
-import { Logger } from '../utils/logger.utils';
+import { readJson, writeJson } from '~/utils/json.utils';
+import { Logger } from '~/utils/logger.utils';
 
 interface AnalysisStepProps {
   options: {

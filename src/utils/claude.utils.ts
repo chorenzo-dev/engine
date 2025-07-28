@@ -1,6 +1,6 @@
 import { spawnSync } from 'child_process';
 import { Logger } from './logger.utils';
-import { AuthConfig } from '../types/config';
+import { AuthConfig } from '~/types/config';
 import { chorenzoConfig } from './config.utils';
 
 export class AuthError extends Error {

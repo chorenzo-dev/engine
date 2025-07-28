@@ -8,7 +8,7 @@ import {
   RecipeValidationError,
   RecipeValidationResult,
   RecipeLibrary,
-} from '../types/recipe';
+} from '~/types/recipe';
 import { isReservedKeyword } from './project-characteristics.utils';
 
 export class RecipeParsingError extends Error {

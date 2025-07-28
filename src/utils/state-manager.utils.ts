@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { workspaceConfig } from './workspace-config.utils';
-import { WorkspaceState } from '../types/state';
+import { WorkspaceState } from '~/types/state';
 
 export class WorkspaceStateManager {
   private statePath: string;

@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { Box, Text } from 'ink';
-import { InitContainer } from '../containers/InitContainer';
-import { AnalyzeContainer } from '../containers/AnalyzeContainer';
-import { RecipesContainer } from '../containers/RecipesContainer';
-import { AnalysisResult } from '../commands/analyze';
+import { InitContainer } from '~/containers/InitContainer';
+import { AnalyzeContainer } from '~/containers/AnalyzeContainer';
+import { RecipesContainer } from '~/containers/RecipesContainer';
+import { AnalysisResult } from '~/commands/analyze';
 import {
   type ValidationResult,
   type GenerateResult as RecipeGenerateResult,
-} from '../commands/recipes';
+} from '~/commands/recipes';
 import { AnalysisDisplay } from './AnalysisDisplay';
 import { ApplyDisplay } from './ApplyDisplay';
-import { ApplyRecipeResult } from '../types/apply';
+import { ApplyRecipeResult } from '~/types/apply';
 
 interface ShellProps {
   command:

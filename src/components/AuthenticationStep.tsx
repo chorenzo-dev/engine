@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { Box, Text, Newline } from 'ink';
 import SelectInput from 'ink-select-input';
 import TextInput from 'ink-text-input';
-import { AuthMethod, AuthConfig } from '../types/config';
+import { AuthMethod, AuthConfig } from '~/types/config';
 import {
   validateApiKey,
   checkClaudeCodeAuth,
   saveAuthConfig,
   loadAndSetupAuth,
-} from '../utils/claude.utils';
+} from '~/utils/claude.utils';
 
 interface AuthenticationStepProps {
   onAuthComplete: () => void;

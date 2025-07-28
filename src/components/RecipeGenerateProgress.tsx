@@ -8,15 +8,15 @@ import {
   type GenerateOptions,
   type GenerateResult,
   type ProgressCallback,
-} from '../commands/recipes';
-import { libraryManager, LocationType } from '../utils/library-manager.utils';
-import { resolvePath } from '../utils/path.utils';
-import { chorenzoConfig } from '../utils/chorenzo-config.utils';
+} from '~/commands/recipes';
+import { libraryManager, LocationType } from '~/utils/library-manager.utils';
+import { resolvePath } from '~/utils/path.utils';
+import { chorenzoConfig } from '~/utils/chorenzo-config.utils';
 import {
   CodeChangesProgress,
   useCodeChangesProgress,
 } from './CodeChangesProgress';
-import { generateOperationId } from '../utils/code-changes-events.utils';
+import { generateOperationId } from '~/utils/code-changes-events.utils';
 
 interface RecipeGenerateProgressProps {
   options: GenerateOptions;

@@ -2,7 +2,7 @@ import {
   parseRecipeFromDirectory,
   parseRecipeLibraryFromDirectory,
   validateRecipe,
-} from '../utils/recipe.utils';
+} from '~/utils/recipe.utils';
 
 export interface RecipeVariant {
   id: string;

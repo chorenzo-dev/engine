@@ -8,9 +8,9 @@ import {
 } from '@jest/globals';
 import * as path from 'path';
 import * as fs from 'fs';
-import type { WorkspaceAnalysis } from '../types/analysis';
-import type { OperationMetadata } from '../types/common';
-import { setupFixture } from '../test-utils/fixture-loader';
+import type { WorkspaceAnalysis } from '~/types/analysis';
+import type { OperationMetadata } from '~/types/common';
+import { setupFixture } from '~/test-utils/fixture-loader';
 
 const frameworksYamlPath = path.join(
   process.cwd(),

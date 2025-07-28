@@ -5,25 +5,25 @@ import { query } from '@anthropic-ai/claude-code';
 import {
   parseRecipeFromDirectory,
   parseRecipeLibraryFromDirectory,
-} from '../utils/recipe.utils';
-import { cloneRepository } from '../utils/git-operations.utils';
-import { normalizeRepoIdentifier } from '../utils/git.utils';
+} from '~/utils/recipe.utils';
+import { cloneRepository } from '~/utils/git-operations.utils';
+import { normalizeRepoIdentifier } from '~/utils/git.utils';
 import { performAnalysis } from './analyze';
-import { readJson } from '../utils/json.utils';
+import { readJson } from '~/utils/json.utils';
 import {
   loadPrompt,
   loadTemplate,
   renderPrompt,
   loadDoc,
-} from '../utils/prompts.utils';
-import { workspaceConfig } from '../utils/workspace-config.utils';
-import { chorenzoConfig } from '../utils/chorenzo-config.utils';
-import { Logger } from '../utils/logger.utils';
-import { resolvePath } from '../utils/path.utils';
+} from '~/utils/prompts.utils';
+import { workspaceConfig } from '~/utils/workspace-config.utils';
+import { chorenzoConfig } from '~/utils/chorenzo-config.utils';
+import { Logger } from '~/utils/logger.utils';
+import { resolvePath } from '~/utils/path.utils';
 import {
   executeCodeChangesOperation,
   CodeChangesEventHandlers,
-} from '../utils/code-changes-events.utils';
+} from '~/utils/code-changes-events.utils';
 import {
   ApplyOptions,
   ApplyRecipeResult,
@@ -33,12 +33,12 @@ import {
   ExecutionResult,
   ApplyProgressCallback,
   ApplyValidationCallback,
-} from '../types/apply';
-import { Recipe, RecipeDependency } from '../types/recipe';
-import { libraryManager, LocationType } from '../utils/library-manager.utils';
-import { WorkspaceAnalysis, ProjectAnalysis } from '../types/analysis';
-import { stateManager } from '../utils/state-manager.utils';
-import { WorkspaceState } from '../types/state';
+} from '~/types/apply';
+import { Recipe, RecipeDependency } from '~/types/recipe';
+import { libraryManager, LocationType } from '~/utils/library-manager.utils';
+import { WorkspaceAnalysis, ProjectAnalysis } from '~/types/analysis';
+import { stateManager } from '~/utils/state-manager.utils';
+import { WorkspaceState } from '~/types/state';
 import {
   isReservedKeyword,
   isWorkspaceKeyword,
@@ -47,7 +47,7 @@ import {
   getWorkspaceCharacteristic,
   getProjectCharacteristic,
   findProjectByPath,
-} from '../utils/project-characteristics.utils';
+} from '~/utils/project-characteristics.utils';
 
 export enum InputType {
   RecipeName = 'recipe-name',

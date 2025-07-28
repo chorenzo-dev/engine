@@ -1,5 +1,6 @@
 import { defineConfig } from 'tsup';
 import { copy } from 'esbuild-plugin-copy';
+import path from 'path';
 
 export default defineConfig({
   entry: ['src/main.ts'],
@@ -9,6 +10,11 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   external: ['commander', '@anthropic-ai/claude-code', 'ink', 'react'],
+  esbuildOptions(options) {
+    options.alias = {
+      '~': path.resolve('./src'),
+    };
+  },
   banner: {
     js: '#!/usr/bin/env node',
   },

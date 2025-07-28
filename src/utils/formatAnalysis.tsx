@@ -4,7 +4,7 @@ import {
   WorkspaceAnalysis,
   ProjectAnalysis,
   CiCdSystem,
-} from '../types/analysis';
+} from '~/types/analysis';
 
 export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({
   analysis,

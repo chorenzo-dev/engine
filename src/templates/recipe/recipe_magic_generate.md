@@ -18,11 +18,12 @@ Follow these guidelines for creating the recipe:
 
 **VARIANT CREATION RULES:**
 
-- Only create variants when there are meaningful differences (different tools/approaches)
-- Good variants: prettier vs eslint, jest vs vitest, postgresql vs mysql
-- Bad variants: single tool with no alternatives
+- CRITICAL: When you detect multiple tools/approaches in your fix instructions, you MUST create separate variants
+- Each distinct tool or approach gets its own variant with its own fix file
+- Good variants: Different tools that accomplish the same goal through different approaches
+- Bad variants: Minor configuration differences within the same tool, different versions of the same tool, cosmetic naming differences
 - If only one approach exists, use single 'default' variant
-- Variants should represent different implementation strategies, not minor configuration differences
+- If you find yourself writing "For Tool A do X, for Tool B do Y" in a single fix file, create separate variants instead
 
 **PROVIDES/REQUIRES GUIDELINES:**
 
@@ -52,12 +53,14 @@ Follow these guidelines for creating the recipe:
 
 1. Create {{ recipe_path }}/metadata.yaml with:
    - Meaningful provides/requires lists
-   - Only necessary variants
+   - Separate variants for each tool/approach you identified
 2. Create {{ recipe_path }}/prompt.md with:
    - Generic investigation steps
    - Ecosystem-agnostic guidance
 3. Create {{ recipe_path }}/fixes/[ecosystem]\_[variant].md with:
-   - Specific implementation for that ecosystem
+   - ONE tool/approach per fix file
+   - Specific implementation for that ecosystem and variant
    - Minimal, essential code examples only
+   - If multiple tools exist, create multiple fix files
 
 Use the Write tool to create each file following these principles.

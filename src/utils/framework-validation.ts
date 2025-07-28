@@ -1,9 +1,11 @@
 import { distance } from 'fastest-levenshtein';
-import { readYaml } from './yaml.utils';
-import { WorkspaceAnalysis } from '~/types/analysis';
 import * as path from 'path';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
+
+import { WorkspaceAnalysis } from '~/types/analysis';
+
+import { readYaml } from './yaml.utils';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const RESOURCES_DIR = __dirname.endsWith('dist')

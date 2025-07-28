@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
-import { ApplyProgress } from '~/components/ApplyProgress';
-import { DebugProgress } from '~/components/DebugProgress';
-import { ApplyDisplay } from '~/components/ApplyDisplay';
-import { RecipeGenerateProgress } from '~/components/RecipeGenerateProgress';
+import React, { useEffect, useState } from 'react';
+
 import {
-  performRecipesValidate,
+  type GenerateResult as RecipeGenerateResult,
+  type ValidationResult,
   performRecipesApply,
   performRecipesGenerate,
-  type ValidationResult,
-  type GenerateResult as RecipeGenerateResult,
+  performRecipesValidate,
 } from '~/commands/recipes';
+import { ApplyDisplay } from '~/components/ApplyDisplay';
+import { ApplyProgress } from '~/components/ApplyProgress';
+import { DebugProgress } from '~/components/DebugProgress';
+import { RecipeGenerateProgress } from '~/components/RecipeGenerateProgress';
 import { ApplyOptions, ApplyRecipeResult } from '~/types/apply';
 
 interface RecipesContainerProps {

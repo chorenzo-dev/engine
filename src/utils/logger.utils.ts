@@ -1,6 +1,7 @@
-import pino from 'pino';
 import * as fs from 'fs';
 import * as path from 'path';
+import pino from 'pino';
+
 import { workspaceConfig } from './workspace-config.utils';
 
 class Logger {

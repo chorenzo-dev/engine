@@ -1,4 +1,4 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals';
 
 describe('Jest Setup', () => {
   it('should be configured correctly', () => {

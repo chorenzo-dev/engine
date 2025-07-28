@@ -1,18 +1,19 @@
 import { query } from '@anthropic-ai/claude-code';
-import { findGitRoot } from '~/utils/git.utils';
-import { buildFileTree } from '~/utils/file-tree.utils';
-import { loadPrompt, renderPrompt } from '~/utils/prompts.utils';
-import { WorkspaceAnalysis } from '~/types/analysis';
-import { OperationMetadata } from '~/types/common';
-import { validateFrameworks } from '~/utils/framework-validation';
-import { writeJson } from '~/utils/json.utils';
-import { Logger } from '~/utils/logger.utils';
-import {
-  executeCodeChangesOperation,
-  CodeChangesEventHandlers,
-} from '~/utils/code-changes-events.utils';
 import * as fs from 'fs';
 import * as path from 'path';
+
+import { WorkspaceAnalysis } from '~/types/analysis';
+import { OperationMetadata } from '~/types/common';
+import {
+  CodeChangesEventHandlers,
+  executeCodeChangesOperation,
+} from '~/utils/code-changes-events.utils';
+import { buildFileTree } from '~/utils/file-tree.utils';
+import { validateFrameworks } from '~/utils/framework-validation';
+import { findGitRoot } from '~/utils/git.utils';
+import { writeJson } from '~/utils/json.utils';
+import { Logger } from '~/utils/logger.utils';
+import { loadPrompt, renderPrompt } from '~/utils/prompts.utils';
 
 const ANALYSIS_PATH = path.join(process.cwd(), '.chorenzo', 'analysis.json');
 

@@ -1,6 +1,6 @@
-import { defineConfig } from 'tsup';
 import { copy } from 'esbuild-plugin-copy';
 import path from 'path';
+import { defineConfig } from 'tsup';
 
 export default defineConfig({
   entry: ['src/main.ts'],

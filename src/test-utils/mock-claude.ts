@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+
 import type { WorkspaceAnalysis } from '~/types/analysis';
 
 export function mockClaudeAnalysis(analysisResult: WorkspaceAnalysis) {

@@ -1,17 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import * as fs from 'fs';
 import { Box, Text, useInput, useStdin } from 'ink';
-import { performAnalysis, AnalysisResult } from '~/commands/analyze';
+import * as os from 'os';
+import * as path from 'path';
+import React, { useEffect, useState } from 'react';
+
+import { AnalysisResult, performAnalysis } from '~/commands/analyze';
+import { generateOperationId } from '~/utils/code-changes-events.utils';
+import { readJson, writeJson } from '~/utils/json.utils';
+import { Logger } from '~/utils/logger.utils';
+
 import { AnalysisDisplay } from './AnalysisDisplay';
 import {
   CodeChangesProgress,
   useCodeChangesProgress,
 } from './CodeChangesProgress';
-import { generateOperationId } from '~/utils/code-changes-events.utils';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-import { readJson, writeJson } from '~/utils/json.utils';
-import { Logger } from '~/utils/logger.utils';
 
 interface AnalysisStepProps {
   options: {

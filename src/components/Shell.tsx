@@ -3,7 +3,6 @@ import { Box, Text } from 'ink';
 import { InitContainer } from '../containers/InitContainer';
 import { AnalyzeContainer } from '../containers/AnalyzeContainer';
 import { RecipesContainer } from '../containers/RecipesContainer';
-import { GenerateContainer } from '../containers/GenerateContainer';
 import { AnalysisResult } from '../commands/analyze';
 import {
   type ValidationResult,
@@ -287,7 +286,8 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     }
 
     return (
-      <GenerateContainer
+      <RecipesContainer
+        command="generate"
         options={{
           name: options.name,
           progress: options.progress,
@@ -297,7 +297,10 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           summary: options.summary,
         }}
         onComplete={(result) => {
-          setCommandState({ command: 'recipes-generate', result });
+          setCommandState({
+            command: 'recipes-generate',
+            result: result as RecipeGenerateResult,
+          });
           setIsComplete(true);
         }}
         onError={(error) => {

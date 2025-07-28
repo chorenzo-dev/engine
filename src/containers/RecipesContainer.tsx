@@ -3,15 +3,18 @@ import { Box, Text } from 'ink';
 import { ApplyProgress } from '../components/ApplyProgress';
 import { DebugProgress } from '../components/DebugProgress';
 import { ApplyDisplay } from '../components/ApplyDisplay';
+import { RecipeGenerateProgress } from '../components/RecipeGenerateProgress';
 import {
   performRecipesValidate,
   performRecipesApply,
+  performRecipesGenerate,
   type ValidationResult,
+  type GenerateResult as RecipeGenerateResult,
 } from '../commands/recipes';
 import { ApplyOptions, ApplyRecipeResult } from '../types/apply';
 
 interface RecipesContainerProps {
-  command: 'validate' | 'apply';
+  command: 'validate' | 'apply' | 'generate';
   options: {
     target?: string;
     recipe?: string;
@@ -21,8 +24,14 @@ interface RecipesContainerProps {
     progress?: boolean;
     debug?: boolean;
     cost?: boolean;
+    name?: string;
+    saveLocation?: string;
+    category?: string;
+    summary?: string;
   };
-  onComplete: (result: ValidationResult | ApplyRecipeResult) => void;
+  onComplete: (
+    result: ValidationResult | ApplyRecipeResult | RecipeGenerateResult
+  ) => void;
   onError: (error: Error) => void;
 }
 
@@ -33,7 +42,7 @@ export const RecipesContainer: React.FC<RecipesContainerProps> = ({
   onError,
 }) => {
   const [result, setResult] = useState<
-    ValidationResult | ApplyRecipeResult | null
+    ValidationResult | ApplyRecipeResult | RecipeGenerateResult | null
   >(null);
   const [error, setError] = useState<Error | null>(null);
   const [isComplete, setIsComplete] = useState(false);
@@ -115,6 +124,40 @@ export const RecipesContainer: React.FC<RecipesContainerProps> = ({
       };
       runRecipesApply();
     }
+
+    if (
+      command === 'generate' &&
+      options.progress === false &&
+      !isComplete &&
+      !error
+    ) {
+      const runRecipesGenerate = async () => {
+        try {
+          const generateResult = await performRecipesGenerate(
+            {
+              name: options.name,
+              progress: options.progress,
+              cost: options.cost,
+              saveLocation: options.saveLocation,
+              category: options.category,
+              summary: options.summary,
+            },
+            (step) => {
+              setSimpleStep(step || '');
+            }
+          );
+
+          setResult(generateResult);
+          setIsComplete(true);
+          onComplete(generateResult);
+        } catch (err) {
+          const errorObj = err instanceof Error ? err : new Error(String(err));
+          setError(errorObj);
+          onError(errorObj);
+        }
+      };
+      runRecipesGenerate();
+    }
   }, [
     command,
     options.target,
@@ -124,6 +167,11 @@ export const RecipesContainer: React.FC<RecipesContainerProps> = ({
     options.yes,
     options.progress,
     options.debug,
+    options.name,
+    options.cost,
+    options.saveLocation,
+    options.category,
+    options.summary,
     isComplete,
     error,
     onComplete,
@@ -291,6 +339,83 @@ export const RecipesContainer: React.FC<RecipesContainerProps> = ({
         onError={(error) => {
           setError(error);
           onError(error);
+        }}
+      />
+    );
+  }
+
+  if (command === 'generate') {
+    if (error) {
+      return (
+        <Box flexDirection="column">
+          <Text color="red">❌ Error: {error.message}</Text>
+        </Box>
+      );
+    }
+
+    if (isComplete && result) {
+      return (
+        <Box flexDirection="column">
+          <Text color="green">✅ Recipe generated successfully!</Text>
+          <Text>Path: {(result as RecipeGenerateResult).recipePath}</Text>
+          <Text>Name: {(result as RecipeGenerateResult).recipeName}</Text>
+          {(result as RecipeGenerateResult).metadata && options.cost && (
+            <>
+              <Text>
+                Cost: $
+                {(result as RecipeGenerateResult).metadata!.costUsd.toFixed(4)}
+              </Text>
+              <Text>
+                Duration:{' '}
+                {(
+                  result as RecipeGenerateResult
+                ).metadata!.durationSeconds.toFixed(1)}
+                s
+              </Text>
+            </>
+          )}
+        </Box>
+      );
+    }
+
+    if (options.progress === false) {
+      return (
+        <Box flexDirection="column">
+          <Text color="blue">🎯 {simpleStep || 'Generating recipe...'}</Text>
+        </Box>
+      );
+    }
+
+    return (
+      <RecipeGenerateProgress
+        options={options}
+        onComplete={(generateResult) => {
+          setResult(generateResult);
+          setIsComplete(true);
+          onComplete(generateResult);
+        }}
+        onError={(error, collectedOptions) => {
+          if (collectedOptions && collectedOptions.name) {
+            let cliCommand = `npx chorenzo recipes generate "${collectedOptions.name}"`;
+            if (collectedOptions.category) {
+              cliCommand += ` --category "${collectedOptions.category}"`;
+            }
+            if (collectedOptions.summary) {
+              cliCommand += ` --summary "${collectedOptions.summary}"`;
+            }
+            if (collectedOptions.saveLocation) {
+              cliCommand += ` --location "${collectedOptions.saveLocation}"`;
+            }
+
+            const enhancedError = new Error(
+              `${error.message}\n\nCLI command to retry:\n${cliCommand}`
+            );
+            setError(enhancedError);
+            onError(enhancedError);
+          } else {
+            setError(error);
+            onError(error);
+          }
         }}
       />
     );

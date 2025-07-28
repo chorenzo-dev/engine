@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { readYaml, writeYaml } from './yaml.utils';
 import { writeJson } from './json.utils';
-import { Config, State } from '../types/config';
+import { Config, State } from '~/types/config';
 
 export class ChorenzoConfig {
   get dir(): string {

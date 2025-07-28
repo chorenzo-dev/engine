@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { readYaml, writeYaml } from './yaml.utils';
 import { writeJson } from './json.utils';
-import type { Config } from '../types/config';
+import type { Config } from '~/types/config';
 
 interface State {
   last_checked: string;

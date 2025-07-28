@@ -1,10 +1,10 @@
-import { GitError } from '../utils/git-operations.utils';
-import { YamlError } from '../utils/yaml.utils';
-import { Logger } from '../utils/logger.utils';
-import { chorenzoConfig } from '../utils/chorenzo-config.utils';
-import { libraryManager } from '../utils/library-manager.utils';
-import { checkClaudeCodeAuth } from '../utils/claude.utils';
-export type { Config } from '../types/config';
+import { GitError } from '~/utils/git-operations.utils';
+import { YamlError } from '~/utils/yaml.utils';
+import { Logger } from '~/utils/logger.utils';
+import { chorenzoConfig } from '~/utils/chorenzo-config.utils';
+import { libraryManager } from '~/utils/library-manager.utils';
+import { checkClaudeCodeAuth } from '~/utils/claude.utils';
+export type { Config } from '~/types/config';
 
 export interface InitOptions {
   reset?: boolean;

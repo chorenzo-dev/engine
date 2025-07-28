@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Text, Box } from 'ink';
 import Spinner from 'ink-spinner';
-import { OperationMetadata } from '../types/common';
+import { OperationMetadata } from '~/types/common';
 
 export interface CodeChangesOperation {
   id: string;

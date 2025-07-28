@@ -1,8 +1,8 @@
 import { SDKMessage } from '@anthropic-ai/claude-code';
-import { CodeChangesOperation } from '../components/CodeChangesProgress';
-import { workspaceConfig } from '../utils/workspace-config.utils';
+import { CodeChangesOperation } from '~/components/CodeChangesProgress';
+import { workspaceConfig } from '~/utils/workspace-config.utils';
 import { Logger } from './logger.utils';
-import { BaseMetadata, OperationMetadata } from '../types/common';
+import { BaseMetadata, OperationMetadata } from '~/types/common';
 import * as os from 'os';
 
 interface BaseToolInput {

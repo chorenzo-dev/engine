@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-import { FormatAnalysis } from '../utils/formatAnalysis';
-import { AnalysisResult } from '../commands/analyze';
+import { FormatAnalysis } from '~/utils/formatAnalysis';
+import { AnalysisResult } from '~/commands/analyze';
 
 interface AnalysisDisplayProps {
   result: AnalysisResult;

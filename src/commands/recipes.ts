@@ -14,7 +14,7 @@ import {
   loadPrompt,
   loadTemplate,
   renderPrompt,
-  loadRecipeGuidelines,
+  loadDoc,
 } from '../utils/prompts.utils';
 import { workspaceConfig } from '../utils/workspace-config.utils';
 import { chorenzoConfig } from '../utils/chorenzo-config.utils';
@@ -1411,7 +1411,7 @@ export async function performRecipesGenerate(
     if (options.magicGenerate) {
       onProgress?.('Generating recipe content with AI...');
 
-      const recipeGuidelines = loadRecipeGuidelines();
+      const recipeGuidelines = loadDoc('recipes');
 
       const magicPromptTemplate = loadTemplate('recipe_magic_generate');
       const additionalInstructionsText = options.additionalInstructions

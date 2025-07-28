@@ -57,10 +57,10 @@ export function renderPrompt(
   return rendered;
 }
 
-export function loadRecipeGuidelines(): string {
-  const guidelinesPath = join(DOCS_DIR, 'recipes.md');
-  if (existsSync(guidelinesPath)) {
-    return readFileSync(guidelinesPath, 'utf-8');
+export function loadDoc(docName: string): string {
+  const docPath = join(DOCS_DIR, `${docName}.md`);
+  if (existsSync(docPath)) {
+    return readFileSync(docPath, 'utf-8');
   }
   return '';
 }

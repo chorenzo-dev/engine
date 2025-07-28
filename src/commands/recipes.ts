@@ -10,9 +10,16 @@ import { cloneRepository } from '../utils/git-operations.utils';
 import { normalizeRepoIdentifier } from '../utils/git.utils';
 import { performAnalysis } from './analyze';
 import { readJson } from '../utils/json.utils';
-import { loadPrompt, renderPrompt } from '../utils/prompts.utils';
+import {
+  loadPrompt,
+  loadTemplate,
+  renderPrompt,
+  loadDoc,
+} from '../utils/prompts.utils';
 import { workspaceConfig } from '../utils/workspace-config.utils';
+import { chorenzoConfig } from '../utils/chorenzo-config.utils';
 import { Logger } from '../utils/logger.utils';
+import { resolvePath } from '../utils/path.utils';
 import {
   executeCodeChangesOperation,
   CodeChangesEventHandlers,
@@ -28,7 +35,7 @@ import {
   ApplyValidationCallback,
 } from '../types/apply';
 import { Recipe, RecipeDependency } from '../types/recipe';
-import { libraryManager } from '../utils/library-manager.utils';
+import { libraryManager, LocationType } from '../utils/library-manager.utils';
 import { WorkspaceAnalysis, ProjectAnalysis } from '../types/analysis';
 import { stateManager } from '../utils/state-manager.utils';
 import { WorkspaceState } from '../types/state';
@@ -49,7 +56,10 @@ export enum InputType {
   GitUrl = 'git-url',
 }
 
-export type ProgressCallback = (step: string) => void;
+export type ProgressCallback = (
+  step: string | null,
+  isThinking?: boolean
+) => void;
 export type ValidationCallback = (
   type: 'info' | 'success' | 'error' | 'warning',
   message: string
@@ -61,6 +71,28 @@ export interface RecipesOptions {
 
 export interface ValidateOptions extends RecipesOptions {
   target: string;
+}
+
+export interface GenerateOptions extends RecipesOptions {
+  name?: string;
+  cost?: boolean;
+  magicGenerate?: boolean;
+  category?: string;
+  summary?: string;
+  location?: string;
+  saveLocation?: string;
+  additionalInstructions?: string;
+}
+
+export interface GenerateResult {
+  recipePath: string;
+  recipeName: string;
+  success: boolean;
+  error?: string;
+  metadata?: {
+    costUsd: number;
+    durationSeconds: number;
+  };
 }
 
 export interface ValidationMessage {
@@ -178,13 +210,6 @@ export async function performRecipesValidate(
   }
 }
 
-function resolvePath(target: string): string {
-  if (target.startsWith('~/')) {
-    return path.join(os.homedir(), target.slice(2));
-  }
-  return target;
-}
-
 function detectInputType(target: string): InputType {
   if (
     target.startsWith('http://') ||
@@ -231,7 +256,7 @@ async function validateRecipeByName(
 
   if (foundPaths.length === 0) {
     throw new RecipesError(
-      `Recipe '${recipeName}' not found in ~/.chorenzo/recipes`,
+      `Recipe '${recipeName}' not found in ${chorenzoConfig.recipesDir}`,
       'RECIPE_NOT_FOUND'
     );
   }
@@ -792,10 +817,10 @@ async function validateWorkspaceDependencies(
 
     if (currentValue === undefined) {
       missing.push(dependency);
-    } else if (currentValue !== dependency.equals) {
+    } else if (currentValue !== String(dependency.equals)) {
       conflicting.push({
         key: dependency.key,
-        required: dependency.equals,
+        required: String(dependency.equals),
         current: currentValue,
       });
     }
@@ -857,10 +882,10 @@ async function validateDependencies(
 
     if (currentValue === undefined) {
       missing.push(dependency);
-    } else if (currentValue !== dependency.equals) {
+    } else if (currentValue !== String(dependency.equals)) {
       conflicting.push({
         key: dependency.key,
-        required: dependency.equals,
+        required: String(dependency.equals),
         current: currentValue,
       });
     }
@@ -1162,7 +1187,7 @@ async function executeRecipe(
         onProgress?.(step, false);
       },
       onThinkingStateChange: (isThinking) => {
-        onProgress?.('', isThinking);
+        onProgress?.(null, isThinking);
       },
       onComplete: (result, metadata) => {
         executionCost = metadata?.costUsd || 0;
@@ -1275,6 +1300,255 @@ async function executeRecipe(
   }
 }
 
+function validateAndNormalizeName(
+  name: string,
+  type: 'recipe' | 'category'
+): string {
+  const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+  const errorCode =
+    type === 'recipe' ? 'INVALID_RECIPE_NAME' : 'INVALID_CATEGORY_NAME';
+
+  if (!name || name.trim().length === 0) {
+    throw new RecipesError(
+      `${capitalizedType} name cannot be empty`,
+      errorCode
+    );
+  }
+
+  const trimmed = name.trim();
+  const normalized = trimmed.replace(/\s+/g, '-').toLowerCase();
+  const invalidChars = normalized.match(/[^a-zA-Z0-9-]/g);
+
+  if (invalidChars) {
+    const uniqueInvalidChars = [...new Set(invalidChars)].join(', ');
+    throw new RecipesError(
+      `${capitalizedType} name contains invalid characters: ${uniqueInvalidChars}. Only letters, numbers, and dashes are allowed.`,
+      errorCode
+    );
+  }
+
+  return normalized;
+}
+
+function validateRecipeId(recipeName: string): string {
+  return validateAndNormalizeName(recipeName, 'recipe');
+}
+
+export function validateCategoryName(categoryName: string): string {
+  return validateAndNormalizeName(categoryName, 'category');
+}
+
+async function loadExistingRecipeOutputs(): Promise<string[]> {
+  try {
+    const outputs: string[] = [];
+    const config = await chorenzoConfig.readConfig();
+
+    for (const libraryName of Object.keys(config.libraries)) {
+      const libraryPath = chorenzoConfig.getLibraryPath(libraryName);
+
+      if (!fs.existsSync(libraryPath)) {
+        continue;
+      }
+
+      try {
+        const library = await parseRecipeLibraryFromDirectory(libraryPath);
+
+        for (const recipe of library.recipes) {
+          outputs.push(...recipe.getProvides());
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    return [...new Set(outputs)].sort();
+  } catch (error) {
+    Logger.warn(
+      { error: error instanceof Error ? error.message : String(error) },
+      'Failed to load existing recipe outputs'
+    );
+    return [];
+  }
+}
+
+export async function performRecipesGenerate(
+  options: GenerateOptions,
+  onProgress?: ProgressCallback
+): Promise<GenerateResult> {
+  const startTime = new Date();
+  let totalCostUsd = 0;
+
+  try {
+    onProgress?.('Starting recipe generation...');
+
+    if (!options.name) {
+      throw new RecipesError(
+        'Recipe name is required. Use: chorenzo recipes generate <name>',
+        'MISSING_RECIPE_NAME'
+      );
+    }
+
+    const recipeName = options.name;
+    const recipeId = validateRecipeId(options.name);
+
+    if (!options.category) {
+      throw new RecipesError(
+        'Category is required. Use --category or provide via interactive prompt',
+        'MISSING_CATEGORY'
+      );
+    }
+    const category = validateCategoryName(options.category);
+
+    const summary = options.summary?.trim();
+    if (!summary) {
+      throw new RecipesError(
+        'Summary is required. Use --summary or provide via interactive prompt',
+        'MISSING_SUMMARY'
+      );
+    }
+
+    const baseLocation = options.saveLocation
+      ? resolvePath(options.saveLocation)
+      : process.cwd();
+
+    const analysis = libraryManager.analyzeLocation(baseLocation);
+    let recipePath: string;
+
+    if (analysis.type === LocationType.CategoryFolder) {
+      recipePath = path.join(baseLocation, recipeId);
+    } else {
+      recipePath = path.join(baseLocation, category, recipeId);
+    }
+
+    if (fs.existsSync(recipePath)) {
+      throw new RecipesError(
+        `Recipe "${recipeId}" already exists at ${recipePath}`,
+        'RECIPE_ALREADY_EXISTS'
+      );
+    }
+
+    onProgress?.(`Creating recipe directory: ${recipePath}`);
+
+    fs.mkdirSync(recipePath, { recursive: true });
+    fs.mkdirSync(path.join(recipePath, 'fixes'), { recursive: true });
+
+    onProgress?.('Creating recipe files...');
+
+    const templateVars = {
+      recipe_id: recipeId,
+      recipe_name: recipeName,
+      category,
+      summary,
+    };
+
+    if (options.magicGenerate) {
+      onProgress?.('Generating recipe content with AI...');
+
+      const recipeGuidelines = loadDoc('recipes');
+      const availableOutputs = await loadExistingRecipeOutputs();
+
+      const magicPromptTemplate = loadTemplate('recipe_magic_generate');
+      const additionalInstructionsText = options.additionalInstructions
+        ? `\nAdditional Instructions: ${options.additionalInstructions}`
+        : '';
+
+      const magicPrompt = renderPrompt(magicPromptTemplate, {
+        recipe_name: recipeName,
+        summary,
+        category,
+        recipe_id: recipeId,
+        recipe_path: recipePath,
+        recipe_guidelines: recipeGuidelines,
+        additional_instructions: additionalInstructionsText,
+        available_outputs:
+          availableOutputs.length > 0
+            ? availableOutputs.map((output) => `- ${output}`).join('\n')
+            : '- (No existing recipes found)',
+      });
+
+      const operationStartTime = new Date();
+      const handlers: CodeChangesEventHandlers = {
+        onProgress: (step) => {
+          onProgress?.(step, false);
+        },
+        onThinkingStateChange: (isThinking) => {
+          onProgress?.(null, isThinking);
+        },
+        onComplete: (result, metadata) => {
+          totalCostUsd = metadata?.costUsd || 0;
+        },
+        showChorenzoOperations: true,
+        onError: (error) => {
+          throw new RecipesError(
+            `Magic generation failed: ${error.message}`,
+            'MAGIC_GENERATION_FAILED'
+          );
+        },
+      };
+
+      const operationResult = await executeCodeChangesOperation(
+        query({
+          prompt: magicPrompt,
+          options: {
+            model: 'sonnet',
+            allowedTools: ['Write'],
+            permissionMode: 'bypassPermissions',
+          },
+        }),
+        handlers,
+        operationStartTime
+      );
+
+      if (!operationResult.success) {
+        throw new RecipesError(
+          operationResult.error || 'Magic generation failed',
+          'MAGIC_GENERATION_FAILED'
+        );
+      }
+
+      totalCostUsd = operationResult.metadata.costUsd;
+    } else {
+      const metadataTemplate = loadTemplate('recipe_metadata', 'yaml');
+      const metadataContent = renderPrompt(metadataTemplate, templateVars);
+      fs.writeFileSync(path.join(recipePath, 'metadata.yaml'), metadataContent);
+
+      const promptTemplate = loadTemplate('recipe_prompt');
+      const promptContent = renderPrompt(promptTemplate, templateVars);
+      fs.writeFileSync(path.join(recipePath, 'prompt.md'), promptContent);
+
+      const fixTemplate = loadTemplate('recipe_fix');
+      const fixContent = renderPrompt(fixTemplate, templateVars);
+      fs.writeFileSync(
+        path.join(recipePath, 'fixes', 'javascript_default.md'),
+        fixContent
+      );
+    }
+
+    const endTime = new Date();
+    const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
+
+    onProgress?.('Recipe generation complete!');
+
+    return {
+      recipePath,
+      recipeName: recipeId,
+      success: true,
+      metadata: {
+        costUsd: totalCostUsd,
+        durationSeconds,
+      },
+    };
+  } catch (error) {
+    if (error instanceof RecipesError) {
+      throw error;
+    }
+    throw new RecipesError(
+      `Recipe generation failed: ${error instanceof Error ? error.message : String(error)}`,
+      'GENERATION_FAILED'
+    );
+  }
+}
+
 interface WorkspacePreferredResult {
   workspaceResult: ExecutionResult | null;
   projectResults: ExecutionResult[];
@@ -1284,7 +1558,7 @@ async function applyWorkspacePreferredRecipe(
   recipe: Recipe,
   analysis: WorkspaceAnalysis,
   options: ApplyOptions,
-  onProgress?: (message: string) => void,
+  onProgress?: ApplyProgressCallback,
   onValidation?: (level: 'info' | 'error' | 'success', message: string) => void
 ): Promise<WorkspacePreferredResult> {
   const workspaceEcosystem = analysis.workspaceEcosystem || 'unknown';
@@ -1309,7 +1583,7 @@ async function applyWorkspacePreferredRecipe(
   const projectResults: ExecutionResult[] = [];
 
   if (canApplyAtWorkspace) {
-    onProgress?.('Applying recipe at workspace level...');
+    onProgress?.('Applying recipe at workspace level...', false);
 
     const variant =
       options.variant ||
@@ -1337,7 +1611,8 @@ async function applyWorkspacePreferredRecipe(
     onProgress?.(
       applicableProjects.length === analysis.projects.length
         ? 'Applying recipe at project level...'
-        : `Applying recipe to ${applicableProjects.length} specific projects...`
+        : `Applying recipe to ${applicableProjects.length} specific projects...`,
+      false
     );
 
     for (const project of applicableProjects) {

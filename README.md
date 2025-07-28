@@ -33,7 +33,7 @@ npx chorenzo analyze --cost
 
 ### Recipes Command
 
-Validate and apply Chorenzo recipes to automate your workspace:
+Validate, apply, and generate Chorenzo recipes to automate your workspace:
 
 #### Validate Recipes
 
@@ -74,6 +74,48 @@ npx chorenzo recipes apply code-formatting --cost
 # Combine flags for detailed output
 npx chorenzo recipes apply linting --cost --debug
 ```
+
+#### Generate Recipes
+
+Create new automation recipes for your workspace:
+
+```bash
+# Interactive recipe generation (prompts for all details)
+npx chorenzo recipes generate
+
+# Generate with recipe name
+npx chorenzo recipes generate my-recipe
+
+# Generate with all parameters specified
+npx chorenzo recipes generate eslint-setup \
+  --category tools \
+  --summary "Set up ESLint and Prettier with TypeScript support for consistent code formatting"
+
+# Generate to custom location
+npx chorenzo recipes generate testing \
+  --location ~/my-recipes \
+  --category development \
+  --summary "Configure Jest testing framework with coverage reporting and TypeScript integration"
+
+# Show LLM cost for AI-generated recipes
+npx chorenzo recipes generate my-recipe --cost
+```
+
+**Interactive Mode:**
+When run without required parameters, the generate command will prompt you interactively for:
+
+- Recipe name (letters, numbers, and dashes only)
+- Magic generation choice (AI-generated vs template-based)
+- Save location (current workspace, home directory, or custom path)
+- Category selection (with autocomplete from existing categories)
+- Recipe summary (descriptive one-sentence explanation)
+
+**Non-interactive Mode:**
+For automation and scripting, provide all required parameters:
+
+- `--category`: Recipe category (required)
+- `--summary`: Descriptive summary (required)
+- `--location`: Custom save location (optional, defaults to current directory)
 
 Chorenzo uses atomic, composable automation recipes to handle workspace setup and configuration. Recipes operate at different levels with intelligent application logic:
 

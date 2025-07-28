@@ -5,18 +5,26 @@ import { InitContainer } from '../containers/InitContainer';
 import { ApplyProgress } from './ApplyProgress';
 import { DebugProgress } from './DebugProgress';
 import { ApplyDisplay } from './ApplyDisplay';
+import { RecipeGenerateProgress } from './RecipeGenerateProgress';
 import { performAnalysis, AnalysisResult } from '../commands/analyze';
 import {
   performRecipesValidate,
   performRecipesApply,
+  performRecipesGenerate,
   type ValidationCallback,
   type ValidationResult,
+  type GenerateResult as RecipeGenerateResult,
 } from '../commands/recipes';
 import { AnalysisDisplay } from './AnalysisDisplay';
 import { ApplyOptions, ApplyRecipeResult } from '../types/apply';
 
 interface ShellProps {
-  command: 'analyze' | 'init' | 'recipes-validate' | 'recipes-apply';
+  command:
+    | 'analyze'
+    | 'init'
+    | 'recipes-validate'
+    | 'recipes-apply'
+    | 'recipes-generate';
   options: {
     progress?: boolean;
     reset?: boolean;
@@ -28,6 +36,10 @@ interface ShellProps {
     project?: string;
     debug?: boolean;
     cost?: boolean;
+    name?: string;
+    saveLocation?: string;
+    category?: string;
+    summary?: string;
   };
 }
 
@@ -35,7 +47,8 @@ type ShellState =
   | { command: 'analyze'; result: AnalysisResult | null }
   | { command: 'init'; result: AnalysisResult | null }
   | { command: 'recipes-validate'; result: ValidationResult | null }
-  | { command: 'recipes-apply'; result: ApplyRecipeResult | null };
+  | { command: 'recipes-apply'; result: ApplyRecipeResult | null }
+  | { command: 'recipes-generate'; result: RecipeGenerateResult | null };
 
 export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   const [commandState, setCommandState] = useState<ShellState>(
@@ -61,7 +74,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       const runSimpleAnalysis = async () => {
         try {
           const analysisResult = await performAnalysis((step) => {
-            setSimpleStep(step);
+            if (step) {
+              setSimpleStep(step);
+            }
           });
           setCommandState({ command: 'analyze', result: analysisResult });
           setIsComplete(true);
@@ -103,7 +118,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
               progress: options.progress,
             },
             (step) => {
-              setSimpleStep(step);
+              if (step) {
+                setSimpleStep(step);
+              }
             },
             handleValidation
           );
@@ -140,7 +157,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
               progress: options.progress,
             },
             (step) => {
-              setSimpleStep(step);
+              if (step) {
+                setSimpleStep(step);
+              }
             }
           );
 
@@ -152,6 +171,42 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       };
       runRecipesApply();
     }
+
+    if (
+      command === 'recipes-generate' &&
+      options.progress === false &&
+      !isComplete &&
+      !error
+    ) {
+      const runRecipesGenerate = async () => {
+        try {
+          const generateResult = await performRecipesGenerate(
+            {
+              name: options.name,
+              progress: options.progress,
+              cost: options.cost,
+              saveLocation: options.saveLocation,
+              category: options.category,
+              summary: options.summary,
+            },
+            (step) => {
+              if (step) {
+                setSimpleStep(step);
+              }
+            }
+          );
+
+          setCommandState({
+            command: 'recipes-generate',
+            result: generateResult,
+          });
+          setIsComplete(true);
+        } catch (err) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+        }
+      };
+      runRecipesGenerate();
+    }
   }, [
     command,
     options.progress,
@@ -161,6 +216,8 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     options.variant,
     options.project,
     options.yes,
+    options.name,
+    options.cost,
     isComplete,
     error,
   ]);
@@ -427,6 +484,121 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         }}
         onError={(error) => {
           setError(error);
+        }}
+      />
+    );
+  }
+
+  if (command === 'recipes-generate') {
+    if (options.progress === false) {
+      if (error) {
+        return (
+          <Box flexDirection="column">
+            <Text color="red">❌ Error: {error.message}</Text>
+          </Box>
+        );
+      }
+
+      if (
+        isComplete &&
+        commandState.command === 'recipes-generate' &&
+        commandState.result
+      ) {
+        return (
+          <Box flexDirection="column">
+            <Text color="green">✅ Recipe generated successfully!</Text>
+            <Text>Path: {commandState.result.recipePath}</Text>
+            <Text>Name: {commandState.result.recipeName}</Text>
+            {commandState.result.metadata && options.cost && (
+              <>
+                <Text>
+                  Cost: ${commandState.result.metadata.costUsd.toFixed(4)}
+                </Text>
+                <Text>
+                  Duration:{' '}
+                  {commandState.result.metadata.durationSeconds.toFixed(1)}s
+                </Text>
+              </>
+            )}
+          </Box>
+        );
+      }
+
+      return (
+        <Box flexDirection="column">
+          <Text color="blue">🎯 {simpleStep || 'Generating recipe...'}</Text>
+        </Box>
+      );
+    }
+
+    if (error && isComplete) {
+      return (
+        <Box flexDirection="column">
+          <Text color="red">❌ Error: {error.message}</Text>
+        </Box>
+      );
+    }
+
+    if (
+      isComplete &&
+      commandState.command === 'recipes-generate' &&
+      commandState.result
+    ) {
+      return (
+        <Box flexDirection="column">
+          <Text color="green">✅ Recipe generated successfully!</Text>
+          <Text>Path: {commandState.result.recipePath}</Text>
+          <Text>Name: {commandState.result.recipeName}</Text>
+          {commandState.result.metadata && options.cost && (
+            <>
+              <Text>
+                Cost: ${commandState.result.metadata.costUsd.toFixed(4)}
+              </Text>
+              <Text>
+                Duration:{' '}
+                {commandState.result.metadata.durationSeconds.toFixed(1)}s
+              </Text>
+            </>
+          )}
+        </Box>
+      );
+    }
+
+    return (
+      <RecipeGenerateProgress
+        options={{
+          name: options.name,
+          progress: options.progress,
+          cost: options.cost,
+          saveLocation: options.saveLocation,
+          category: options.category,
+          summary: options.summary,
+        }}
+        onComplete={(result) => {
+          setCommandState({ command: 'recipes-generate', result });
+          setIsComplete(true);
+        }}
+        onError={(error, collectedOptions) => {
+          if (collectedOptions && collectedOptions.name) {
+            let cliCommand = `npx chorenzo recipes generate "${collectedOptions.name}"`;
+            if (collectedOptions.category) {
+              cliCommand += ` --category "${collectedOptions.category}"`;
+            }
+            if (collectedOptions.summary) {
+              cliCommand += ` --summary "${collectedOptions.summary}"`;
+            }
+            if (collectedOptions.saveLocation) {
+              cliCommand += ` --location "${collectedOptions.saveLocation}"`;
+            }
+
+            const enhancedError = new Error(
+              `${error.message}\n\nCLI command to retry:\n${cliCommand}`
+            );
+            setError(enhancedError);
+          } else {
+            setError(error);
+          }
+          setIsComplete(true);
         }}
       />
     );

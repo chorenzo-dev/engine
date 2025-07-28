@@ -1,0 +1,9 @@
+id: {{ recipe_id }}
+category: {{ category }}
+summary: {{ summary }}
+
+ecosystems: []
+
+provides: []
+
+requires: []

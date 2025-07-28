@@ -60,6 +60,7 @@ export interface CodeChangesEventHandlers {
   onThinkingStateChange?: (isThinking: boolean) => void;
   onComplete?: (result: unknown, metadata?: Partial<OperationMetadata>) => void;
   onError?: (error: Error) => void;
+  showChorenzoOperations?: boolean;
 }
 
 export interface CodeChangesOperationResult {
@@ -150,7 +151,8 @@ export async function executeCodeChangesOperation(
 
                 const toolMessage = formatToolMessage(
                   String(content.name),
-                  content.input as ToolInput
+                  content.input as ToolInput,
+                  handlers.showChorenzoOperations
                 );
                 if (toolMessage) {
                   handlers.onThinkingStateChange?.(false);
@@ -304,7 +306,11 @@ export function generateOperationId(
   return `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
-function formatToolMessage(toolName: string, input: ToolInput): string | null {
+function formatToolMessage(
+  toolName: string,
+  input: ToolInput,
+  showChorenzoOperations?: boolean
+): string | null {
   if (toolName === 'TodoWrite' || toolName === 'TodoRead') {
     return null;
   }
@@ -317,7 +323,7 @@ function formatToolMessage(toolName: string, input: ToolInput): string | null {
     case 'Read': {
       const fileInput = input as FileToolInput;
       const readPath = getRelativePath(fileInput.file_path) || 'file';
-      if (isChorenzoPath(readPath)) {
+      if (isChorenzoPath(readPath) && !showChorenzoOperations) {
         return 'Updating Chorenzo context';
       }
       return `Reading ${readPath}`;
@@ -326,7 +332,7 @@ function formatToolMessage(toolName: string, input: ToolInput): string | null {
     case 'Write': {
       const fileInput = input as FileToolInput;
       const writePath = getRelativePath(fileInput.file_path) || 'file';
-      if (isChorenzoPath(writePath)) {
+      if (isChorenzoPath(writePath) && !showChorenzoOperations) {
         return 'Updating Chorenzo context';
       }
       return `Writing ${writePath}`;
@@ -336,7 +342,7 @@ function formatToolMessage(toolName: string, input: ToolInput): string | null {
     case 'MultiEdit': {
       const fileInput = input as FileToolInput;
       const editPath = getRelativePath(fileInput.file_path) || 'file';
-      if (isChorenzoPath(editPath)) {
+      if (isChorenzoPath(editPath) && !showChorenzoOperations) {
         return 'Updating Chorenzo context';
       }
       return `Editing ${editPath}`;

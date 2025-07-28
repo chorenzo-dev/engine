@@ -112,7 +112,9 @@ export const AnalysisStep: React.FC<AnalysisStepProps> = ({
           });
 
           const result = await performAnalysis((step) => {
-            progressOperation(operationId, step);
+            if (step) {
+              progressOperation(operationId, step);
+            }
           });
 
           setAnalysisResult(result);

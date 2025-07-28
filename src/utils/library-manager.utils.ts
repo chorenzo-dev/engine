@@ -12,6 +12,13 @@ import { Logger } from './logger.utils';
 import { chorenzoConfig } from './chorenzo-config.utils';
 import type { Config, ConfigLibrary } from '../types/config';
 
+export enum LocationType {
+  Empty = 'empty',
+  LibraryRoot = 'library_root',
+  CategoryFolder = 'category_folder',
+  Invalid = 'invalid',
+}
+
 export class LibraryManagerError extends Error {
   constructor(
     message: string,
@@ -234,6 +241,120 @@ export class LibraryManager {
   private async getAllLibraryNames(): Promise<string[]> {
     const config = await this.getConfig();
     return Object.keys(config.libraries);
+  }
+
+  analyzeLocation(locationPath: string): {
+    type: LocationType;
+    categoryName?: string;
+    categories?: string[];
+  } {
+    if (!fs.existsSync(locationPath)) {
+      return { type: LocationType.Empty };
+    }
+
+    const stat = fs.statSync(locationPath);
+    if (!stat.isDirectory()) {
+      throw new LibraryManagerError(
+        `Location is not a directory: ${locationPath}`,
+        'INVALID_LOCATION'
+      );
+    }
+
+    const entries = fs.readdirSync(locationPath);
+    if (entries.length === 0) {
+      return { type: LocationType.Empty };
+    }
+
+    const subfolders = entries.filter((entry) => {
+      const entryPath = path.join(locationPath, entry);
+      try {
+        return fs.statSync(entryPath).isDirectory();
+      } catch {
+        return false;
+      }
+    });
+
+    if (subfolders.length === 0) {
+      return { type: LocationType.Empty };
+    }
+
+    let recipeCount = 0;
+    let categoryCount = 0;
+
+    for (const subfolder of subfolders) {
+      const subfolderPath = path.join(locationPath, subfolder);
+
+      if (this.isRecipeFolder(subfolderPath)) {
+        recipeCount++;
+      } else if (this.isCategoryFolder(subfolderPath)) {
+        categoryCount++;
+      }
+    }
+
+    if (recipeCount > 0 && categoryCount > 0) {
+      throw new LibraryManagerError(
+        `Invalid hierarchy: location contains both recipe folders and category folders: ${locationPath}`,
+        'MIXED_HIERARCHY'
+      );
+    }
+
+    if (recipeCount > 0) {
+      const categoryName = path.basename(locationPath);
+      return { type: LocationType.CategoryFolder, categoryName };
+    }
+
+    if (categoryCount > 0) {
+      const categories = subfolders.filter((subfolder) =>
+        this.isCategoryFolder(path.join(locationPath, subfolder))
+      );
+      return { type: LocationType.LibraryRoot, categories };
+    }
+
+    throw new LibraryManagerError(
+      `Location "${locationPath}" contains folders but none are recognized as recipe categories or recipes. Choose an empty directory or an existing recipe library instead.`,
+      'UNKNOWN_HIERARCHY'
+    );
+  }
+
+  private isRecipeFolder(folderPath: string): boolean {
+    const metadataPath = path.join(folderPath, 'metadata.yaml');
+    const promptPath = path.join(folderPath, 'prompt.md');
+    return fs.existsSync(metadataPath) || fs.existsSync(promptPath);
+  }
+
+  private isCategoryFolder(folderPath: string): boolean {
+    const entries = fs.readdirSync(folderPath);
+    const subfolders = entries.filter((entry) => {
+      const entryPath = path.join(folderPath, entry);
+      try {
+        return fs.statSync(entryPath).isDirectory();
+      } catch {
+        return false;
+      }
+    });
+
+    return subfolders.some((subfolder) =>
+      this.isRecipeFolder(path.join(folderPath, subfolder))
+    );
+  }
+
+  async getAllCategories(searchPath?: string): Promise<string[]> {
+    const recipesDir = searchPath || chorenzoConfig.recipesDir;
+    const analysis = this.analyzeLocation(recipesDir);
+
+    if (analysis.type === LocationType.Empty) {
+      return [];
+    }
+
+    if (analysis.type === LocationType.CategoryFolder) {
+      return [analysis.categoryName!];
+    }
+
+    if (analysis.type === LocationType.LibraryRoot && analysis.categories) {
+      return analysis.categories.sort();
+    }
+
+    return [];
   }
 }
 

@@ -17,6 +17,7 @@ import {
   loadRecipeGuidelines,
 } from '../utils/prompts.utils';
 import { workspaceConfig } from '../utils/workspace-config.utils';
+import { chorenzoConfig } from '../utils/chorenzo-config.utils';
 import { Logger } from '../utils/logger.utils';
 import { resolvePath } from '../utils/path.utils';
 import {
@@ -255,7 +256,7 @@ async function validateRecipeByName(
 
   if (foundPaths.length === 0) {
     throw new RecipesError(
-      `Recipe '${recipeName}' not found in ~/.chorenzo/recipes`,
+      `Recipe '${recipeName}' not found in ${chorenzoConfig.recipesDir}`,
       'RECIPE_NOT_FOUND'
     );
   }

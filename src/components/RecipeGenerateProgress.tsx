@@ -11,6 +11,7 @@ import {
 } from '../commands/recipes';
 import { libraryManager, LocationType } from '../utils/library-manager.utils';
 import { resolvePath } from '../utils/path.utils';
+import { chorenzoConfig } from '../utils/chorenzo-config.utils';
 import {
   CodeChangesProgress,
   useCodeChangesProgress,
@@ -93,7 +94,10 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
 
   const locationOptions = [
     { label: `Current folder (${process.cwd()})`, value: 'workspace' },
-    { label: 'This machine (~/.chorenzo/recipes/local)', value: 'machine' },
+    {
+      label: `This machine (${chorenzoConfig.localRecipesDir})`,
+      value: 'machine',
+    },
     { label: 'Choose location', value: 'custom' },
   ];
 
@@ -110,7 +114,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
       if (item.value === 'workspace') {
         selectedLocation = process.cwd();
       } else if (item.value === 'machine') {
-        selectedLocation = '~/.chorenzo/recipes/local';
+        selectedLocation = chorenzoConfig.localRecipesDir;
       }
       const updatedOptions = {
         ...collectedOptions,

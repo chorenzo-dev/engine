@@ -619,7 +619,7 @@ outputs:
       });
 
       await expect(performRecipesValidate(options)).rejects.toThrow(
-        "Recipe 'nonexistent-recipe' not found in ~/.chorenzo/recipes"
+        "Recipe 'nonexistent-recipe' not found in"
       );
     });
 

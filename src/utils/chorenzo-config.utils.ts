@@ -26,6 +26,10 @@ export class ChorenzoConfig {
     return path.join(this.dir, 'recipes');
   }
 
+  get localRecipesDir(): string {
+    return path.join(this.recipesDir, 'local');
+  }
+
   createRecipesDir(): void {
     fs.mkdirSync(this.recipesDir, { recursive: true });
   }

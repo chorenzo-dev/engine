@@ -1,10 +1,11 @@
-import { Box, Newline, Text } from 'ink';
+import { Box, Text } from 'ink';
 import React, { useEffect, useState } from 'react';
 
 import { AnalysisResult } from '~/commands/analyze';
 import { InitError, performInit } from '~/commands/init';
 import { AnalysisStep } from '~/components/AnalysisStep';
 import { AuthenticationStep } from '~/components/AuthenticationStep';
+import { CommandFlow } from '~/components/CommandFlow';
 
 interface InitContainerProps {
   options: {
@@ -78,9 +79,10 @@ export const InitContainer: React.FC<InitContainerProps> = ({
 
   if (currentStep === 'checking_init') {
     return (
-      <Box flexDirection="column">
-        <Text color="blue">🔍 Checking Claude Code authentication...</Text>
-      </Box>
+      <CommandFlow
+        title="Checking Claude Code authentication..."
+        status="in_progress"
+      />
     );
   }
 
@@ -98,8 +100,17 @@ export const InitContainer: React.FC<InitContainerProps> = ({
 
   if (currentStep === 'analysis') {
     return (
-      <Box flexDirection="column">
-        <Text color="green">✅ Initialization complete!</Text>
+      <CommandFlow
+        title="Initialization complete!"
+        status="completed"
+        completedSteps={[
+          {
+            id: 'init',
+            title: 'Initialization complete!',
+            success: true,
+          },
+        ]}
+      >
         <AnalysisStep
           options={{
             noAnalyze: options.noAnalyze,
@@ -110,29 +121,20 @@ export const InitContainer: React.FC<InitContainerProps> = ({
           onAnalysisComplete={handleAnalysisComplete}
           onAnalysisError={handleAnalysisError}
         />
-      </Box>
+      </CommandFlow>
     );
   }
 
   if (currentStep === 'error') {
     return (
-      <Box flexDirection="column">
-        <Text color="red">❌ Error:</Text>
-        <Text color="red">
-          {error}
-          <Newline />
-        </Text>
+      <CommandFlow title="Error" status="error" error={error}>
         <Text>Please run 'chorenzo init' again to retry.</Text>
-      </Box>
+      </CommandFlow>
     );
   }
 
   if (currentStep === 'complete') {
-    return (
-      <Box flexDirection="column">
-        <Text color="green">✅ Initialization complete!</Text>
-      </Box>
-    );
+    return <CommandFlow title="Initialization complete!" status="completed" />;
   }
 
   return null;

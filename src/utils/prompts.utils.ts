@@ -6,6 +6,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROMPTS_DIR = __dirname.endsWith('dist')
   ? join(__dirname, 'prompts')
   : join(__dirname, '..', 'prompts');
+const TEMPLATES_DIR = __dirname.endsWith('dist')
+  ? join(__dirname, 'templates')
+  : join(__dirname, '..', 'templates');
 const DOCS_DIR = __dirname.endsWith('dist')
   ? join(__dirname, 'docs')
   : join(__dirname, '..', '..', 'docs');
@@ -25,7 +28,11 @@ export function loadTemplate(
   templateName: string,
   extension: string = 'md'
 ): string {
-  const templatePath = join(PROMPTS_DIR, `${templateName}.${extension}`);
+  const templatePath = join(
+    TEMPLATES_DIR,
+    'recipe',
+    `${templateName}.${extension}`
+  );
   try {
     return readFileSync(templatePath, 'utf-8');
   } catch (error) {

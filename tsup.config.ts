@@ -24,6 +24,10 @@ export default defineConfig({
           to: ['./resources'],
         },
         {
+          from: ['./src/templates/**/*'],
+          to: ['./templates'],
+        },
+        {
           from: ['./docs/recipes.md'],
           to: ['./docs/recipes.md'],
         },

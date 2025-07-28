@@ -1412,7 +1412,7 @@ export async function performRecipesGenerate(
 
       const recipeGuidelines = loadRecipeGuidelines();
 
-      const magicPromptTemplate = loadPrompt('recipe_magic_generate');
+      const magicPromptTemplate = loadTemplate('recipe_magic_generate');
       const additionalInstructionsText = options.additionalInstructions
         ? `\nAdditional Instructions: ${options.additionalInstructions}`
         : '';

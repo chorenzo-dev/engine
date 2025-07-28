@@ -1338,6 +1338,39 @@ export function validateCategoryName(categoryName: string): string {
   return validateAndNormalizeName(categoryName, 'category');
 }
 
+async function loadExistingRecipeOutputs(): Promise<string[]> {
+  try {
+    const outputs: string[] = [];
+    const config = await chorenzoConfig.readConfig();
+
+    for (const libraryName of Object.keys(config.libraries)) {
+      const libraryPath = chorenzoConfig.getLibraryPath(libraryName);
+
+      if (!fs.existsSync(libraryPath)) {
+        continue;
+      }
+
+      try {
+        const library = await parseRecipeLibraryFromDirectory(libraryPath);
+
+        for (const recipe of library.recipes) {
+          outputs.push(...recipe.getProvides());
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    return [...new Set(outputs)].sort();
+  } catch (error) {
+    Logger.warn(
+      { error: error instanceof Error ? error.message : String(error) },
+      'Failed to load existing recipe outputs'
+    );
+    return [];
+  }
+}
+
 export async function performRecipesGenerate(
   options: GenerateOptions,
   onProgress?: ProgressCallback
@@ -1412,6 +1445,7 @@ export async function performRecipesGenerate(
       onProgress?.('Generating recipe content with AI...');
 
       const recipeGuidelines = loadDoc('recipes');
+      const availableOutputs = await loadExistingRecipeOutputs();
 
       const magicPromptTemplate = loadTemplate('recipe_magic_generate');
       const additionalInstructionsText = options.additionalInstructions
@@ -1426,6 +1460,10 @@ export async function performRecipesGenerate(
         recipe_path: recipePath,
         recipe_guidelines: recipeGuidelines,
         additional_instructions: additionalInstructionsText,
+        available_outputs:
+          availableOutputs.length > 0
+            ? availableOutputs.map((output) => `- ${output}`).join('\n')
+            : '- (No existing recipes found)',
       });
 
       const operationStartTime = new Date();

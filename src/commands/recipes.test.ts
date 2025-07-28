@@ -3556,7 +3556,7 @@ outputs:
           return 'Generate recipe for: {{ recipe_name }}\nSummary: {{ summary }}';
         }
         if (filePath.includes('recipe_metadata.yaml')) {
-          return 'id: {{ recipe_id }}\ncategory: {{ category }}';
+          return 'id: {{ recipe_id }}\ncategory: {{ category }}\nsummary: {{ summary }}\n\necosystems: []\n\nprovides: []\n\nrequires: []';
         }
         if (filePath.includes('recipe_prompt.md')) {
           return '## Goal\n{{ summary }}';

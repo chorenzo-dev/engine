@@ -5,7 +5,7 @@ import { OperationMetadata } from '../types/common';
 
 export interface CodeChangesOperation {
   id: string;
-  type: 'analysis' | 'apply' | 'init' | 'validation';
+  type: 'analysis' | 'apply' | 'init' | 'validation' | 'generate';
   description: string;
   status: 'pending' | 'in_progress' | 'completed' | 'error';
   startTime?: Date;

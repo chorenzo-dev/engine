@@ -28,7 +28,7 @@ export const AnalyzeContainer: React.FC<AnalyzeContainerProps> = ({
       const runSimpleAnalysis = async () => {
         try {
           const analysisResult = await performAnalysis((step) => {
-            setSimpleStep(step);
+            setSimpleStep(step || '');
           });
           setResult(analysisResult);
           setIsComplete(true);

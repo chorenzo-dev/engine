@@ -139,4 +139,46 @@ Examples:
     );
   });
 
+recipesCommand
+  .command('generate [name]')
+  .description('Generate a new recipe')
+  .option('--no-progress', 'Disable progress UI')
+  .option('--cost', 'Show LLM cost information')
+  .option('--location <path>', 'Custom save location for the recipe')
+  .option('--category <category>', 'Recipe category')
+  .option('--summary <summary>', 'Recipe summary')
+  .addHelpText(
+    'after',
+    `
+Arguments:  
+  name      Recipe name (optional, will prompt if not provided)
+
+Options:
+  --location <path>    Custom path to save recipe (supports ~ for home directory)
+  --category <name>    Recipe category (required in non-interactive mode)
+  --summary <text>     Recipe summary (required in non-interactive mode)
+
+Examples:
+  $ chorenzo recipes generate                               # Interactive generation
+  $ chorenzo recipes generate code-formatting               # Generate with name
+  $ chorenzo recipes generate linting --category tools --summary "Set up ESLint and Prettier with TypeScript support for consistent code formatting"
+  $ chorenzo recipes generate testing --location ~/my-recipes --category development --summary "Configure Jest testing framework with coverage reporting and TypeScript integration"
+`
+  )
+  .action(async (name, options) => {
+    render(
+      React.createElement(Shell, {
+        command: 'recipes-generate',
+        options: {
+          name,
+          progress: options.progress,
+          cost: options.cost,
+          saveLocation: options.location,
+          category: options.category,
+          summary: options.summary,
+        },
+      })
+    );
+  });
+
 program.parse();

@@ -58,7 +58,7 @@ export const RecipesContainer: React.FC<RecipesContainerProps> = ({
               progress: options.progress,
             },
             (step) => {
-              setSimpleStep(step);
+              setSimpleStep(step || '');
             }
           );
 
@@ -100,7 +100,7 @@ export const RecipesContainer: React.FC<RecipesContainerProps> = ({
               progress: options.progress,
             },
             (step) => {
-              setSimpleStep(step);
+              setSimpleStep(step || '');
             }
           );
 

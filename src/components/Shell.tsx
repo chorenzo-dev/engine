@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Box, Text } from 'ink';
 import { InitContainer } from '../containers/InitContainer';
 import { AnalyzeContainer } from '../containers/AnalyzeContainer';
 import { RecipesContainer } from '../containers/RecipesContainer';
-import { RecipeGenerateProgress } from './RecipeGenerateProgress';
+import { GenerateContainer } from '../containers/GenerateContainer';
 import { AnalysisResult } from '../commands/analyze';
 import {
-  performRecipesGenerate,
   type ValidationResult,
   type GenerateResult as RecipeGenerateResult,
 } from '../commands/recipes';
@@ -58,55 +57,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   const [isComplete, setIsComplete] = useState(false);
   const [validationResult, setValidationResult] =
     useState<ValidationResult | null>(null);
-  const [simpleStep, setSimpleStep] = useState<string>('');
-
-  useEffect(() => {
-    if (
-      command === 'recipes-generate' &&
-      options.progress === false &&
-      !isComplete &&
-      !error
-    ) {
-      const runRecipesGenerate = async () => {
-        try {
-          const generateResult = await performRecipesGenerate(
-            {
-              name: options.name,
-              progress: options.progress,
-              cost: options.cost,
-              saveLocation: options.saveLocation,
-              category: options.category,
-              summary: options.summary,
-            },
-            (step) => {
-              if (step) {
-                setSimpleStep(step);
-              }
-            }
-          );
-
-          setCommandState({
-            command: 'recipes-generate',
-            result: generateResult,
-          });
-          setIsComplete(true);
-        } catch (err) {
-          setError(err instanceof Error ? err : new Error(String(err)));
-        }
-      };
-      runRecipesGenerate();
-    }
-  }, [
-    command,
-    options.progress,
-    options.name,
-    options.cost,
-    options.saveLocation,
-    options.category,
-    options.summary,
-    isComplete,
-    error,
-  ]);
   if (command === 'analyze') {
     if (error) {
       return (
@@ -303,48 +253,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   }
 
   if (command === 'recipes-generate') {
-    if (options.progress === false) {
-      if (error) {
-        return (
-          <Box flexDirection="column">
-            <Text color="red">❌ Error: {error.message}</Text>
-          </Box>
-        );
-      }
-
-      if (
-        isComplete &&
-        commandState.command === 'recipes-generate' &&
-        commandState.result
-      ) {
-        return (
-          <Box flexDirection="column">
-            <Text color="green">✅ Recipe generated successfully!</Text>
-            <Text>Path: {commandState.result.recipePath}</Text>
-            <Text>Name: {commandState.result.recipeName}</Text>
-            {commandState.result.metadata && options.cost && (
-              <>
-                <Text>
-                  Cost: ${commandState.result.metadata.costUsd.toFixed(4)}
-                </Text>
-                <Text>
-                  Duration:{' '}
-                  {commandState.result.metadata.durationSeconds.toFixed(1)}s
-                </Text>
-              </>
-            )}
-          </Box>
-        );
-      }
-
-      return (
-        <Box flexDirection="column">
-          <Text color="blue">🎯 {simpleStep || 'Generating recipe...'}</Text>
-        </Box>
-      );
-    }
-
-    if (error && isComplete) {
+    if (error) {
       return (
         <Box flexDirection="column">
           <Text color="red">❌ Error: {error.message}</Text>
@@ -378,7 +287,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     }
 
     return (
-      <RecipeGenerateProgress
+      <GenerateContainer
         options={{
           name: options.name,
           progress: options.progress,
@@ -391,27 +300,8 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           setCommandState({ command: 'recipes-generate', result });
           setIsComplete(true);
         }}
-        onError={(error, collectedOptions) => {
-          if (collectedOptions && collectedOptions.name) {
-            let cliCommand = `npx chorenzo recipes generate "${collectedOptions.name}"`;
-            if (collectedOptions.category) {
-              cliCommand += ` --category "${collectedOptions.category}"`;
-            }
-            if (collectedOptions.summary) {
-              cliCommand += ` --summary "${collectedOptions.summary}"`;
-            }
-            if (collectedOptions.saveLocation) {
-              cliCommand += ` --location "${collectedOptions.saveLocation}"`;
-            }
-
-            const enhancedError = new Error(
-              `${error.message}\n\nCLI command to retry:\n${cliCommand}`
-            );
-            setError(enhancedError);
-          } else {
-            setError(error);
-          }
-          setIsComplete(true);
+        onError={(error) => {
+          setError(error);
         }}
       />
     );

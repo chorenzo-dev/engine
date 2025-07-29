@@ -10,6 +10,7 @@ import {
   performRecipesGenerate,
   validateCategoryName,
 } from '~/commands/recipes';
+import { colors } from '~/styles/colors';
 import { chorenzoConfig } from '~/utils/chorenzo-config.utils';
 import { generateOperationId } from '~/utils/code-changes-events.utils';
 import { LocationType, libraryManager } from '~/utils/library-manager.utils';
@@ -322,7 +323,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
     return (
       <Box flexDirection="column">
         <Box>
-          <Text color="blue">🎯 Recipe name: </Text>
+          <Text>Recipe name: </Text>
           <TextInput
             value={userInput}
             onChange={setUserInput}
@@ -348,7 +349,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
       return (
         <Box flexDirection="column">
           <Box>
-            <Text color="blue">📁 Custom location: </Text>
+            <Text>Custom location: </Text>
             <TextInput
               value={customLocationInput}
               onChange={setCustomLocationInput}
@@ -362,7 +363,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
 
     return (
       <Box flexDirection="column">
-        <Text color="blue">📁 Choose where to save the recipe:</Text>
+        <Text>Choose where to save the recipe:</Text>
         <SelectInput items={locationOptions} onSelect={handleLocationSelect} />
       </Box>
     );
@@ -372,8 +373,8 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
     return (
       <Box flexDirection="column">
         <Box>
-          <Text color="blue">
-            🛈 Do you want me to generate the recipe automatically using AI?
+          <Text>
+            Do you want me to generate the recipe automatically using AI?
             (y/N){' '}
           </Text>
           <TextInput
@@ -403,7 +404,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
       return (
         <Box flexDirection="column">
           <Box>
-            <Text color="blue">📂 Custom category: </Text>
+            <Text>Custom category: </Text>
             <TextInput
               value={categoryInput}
               onChange={setCategoryInput}
@@ -417,7 +418,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
 
     return (
       <Box flexDirection="column">
-        <Text color="blue">📂 Choose a category for your recipe:</Text>
+        <Text>Choose a category for your recipe:</Text>
         <SelectInput items={categoryOptions} onSelect={handleCategorySelect} />
       </Box>
     );
@@ -427,7 +428,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
     return (
       <Box flexDirection="column">
         <Box>
-          <Text color="blue">📝 Recipe summary: </Text>
+          <Text>Recipe summary: </Text>
           <TextInput
             value={summaryInput}
             onChange={setSummaryInput}
@@ -444,7 +445,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
             showCursor
           />
         </Box>
-        <Text color="gray" dimColor>
+        <Text color={colors.muted} dimColor>
           Enter a one-sentence summary of what this recipe does
         </Text>
       </Box>
@@ -455,7 +456,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
     return (
       <Box flexDirection="column">
         <Box>
-          <Text color="blue">💡 Additional instructions (optional):</Text>
+          <Text>Additional instructions (optional):</Text>
           <TextInput
             value={instructionsInput}
             onChange={setInstructionsInput}
@@ -468,7 +469,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
             showCursor
           />
         </Box>
-        <Text color="gray" dimColor>
+        <Text color={colors.muted} dimColor>
           Press Enter to continue without additional instructions
         </Text>
       </Box>

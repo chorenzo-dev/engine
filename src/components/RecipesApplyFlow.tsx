@@ -2,6 +2,7 @@ import { Box, Text } from 'ink';
 import React, { useEffect, useState } from 'react';
 
 import { performRecipesApply } from '~/commands/recipes';
+import { colors } from '~/styles/colors';
 import { RecipesApplyOptions, RecipesApplyResult } from '~/types/recipes-apply';
 import { generateOperationId } from '~/utils/code-changes-events.utils';
 
@@ -10,16 +11,20 @@ import {
   useCodeChangesProgress,
 } from './CodeChangesProgress';
 
-interface ApplyProgressProps {
+interface RecipesApplyFlowProps {
   options: RecipesApplyOptions;
+  showProgress?: boolean;
   onComplete: (result: RecipesApplyResult) => void;
   onError: (error: Error) => void;
+  onProgress?: (step: string) => void;
 }
 
-export const ApplyProgress: React.FC<ApplyProgressProps> = ({
+export const RecipesApplyFlow: React.FC<RecipesApplyFlowProps> = ({
   options,
+  showProgress = true,
   onComplete,
   onError,
+  onProgress,
 }) => {
   const {
     operations,
@@ -37,21 +42,27 @@ export const ApplyProgress: React.FC<ApplyProgressProps> = ({
       const operationId = generateOperationId('apply');
 
       try {
-        startOperation({
-          id: operationId,
-          type: 'apply',
-          description: 'Applying recipe',
-          status: 'in_progress',
-        });
+        if (showProgress) {
+          startOperation({
+            id: operationId,
+            type: 'apply',
+            description: 'Applying recipe',
+            status: 'in_progress',
+          });
+        }
 
         const result = await performRecipesApply(
           options,
           (step, isThinking) => {
-            if (step) {
-              progressOperation(operationId, step);
-            }
-            if (isThinking !== undefined) {
-              updateOperation(operationId, { isThinking });
+            if (showProgress) {
+              if (step) {
+                progressOperation(operationId, step);
+              }
+              if (isThinking !== undefined) {
+                updateOperation(operationId, { isThinking });
+              }
+            } else if (step && onProgress) {
+              onProgress(step);
             }
           },
           (type, message) => {
@@ -64,30 +75,40 @@ export const ApplyProgress: React.FC<ApplyProgressProps> = ({
           }
         );
 
-        completeOperation(operationId, {
-          costUsd: result.metadata?.costUsd || 0,
-          turns: result.metadata?.turns || 0,
-          durationSeconds: result.metadata?.durationSeconds || 0,
-        });
+        if (showProgress) {
+          completeOperation(operationId, {
+            costUsd: result.metadata?.costUsd || 0,
+            turns: result.metadata?.turns || 0,
+            durationSeconds: result.metadata?.durationSeconds || 0,
+          });
+        }
 
         onComplete(result);
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : 'Unknown error';
-        errorOperation(operationId, errorMessage);
-        onError(err instanceof Error ? err : new Error(errorMessage));
+        const errorObj = err instanceof Error ? err : new Error(errorMessage);
+
+        if (showProgress) {
+          errorOperation(operationId, errorMessage);
+        }
+
+        onError(errorObj);
       }
     };
 
     runApply();
   }, [
     options,
+    showProgress,
     onComplete,
     onError,
+    onProgress,
     startOperation,
     progressOperation,
     completeOperation,
     errorOperation,
+    updateOperation,
   ]);
 
   const getIcon = (type: string) => {
@@ -103,18 +124,22 @@ export const ApplyProgress: React.FC<ApplyProgressProps> = ({
     }
   };
 
-  return (
-    <Box flexDirection="column">
-      <CodeChangesProgress operations={operations} showLogs />
-      {validationMessages.length > 0 && (
-        <Box flexDirection="column" marginTop={1}>
-          {validationMessages.map((msg, i) => (
-            <Text key={i} dimColor>
-              {msg}
-            </Text>
-          ))}
-        </Box>
-      )}
-    </Box>
-  );
+  if (showProgress) {
+    return (
+      <Box flexDirection="column">
+        <CodeChangesProgress operations={operations} showLogs />
+        {validationMessages.length > 0 && (
+          <Box flexDirection="column" marginTop={1}>
+            {validationMessages.map((msg, i) => (
+              <Text key={i} color={colors.muted}>
+                {msg}
+              </Text>
+            ))}
+          </Box>
+        )}
+      </Box>
+    );
+  }
+
+  return null;
 };

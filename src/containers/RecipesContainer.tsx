@@ -4,17 +4,14 @@ import React, { useEffect, useState } from 'react';
 import {
   type GenerateResult as RecipeGenerateResult,
   type ValidationResult,
-  performRecipesApply,
   performRecipesGenerate,
   performRecipesValidate,
 } from '~/commands/recipes';
-import { ApplyDisplay } from '~/components/ApplyDisplay';
-import { ApplyProgress } from '~/components/ApplyProgress';
 import { CommandFlow } from '~/components/CommandFlow';
 import { emojis } from '~/components/CommandFlow';
-import { DebugProgress } from '~/components/DebugProgress';
 import { RecipeGenerateProgress } from '~/components/RecipeGenerateProgress';
-import { ApplyOptions, ApplyRecipeResult } from '~/types/apply';
+import { RecipesApplyContainer } from '~/containers/RecipesApplyContainer';
+import { RecipesApplyOptions, RecipesApplyResult } from '~/types/recipes-apply';
 
 interface RecipesContainerProps {
   command: 'validate' | 'apply' | 'generate';
@@ -33,7 +30,7 @@ interface RecipesContainerProps {
     summary?: string;
   };
   onComplete: (
-    result: ValidationResult | ApplyRecipeResult | RecipeGenerateResult
+    result: ValidationResult | RecipesApplyResult | RecipeGenerateResult
   ) => void;
   onError: (error: Error) => void;
 }
@@ -45,7 +42,7 @@ export const RecipesContainer: React.FC<RecipesContainerProps> = ({
   onError,
 }) => {
   const [result, setResult] = useState<
-    ValidationResult | ApplyRecipeResult | RecipeGenerateResult | null
+    ValidationResult | RecipesApplyResult | RecipeGenerateResult | null
   >(null);
   const [error, setError] = useState<Error | null>(null);
   const [isComplete, setIsComplete] = useState(false);
@@ -88,47 +85,6 @@ export const RecipesContainer: React.FC<RecipesContainerProps> = ({
     }
 
     if (
-      command === 'apply' &&
-      options.progress === false &&
-      !options.debug &&
-      !isComplete &&
-      !error
-    ) {
-      if (!options.recipe) {
-        const errorObj = new Error('Recipe parameter is required');
-        setError(errorObj);
-        onError(errorObj);
-        return;
-      }
-
-      const runRecipesApply = async () => {
-        try {
-          const applyResult = await performRecipesApply(
-            {
-              recipe: options.recipe!,
-              variant: options.variant,
-              project: options.project,
-              yes: options.yes,
-              progress: options.progress,
-            },
-            (step) => {
-              setSimpleStep(step || '');
-            }
-          );
-
-          setResult(applyResult);
-          setIsComplete(true);
-          onComplete(applyResult);
-        } catch (err) {
-          const errorObj = err instanceof Error ? err : new Error(String(err));
-          setError(errorObj);
-          onError(errorObj);
-        }
-      };
-      runRecipesApply();
-    }
-
-    if (
       command === 'generate' &&
       options.progress === false &&
       !isComplete &&
@@ -164,12 +120,7 @@ export const RecipesContainer: React.FC<RecipesContainerProps> = ({
   }, [
     command,
     options.target,
-    options.recipe,
-    options.variant,
-    options.project,
-    options.yes,
     options.progress,
-    options.debug,
     options.name,
     options.cost,
     options.saveLocation,
@@ -237,96 +188,21 @@ export const RecipesContainer: React.FC<RecipesContainerProps> = ({
   }
 
   if (command === 'apply') {
-    if (!options.recipe) {
-      return (
-        <CommandFlow
-          title="Error"
-          status="error"
-          error="Recipe parameter is required"
-        />
-      );
-    }
-
-    if (options.debug) {
-      if (error) {
-        return (
-          <CommandFlow title="Error" status="error" error={error.message} />
-        );
-      }
-
-      const applyOptions: ApplyOptions = {
-        recipe: options.recipe,
-        variant: options.variant,
-        project: options.project,
-        yes: options.yes,
-        progress: options.progress,
-        cost: options.cost,
-      };
-
-      return (
-        <DebugProgress
-          options={applyOptions}
-          onComplete={(applyResult) => {
-            setResult(applyResult);
-            setIsComplete(true);
-            onComplete(applyResult);
-          }}
-          onError={(error) => {
-            setError(error);
-            onError(error);
-          }}
-        />
-      );
-    }
-
-    if (options.progress === false) {
-      if (error) {
-        return (
-          <CommandFlow title="Error" status="error" error={error.message} />
-        );
-      }
-
-      if (isComplete && result) {
-        return (
-          <ApplyDisplay
-            result={result as ApplyRecipeResult}
-            showCost={options.cost}
-          />
-        );
-      }
-
-      return (
-        <CommandFlow
-          title={simpleStep || 'Applying recipe...'}
-          status="in_progress"
-        />
-      );
-    }
-
-    if (error) {
-      return <CommandFlow title="Error" status="error" error={error.message} />;
-    }
-
-    if (isComplete && result) {
-      return (
-        <ApplyDisplay
-          result={result as ApplyRecipeResult}
-          showCost={options.cost}
-        />
-      );
-    }
-
-    const applyOptions: ApplyOptions = {
-      recipe: options.recipe,
+    const applyOptions: RecipesApplyOptions & {
+      progress?: boolean;
+      debug?: boolean;
+    } = {
+      recipe: options.recipe!,
       variant: options.variant,
       project: options.project,
       yes: options.yes,
       progress: options.progress,
       cost: options.cost,
+      debug: options.debug,
     };
 
     return (
-      <ApplyProgress
+      <RecipesApplyContainer
         options={applyOptions}
         onComplete={(applyResult) => {
           setResult(applyResult);

@@ -96,5 +96,5 @@ export const AnalysisFlow: React.FC<AnalysisFlowProps> = ({
     return <CodeChangesProgress operations={operations} showLogs />;
   }
 
-  return null; // Container handles simple progress display
+  return null;
 };

@@ -2,15 +2,15 @@ import { Box, Text } from 'ink';
 import React, { useEffect, useState } from 'react';
 
 import { performRecipesApply } from '~/commands/recipes';
-import { ApplyOptions, ApplyRecipeResult } from '~/types/apply';
+import { RecipesApplyOptions, RecipesApplyResult } from '~/types/recipes-apply';
 import { generateOperationId } from '~/utils/code-changes-events.utils';
 
 import { ApplyDisplay } from './ApplyDisplay';
 import { useCodeChangesProgress } from './CodeChangesProgress';
 
 interface DebugProgressProps {
-  options: ApplyOptions;
-  onComplete: (result: ApplyRecipeResult) => void;
+  options: RecipesApplyOptions;
+  onComplete: (result: RecipesApplyResult) => void;
   onError: (error: Error) => void;
 }
 
@@ -27,7 +27,7 @@ export const DebugProgress: React.FC<DebugProgressProps> = ({
 }) => {
   const [messages, setMessages] = useState<ProgressMessage[]>([]);
   const [isComplete, setIsComplete] = useState(false);
-  const [result, setResult] = useState<ApplyRecipeResult | null>(null);
+  const [result, setResult] = useState<RecipesApplyResult | null>(null);
   const [validationMessages, setValidationMessages] = useState<string[]>([]);
   const [hasStarted, setHasStarted] = useState(false);
 

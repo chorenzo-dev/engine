@@ -263,7 +263,7 @@ function parsePromptContent(content: string): RecipePrompt {
     goal: sections.get('Goal') || '',
     investigation: sections.get('Investigation') || '',
     expectedOutput: sections.get('Expected Output') || '',
-    content: content,
+    content,
   };
 }
 

@@ -8,12 +8,12 @@ import {
 } from '~/commands/recipes';
 import { AnalyzeContainer } from '~/containers/AnalyzeContainer';
 import { InitContainer } from '~/containers/InitContainer';
+import { RecipesApplyContainer } from '~/containers/RecipesApplyContainer';
 import { RecipesContainer } from '~/containers/RecipesContainer';
 import { colors } from '~/styles/colors';
-import { ApplyRecipeResult } from '~/types/apply';
+import { RecipesApplyResult } from '~/types/recipes-apply';
 
 import { AnalysisResultDisplay } from './AnalysisResultDisplay';
-import { ApplyDisplay } from './ApplyDisplay';
 import { CommandFlow } from './CommandFlow';
 
 interface ShellProps {
@@ -45,7 +45,7 @@ type ShellState =
   | { command: 'analyze'; result: AnalysisResult | null }
   | { command: 'init'; result: AnalysisResult | null }
   | { command: 'recipes-validate'; result: ValidationResult | null }
-  | { command: 'recipes-apply'; result: ApplyRecipeResult | null }
+  | { command: 'recipes-apply'; result: RecipesApplyResult | null }
   | { command: 'recipes-generate'; result: RecipeGenerateResult | null };
 
 export const Shell: React.FC<ShellProps> = ({ command, options }) => {
@@ -193,21 +193,10 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       return <CommandFlow title="Error" status="error" error={error.message} />;
     }
 
-    if (
-      isComplete &&
-      commandState.command === 'recipes-apply' &&
-      commandState.result
-    ) {
-      return (
-        <ApplyDisplay result={commandState.result} showCost={options.cost} />
-      );
-    }
-
     return (
-      <RecipesContainer
-        command="apply"
+      <RecipesApplyContainer
         options={{
-          recipe: options.recipe,
+          recipe: options.recipe!,
           variant: options.variant,
           project: options.project,
           yes: options.yes,
@@ -218,7 +207,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         onComplete={(result) => {
           setCommandState({
             command: 'recipes-apply',
-            result: result as ApplyRecipeResult,
+            result,
           });
           setIsComplete(true);
         }}

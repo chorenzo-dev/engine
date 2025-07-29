@@ -1,10 +1,10 @@
 import { Box, Text } from 'ink';
 import React from 'react';
 
-import { ApplyRecipeResult } from '~/types/apply';
+import { RecipesApplyResult } from '~/types/recipes-apply';
 
 interface ApplyDisplayProps {
-  result: ApplyRecipeResult;
+  result: RecipesApplyResult;
   showCost?: boolean;
 }
 

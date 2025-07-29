@@ -44,6 +44,7 @@ export default [
         },
       ],
       curly: ['error', 'all'],
+      'object-shorthand': ['error', 'always'],
     },
   },
 ];

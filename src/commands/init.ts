@@ -1,5 +1,5 @@
-import { chorenzoConfig } from '~/utils/chorenzo-config.utils';
 import { checkClaudeCodeAuth } from '~/utils/claude.utils';
+import { chorenzoConfig } from '~/utils/config.utils';
 import { GitError } from '~/utils/git-operations.utils';
 import { libraryManager } from '~/utils/library-manager.utils';
 import { Logger } from '~/utils/logger.utils';

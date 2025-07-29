@@ -2,7 +2,7 @@ import { spawnSync } from 'child_process';
 
 import { AuthConfig } from '~/types/config';
 
-import { chorenzoConfig } from './chorenzo-config.utils';
+import { chorenzoConfig } from './config.utils';
 import { Logger } from './logger.utils';
 
 export class AuthError extends Error {

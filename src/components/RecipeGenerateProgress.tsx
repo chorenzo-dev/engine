@@ -10,8 +10,8 @@ import {
   performRecipesGenerate,
   validateCategoryName,
 } from '~/commands/recipes';
-import { chorenzoConfig } from '~/utils/chorenzo-config.utils';
 import { generateOperationId } from '~/utils/code-changes-events.utils';
+import { chorenzoConfig } from '~/utils/config.utils';
 import { LocationType, libraryManager } from '~/utils/library-manager.utils';
 import { resolvePath } from '~/utils/path.utils';
 

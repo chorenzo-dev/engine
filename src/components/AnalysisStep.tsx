@@ -1,13 +1,10 @@
 import * as fs from 'fs';
 import { Box, Text, useInput, useStdin } from 'ink';
-import * as os from 'os';
 import * as path from 'path';
 import React, { useEffect, useState } from 'react';
 
 import { AnalysisResult, performAnalysis } from '~/commands/analyze';
 import { generateOperationId } from '~/utils/code-changes-events.utils';
-import { readJson, writeJson } from '~/utils/json.utils';
-import { Logger } from '~/utils/logger.utils';
 
 import { AnalysisDisplay } from './AnalysisDisplay';
 import {
@@ -24,16 +21,6 @@ interface AnalysisStepProps {
   };
   onAnalysisComplete: (result?: AnalysisResult) => void;
   onAnalysisError: (error: Error) => void;
-}
-
-interface LastAnalysis {
-  workspace: string;
-  timestamp: string;
-}
-
-interface State {
-  last_checked: string;
-  last_analysis?: LastAnalysis;
 }
 
 export const AnalysisStep: React.FC<AnalysisStepProps> = ({
@@ -131,7 +118,7 @@ export const AnalysisStep: React.FC<AnalysisStepProps> = ({
             durationSeconds: result.metadata?.durationSeconds || 0,
           });
 
-          await Promise.all([updateGitignore(), updateGlobalState()]);
+          await updateGitignore();
 
           setPhase('complete');
           onAnalysisComplete(result);
@@ -179,32 +166,6 @@ export const AnalysisStep: React.FC<AnalysisStepProps> = ({
       gitignoreContent += '/.chorenzo/\n';
       fs.writeFileSync(gitignorePath, gitignoreContent);
     }
-  };
-
-  const updateGlobalState = async () => {
-    const statePath = path.join(os.homedir(), '.chorenzo', 'state.json');
-    let state: State = { last_checked: '1970-01-01T00:00:00Z' };
-
-    if (fs.existsSync(statePath)) {
-      try {
-        state = await readJson<State>(statePath);
-      } catch (error) {
-        Logger.warn(
-          {
-            event: 'state_read_failed',
-            error: error instanceof Error ? error.message : String(error),
-          },
-          'Failed to read existing state file, using defaults'
-        );
-      }
-    }
-
-    state.last_analysis = {
-      workspace: path.resolve(process.cwd()),
-      timestamp: new Date().toISOString(),
-    };
-
-    await writeJson(statePath, state);
   };
 
   if (phase === 'confirm') {

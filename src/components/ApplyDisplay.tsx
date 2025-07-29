@@ -3,6 +3,8 @@ import React from 'react';
 
 import { RecipesApplyResult } from '~/types/recipes-apply';
 
+import { MetadataDisplay } from './MetadataDisplay';
+
 interface ApplyDisplayProps {
   result: RecipesApplyResult;
   showCost?: boolean;
@@ -37,23 +39,7 @@ export const ApplyDisplay: React.FC<ApplyDisplayProps> = ({
       </Box>
 
       {metadata && (
-        <Box flexDirection="column" marginBottom={1}>
-          <Text bold>Performance:</Text>
-          <Text> • Duration: {metadata.durationSeconds.toFixed(1)}s</Text>
-          {showCost && <Text> • Cost: ${metadata.costUsd.toFixed(4)} USD</Text>}
-          {metadata.startTime && (
-            <Text dimColor>
-              {' '}
-              • Started: {new Date(metadata.startTime).toLocaleTimeString()}
-            </Text>
-          )}
-          {metadata.endTime && (
-            <Text dimColor>
-              {' '}
-              • Finished: {new Date(metadata.endTime).toLocaleTimeString()}
-            </Text>
-          )}
-        </Box>
+        <MetadataDisplay metadata={metadata} showCost={showCost} includeLabel />
       )}
 
       {executionResults.length > 0 && (

@@ -2,6 +2,7 @@ import { Text } from 'ink';
 import React, { useState } from 'react';
 
 import { CommandFlow } from '~/components/CommandFlow';
+import { MetadataDisplay } from '~/components/MetadataDisplay';
 import { RecipesGenerateFlow } from '~/components/RecipesGenerateFlow';
 import {
   RecipesGenerateOptions,
@@ -63,11 +64,8 @@ export const RecipesGenerateContainer: React.FC<
       <CommandFlow title="Recipe generated successfully!" status="completed">
         <Text>Path: {result.recipePath}</Text>
         <Text>Name: {result.recipeName}</Text>
-        {result.metadata && options.cost && (
-          <>
-            <Text>Cost: ${result.metadata.costUsd.toFixed(4)}</Text>
-            <Text>Duration: {result.metadata.durationSeconds.toFixed(1)}s</Text>
-          </>
+        {result.metadata && (
+          <MetadataDisplay metadata={result.metadata} showCost={options.cost} />
         )}
       </CommandFlow>
     );

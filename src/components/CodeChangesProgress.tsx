@@ -4,6 +4,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 import { OperationMetadata } from '~/types/common';
 
+import { MetadataDisplay } from './MetadataDisplay';
+
 export interface CodeChangesOperation {
   id: string;
   type: 'analysis' | 'apply' | 'init' | 'validation' | 'generate';
@@ -140,14 +142,11 @@ export const CodeChangesProgress: React.FC<CodeChangesProgressProps> = ({
 
       {isComplete && currentOperation.metadata && (
         <Box marginTop={1}>
-          <Text color="gray">
-            {currentOperation.metadata.durationSeconds &&
-              `Duration: ${currentOperation.metadata.durationSeconds.toFixed(2)}s`}
-            {currentOperation.metadata.costUsd &&
-              ` • Cost: $${currentOperation.metadata.costUsd.toFixed(4)}`}
-            {currentOperation.metadata.turns &&
-              ` • Turns: ${currentOperation.metadata.turns}`}
-          </Text>
+          <MetadataDisplay
+            metadata={currentOperation.metadata}
+            showCost
+            inline
+          />
         </Box>
       )}
 

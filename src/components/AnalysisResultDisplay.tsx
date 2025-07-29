@@ -6,6 +6,7 @@ import { colors } from '~/styles/colors';
 import { FormatAnalysis } from '~/utils/formatAnalysis';
 
 import { CommandFlow } from './CommandFlow';
+import { MetadataDisplay } from './MetadataDisplay';
 
 interface AnalysisResultDisplayProps {
   result: AnalysisResultType;
@@ -27,12 +28,7 @@ export const AnalysisResultDisplay: React.FC<AnalysisResultDisplayProps> = ({
           <FormatAnalysis analysis={result.analysis} />
         </Box>
         {result.metadata && (
-          <>
-            {showCost && (
-              <Text>Cost: ${result.metadata.costUsd.toFixed(4)}</Text>
-            )}
-            <Text>Duration: {result.metadata.durationSeconds.toFixed(1)}s</Text>
-          </>
+          <MetadataDisplay metadata={result.metadata} showCost={showCost} />
         )}
         {result.unrecognizedFrameworks &&
           result.unrecognizedFrameworks.length > 0 && (

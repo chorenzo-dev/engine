@@ -6,8 +6,8 @@ import { type ValidationResult } from '~/commands/recipes';
 import { AnalyzeContainer } from '~/containers/AnalyzeContainer';
 import { InitContainer } from '~/containers/InitContainer';
 import { RecipesApplyContainer } from '~/containers/RecipesApplyContainer';
-import { RecipesContainer } from '~/containers/RecipesContainer';
 import { RecipesGenerateContainer } from '~/containers/RecipesGenerateContainer';
+import { RecipesValidateContainer } from '~/containers/RecipesValidateContainer';
 import { colors } from '~/styles/colors';
 import { RecipesApplyResult } from '~/types/recipes-apply';
 import { RecipesGenerateResult } from '~/types/recipes-generate';
@@ -57,8 +57,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   );
   const [error, setError] = useState<Error | null>(null);
   const [isComplete, setIsComplete] = useState(false);
-  const [validationResult, setValidationResult] =
-    useState<ValidationResult | null>(null);
   if (command === 'analyze') {
     if (error) {
       return <CommandFlow title="Error" status="error" error={error.message} />;
@@ -125,59 +123,27 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   }
 
   if (command === 'recipes-validate') {
-    if (error) {
-      return <CommandFlow title="Error" status="error" error={error.message} />;
-    }
-
-    if (isComplete && validationResult) {
+    if (!options.target) {
       return (
-        <Box flexDirection="column">
-          {validationResult.messages.map((msg, index) => {
-            let icon = '';
-            switch (msg.type) {
-              case 'success':
-                icon = '✅';
-                break;
-              case 'error':
-                icon = '❌';
-                break;
-              case 'warning':
-                icon = '⚠️ ';
-                break;
-              case 'info':
-                icon = '📊';
-                break;
-            }
-            return <Text key={index}>{`${icon} ${msg.text}`}</Text>;
-          })}
-          {validationResult.summary && (
-            <Box marginTop={1} flexDirection="column">
-              <Text>📊 Summary:</Text>
-              <Text>{`  Valid recipes: ${validationResult.summary.valid}/${validationResult.summary.total}`}</Text>
-              {validationResult.summary.totalErrors > 0 && (
-                <Text>{`  Total errors: ${validationResult.summary.totalErrors}`}</Text>
-              )}
-              {validationResult.summary.totalWarnings > 0 && (
-                <Text>{`  Total warnings: ${validationResult.summary.totalWarnings}`}</Text>
-              )}
-            </Box>
-          )}
-          <Box marginTop={1}>
-            <Text color={colors.success}>✅ Recipe validation complete!</Text>
-          </Box>
-        </Box>
+        <CommandFlow
+          title="Error"
+          status="error"
+          error="Target parameter is required"
+        />
       );
     }
 
     return (
-      <RecipesContainer
-        command="validate"
+      <RecipesValidateContainer
         options={{
           target: options.target,
           progress: options.progress,
         }}
         onComplete={(result) => {
-          setValidationResult(result as ValidationResult);
+          setCommandState({
+            command: 'recipes-validate',
+            result,
+          });
           setIsComplete(true);
         }}
         onError={(error) => {

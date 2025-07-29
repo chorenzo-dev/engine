@@ -2,16 +2,15 @@ import { Box, Text } from 'ink';
 import React, { useState } from 'react';
 
 import { AnalysisResult } from '~/commands/analyze';
-import {
-  type GenerateResult as RecipeGenerateResult,
-  type ValidationResult,
-} from '~/commands/recipes';
+import { type ValidationResult } from '~/commands/recipes';
 import { AnalyzeContainer } from '~/containers/AnalyzeContainer';
 import { InitContainer } from '~/containers/InitContainer';
 import { RecipesApplyContainer } from '~/containers/RecipesApplyContainer';
 import { RecipesContainer } from '~/containers/RecipesContainer';
+import { RecipesGenerateContainer } from '~/containers/RecipesGenerateContainer';
 import { colors } from '~/styles/colors';
 import { RecipesApplyResult } from '~/types/recipes-apply';
+import { RecipesGenerateResult } from '~/types/recipes-generate';
 
 import { AnalysisResultDisplay } from './AnalysisResultDisplay';
 import { CommandFlow } from './CommandFlow';
@@ -46,7 +45,7 @@ type ShellState =
   | { command: 'init'; result: AnalysisResult | null }
   | { command: 'recipes-validate'; result: ValidationResult | null }
   | { command: 'recipes-apply'; result: RecipesApplyResult | null }
-  | { command: 'recipes-generate'; result: RecipeGenerateResult | null };
+  | { command: 'recipes-generate'; result: RecipesGenerateResult | null };
 
 export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   const [commandState, setCommandState] = useState<ShellState>(
@@ -223,34 +222,8 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       return <CommandFlow title="Error" status="error" error={error.message} />;
     }
 
-    if (
-      isComplete &&
-      commandState.command === 'recipes-generate' &&
-      commandState.result
-    ) {
-      return (
-        <Box flexDirection="column">
-          <Text color={colors.success}>✅ Recipe generated successfully!</Text>
-          <Text>Path: {commandState.result.recipePath}</Text>
-          <Text>Name: {commandState.result.recipeName}</Text>
-          {commandState.result.metadata && options.cost && (
-            <>
-              <Text>
-                Cost: ${commandState.result.metadata.costUsd.toFixed(4)}
-              </Text>
-              <Text>
-                Duration:{' '}
-                {commandState.result.metadata.durationSeconds.toFixed(1)}s
-              </Text>
-            </>
-          )}
-        </Box>
-      );
-    }
-
     return (
-      <RecipesContainer
-        command="generate"
+      <RecipesGenerateContainer
         options={{
           name: options.name,
           progress: options.progress,
@@ -262,7 +235,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         onComplete={(result) => {
           setCommandState({
             command: 'recipes-generate',
-            result: result as RecipeGenerateResult,
+            result,
           });
           setIsComplete(true);
         }}

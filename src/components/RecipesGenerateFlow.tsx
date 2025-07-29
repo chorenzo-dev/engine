@@ -4,13 +4,15 @@ import TextInput from 'ink-text-input';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import {
-  type GenerateOptions,
-  type GenerateResult,
   type ProgressCallback,
   performRecipesGenerate,
   validateCategoryName,
 } from '~/commands/recipes';
 import { colors } from '~/styles/colors';
+import {
+  RecipesGenerateOptions,
+  RecipesGenerateResult,
+} from '~/types/recipes-generate';
 import { chorenzoConfig } from '~/utils/chorenzo-config.utils';
 import { generateOperationId } from '~/utils/code-changes-events.utils';
 import { LocationType, libraryManager } from '~/utils/library-manager.utils';
@@ -21,13 +23,13 @@ import {
   useCodeChangesProgress,
 } from './CodeChangesProgress';
 
-interface RecipeGenerateProgressProps {
-  options: GenerateOptions;
-  onComplete: (result: GenerateResult) => void;
-  onError: (error: Error, collectedOptions?: GenerateOptions) => void;
+interface RecipesGenerateFlowProps {
+  options: RecipesGenerateOptions;
+  onComplete: (result: RecipesGenerateResult) => void;
+  onError: (error: Error, collectedOptions?: RecipesGenerateOptions) => void;
 }
 
-export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
+export const RecipesGenerateFlow: React.FC<RecipesGenerateFlowProps> = ({
   options,
   onComplete,
   onError,
@@ -223,7 +225,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
           const categories = await libraryManager.getAllCategories(location);
           setAvailableCategories(categories);
         } catch (error) {
-          const collectedData: GenerateOptions = {
+          const collectedData: RecipesGenerateOptions = {
             name: collectedOptions.name,
             category: collectedOptions.category,
             summary: collectedOptions.summary,
@@ -286,7 +288,7 @@ export const RecipeGenerateProgress: React.FC<RecipeGenerateProgressProps> = ({
           const errorMessage = err instanceof Error ? err.message : String(err);
           errorOperation(operationId, errorMessage);
 
-          const collectedData: GenerateOptions = {
+          const collectedData: RecipesGenerateOptions = {
             name: recipeName,
             category,
             summary,

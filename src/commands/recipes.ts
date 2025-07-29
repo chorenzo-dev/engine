@@ -75,7 +75,7 @@ export interface ValidateOptions extends RecipesOptions {
   target: string;
 }
 
-export interface GenerateOptions extends RecipesOptions {
+export interface RecipesGenerateOptions extends RecipesOptions {
   name?: string;
   cost?: boolean;
   magicGenerate?: boolean;
@@ -86,7 +86,7 @@ export interface GenerateOptions extends RecipesOptions {
   additionalInstructions?: string;
 }
 
-export interface GenerateResult {
+export interface RecipesGenerateResult {
   recipePath: string;
   recipeName: string;
   success: boolean;
@@ -1372,9 +1372,9 @@ async function loadExistingRecipeOutputs(): Promise<string[]> {
 }
 
 export async function performRecipesGenerate(
-  options: GenerateOptions,
+  options: RecipesGenerateOptions,
   onProgress?: ProgressCallback
-): Promise<GenerateResult> {
+): Promise<RecipesGenerateResult> {
   const startTime = new Date();
   let totalCostUsd = 0;
 

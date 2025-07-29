@@ -4,12 +4,15 @@ import * as os from 'os';
 import * as path from 'path';
 import React, { useEffect, useState } from 'react';
 
-import { AnalysisResult, performAnalysis } from '~/commands/analyze';
+import {
+  AnalysisResult as AnalysisResultType,
+  performAnalysis,
+} from '~/commands/analyze';
 import { generateOperationId } from '~/utils/code-changes-events.utils';
 import { readJson, writeJson } from '~/utils/json.utils';
 import { Logger } from '~/utils/logger.utils';
 
-import { AnalysisDisplay } from './AnalysisDisplay';
+import { AnalysisResultDisplay } from './AnalysisResultDisplay';
 import {
   CodeChangesProgress,
   useCodeChangesProgress,
@@ -22,7 +25,7 @@ interface AnalysisStepProps {
     progress?: boolean;
     cost?: boolean;
   };
-  onAnalysisComplete: (result?: AnalysisResult) => void;
+  onAnalysisComplete: (result?: AnalysisResultType) => void;
   onAnalysisError: (error: Error) => void;
 }
 
@@ -44,9 +47,8 @@ export const AnalysisStep: React.FC<AnalysisStepProps> = ({
   const [phase, setPhase] = useState<'confirm' | 'analysis' | 'complete'>(
     'confirm'
   );
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
-    null
-  );
+  const [analysisResult, setAnalysisResult] =
+    useState<AnalysisResultType | null>(null);
   const [analysisStartTime, setAnalysisStartTime] = useState<number>(0);
   const [showLongRunningMessage, setShowLongRunningMessage] = useState(false);
   const [analysisAborted, setAnalysisAborted] = useState(false);
@@ -242,7 +244,10 @@ export const AnalysisStep: React.FC<AnalysisStepProps> = ({
     if (analysisResult) {
       return (
         <Box flexDirection="column">
-          <AnalysisDisplay result={analysisResult} showCost={options.cost} />
+          <AnalysisResultDisplay
+            result={analysisResult}
+            showCost={options.cost}
+          />
         </Box>
       );
     }

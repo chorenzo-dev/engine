@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
-import { AnalysisResult, performAnalysis } from '~/commands/analyze';
-import { AnalysisDisplay } from '~/components/AnalysisDisplay';
-import { AnalysisProgress } from '~/components/AnalysisProgress';
+import { AnalysisResult as AnalysisResultType } from '~/commands/analyze';
+import { AnalysisFlow } from '~/components/AnalysisFlow';
+import { AnalysisResultDisplay } from '~/components/AnalysisResultDisplay';
 import { CommandFlow } from '~/components/CommandFlow';
 
 interface AnalyzeContainerProps {
@@ -10,7 +10,7 @@ interface AnalyzeContainerProps {
     progress?: boolean;
     cost?: boolean;
   };
-  onComplete: (result: AnalysisResult) => void;
+  onComplete: (result: AnalysisResultType) => void;
   onError: (error: Error) => void;
 }
 
@@ -19,63 +19,52 @@ export const AnalyzeContainer: React.FC<AnalyzeContainerProps> = ({
   onComplete,
   onError,
 }) => {
-  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [result, setResult] = useState<AnalysisResultType | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [isComplete, setIsComplete] = useState(false);
-  const [simpleStep, setSimpleStep] = useState<string>('');
+  const [currentStep, setCurrentStep] = useState<string>('');
 
-  useEffect(() => {
-    if (options.progress === false && !isComplete && !error) {
-      const runSimpleAnalysis = async () => {
-        try {
-          const analysisResult = await performAnalysis((step) => {
-            setSimpleStep(step || '');
-          });
-          setResult(analysisResult);
-          setIsComplete(true);
-          onComplete(analysisResult);
-        } catch (err) {
-          const errorObj = err instanceof Error ? err : new Error(String(err));
-          setError(errorObj);
-          onError(errorObj);
-        }
-      };
-      runSimpleAnalysis();
-    }
-  }, [options.progress, isComplete, error, onComplete, onError]);
+  const handleComplete = (analysisResult: AnalysisResultType) => {
+    setResult(analysisResult);
+    setIsComplete(true);
+    onComplete(analysisResult);
+  };
 
-  if (options.progress === false) {
-    if (error) {
-      return <CommandFlow title="Error" status="error" error={error.message} />;
-    }
-
-    if (isComplete && result) {
-      return <AnalysisDisplay result={result} showCost={options.cost} />;
-    }
-
-    return (
-      <CommandFlow
-        title={simpleStep || 'Analyzing workspace...'}
-        status="in_progress"
-      />
-    );
-  }
+  const handleError = (err: Error) => {
+    setError(err);
+    onError(err);
+  };
 
   if (error) {
     return <CommandFlow title="Error" status="error" error={error.message} />;
   }
 
+  if (isComplete && result) {
+    return <AnalysisResultDisplay result={result} showCost={options.cost} />;
+  }
+
+  if (options.progress === false) {
+    return (
+      <>
+        <CommandFlow
+          title={currentStep || 'Analyzing workspace...'}
+          status="in_progress"
+        />
+        <AnalysisFlow
+          showProgress={false}
+          onComplete={handleComplete}
+          onError={handleError}
+          onProgress={setCurrentStep}
+        />
+      </>
+    );
+  }
+
   return (
-    <AnalysisProgress
-      onComplete={(analysisResult) => {
-        setResult(analysisResult);
-        setIsComplete(true);
-        onComplete(analysisResult);
-      }}
-      onError={(error) => {
-        setError(error);
-        onError(error);
-      }}
+    <AnalysisFlow
+      showProgress={true}
+      onComplete={handleComplete}
+      onError={handleError}
     />
   );
 };

@@ -12,7 +12,7 @@ import { RecipesContainer } from '~/containers/RecipesContainer';
 import { colors } from '~/styles/colors';
 import { ApplyRecipeResult } from '~/types/apply';
 
-import { AnalysisDisplay } from './AnalysisDisplay';
+import { AnalysisResultDisplay } from './AnalysisResultDisplay';
 import { ApplyDisplay } from './ApplyDisplay';
 import { CommandFlow } from './CommandFlow';
 
@@ -65,16 +65,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       return <CommandFlow title="Error" status="error" error={error.message} />;
     }
 
-    if (
-      isComplete &&
-      commandState.command === 'analyze' &&
-      commandState.result
-    ) {
-      return (
-        <AnalysisDisplay result={commandState.result} showCost={options.cost} />
-      );
-    }
-
     return (
       <AnalyzeContainer
         options={{
@@ -105,7 +95,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           commandState.result &&
           commandState.result.analysis ? (
             <Box marginTop={1}>
-              <AnalysisDisplay
+              <AnalysisResultDisplay
                 result={commandState.result}
                 showCost={options.cost}
               />

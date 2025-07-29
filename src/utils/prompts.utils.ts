@@ -27,18 +27,18 @@ export function loadPrompt(promptName: string): string {
 
 export function loadTemplate(
   templateName: string,
-  extension: string = 'hbs'
+  extension: string = 'md'
 ): string {
   const templatePath = join(
     TEMPLATES_DIR,
     'recipe',
-    `${templateName}.${extension}`
+    `${templateName}.${extension}.hbs`
   );
   try {
     return readFileSync(templatePath, 'utf-8');
   } catch (error) {
     throw new Error(
-      `Failed to load template ${templateName}.${extension}: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to load template ${templateName}.${extension}.hbs: ${error instanceof Error ? error.message : String(error)}`
     );
   }
 }

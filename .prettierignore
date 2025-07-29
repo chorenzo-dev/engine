@@ -5,3 +5,4 @@ coverage/
 *.min.css
 CHANGELOG.md
 src/templates/recipe/*.yaml
+*.hbs

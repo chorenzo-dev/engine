@@ -9,10 +9,12 @@ import {
 import { AnalyzeContainer } from '~/containers/AnalyzeContainer';
 import { InitContainer } from '~/containers/InitContainer';
 import { RecipesContainer } from '~/containers/RecipesContainer';
+import { colors } from '~/styles/colors';
 import { ApplyRecipeResult } from '~/types/apply';
 
 import { AnalysisDisplay } from './AnalysisDisplay';
 import { ApplyDisplay } from './ApplyDisplay';
+import { CommandFlow } from './CommandFlow';
 
 interface ShellProps {
   command:
@@ -60,11 +62,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     useState<ValidationResult | null>(null);
   if (command === 'analyze') {
     if (error) {
-      return (
-        <Box flexDirection="column">
-          <Text color="red">❌ Error: {error.message}</Text>
-        </Box>
-      );
+      return <CommandFlow title="Error" status="error" error={error.message} />;
     }
 
     if (
@@ -96,17 +94,13 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
 
   if (command === 'init') {
     if (error) {
-      return (
-        <Box flexDirection="column">
-          <Text color="red">❌ Error: {error.message}</Text>
-        </Box>
-      );
+      return <CommandFlow title="Error" status="error" error={error.message} />;
     }
 
     if (isComplete) {
       return (
         <Box flexDirection="column">
-          <Text color="green">✅ Initialization complete!</Text>
+          <Text color={colors.success}>✅ Initialization complete!</Text>
           {commandState.command === 'init' &&
           commandState.result &&
           commandState.result.analysis ? (
@@ -143,11 +137,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
 
   if (command === 'recipes-validate') {
     if (error) {
-      return (
-        <Box flexDirection="column">
-          <Text color="red">❌ Error: {error.message}</Text>
-        </Box>
-      );
+      return <CommandFlow title="Error" status="error" error={error.message} />;
     }
 
     if (isComplete && validationResult) {
@@ -184,7 +174,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
             </Box>
           )}
           <Box marginTop={1}>
-            <Text color="green">✅ Recipe validation complete!</Text>
+            <Text color={colors.success}>✅ Recipe validation complete!</Text>
           </Box>
         </Box>
       );
@@ -210,11 +200,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
 
   if (command === 'recipes-apply') {
     if (error) {
-      return (
-        <Box flexDirection="column">
-          <Text color="red">❌ Error: {error.message}</Text>
-        </Box>
-      );
+      return <CommandFlow title="Error" status="error" error={error.message} />;
     }
 
     if (
@@ -255,11 +241,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
 
   if (command === 'recipes-generate') {
     if (error) {
-      return (
-        <Box flexDirection="column">
-          <Text color="red">❌ Error: {error.message}</Text>
-        </Box>
-      );
+      return <CommandFlow title="Error" status="error" error={error.message} />;
     }
 
     if (
@@ -269,7 +251,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     ) {
       return (
         <Box flexDirection="column">
-          <Text color="green">✅ Recipe generated successfully!</Text>
+          <Text color={colors.success}>✅ Recipe generated successfully!</Text>
           <Text>Path: {commandState.result.recipePath}</Text>
           <Text>Name: {commandState.result.recipeName}</Text>
           {commandState.result.metadata && options.cost && (

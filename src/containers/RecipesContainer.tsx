@@ -10,6 +10,8 @@ import {
 } from '~/commands/recipes';
 import { ApplyDisplay } from '~/components/ApplyDisplay';
 import { ApplyProgress } from '~/components/ApplyProgress';
+import { CommandFlow } from '~/components/CommandFlow';
+import { emojis } from '~/components/CommandFlow';
 import { DebugProgress } from '~/components/DebugProgress';
 import { RecipeGenerateProgress } from '~/components/RecipeGenerateProgress';
 import { ApplyOptions, ApplyRecipeResult } from '~/types/apply';
@@ -181,75 +183,74 @@ export const RecipesContainer: React.FC<RecipesContainerProps> = ({
 
   if (command === 'validate') {
     if (error) {
-      return (
-        <Box flexDirection="column">
-          <Text color="red">❌ Error: {error.message}</Text>
-        </Box>
-      );
+      return <CommandFlow title="Error" status="error" error={error.message} />;
     }
 
     if (isComplete && validationResult) {
       return (
-        <Box flexDirection="column">
-          {validationResult.messages.map((msg, index) => {
-            let icon = '';
-            switch (msg.type) {
-              case 'success':
-                icon = '✅';
-                break;
-              case 'error':
-                icon = '❌';
-                break;
-              case 'warning':
-                icon = '⚠️ ';
-                break;
-              case 'info':
-                icon = '📊';
-                break;
-            }
-            return <Text key={index}>{`${icon} ${msg.text}`}</Text>;
-          })}
-          {validationResult.summary && (
-            <Box marginTop={1} flexDirection="column">
-              <Text>📊 Summary:</Text>
-              <Text>{`  Valid recipes: ${validationResult.summary.valid}/${validationResult.summary.total}`}</Text>
-              {validationResult.summary.totalErrors > 0 && (
-                <Text>{`  Total errors: ${validationResult.summary.totalErrors}`}</Text>
-              )}
-              {validationResult.summary.totalWarnings > 0 && (
-                <Text>{`  Total warnings: ${validationResult.summary.totalWarnings}`}</Text>
-              )}
-            </Box>
-          )}
-          <Box marginTop={1}>
-            <Text color="green">✅ Recipe validation complete!</Text>
+        <CommandFlow title="Recipe validation complete!" status="completed">
+          <Box flexDirection="column">
+            {validationResult.messages.map((msg, index) => {
+              let icon = '';
+              switch (msg.type) {
+                case 'success':
+                  icon = emojis.success;
+                  break;
+                case 'error':
+                  icon = emojis.error;
+                  break;
+                case 'warning':
+                case 'info':
+                  icon = '';
+                  break;
+              }
+              return (
+                <Text key={index}>
+                  {icon ? `${icon} ` : ''}
+                  {msg.text}
+                </Text>
+              );
+            })}
+            {validationResult.summary && (
+              <Box marginTop={1} flexDirection="column">
+                <Text>Summary:</Text>
+                <Text>{`  Valid recipes: ${validationResult.summary.valid}/${validationResult.summary.total}`}</Text>
+                {validationResult.summary.totalErrors > 0 && (
+                  <Text>{`  Total errors: ${validationResult.summary.totalErrors}`}</Text>
+                )}
+                {validationResult.summary.totalWarnings > 0 && (
+                  <Text>{`  Total warnings: ${validationResult.summary.totalWarnings}`}</Text>
+                )}
+              </Box>
+            )}
           </Box>
-        </Box>
+        </CommandFlow>
       );
     }
 
     return (
-      <Box flexDirection="column">
-        <Text color="blue">🔍 {simpleStep || 'Validating recipe...'}</Text>
-      </Box>
+      <CommandFlow
+        title={simpleStep || 'Validating recipe...'}
+        status="in_progress"
+      />
     );
   }
 
   if (command === 'apply') {
     if (!options.recipe) {
       return (
-        <Box flexDirection="column">
-          <Text color="red">❌ Error: Recipe parameter is required</Text>
-        </Box>
+        <CommandFlow
+          title="Error"
+          status="error"
+          error="Recipe parameter is required"
+        />
       );
     }
 
     if (options.debug) {
       if (error) {
         return (
-          <Box flexDirection="column">
-            <Text color="red">❌ Error: {error.message}</Text>
-          </Box>
+          <CommandFlow title="Error" status="error" error={error.message} />
         );
       }
 
@@ -281,9 +282,7 @@ export const RecipesContainer: React.FC<RecipesContainerProps> = ({
     if (options.progress === false) {
       if (error) {
         return (
-          <Box flexDirection="column">
-            <Text color="red">❌ Error: {error.message}</Text>
-          </Box>
+          <CommandFlow title="Error" status="error" error={error.message} />
         );
       }
 
@@ -297,18 +296,15 @@ export const RecipesContainer: React.FC<RecipesContainerProps> = ({
       }
 
       return (
-        <Box flexDirection="column">
-          <Text color="blue">🔧 {simpleStep || 'Applying recipe...'}</Text>
-        </Box>
+        <CommandFlow
+          title={simpleStep || 'Applying recipe...'}
+          status="in_progress"
+        />
       );
     }
 
     if (error) {
-      return (
-        <Box flexDirection="column">
-          <Text color="red">❌ Error: {error.message}</Text>
-        </Box>
-      );
+      return <CommandFlow title="Error" status="error" error={error.message} />;
     }
 
     if (isComplete && result) {
@@ -347,43 +343,43 @@ export const RecipesContainer: React.FC<RecipesContainerProps> = ({
 
   if (command === 'generate') {
     if (error) {
-      return (
-        <Box flexDirection="column">
-          <Text color="red">❌ Error: {error.message}</Text>
-        </Box>
-      );
+      return <CommandFlow title="Error" status="error" error={error.message} />;
     }
 
     if (isComplete && result) {
       return (
-        <Box flexDirection="column">
-          <Text color="green">✅ Recipe generated successfully!</Text>
-          <Text>Path: {(result as RecipeGenerateResult).recipePath}</Text>
-          <Text>Name: {(result as RecipeGenerateResult).recipeName}</Text>
-          {(result as RecipeGenerateResult).metadata && options.cost && (
-            <>
-              <Text>
-                Cost: $
-                {(result as RecipeGenerateResult).metadata!.costUsd.toFixed(4)}
-              </Text>
-              <Text>
-                Duration:{' '}
-                {(
-                  result as RecipeGenerateResult
-                ).metadata!.durationSeconds.toFixed(1)}
-                s
-              </Text>
-            </>
-          )}
-        </Box>
+        <CommandFlow title="Recipe generated successfully!" status="completed">
+          <Box flexDirection="column">
+            <Text>Path: {(result as RecipeGenerateResult).recipePath}</Text>
+            <Text>Name: {(result as RecipeGenerateResult).recipeName}</Text>
+            {(result as RecipeGenerateResult).metadata && options.cost && (
+              <>
+                <Text>
+                  Cost: $
+                  {(result as RecipeGenerateResult).metadata!.costUsd.toFixed(
+                    4
+                  )}
+                </Text>
+                <Text>
+                  Duration:{' '}
+                  {(
+                    result as RecipeGenerateResult
+                  ).metadata!.durationSeconds.toFixed(1)}
+                  s
+                </Text>
+              </>
+            )}
+          </Box>
+        </CommandFlow>
       );
     }
 
     if (options.progress === false) {
       return (
-        <Box flexDirection="column">
-          <Text color="blue">🎯 {simpleStep || 'Generating recipe...'}</Text>
-        </Box>
+        <CommandFlow
+          title={simpleStep || 'Generating recipe...'}
+          status="in_progress"
+        />
       );
     }
 

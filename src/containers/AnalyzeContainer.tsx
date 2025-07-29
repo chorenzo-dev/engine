@@ -1,9 +1,9 @@
-import { Box, Text } from 'ink';
 import React, { useEffect, useState } from 'react';
 
 import { AnalysisResult, performAnalysis } from '~/commands/analyze';
 import { AnalysisDisplay } from '~/components/AnalysisDisplay';
 import { AnalysisProgress } from '~/components/AnalysisProgress';
+import { CommandFlow } from '~/components/CommandFlow';
 
 interface AnalyzeContainerProps {
   options: {
@@ -46,11 +46,7 @@ export const AnalyzeContainer: React.FC<AnalyzeContainerProps> = ({
 
   if (options.progress === false) {
     if (error) {
-      return (
-        <Box flexDirection="column">
-          <Text color="red">❌ Error: {error.message}</Text>
-        </Box>
-      );
+      return <CommandFlow title="Error" status="error" error={error.message} />;
     }
 
     if (isComplete && result) {
@@ -58,18 +54,15 @@ export const AnalyzeContainer: React.FC<AnalyzeContainerProps> = ({
     }
 
     return (
-      <Box flexDirection="column">
-        <Text color="blue">🔍 {simpleStep || 'Analyzing workspace...'}</Text>
-      </Box>
+      <CommandFlow
+        title={simpleStep || 'Analyzing workspace...'}
+        status="in_progress"
+      />
     );
   }
 
   if (error) {
-    return (
-      <Box flexDirection="column">
-        <Text color="red">❌ Error: {error.message}</Text>
-      </Box>
-    );
+    return <CommandFlow title="Error" status="error" error={error.message} />;
   }
 
   return (

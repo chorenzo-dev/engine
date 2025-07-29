@@ -1,18 +1,12 @@
-import { Box, Text } from 'ink';
+import { Text } from 'ink';
 import React, { useState } from 'react';
 
-import { AnalysisResult } from '~/commands/analyze';
-import { type ValidationResult } from '~/commands/recipes';
 import { AnalyzeContainer } from '~/containers/AnalyzeContainer';
 import { InitContainer } from '~/containers/InitContainer';
 import { RecipesApplyContainer } from '~/containers/RecipesApplyContainer';
 import { RecipesGenerateContainer } from '~/containers/RecipesGenerateContainer';
 import { RecipesValidateContainer } from '~/containers/RecipesValidateContainer';
-import { colors } from '~/styles/colors';
-import { RecipesApplyResult } from '~/types/recipes-apply';
-import { RecipesGenerateResult } from '~/types/recipes-generate';
 
-import { AnalysisResultDisplay } from './AnalysisResultDisplay';
 import { CommandFlow } from './CommandFlow';
 
 interface ShellProps {
@@ -40,23 +34,8 @@ interface ShellProps {
   };
 }
 
-type ShellState =
-  | { command: 'analyze'; result: AnalysisResult | null }
-  | { command: 'init'; result: AnalysisResult | null }
-  | { command: 'recipes-validate'; result: ValidationResult | null }
-  | { command: 'recipes-apply'; result: RecipesApplyResult | null }
-  | { command: 'recipes-generate'; result: RecipesGenerateResult | null };
-
 export const Shell: React.FC<ShellProps> = ({ command, options }) => {
-  const [commandState, setCommandState] = useState<ShellState>(
-    () =>
-      ({
-        command,
-        result: null,
-      }) as ShellState
-  );
   const [error, setError] = useState<Error | null>(null);
-  const [isComplete, setIsComplete] = useState(false);
   if (command === 'analyze') {
     if (error) {
       return <CommandFlow title="Error" status="error" error={error.message} />;
@@ -68,10 +47,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           progress: options.progress,
           cost: options.cost,
         }}
-        onComplete={(result) => {
-          setCommandState({ command: 'analyze', result });
-          setIsComplete(true);
-        }}
         onError={(error) => {
           setError(error);
         }}
@@ -80,28 +55,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   }
 
   if (command === 'init') {
-    if (error) {
-      return <CommandFlow title="Error" status="error" error={error.message} />;
-    }
-
-    if (isComplete) {
-      return (
-        <Box flexDirection="column">
-          <Text color={colors.success}>✅ Initialization complete!</Text>
-          {commandState.command === 'init' &&
-          commandState.result &&
-          commandState.result.analysis ? (
-            <Box marginTop={1}>
-              <AnalysisResultDisplay
-                result={commandState.result}
-                showCost={options.cost}
-              />
-            </Box>
-          ) : null}
-        </Box>
-      );
-    }
-
     return (
       <InitContainer
         options={{
@@ -110,10 +63,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           yes: options.yes,
           progress: options.progress,
           cost: options.cost,
-        }}
-        onComplete={(result) => {
-          setCommandState({ command: 'init', result: result || null });
-          setIsComplete(true);
         }}
         onError={(error) => {
           setError(error);
@@ -139,13 +88,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           target: options.target,
           progress: options.progress,
         }}
-        onComplete={(result) => {
-          setCommandState({
-            command: 'recipes-validate',
-            result,
-          });
-          setIsComplete(true);
-        }}
         onError={(error) => {
           setError(error);
         }}
@@ -169,13 +111,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           debug: options.debug,
           cost: options.cost,
         }}
-        onComplete={(result) => {
-          setCommandState({
-            command: 'recipes-apply',
-            result,
-          });
-          setIsComplete(true);
-        }}
         onError={(error) => {
           setError(error);
         }}
@@ -197,13 +132,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           saveLocation: options.saveLocation,
           category: options.category,
           summary: options.summary,
-        }}
-        onComplete={(result) => {
-          setCommandState({
-            command: 'recipes-generate',
-            result,
-          });
-          setIsComplete(true);
         }}
         onError={(error) => {
           setError(error);

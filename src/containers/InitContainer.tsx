@@ -3,9 +3,11 @@ import React, { useEffect, useState } from 'react';
 
 import { AnalysisResult } from '~/commands/analyze';
 import { InitError, performInit } from '~/commands/init';
+import { AnalysisResultDisplay } from '~/components/AnalysisResultDisplay';
 import { AnalysisStep } from '~/components/AnalysisStep';
 import { AuthenticationStep } from '~/components/AuthenticationStep';
 import { CommandFlow } from '~/components/CommandFlow';
+import { colors } from '~/styles/colors';
 
 interface InitContainerProps {
   options: {
@@ -15,7 +17,6 @@ interface InitContainerProps {
     progress?: boolean;
     cost?: boolean;
   };
-  onComplete: (result?: AnalysisResult) => void;
   onError: (error: Error) => void;
 }
 
@@ -29,11 +30,13 @@ type Step =
 
 export const InitContainer: React.FC<InitContainerProps> = ({
   options,
-  onComplete,
   onError,
 }) => {
   const [currentStep, setCurrentStep] = useState<Step>('checking_init');
   const [error, setError] = useState<string>('');
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
+    null
+  );
 
   useEffect(() => {
     const runInit = async () => {
@@ -69,8 +72,10 @@ export const InitContainer: React.FC<InitContainerProps> = ({
   };
 
   const handleAnalysisComplete = (result?: AnalysisResult) => {
+    if (result) {
+      setAnalysisResult(result);
+    }
     setCurrentStep('complete');
-    onComplete(result);
   };
 
   const handleAnalysisError = (error: Error) => {
@@ -134,7 +139,19 @@ export const InitContainer: React.FC<InitContainerProps> = ({
   }
 
   if (currentStep === 'complete') {
-    return <CommandFlow title="Initialization complete!" status="completed" />;
+    return (
+      <Box flexDirection="column">
+        <Text color={colors.success}>✅ Initialization complete!</Text>
+        {analysisResult && analysisResult.analysis ? (
+          <Box marginTop={1}>
+            <AnalysisResultDisplay
+              result={analysisResult}
+              showCost={options.cost}
+            />
+          </Box>
+        ) : null}
+      </Box>
+    );
   }
 
   return null;

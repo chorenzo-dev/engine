@@ -13,13 +13,12 @@ interface RecipesValidateContainerProps {
     target: string;
     progress?: boolean;
   };
-  onComplete: (result: ValidationResult) => void;
   onError: (error: Error) => void;
 }
 
 export const RecipesValidateContainer: React.FC<
   RecipesValidateContainerProps
-> = ({ options, onComplete, onError }) => {
+> = ({ options, onError }) => {
   const [error, setError] = useState<Error | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [simpleStep, setSimpleStep] = useState<string>('');
@@ -42,7 +41,6 @@ export const RecipesValidateContainer: React.FC<
 
           setValidationResult(validationResult);
           setIsComplete(true);
-          onComplete(validationResult);
         } catch (err) {
           const errorObj = err instanceof Error ? err : new Error(String(err));
           setError(errorObj);
@@ -51,14 +49,7 @@ export const RecipesValidateContainer: React.FC<
       };
       runRecipesValidate();
     }
-  }, [
-    options.target,
-    options.progress,
-    isComplete,
-    error,
-    onComplete,
-    onError,
-  ]);
+  }, [options.target, options.progress, isComplete, error, onError]);
 
   if (error) {
     return <CommandFlow title="Error" status="error" error={error.message} />;

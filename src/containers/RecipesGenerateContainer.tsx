@@ -11,13 +11,12 @@ import {
 
 interface RecipesGenerateContainerProps {
   options: RecipesGenerateOptions;
-  onComplete: (result: RecipesGenerateResult) => void;
   onError: (error: Error) => void;
 }
 
 export const RecipesGenerateContainer: React.FC<
   RecipesGenerateContainerProps
-> = ({ options, onComplete, onError }) => {
+> = ({ options, onError }) => {
   const [result, setResult] = useState<RecipesGenerateResult | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [isComplete, setIsComplete] = useState(false);
@@ -25,7 +24,6 @@ export const RecipesGenerateContainer: React.FC<
   const handleComplete = (generateResult: RecipesGenerateResult) => {
     setResult(generateResult);
     setIsComplete(true);
-    onComplete(generateResult);
   };
 
   const handleError = (

@@ -11,13 +11,11 @@ interface RecipesApplyContainerProps {
     progress?: boolean;
     debug?: boolean;
   };
-  onComplete: (result: RecipesApplyResult) => void;
   onError: (error: Error) => void;
 }
 
 export const RecipesApplyContainer: React.FC<RecipesApplyContainerProps> = ({
   options,
-  onComplete,
   onError,
 }) => {
   const [result, setResult] = useState<RecipesApplyResult | null>(null);
@@ -28,7 +26,6 @@ export const RecipesApplyContainer: React.FC<RecipesApplyContainerProps> = ({
   const handleComplete = (applyResult: RecipesApplyResult) => {
     setResult(applyResult);
     setIsComplete(true);
-    onComplete(applyResult);
   };
 
   const handleError = (err: Error) => {

@@ -10,13 +10,11 @@ interface AnalyzeContainerProps {
     progress?: boolean;
     cost?: boolean;
   };
-  onComplete: (result: AnalysisResultType) => void;
   onError: (error: Error) => void;
 }
 
 export const AnalyzeContainer: React.FC<AnalyzeContainerProps> = ({
   options,
-  onComplete,
   onError,
 }) => {
   const [result, setResult] = useState<AnalysisResultType | null>(null);
@@ -27,7 +25,6 @@ export const AnalyzeContainer: React.FC<AnalyzeContainerProps> = ({
   const handleComplete = (analysisResult: AnalysisResultType) => {
     setResult(analysisResult);
     setIsComplete(true);
-    onComplete(analysisResult);
   };
 
   const handleError = (err: Error) => {

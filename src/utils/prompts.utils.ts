@@ -47,7 +47,7 @@ export function renderPrompt(
   template: string,
   variables: Record<string, string | number | boolean>
 ): string {
-  const compiledTemplate = Handlebars.compile(template);
+  const compiledTemplate = Handlebars.compile(template, { noEscape: true });
   return compiledTemplate(variables);
 }
 

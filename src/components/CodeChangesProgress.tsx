@@ -2,6 +2,7 @@ import { Box, Text } from 'ink';
 import Spinner from 'ink-spinner';
 import React, { useCallback, useEffect, useState } from 'react';
 
+import { colors } from '~/styles/colors';
 import { OperationMetadata } from '~/types/common';
 
 import { MetadataDisplay } from './MetadataDisplay';
@@ -66,30 +67,30 @@ export const CodeChangesProgress: React.FC<CodeChangesProgressProps> = ({
   const getOperationIcon = (status: CodeChangesOperation['status']) => {
     switch (status) {
       case 'pending':
-        return '⏳';
+        return '';
       case 'in_progress':
-        return '🔄';
+        return '';
       case 'completed':
         return '✅';
       case 'error':
         return '❌';
       default:
-        return '📋';
+        return '';
     }
   };
 
   const getOperationColor = (status: CodeChangesOperation['status']) => {
     switch (status) {
       case 'pending':
-        return 'yellow';
+        return colors.warning;
       case 'in_progress':
-        return 'blue';
+        return colors.info;
       case 'completed':
-        return 'green';
+        return colors.success;
       case 'error':
-        return 'red';
+        return colors.error;
       default:
-        return 'white';
+        return undefined;
     }
   };
 
@@ -100,16 +101,16 @@ export const CodeChangesProgress: React.FC<CodeChangesProgressProps> = ({
       case 'error':
         return '❌';
       case 'warning':
-        return '⚠️';
+        return '';
       default:
-        return 'ℹ️';
+        return '';
     }
   };
 
   if (!currentOperation) {
     return (
       <Box>
-        <Text color="gray">No code change operations in progress</Text>
+        <Text color={colors.muted}>No code change operations in progress</Text>
       </Box>
     );
   }
@@ -136,7 +137,7 @@ export const CodeChangesProgress: React.FC<CodeChangesProgressProps> = ({
 
       {hasError && currentOperation.error && (
         <Box marginTop={1}>
-          <Text color="red">{currentOperation.error}</Text>
+          <Text color={colors.error}>{currentOperation.error}</Text>
         </Box>
       )}
 

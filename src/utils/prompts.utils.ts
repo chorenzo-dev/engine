@@ -15,7 +15,7 @@ const DOCS_DIR = __dirname.endsWith('dist')
   : join(__dirname, '..', '..', 'docs');
 
 export function loadPrompt(promptName: string): string {
-  const promptPath = join(PROMPTS_DIR, `${promptName}.md`);
+  const promptPath = join(PROMPTS_DIR, `${promptName}.md.hbs`);
   try {
     return readFileSync(promptPath, 'utf-8');
   } catch (error) {

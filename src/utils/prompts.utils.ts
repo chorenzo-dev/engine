@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'fs';
+import Handlebars from 'handlebars';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -26,7 +27,7 @@ export function loadPrompt(promptName: string): string {
 
 export function loadTemplate(
   templateName: string,
-  extension: string = 'md'
+  extension: string = 'hbs'
 ): string {
   const templatePath = join(
     TEMPLATES_DIR,
@@ -44,17 +45,10 @@ export function loadTemplate(
 
 export function renderPrompt(
   template: string,
-  variables: Record<string, string>
+  variables: Record<string, string | number | boolean>
 ): string {
-  let rendered = template;
-  for (const [key, value] of Object.entries(variables)) {
-    const placeholder = `{{ ${key} }}`;
-    rendered = rendered.replace(
-      new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'),
-      value
-    );
-  }
-  return rendered;
+  const compiledTemplate = Handlebars.compile(template);
+  return compiledTemplate(variables);
 }
 
 export function loadDoc(docName: string): string {

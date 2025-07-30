@@ -18,24 +18,49 @@ export class AuthError extends Error {
 export async function checkClaudeCodeAuth(): Promise<boolean> {
   try {
     if (process.env.ANTHROPIC_API_KEY) {
+      Logger.info(
+        { event: 'auth_check_method', method: 'ANTHROPIC_API_KEY' },
+        'Using ANTHROPIC_API_KEY for authentication'
+      );
       return true;
     }
 
     if (process.env.ANTHROPIC_AUTH_TOKEN) {
+      Logger.info(
+        { event: 'auth_check_method', method: 'ANTHROPIC_AUTH_TOKEN' },
+        'Using ANTHROPIC_AUTH_TOKEN for authentication'
+      );
       return true;
     }
 
     if (process.env.AWS_BEARER_TOKEN_BEDROCK) {
+      Logger.info(
+        { event: 'auth_check_method', method: 'AWS_BEARER_TOKEN_BEDROCK' },
+        'Using AWS_BEARER_TOKEN_BEDROCK for authentication'
+      );
       return true;
     }
 
     if (process.env.CLAUDE_CODE_USE_BEDROCK === '1') {
+      Logger.info(
+        { event: 'auth_check_method', method: 'CLAUDE_CODE_USE_BEDROCK' },
+        'Using Bedrock for authentication'
+      );
       return true;
     }
 
     if (process.env.CLAUDE_CODE_USE_VERTEX === '1') {
+      Logger.info(
+        { event: 'auth_check_method', method: 'CLAUDE_CODE_USE_VERTEX' },
+        'Using Vertex AI for authentication'
+      );
       return true;
     }
+
+    Logger.info(
+      { event: 'auth_check_method', method: 'claude_cli' },
+      'Using Claude CLI for authentication check'
+    );
 
     const cliResult = spawnSync('claude', ['--version'], {
       encoding: 'utf8',
@@ -44,6 +69,16 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
     });
 
     if (cliResult.error || cliResult.status !== 0) {
+      Logger.warn(
+        {
+          event: 'auth_check_failed',
+          reason: 'claude_version_failed',
+          error: cliResult.error?.message,
+          status: cliResult.status,
+          stderr: cliResult.stderr,
+        },
+        'Claude CLI --version check failed'
+      );
       return false;
     }
 
@@ -56,11 +91,31 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
 
     const output = (testResult.stdout || '') + (testResult.stderr || '');
 
+    Logger.info(
+      {
+        event: 'claude_cli_status_result',
+        status: testResult.status,
+        signal: testResult.signal,
+        stdout: testResult.stdout,
+        stderr: testResult.stderr,
+        output_length: output.length,
+      },
+      'Claude CLI status command result'
+    );
+
     if (testResult.signal === 'SIGTERM') {
+      Logger.warn(
+        { event: 'auth_check_failed', reason: 'sigterm' },
+        'Claude CLI status command terminated with SIGTERM'
+      );
       return false;
     }
 
     if (output.includes('Invalid API key') || output.includes('/login')) {
+      Logger.warn(
+        { event: 'auth_check_failed', reason: 'invalid_api_key_or_login' },
+        'Claude CLI output indicates invalid API key or login required'
+      );
       return false;
     }
 
@@ -70,6 +125,10 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       output.includes('claude login') ||
       output.includes('Invalid API key')
     ) {
+      Logger.warn(
+        { event: 'auth_check_failed', reason: 'not_authenticated' },
+        'Claude CLI output indicates not authenticated'
+      );
       return false;
     }
 
@@ -78,11 +137,32 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       testResult.stdout &&
       testResult.stdout.length > 0
     ) {
+      Logger.info(
+        { event: 'auth_check_success', reason: 'valid_status_output' },
+        'Claude CLI status command succeeded with output'
+      );
       return true;
     }
 
+    Logger.warn(
+      {
+        event: 'auth_check_failed',
+        reason: 'no_valid_output',
+        status: testResult.status,
+        stdout_length: testResult.stdout?.length || 0,
+      },
+      'Claude CLI status command did not return valid output'
+    );
     return false;
-  } catch {
+  } catch (error) {
+    Logger.error(
+      {
+        event: 'auth_check_failed',
+        reason: 'exception',
+        error: error instanceof Error ? error.message : String(error),
+      },
+      'Claude Code authentication check threw exception'
+    );
     return false;
   }
 }

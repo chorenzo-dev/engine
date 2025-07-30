@@ -1,13 +1,16 @@
 import { Box, Text } from 'ink';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import { AnalysisResult } from '~/commands/analyze';
-import { InitError, performInit } from '~/commands/init';
+import { AnalysisFlowStep } from '~/components/AnalysisFlowStep';
 import { AnalysisResultDisplay } from '~/components/AnalysisResultDisplay';
-import { AnalysisStep } from '~/components/AnalysisStep';
 import { AuthenticationStep } from '~/components/AuthenticationStep';
 import { CommandFlow } from '~/components/CommandFlow';
-import { colors } from '~/styles/colors';
+import {
+  CommandFlowProgress,
+  FlowStep,
+} from '~/components/CommandFlowProgress';
+import { InitAuthStep } from '~/components/InitAuthStep';
 
 interface InitContainerProps {
   options: {
@@ -20,139 +23,123 @@ interface InitContainerProps {
   onError: (error: Error) => void;
 }
 
-type Step =
-  | 'checking_init'
-  | 'authentication'
-  | 'workspace_setup'
-  | 'analysis'
-  | 'complete'
-  | 'error';
-
 export const InitContainer: React.FC<InitContainerProps> = ({
   options,
   onError,
 }) => {
-  const [currentStep, setCurrentStep] = useState<Step>('checking_init');
-  const [error, setError] = useState<string>('');
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
     null
   );
+  const [needsAuth, setNeedsAuth] = useState(false);
+  const [initError, setInitError] = useState<string>('');
+  const [isFlowComplete, setIsFlowComplete] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState<
+    Array<{ id: string; title: string; success: boolean }>
+  >([]);
 
-  useEffect(() => {
-    const runInit = async () => {
-      try {
-        await performInit(options);
-        setCurrentStep('analysis');
-      } catch (error) {
-        if (error instanceof InitError && error.code === 'AUTH_REQUIRED') {
-          setCurrentStep('authentication');
-        } else {
-          setError(error instanceof Error ? error.message : String(error));
-          setCurrentStep('error');
-        }
-      }
-    };
-
-    if (currentStep === 'checking_init') {
-      runInit();
-    }
-  }, [currentStep, options]);
-
-  const handleAuthComplete = () => {
-    setCurrentStep('checking_init');
-  };
-
-  const handleAuthError = (errorMessage: string) => {
-    setError(errorMessage);
-    setCurrentStep('error');
-  };
-
-  const handleQuit = () => {
-    process.exit(0);
-  };
-
-  const handleAnalysisComplete = (result?: AnalysisResult) => {
-    if (result) {
-      setAnalysisResult(result);
-    }
-    setCurrentStep('complete');
-  };
-
-  const handleAnalysisError = (error: Error) => {
-    onError(error);
-  };
-
-  if (currentStep === 'checking_init') {
-    return (
-      <CommandFlow
-        title="Checking Claude Code authentication..."
-        status="in_progress"
-      />
-    );
-  }
-
-  if (currentStep === 'authentication') {
-    return (
-      <Box flexDirection="column">
-        <AuthenticationStep
-          onAuthComplete={handleAuthComplete}
-          onAuthError={handleAuthError}
-          onQuit={handleQuit}
+  const flowSteps: FlowStep[] = [
+    {
+      id: 'checking_auth',
+      title: 'Checking authentication',
+      render: () => (
+        <InitAuthStep
+          options={options}
+          onAuthRequired={() => setNeedsAuth(true)}
         />
-      </Box>
-    );
-  }
+      ),
+    },
+  ];
 
-  if (currentStep === 'analysis') {
-    return (
-      <CommandFlow
-        title="Initialization complete!"
-        status="completed"
-        completedSteps={[
-          {
-            id: 'init',
-            title: 'Initialization complete!',
-            success: true,
-          },
-        ]}
-      >
-        <AnalysisStep
+  if (!options.noAnalyze) {
+    flowSteps.push({
+      id: 'analysis',
+      title: 'Running project analysis',
+      render: () => (
+        <AnalysisFlowStep
           options={{
             noAnalyze: options.noAnalyze,
             yes: options.yes,
             progress: options.progress,
             cost: options.cost,
           }}
-          onAnalysisComplete={handleAnalysisComplete}
-          onAnalysisError={handleAnalysisError}
+          onResult={(result?: AnalysisResult) => {
+            if (result) {
+              setAnalysisResult(result);
+            }
+          }}
         />
-      </CommandFlow>
+      ),
+    });
+  }
+
+  const handleStepComplete = (stepId: string, result?: unknown) => {
+    if (stepId === 'analysis' && result) {
+      setAnalysisResult(result as AnalysisResult);
+    }
+  };
+
+  const handleStepError = (stepId: string, error: Error) => {
+    if (stepId === 'checking_auth' && error.message === 'AUTH_REQUIRED') {
+      setNeedsAuth(true);
+    } else {
+      setInitError(error.message);
+      onError(error);
+    }
+  };
+
+  const handleFlowComplete = (
+    steps: Array<{ id: string; title: string; success: boolean }>
+  ) => {
+    setCompletedSteps(steps);
+    setIsFlowComplete(true);
+  };
+
+  if (needsAuth) {
+    return (
+      <Box flexDirection="column">
+        <AuthenticationStep
+          onAuthComplete={() => setNeedsAuth(false)}
+          onAuthError={(errorMessage: string) => {
+            setInitError(errorMessage);
+            onError(new Error(errorMessage));
+          }}
+          onQuit={() => process.exit(0)}
+        />
+      </Box>
     );
   }
 
-  if (currentStep === 'error') {
+  if (initError) {
     return (
-      <CommandFlow title="Error" status="error" error={error}>
+      <CommandFlow title="Error" status="error" error={initError}>
         <Text>Please run 'chorenzo init' again to retry.</Text>
       </CommandFlow>
     );
   }
 
-  if (currentStep === 'complete') {
+  if (isFlowComplete) {
     return (
-      <Box flexDirection="column">
-        <Text color={colors.success}>✅ Initialization complete!</Text>
+      <CommandFlow
+        title="Initialization complete!"
+        status="completed"
+        completedSteps={completedSteps}
+      >
         {analysisResult && analysisResult.analysis ? (
-          <Box marginTop={1}>
-            <AnalysisResultDisplay
-              result={analysisResult}
-              showCost={options.cost}
-            />
-          </Box>
+          <AnalysisResultDisplay
+            result={analysisResult}
+            showCost={options.cost}
+          />
         ) : null}
-      </Box>
+      </CommandFlow>
     );
   }
 
-  return null;
+  return (
+    <CommandFlowProgress
+      steps={flowSteps}
+      onStepComplete={handleStepComplete}
+      onStepError={handleStepError}
+      onFlowComplete={handleFlowComplete}
+    />
+  );
 };

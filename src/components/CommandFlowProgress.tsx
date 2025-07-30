@@ -1,136 +1,123 @@
-import React, { useCallback, useState } from 'react';
-
-import { OperationMetadata } from '~/types/common';
+import React, { useState } from 'react';
 
 import { CommandFlow } from './CommandFlow';
 
-export interface CommandFlowOperation {
+export interface FlowStep {
   id: string;
-  type: string;
   title: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'error';
-  currentActivity?: string;
-  isThinking?: boolean;
-  error?: string;
-  metadata?: Partial<OperationMetadata>;
+  render: () => React.ReactNode;
 }
 
 interface CommandFlowProgressProps {
-  operations: CommandFlowOperation[];
+  steps: FlowStep[];
+  onStepComplete?: (stepId: string, result?: unknown) => void;
+  onStepError?: (stepId: string, error: Error) => void;
+  onFlowComplete?: (
+    completedSteps: Array<{ id: string; title: string; success: boolean }>
+  ) => void;
   showCompletedSteps?: boolean;
 }
 
 export const CommandFlowProgress: React.FC<CommandFlowProgressProps> = ({
-  operations,
+  steps,
+  onStepComplete,
+  onStepError,
+  onFlowComplete,
   showCompletedSteps = true,
 }) => {
-  const getCurrentOperation = useCallback(() => {
-    const inProgress = operations.find((op) => op.status === 'in_progress');
-    const pending = operations.find((op) => op.status === 'pending');
-    return inProgress || pending || operations[operations.length - 1] || null;
-  }, [operations]);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<
+    Array<{ id: string; title: string; success: boolean }>
+  >([]);
+  const [currentActivity, setCurrentActivity] = useState<string>('');
+  const [error, setError] = useState<string>('');
 
-  const getCompletedSteps = useCallback(() => {
-    if (!showCompletedSteps) {
-      return [];
+  const currentStep = steps[currentStepIndex];
+  const isComplete = currentStepIndex >= steps.length;
+
+  const nextStep = () => {
+    const updatedSteps = [
+      ...completedSteps,
+      {
+        id: `${currentStep.id}-${currentStepIndex}`,
+        title: currentStep.title,
+        success: true,
+      },
+    ];
+    setCompletedSteps(updatedSteps);
+
+    setCurrentStepIndex((prev) => prev + 1);
+    setCurrentActivity('');
+    setError('');
+
+    if (currentStepIndex >= steps.length - 1) {
+      onFlowComplete?.(updatedSteps);
     }
+  };
 
-    return operations
-      .filter((op) => op.status === 'completed' || op.status === 'error')
-      .map((op) => ({
-        id: op.id,
-        title: op.title,
-        success: op.status === 'completed',
-      }));
-  }, [operations, showCompletedSteps]);
+  const errorStep = (errorMessage: string) => {
+    setCompletedSteps((prev) => [
+      ...prev,
+      {
+        id: `${currentStep.id}-${currentStepIndex}`,
+        title: currentStep.title,
+        success: false,
+      },
+    ]);
+    setError(errorMessage);
+    onStepError?.(currentStep.id, new Error(errorMessage));
+  };
 
-  const currentOperation = getCurrentOperation();
-  const completedSteps = getCompletedSteps();
+  const stepComplete = (result?: unknown) => {
+    onStepComplete?.(currentStep.id, result);
+    nextStep();
+  };
 
-  if (!currentOperation) {
-    return <CommandFlow title="No operations in progress" status="pending" />;
+  if (isComplete) {
+    return null;
   }
+
+  if (!currentStep) {
+    return <CommandFlow title="No steps defined" status="pending" />;
+  }
+
+  const stepControls: FlowStepControls = {
+    setActivity: setCurrentActivity,
+    complete: stepComplete,
+    error: errorStep,
+  };
 
   return (
     <CommandFlow
-      title={currentOperation.title}
-      status={currentOperation.status}
-      currentActivity={currentOperation.currentActivity}
-      isThinking={currentOperation.isThinking}
-      error={currentOperation.error}
-      completedSteps={completedSteps}
-    />
+      title={`${currentStep.title}...`}
+      status={error ? 'error' : 'in_progress'}
+      currentActivity={currentActivity}
+      error={error}
+      completedSteps={showCompletedSteps ? completedSteps : []}
+    >
+      <FlowStepContext.Provider value={stepControls}>
+        {currentStep.render()}
+      </FlowStepContext.Provider>
+    </CommandFlow>
   );
 };
 
-export const useCommandFlowProgress = () => {
-  const [operations, setOperations] = useState<CommandFlowOperation[]>([]);
+export interface FlowStepControls {
+  setActivity: (activity: string) => void;
+  complete: (result?: unknown) => void;
+  error: (errorMessage: string) => void;
+}
 
-  const createOperation = useCallback(
-    (id: string, type: string, title: string): CommandFlowOperation => ({
-      id,
-      type,
-      title,
-      status: 'pending',
-    }),
-    []
-  );
+export const FlowStepContext = React.createContext<FlowStepControls | null>(
+  null
+);
 
-  const updateOperation = useCallback(
-    (id: string, updates: Partial<CommandFlowOperation>) => {
-      setOperations((prev) =>
-        prev.map((op) => (op.id === id ? { ...op, ...updates } : op))
-      );
-    },
-    []
-  );
-
-  const startOperation = useCallback((operation: CommandFlowOperation) => {
-    setOperations((prev) => [...prev, { ...operation, status: 'in_progress' }]);
-  }, []);
-
-  const completeOperation = useCallback(
-    (id: string, metadata?: CommandFlowOperation['metadata']) => {
-      updateOperation(id, {
-        status: 'completed',
-        metadata,
-      });
-    },
-    [updateOperation]
-  );
-
-  const errorOperation = useCallback(
-    (id: string, error: string) => {
-      updateOperation(id, {
-        status: 'error',
-        error,
-      });
-    },
-    [updateOperation]
-  );
-
-  const progressOperation = useCallback(
-    (id: string, activity: string, isThinking?: boolean) => {
-      updateOperation(id, {
-        currentActivity: activity,
-        isThinking,
-      });
-    },
-    [updateOperation]
-  );
-
-  const clearOperations = useCallback(() => {
-    setOperations([]);
-  }, []);
-
-  return {
-    operations,
-    createOperation,
-    startOperation,
-    updateOperation,
-    completeOperation,
-    errorOperation,
-    progressOperation,
-    clearOperations,
-  };
+export const useFlowStep = (): FlowStepControls => {
+  const context = React.useContext(FlowStepContext);
+  if (!context) {
+    throw new Error(
+      'useFlowStep must be used within a CommandFlowProgress step'
+    );
+  }
+  return context;
 };

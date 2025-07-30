@@ -35,34 +35,26 @@ export const CommandFlow: React.FC<CommandFlowProps> = ({
   completedSteps = [],
   children,
 }) => {
-  const getMainIcon = () => {
-    switch (status) {
-      case 'completed':
-        return emojis.success;
-      case 'error':
-        return emojis.error;
-      default:
-        return '';
-    }
-  };
+  const mainIcon =
+    status === 'completed'
+      ? emojis.success
+      : status === 'error'
+        ? emojis.error
+        : '';
 
-  const getMainColor = () => {
-    switch (status) {
-      case 'completed':
-        return colors.success;
-      case 'error':
-        return colors.error;
-      case 'in_progress':
-        return colors.info;
-      default:
-        return colors.warning;
-    }
-  };
+  const mainColor =
+    status === 'completed'
+      ? colors.success
+      : status === 'error'
+        ? colors.error
+        : status === 'in_progress'
+          ? colors.info
+          : colors.warning;
 
   return (
     <Box flexDirection="column">
       {completedSteps.length > 0 && (
-        <Box flexDirection="column" marginBottom={1}>
+        <>
           {completedSteps.map((step) => (
             <Text
               key={step.id}
@@ -71,29 +63,27 @@ export const CommandFlow: React.FC<CommandFlowProps> = ({
               {step.success ? emojis.success : emojis.error} {step.title}
             </Text>
           ))}
+        </>
+      )}
+
+      <Text color={mainColor}>
+        {mainIcon ? `${mainIcon} ${title}` : `   ${title}`}
+      </Text>
+
+      {status === 'in_progress' && currentActivity && (
+        <Box flexDirection="row" marginTop={1}>
+          {isThinking && <Spinner type="dots" />}
+          <Text color={colors.progress}>{currentActivity}</Text>
         </Box>
       )}
 
-      <Box flexDirection="column">
-        <Text color={getMainColor()}>
-          {getMainIcon()} {title}
-        </Text>
+      {status === 'error' && error && (
+        <Box marginTop={1}>
+          <Text color={colors.error}>{error}</Text>
+        </Box>
+      )}
 
-        {status === 'in_progress' && currentActivity && (
-          <Box flexDirection="row" marginTop={1}>
-            <Box width={3}>{isThinking && <Spinner type="dots" />}</Box>
-            <Text color={colors.progress}>{currentActivity}</Text>
-          </Box>
-        )}
-
-        {status === 'error' && error && (
-          <Box marginTop={1}>
-            <Text color={colors.error}>{error}</Text>
-          </Box>
-        )}
-
-        {children && <Box marginTop={1}>{children}</Box>}
-      </Box>
+      {children && <Box>{children}</Box>}
     </Box>
   );
 };

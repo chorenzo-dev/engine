@@ -2,7 +2,7 @@ export const colors = {
   success: 'green',
   error: 'red',
   warning: 'yellow',
-  info: 'blue',
+  info: undefined,
   progress: 'cyan',
   muted: 'gray',
   secondary: 'magenta',

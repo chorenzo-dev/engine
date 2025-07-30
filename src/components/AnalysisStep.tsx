@@ -210,13 +210,7 @@ export const AnalysisStep: React.FC<AnalysisStepProps> = ({
   };
 
   if (phase === 'confirm') {
-    return (
-      <Box flexDirection="column">
-        <Text color="blue">
-          🛈 Run code-base analysis now? (y/N) {userResponse}
-        </Text>
-      </Box>
-    );
+    return <Text>Run code-base analysis now? (y/N) {userResponse}</Text>;
   }
 
   if (phase === 'analysis') {

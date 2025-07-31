@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { CommandFlow } from './CommandFlow';
+import { ProcessDisplay } from './ProcessDisplay';
 
 export interface FlowStep {
   id: string;
@@ -8,7 +8,7 @@ export interface FlowStep {
   render: () => React.ReactNode;
 }
 
-interface CommandFlowProgressProps {
+interface WorkflowRunnerProps {
   steps: FlowStep[];
   onStepComplete?: (stepId: string, result?: unknown) => void;
   onStepError?: (stepId: string, error: Error) => void;
@@ -18,7 +18,7 @@ interface CommandFlowProgressProps {
   showCompletedSteps?: boolean;
 }
 
-export const CommandFlowProgress: React.FC<CommandFlowProgressProps> = ({
+export const WorkflowRunner: React.FC<WorkflowRunnerProps> = ({
   steps,
   onStepComplete,
   onStepError,
@@ -78,7 +78,7 @@ export const CommandFlowProgress: React.FC<CommandFlowProgressProps> = ({
   }
 
   if (!currentStep) {
-    return <CommandFlow title="No steps defined" status="pending" />;
+    return <ProcessDisplay title="No steps defined" status="pending" />;
   }
 
   const stepControls: FlowStepControls = {
@@ -88,7 +88,7 @@ export const CommandFlowProgress: React.FC<CommandFlowProgressProps> = ({
   };
 
   return (
-    <CommandFlow
+    <ProcessDisplay
       title={`${currentStep.title}...`}
       status={error ? 'error' : 'in_progress'}
       currentActivity={currentActivity}
@@ -98,7 +98,7 @@ export const CommandFlowProgress: React.FC<CommandFlowProgressProps> = ({
       <FlowStepContext.Provider value={stepControls}>
         {currentStep.render()}
       </FlowStepContext.Provider>
-    </CommandFlow>
+    </ProcessDisplay>
   );
 };
 
@@ -115,9 +115,7 @@ export const FlowStepContext = React.createContext<FlowStepControls | null>(
 export const useFlowStep = (): FlowStepControls => {
   const context = React.useContext(FlowStepContext);
   if (!context) {
-    throw new Error(
-      'useFlowStep must be used within a CommandFlowProgress step'
-    );
+    throw new Error('useFlowStep must be used within a WorkflowRunner step');
   }
   return context;
 };

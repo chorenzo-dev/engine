@@ -4,8 +4,8 @@ import React from 'react';
 import { colors } from '~/styles/colors';
 import { RecipesApplyResult } from '~/types/recipes-apply';
 
-import { CommandFlow } from './CommandFlow';
 import { MetadataDisplay } from './MetadataDisplay';
+import { ProcessDisplay } from './ProcessDisplay';
 
 interface RecipesApplyResultDisplayProps {
   result: RecipesApplyResult;
@@ -18,7 +18,7 @@ export const RecipesApplyResultDisplay: React.FC<
   const { recipe, summary, executionResults, metadata } = result;
 
   return (
-    <CommandFlow title="Recipe Application Complete" status="completed">
+    <ProcessDisplay title="Recipe Application Complete" status="completed">
       <Box flexDirection="column">
         <Box flexDirection="column" marginBottom={1}>
           <Text>Recipe: {recipe.getId()}</Text>
@@ -74,6 +74,6 @@ export const RecipesApplyResultDisplay: React.FC<
           </Box>
         )}
       </Box>
-    </CommandFlow>
+    </ProcessDisplay>
   );
 };

@@ -5,8 +5,8 @@ import {
   type ValidationResult,
   performRecipesValidate,
 } from '~/commands/recipes';
-import { CommandFlow } from '~/components/CommandFlow';
-import { emojis } from '~/components/CommandFlow';
+import { ProcessDisplay } from '~/components/ProcessDisplay';
+import { emojis } from '~/components/ProcessDisplay';
 
 interface RecipesValidateContainerProps {
   options: {
@@ -52,12 +52,14 @@ export const RecipesValidateContainer: React.FC<
   }, [options.target, options.progress, isComplete, error, onError]);
 
   if (error) {
-    return <CommandFlow title="Error" status="error" error={error.message} />;
+    return (
+      <ProcessDisplay title="Error" status="error" error={error.message} />
+    );
   }
 
   if (isComplete && validationResult) {
     return (
-      <CommandFlow title="Recipe validation complete!" status="completed">
+      <ProcessDisplay title="Recipe validation complete!" status="completed">
         <Box flexDirection="column">
           {validationResult.messages.map((msg, index) => {
             let icon = '';
@@ -93,12 +95,12 @@ export const RecipesValidateContainer: React.FC<
             </Box>
           )}
         </Box>
-      </CommandFlow>
+      </ProcessDisplay>
     );
   }
 
   return (
-    <CommandFlow
+    <ProcessDisplay
       title={simpleStep || 'Validating recipe...'}
       status="in_progress"
     />

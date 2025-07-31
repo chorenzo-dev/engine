@@ -16,7 +16,7 @@ interface CompletedStep {
   success: boolean;
 }
 
-interface CommandFlowProps {
+interface ProcessDisplayProps {
   title: string;
   status: 'pending' | 'in_progress' | 'completed' | 'error';
   currentActivity?: string;
@@ -26,7 +26,7 @@ interface CommandFlowProps {
   children?: React.ReactNode;
 }
 
-export const CommandFlow: React.FC<CommandFlowProps> = ({
+export const ProcessDisplay: React.FC<ProcessDisplayProps> = ({
   title,
   status,
   currentActivity,

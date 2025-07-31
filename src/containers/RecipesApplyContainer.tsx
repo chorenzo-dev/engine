@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
-import { CommandFlow } from '~/components/CommandFlow';
 import { DebugProgress } from '~/components/DebugProgress';
+import { ProcessDisplay } from '~/components/ProcessDisplay';
 import { RecipesApplyFlow } from '~/components/RecipesApplyFlow';
 import { RecipesApplyResultDisplay } from '~/components/RecipesApplyResultDisplay';
 import { RecipesApplyOptions, RecipesApplyResult } from '~/types/recipes-apply';
@@ -35,7 +35,7 @@ export const RecipesApplyContainer: React.FC<RecipesApplyContainerProps> = ({
 
   if (!options.recipe) {
     return (
-      <CommandFlow
+      <ProcessDisplay
         title="Error"
         status="error"
         error="Recipe parameter is required"
@@ -44,7 +44,9 @@ export const RecipesApplyContainer: React.FC<RecipesApplyContainerProps> = ({
   }
 
   if (error) {
-    return <CommandFlow title="Error" status="error" error={error.message} />;
+    return (
+      <ProcessDisplay title="Error" status="error" error={error.message} />
+    );
   }
 
   if (isComplete && result) {
@@ -66,7 +68,7 @@ export const RecipesApplyContainer: React.FC<RecipesApplyContainerProps> = ({
   if (options.progress === false) {
     return (
       <>
-        <CommandFlow
+        <ProcessDisplay
           title={currentStep || 'Applying recipe...'}
           status="in_progress"
         />

@@ -5,8 +5,8 @@ import { AnalysisResult as AnalysisResultType } from '~/commands/analyze';
 import { colors } from '~/styles/colors';
 import { FormatAnalysis } from '~/utils/formatAnalysis';
 
-import { CommandFlow } from './CommandFlow';
 import { MetadataDisplay } from './MetadataDisplay';
+import { ProcessDisplay } from './ProcessDisplay';
 
 interface AnalysisResultDisplayProps {
   result: AnalysisResultType;
@@ -18,11 +18,11 @@ export const AnalysisResultDisplay: React.FC<AnalysisResultDisplayProps> = ({
   showCost,
 }) => {
   if (!result.analysis) {
-    return <CommandFlow title="No analysis data available" status="error" />;
+    return <ProcessDisplay title="No analysis data available" status="error" />;
   }
 
   return (
-    <CommandFlow title="Analysis complete!" status="completed">
+    <ProcessDisplay title="Analysis complete!" status="completed">
       <Box flexDirection="column">
         <Box marginTop={1}>
           <FormatAnalysis analysis={result.analysis} />
@@ -45,6 +45,6 @@ export const AnalysisResultDisplay: React.FC<AnalysisResultDisplayProps> = ({
             </>
           )}
       </Box>
-    </CommandFlow>
+    </ProcessDisplay>
   );
 };

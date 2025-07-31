@@ -1,8 +1,8 @@
 import { Text } from 'ink';
 import React, { useState } from 'react';
 
-import { CommandFlow } from '~/components/CommandFlow';
 import { MetadataDisplay } from '~/components/MetadataDisplay';
+import { ProcessDisplay } from '~/components/ProcessDisplay';
 import { RecipesGenerateFlow } from '~/components/RecipesGenerateFlow';
 import {
   RecipesGenerateOptions,
@@ -54,18 +54,20 @@ export const RecipesGenerateContainer: React.FC<
   };
 
   if (error) {
-    return <CommandFlow title="Error" status="error" error={error.message} />;
+    return (
+      <ProcessDisplay title="Error" status="error" error={error.message} />
+    );
   }
 
   if (isComplete && result) {
     return (
-      <CommandFlow title="Recipe generated successfully!" status="completed">
+      <ProcessDisplay title="Recipe generated successfully!" status="completed">
         <Text>Path: {result.recipePath}</Text>
         <Text>Name: {result.recipeName}</Text>
         {result.metadata && (
           <MetadataDisplay metadata={result.metadata} showCost={options.cost} />
         )}
-      </CommandFlow>
+      </ProcessDisplay>
     );
   }
 

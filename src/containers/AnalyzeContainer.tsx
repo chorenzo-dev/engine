@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { AnalysisResult as AnalysisResultType } from '~/commands/analyze';
 import { AnalysisFlow } from '~/components/AnalysisFlow';
 import { AnalysisResultDisplay } from '~/components/AnalysisResultDisplay';
-import { CommandFlow } from '~/components/CommandFlow';
+import { ProcessDisplay } from '~/components/ProcessDisplay';
 
 interface AnalyzeContainerProps {
   options: {
@@ -33,7 +33,9 @@ export const AnalyzeContainer: React.FC<AnalyzeContainerProps> = ({
   };
 
   if (error) {
-    return <CommandFlow title="Error" status="error" error={error.message} />;
+    return (
+      <ProcessDisplay title="Error" status="error" error={error.message} />
+    );
   }
 
   if (isComplete && result) {
@@ -43,7 +45,7 @@ export const AnalyzeContainer: React.FC<AnalyzeContainerProps> = ({
   if (options.progress === false) {
     return (
       <>
-        <CommandFlow
+        <ProcessDisplay
           title={currentStep || 'Analyzing workspace...'}
           status="in_progress"
         />

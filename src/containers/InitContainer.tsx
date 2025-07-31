@@ -6,11 +6,7 @@ import { performInit } from '~/commands/init';
 import { AnalysisPrompt } from '~/components/AnalysisPrompt';
 import { AnalysisResultDisplay } from '~/components/AnalysisResultDisplay';
 import { AuthenticationStep } from '~/components/AuthenticationStep';
-import {
-  SimpleFlowProgress,
-  SimpleStep,
-  StepContext,
-} from '~/components/SimpleFlowProgress';
+import { Step, StepContext, StepSequence } from '~/components/StepSequence';
 import { Logger } from '~/utils/logger.utils';
 
 interface InitContainerProps {
@@ -24,7 +20,7 @@ interface InitContainerProps {
 }
 
 export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
-  const steps: SimpleStep[] = [
+  const steps: Step[] = [
     {
       id: 'auth',
       title: 'Checking authentication',
@@ -155,7 +151,7 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
     : steps;
 
   return (
-    <SimpleFlowProgress
+    <StepSequence
       steps={filteredSteps}
       completionTitle="Initialization complete!"
       completionComponent={(context: StepContext) => {

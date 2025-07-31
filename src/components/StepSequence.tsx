@@ -20,14 +20,14 @@ export interface StepContext extends ProgressControls {
   options: Record<string, unknown>;
 }
 
-export interface SimpleStep {
+export interface Step {
   id: string;
   title: string;
   component: (context: StepContext) => React.ReactNode;
 }
 
-interface SimpleFlowProgressProps {
-  steps: SimpleStep[];
+interface StepSequenceProps {
+  steps: Step[];
   completionTitle?: string;
   completionComponent?: (context: StepContext) => React.ReactNode;
   errorTitle?: string;
@@ -37,13 +37,13 @@ interface SimpleFlowProgressProps {
 }
 
 const StepRenderer: React.FC<{
-  step: SimpleStep;
+  step: Step;
   context: StepContext;
 }> = ({ step, context }) => {
   return step.component(context);
 };
 
-export const SimpleFlowProgress: React.FC<SimpleFlowProgressProps> = ({
+export const StepSequence: React.FC<StepSequenceProps> = ({
   steps,
   completionTitle = 'Process completed!',
   completionComponent,

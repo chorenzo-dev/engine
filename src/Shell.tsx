@@ -7,7 +7,7 @@ import { RecipesApplyContainer } from '~/containers/RecipesApplyContainer';
 import { RecipesGenerateContainer } from '~/containers/RecipesGenerateContainer';
 import { RecipesValidateContainer } from '~/containers/RecipesValidateContainer';
 
-import { CommandFlow } from './components/CommandFlow';
+import { ProcessDisplay } from './components/ProcessDisplay';
 
 interface ShellProps {
   command:
@@ -38,7 +38,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   const [error, setError] = useState<Error | null>(null);
   if (command === 'analyze') {
     if (error) {
-      return <CommandFlow title="Error" status="error" error={error.message} />;
+      return (
+        <ProcessDisplay title="Error" status="error" error={error.message} />
+      );
     }
 
     return (
@@ -71,7 +73,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   if (command === 'recipes-validate') {
     if (!options.target) {
       return (
-        <CommandFlow
+        <ProcessDisplay
           title="Error"
           status="error"
           error="Target parameter is required"
@@ -94,7 +96,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
 
   if (command === 'recipes-apply') {
     if (error) {
-      return <CommandFlow title="Error" status="error" error={error.message} />;
+      return (
+        <ProcessDisplay title="Error" status="error" error={error.message} />
+      );
     }
 
     return (
@@ -117,7 +121,9 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
 
   if (command === 'recipes-generate') {
     if (error) {
-      return <CommandFlow title="Error" status="error" error={error.message} />;
+      return (
+        <ProcessDisplay title="Error" status="error" error={error.message} />
+      );
     }
 
     return (

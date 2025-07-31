@@ -9,7 +9,8 @@ interface StepDisplayProps {
   status: 'pending' | 'in_progress' | 'completed' | 'error';
   activity?: string;
   error?: string;
-  isThinking?: boolean;
+  isProcessing?: boolean;
+  isActivityProcessing?: boolean;
   children?: React.ReactNode;
 }
 
@@ -18,7 +19,8 @@ export const StepDisplay: React.FC<StepDisplayProps> = ({
   status,
   activity,
   error,
-  isThinking,
+  isProcessing,
+  isActivityProcessing,
   children,
 }) => {
   const getIcon = () => {
@@ -52,28 +54,38 @@ export const StepDisplay: React.FC<StepDisplayProps> = ({
   return (
     <Box flexDirection="column">
       <Box>
-        {status === 'in_progress' ? (
-          <>
-            <Spinner type="dots" />
-            <Text> </Text>
-          </>
-        ) : icon ? (
-          <Text>{icon} </Text>
-        ) : null}
-        <Text color={color}>{displayTitle}</Text>
+        <Text color={color}>
+          {status === 'in_progress' ? (
+            isProcessing ? (
+              <>
+                <Spinner type="dots" />
+                {'  '}
+              </>
+            ) : (
+              '   '
+            )
+          ) : icon ? (
+            `${icon} `
+          ) : (
+            ''
+          )}
+          {displayTitle}
+        </Text>
       </Box>
 
       {status === 'in_progress' && activity && (
         <Box>
-          {isThinking ? (
-            <>
-              <Spinner type="dots" />
-              <Text> </Text>
-            </>
-          ) : (
-            <Text> </Text>
-          )}
-          <Text color={colors.progress}>{activity}</Text>
+          <Text color={colors.progress}>
+            {isActivityProcessing ? (
+              <>
+                <Spinner type="dots" />
+                {'  '}
+              </>
+            ) : (
+              '   '
+            )}
+            {activity}
+          </Text>
         </Box>
       )}
 

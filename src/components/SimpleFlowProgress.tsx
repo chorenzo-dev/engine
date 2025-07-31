@@ -2,13 +2,15 @@ import { Box, Text } from 'ink';
 import React, { useState } from 'react';
 
 import { ProgressContext } from '~/contexts/ProgressContext';
+import { Logger } from '~/utils/logger.utils';
 
 import { StepDisplay } from './StepDisplay';
 
 export interface ProgressControls {
-  setActivity: (activity: string, isThinking?: boolean) => void;
+  setActivity: (activity: string, isProcessing?: boolean) => void;
   setError: (error: string) => void;
   complete: () => void;
+  setProcessing: (processing: boolean) => void;
 }
 
 export interface StepContext extends ProgressControls {
@@ -53,18 +55,23 @@ export const SimpleFlowProgress: React.FC<SimpleFlowProgressProps> = ({
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [errorSteps, setErrorSteps] = useState<Set<string>>(new Set());
   const [currentActivity, setCurrentActivity] = useState('');
-  const [isThinking, setIsThinking] = useState(false);
   const [currentError, setCurrentError] = useState('');
   const [isFlowComplete, setIsFlowComplete] = useState(false);
+  const [isStepProcessing, setIsStepProcessing] = useState(false);
+  const [isActivityProcessing, setIsActivityProcessing] = useState(false);
   const [flowError, setFlowError] = useState<Error | null>(null);
   const [results, setResults] = useState<Record<string, unknown>>({});
 
   const currentStep = steps[currentStepIndex];
 
   const progressControls: ProgressControls = {
-    setActivity: (activity: string, thinking = false) => {
+    setActivity: (activity: string, processing = false) => {
+      Logger.info(
+        { event: 'setActivity_debug', activity, processing },
+        `setActivity called: ${activity} (processing: ${processing})`
+      );
       setCurrentActivity(activity);
-      setIsThinking(thinking);
+      setIsActivityProcessing(processing);
     },
     setError: (error: string) => {
       setCurrentError(error);
@@ -74,8 +81,9 @@ export const SimpleFlowProgress: React.FC<SimpleFlowProgressProps> = ({
     complete: () => {
       setCompletedSteps((prev) => new Set(prev).add(currentStep.id));
       setCurrentActivity('');
-      setIsThinking(false);
       setCurrentError('');
+      setIsStepProcessing(false);
+      setIsActivityProcessing(false);
 
       if (currentStepIndex < steps.length - 1) {
         setCurrentStepIndex((prev) => prev + 1);
@@ -83,6 +91,9 @@ export const SimpleFlowProgress: React.FC<SimpleFlowProgressProps> = ({
         setIsFlowComplete(true);
         onComplete?.();
       }
+    },
+    setProcessing: (processing: boolean) => {
+      setIsStepProcessing(processing);
     },
   };
 
@@ -145,7 +156,10 @@ export const SimpleFlowProgress: React.FC<SimpleFlowProgressProps> = ({
               status={status}
               activity={isCurrentStep ? currentActivity : undefined}
               error={hasError ? currentError : undefined}
-              isThinking={isCurrentStep ? isThinking : undefined}
+              isProcessing={isCurrentStep ? isStepProcessing : undefined}
+              isActivityProcessing={
+                isCurrentStep ? isActivityProcessing : undefined
+              }
             >
               {isCurrentStep && (
                 <StepRenderer step={step} context={stepContext} />

@@ -11,6 +11,7 @@ import {
   SimpleStep,
   StepContext,
 } from '~/components/SimpleFlowProgress';
+import { Logger } from '~/utils/logger.utils';
 
 interface InitContainerProps {
   options: {
@@ -32,12 +33,14 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
 
         useEffect(() => {
           const checkAuth = async () => {
+            context.setProcessing(true);
             try {
               const isAuthenticated = await performAuthCheck();
               if (isAuthenticated) {
                 context.complete();
               } else {
                 setNeedsAuth(true);
+                context.setProcessing(false);
               }
             } catch (error) {
               context.setError(
@@ -70,9 +73,10 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
       component: (context: StepContext) => {
         useEffect(() => {
           const setup = async () => {
+            context.setProcessing(true);
             try {
               await performInit(context.options, (step) => {
-                context.setActivity(step);
+                context.setActivity(step, true);
               });
               context.complete();
             } catch (error) {
@@ -96,11 +100,18 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
 
         const runAnalysis = async () => {
           setPromptShown(false);
+          context.setProcessing(true);
           try {
-            context.setActivity('Analyzing workspace...');
+            context.setActivity('Analyzing workspace...', true);
             const result = await performAnalysis((step, isThinking) => {
+              Logger.info(
+                { event: 'analysis_progress', step, isThinking },
+                `Analysis progress: ${step} (isThinking: ${isThinking})`
+              );
               if (step) {
                 context.setActivity(step, isThinking);
+              } else if (isThinking !== undefined) {
+                context.setActivity('Analyzing workspace...', isThinking);
               }
             });
 

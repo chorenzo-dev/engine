@@ -1,16 +1,17 @@
-import { Box, Text } from 'ink';
+import { Text } from 'ink';
+import TextInput from 'ink-text-input';
 import React, { useState } from 'react';
 
-import { AnalysisResult } from '~/commands/analyze';
-import { AnalysisFlowStep } from '~/components/AnalysisFlowStep';
+import { AnalysisResult, performAnalysis } from '~/commands/analyze';
+import { performAuthCheck } from '~/commands/auth';
+import { performInit } from '~/commands/init';
 import { AnalysisResultDisplay } from '~/components/AnalysisResultDisplay';
 import { AuthenticationStep } from '~/components/AuthenticationStep';
-import { CommandFlow } from '~/components/CommandFlow';
 import {
-  CommandFlowProgress,
-  FlowStep,
-} from '~/components/CommandFlowProgress';
-import { InitAuthStep } from '~/components/InitAuthStep';
+  ProgressControls,
+  SimpleFlowProgress,
+  SimpleStep,
+} from '~/components/SimpleFlowProgress';
 
 interface InitContainerProps {
   options: {
@@ -31,115 +32,138 @@ export const InitContainer: React.FC<InitContainerProps> = ({
     null
   );
   const [needsAuth, setNeedsAuth] = useState(false);
-  const [initError, setInitError] = useState<string>('');
-  const [isFlowComplete, setIsFlowComplete] = useState(false);
-  const [completedSteps, setCompletedSteps] = useState<
-    Array<{ id: string; title: string; success: boolean }>
-  >([]);
+  const [showAnalysisPrompt, setShowAnalysisPrompt] = useState(false);
 
-  const flowSteps: FlowStep[] = [
+  const steps: SimpleStep[] = [
     {
-      id: 'checking_auth',
+      id: 'auth',
       title: 'Checking authentication',
-      render: () => (
-        <InitAuthStep
-          options={options}
-          onAuthRequired={() => setNeedsAuth(true)}
-        />
-      ),
+      component: needsAuth
+        ? (context) => (
+            <AuthenticationStep
+              onAuthComplete={() => context.complete()}
+              onAuthError={(errorMessage: string) =>
+                context.setError(errorMessage)
+              }
+              onQuit={() => process.exit(0)}
+            />
+          )
+        : undefined,
+      execute: async (context: ProgressControls) => {
+        try {
+          const isAuthenticated = await performAuthCheck();
+
+          if (!isAuthenticated) {
+            setNeedsAuth(true);
+          } else {
+            context.complete();
+          }
+        } catch (error) {
+          const errorMsg =
+            error instanceof Error ? error.message : String(error);
+          context.setError(errorMsg);
+        }
+      },
+    },
+    {
+      id: 'setup',
+      title: 'Setting up workspace',
+      execute: async (context: ProgressControls) => {
+        try {
+          await performInit(options, (step) => {
+            context.setActivity(step);
+          });
+          context.complete();
+        } catch (error) {
+          const errorMsg =
+            error instanceof Error ? error.message : String(error);
+          context.setError(errorMsg);
+        }
+      },
     },
   ];
 
   if (!options.noAnalyze) {
-    flowSteps.push({
+    steps.push({
       id: 'analysis',
       title: 'Running project analysis',
-      render: () => (
-        <AnalysisFlowStep
-          options={{
-            noAnalyze: options.noAnalyze,
-            yes: options.yes,
-            progress: options.progress,
-            cost: options.cost,
-          }}
-          onResult={(result?: AnalysisResult) => {
-            if (result) {
-              setAnalysisResult(result);
+      component:
+        showAnalysisPrompt && !options.yes
+          ? (context) => {
+              const AnalysisPrompt: React.FC = () => {
+                const [value, setValue] = useState('');
+
+                const handleSubmit = async (inputValue: string) => {
+                  if (
+                    inputValue.toLowerCase() === 'y' ||
+                    inputValue.toLowerCase() === 'yes'
+                  ) {
+                    setShowAnalysisPrompt(false);
+                    await context.execute();
+                  } else {
+                    context.complete();
+                  }
+                };
+
+                return (
+                  <Text>
+                    Run code-base analysis now? (y/N){' '}
+                    <TextInput
+                      value={value}
+                      onChange={setValue}
+                      onSubmit={handleSubmit}
+                    />
+                  </Text>
+                );
+              };
+
+              return <AnalysisPrompt />;
             }
-          }}
-        />
-      ),
+          : undefined,
+      execute: async (context: ProgressControls) => {
+        if (!options.yes && !showAnalysisPrompt) {
+          setShowAnalysisPrompt(true);
+          return;
+        }
+
+        if (!options.yes && showAnalysisPrompt) {
+          return;
+        }
+
+        try {
+          context.setActivity('Analyzing workspace...');
+          const result = await performAnalysis((step, isThinking) => {
+            if (step) {
+              context.setActivity(step, isThinking);
+            }
+          });
+
+          if (result) {
+            setAnalysisResult(result);
+          }
+          context.complete();
+        } catch (error) {
+          const errorMsg =
+            error instanceof Error ? error.message : String(error);
+          context.setError(errorMsg);
+        }
+      },
     });
   }
 
-  const handleStepComplete = (stepId: string, result?: unknown) => {
-    if (stepId === 'analysis' && result) {
-      setAnalysisResult(result as AnalysisResult);
-    }
-  };
-
-  const handleStepError = (stepId: string, error: Error) => {
-    if (stepId === 'checking_auth' && error.message === 'AUTH_REQUIRED') {
-      setNeedsAuth(true);
-    } else {
-      setInitError(error.message);
-      onError(error);
-    }
-  };
-
-  const handleFlowComplete = (
-    steps: Array<{ id: string; title: string; success: boolean }>
-  ) => {
-    setCompletedSteps(steps);
-    setIsFlowComplete(true);
-  };
-
-  if (needsAuth) {
-    return (
-      <Box flexDirection="column">
-        <AuthenticationStep
-          onAuthComplete={() => setNeedsAuth(false)}
-          onAuthError={(errorMessage: string) => {
-            setInitError(errorMessage);
-            onError(new Error(errorMessage));
-          }}
-          onQuit={() => process.exit(0)}
-        />
-      </Box>
-    );
-  }
-
-  if (initError) {
-    return (
-      <CommandFlow title="Error" status="error" error={initError}>
-        <Text>Please run 'chorenzo init' again to retry.</Text>
-      </CommandFlow>
-    );
-  }
-
-  if (isFlowComplete) {
-    return (
-      <CommandFlow
-        title="Initialization complete!"
-        status="completed"
-        completedSteps={completedSteps}
-      >
-        {analysisResult && analysisResult.analysis ? (
+  return (
+    <SimpleFlowProgress
+      steps={steps}
+      completionTitle="Initialization complete!"
+      completionComponent={
+        analysisResult && analysisResult.analysis ? (
           <AnalysisResultDisplay
             result={analysisResult}
             showCost={options.cost}
           />
-        ) : null}
-      </CommandFlow>
-    );
-  }
-
-  return (
-    <CommandFlowProgress
-      steps={flowSteps}
-      onStepComplete={handleStepComplete}
-      onStepError={handleStepError}
-      onFlowComplete={handleFlowComplete}
+        ) : null
+      }
+      onError={onError}
     />
   );
 };

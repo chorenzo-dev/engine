@@ -1,5 +1,4 @@
 import { chorenzoConfig } from '~/utils/chorenzo-config.utils';
-import { checkClaudeCodeAuth } from '~/utils/claude.utils';
 import { GitError } from '~/utils/git-operations.utils';
 import { libraryManager } from '~/utils/library-manager.utils';
 import { Logger } from '~/utils/logger.utils';
@@ -40,16 +39,6 @@ export async function performInit(
     if (options.reset) {
       onProgress?.('Resetting workspace...');
       await resetWorkspace();
-    }
-
-    onProgress?.('Checking Claude Code authentication...');
-    const isAuthenticated = await checkClaudeCodeAuth();
-
-    if (!isAuthenticated) {
-      throw new InitError(
-        'Claude Code is not authenticated. Please complete authentication setup.',
-        'AUTH_REQUIRED'
-      );
     }
 
     onProgress?.('Creating directory structure...');

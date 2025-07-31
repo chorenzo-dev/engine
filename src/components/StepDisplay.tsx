@@ -95,7 +95,7 @@ export const StepDisplay: React.FC<StepDisplayProps> = ({
         </Box>
       )}
 
-      {children}
+      {children && <Box marginLeft={3}>{children}</Box>}
     </Box>
   );
 };

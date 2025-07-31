@@ -1,9 +1,8 @@
-import { spawnSync } from 'child_process';
-
 import { AuthConfig } from '~/types/config';
 
 import { chorenzoConfig } from './config.utils';
 import { Logger } from './logger.utils';
+import { spawnAsync } from './process.utils';
 
 export class AuthError extends Error {
   constructor(
@@ -62,28 +61,26 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       'Using Claude CLI for authentication check'
     );
 
-    const cliResult = spawnSync('claude', ['--version'], {
-      encoding: 'utf8',
+    const versionResult = await spawnAsync('claude', ['--version'], {
       timeout: 2000,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 
-    if (cliResult.error || cliResult.status !== 0) {
-      Logger.warn(
+    if (versionResult.error || versionResult.status !== 0) {
+      Logger.error(
         {
           event: 'auth_check_failed',
           reason: 'claude_version_failed',
-          error: cliResult.error?.message,
-          status: cliResult.status,
-          stderr: cliResult.stderr,
+          error: versionResult.error?.message,
+          status: versionResult.status,
+          stderr: versionResult.stderr,
         },
         'Claude CLI --version check failed'
       );
       return false;
     }
 
-    const testResult = spawnSync('claude', ['-p', 'status'], {
-      encoding: 'utf8',
+    const testResult = await spawnAsync('claude', ['-p', 'status'], {
       timeout: 30000,
       stdio: ['pipe', 'pipe', 'pipe'],
       input: '',
@@ -94,22 +91,12 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
     Logger.info(
       {
         event: 'claude_cli_status_result',
-        status: testResult.status,
-        signal: testResult.signal,
         stdout: testResult.stdout,
         stderr: testResult.stderr,
         output_length: output.length,
       },
       'Claude CLI status command result'
     );
-
-    if (testResult.signal === 'SIGTERM') {
-      Logger.warn(
-        { event: 'auth_check_failed', reason: 'sigterm' },
-        'Claude CLI status command terminated with SIGTERM'
-      );
-      return false;
-    }
 
     if (output.includes('Invalid API key') || output.includes('/login')) {
       Logger.warn(
@@ -148,8 +135,8 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       {
         event: 'auth_check_failed',
         reason: 'no_valid_output',
-        status: testResult.status,
         stdout_length: testResult.stdout?.length || 0,
+        stderr_length: testResult.stderr?.length || 0,
       },
       'Claude CLI status command did not return valid output'
     );

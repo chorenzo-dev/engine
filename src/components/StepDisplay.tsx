@@ -56,7 +56,7 @@ export const StepDisplay: React.FC<StepDisplayProps> = ({
       </Text>
 
       {status === 'in_progress' && activity && (
-        <Box marginTop={1}>
+        <Box>
           {isThinking && <Spinner type="dots" />}
           <Text color={colors.progress}>{activity}</Text>
         </Box>
@@ -68,7 +68,7 @@ export const StepDisplay: React.FC<StepDisplayProps> = ({
         </Box>
       )}
 
-      {children && <Box>{children}</Box>}
+      {children}
     </Box>
   );
 };

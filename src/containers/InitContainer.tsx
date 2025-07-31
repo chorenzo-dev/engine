@@ -147,16 +147,14 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
       completionComponent={(context: StepContext) => {
         if (!options.noAnalyze) {
           const analysisResult = context.getResult<AnalysisResult>('analysis');
-          if (!analysisResult) {
-            context.setError('Analysis was expected but no result was found');
-            return null;
+          if (analysisResult) {
+            return (
+              <AnalysisResultDisplay
+                result={analysisResult}
+                showCost={context.options.cost as boolean}
+              />
+            );
           }
-          return (
-            <AnalysisResultDisplay
-              result={analysisResult}
-              showCost={context.options.cost as boolean}
-            />
-          );
         }
         return null;
       }}

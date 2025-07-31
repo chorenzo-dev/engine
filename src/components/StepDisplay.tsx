@@ -11,6 +11,7 @@ interface StepDisplayProps {
   error?: string;
   isProcessing?: boolean;
   isActivityProcessing?: boolean;
+  isTitleVisible?: boolean;
   children?: React.ReactNode;
 }
 
@@ -21,6 +22,7 @@ export const StepDisplay: React.FC<StepDisplayProps> = ({
   error,
   isProcessing,
   isActivityProcessing,
+  isTitleVisible = true,
   children,
 }) => {
   const getIcon = () => {
@@ -53,25 +55,27 @@ export const StepDisplay: React.FC<StepDisplayProps> = ({
 
   return (
     <Box flexDirection="column">
-      <Box>
-        <Text color={color}>
-          {status === 'in_progress' ? (
-            isProcessing ? (
-              <>
-                <Spinner type="dots" />
-                {'  '}
-              </>
+      {isTitleVisible && (
+        <Box>
+          <Text color={color}>
+            {status === 'in_progress' ? (
+              isProcessing ? (
+                <>
+                  <Spinner type="dots" />
+                  {'  '}
+                </>
+              ) : (
+                '   '
+              )
+            ) : icon ? (
+              `${icon} `
             ) : (
-              '   '
-            )
-          ) : icon ? (
-            `${icon} `
-          ) : (
-            ''
-          )}
-          {displayTitle}
-        </Text>
-      </Box>
+              ''
+            )}
+            {displayTitle}
+          </Text>
+        </Box>
+      )}
 
       {status === 'in_progress' && activity && (
         <Box>

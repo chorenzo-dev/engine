@@ -100,6 +100,7 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
 
         const runAnalysis = async () => {
           setPromptShown(false);
+          context.setTitleVisible(true);
           context.setProcessing(true);
           try {
             context.setActivity('Analyzing workspace...', true);
@@ -131,6 +132,7 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
             runAnalysis();
           } else {
             setPromptShown(true);
+            context.setTitleVisible(false);
           }
         }, []);
 

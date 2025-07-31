@@ -11,6 +11,7 @@ export interface ProgressControls {
   setError: (error: string) => void;
   complete: () => void;
   setProcessing: (processing: boolean) => void;
+  setTitleVisible: (visible: boolean) => void;
 }
 
 export interface StepContext extends ProgressControls {
@@ -59,6 +60,7 @@ export const SimpleFlowProgress: React.FC<SimpleFlowProgressProps> = ({
   const [isFlowComplete, setIsFlowComplete] = useState(false);
   const [isStepProcessing, setIsStepProcessing] = useState(false);
   const [isActivityProcessing, setIsActivityProcessing] = useState(false);
+  const [isTitleVisible, setIsTitleVisible] = useState(true);
   const [flowError, setFlowError] = useState<Error | null>(null);
   const [results, setResults] = useState<Record<string, unknown>>({});
 
@@ -84,6 +86,7 @@ export const SimpleFlowProgress: React.FC<SimpleFlowProgressProps> = ({
       setCurrentError('');
       setIsStepProcessing(false);
       setIsActivityProcessing(false);
+      setIsTitleVisible(true);
 
       if (currentStepIndex < steps.length - 1) {
         setCurrentStepIndex((prev) => prev + 1);
@@ -94,6 +97,9 @@ export const SimpleFlowProgress: React.FC<SimpleFlowProgressProps> = ({
     },
     setProcessing: (processing: boolean) => {
       setIsStepProcessing(processing);
+    },
+    setTitleVisible: (visible: boolean) => {
+      setIsTitleVisible(visible);
     },
   };
 
@@ -160,6 +166,7 @@ export const SimpleFlowProgress: React.FC<SimpleFlowProgressProps> = ({
               isActivityProcessing={
                 isCurrentStep ? isActivityProcessing : undefined
               }
+              isTitleVisible={isCurrentStep ? isTitleVisible : true}
             >
               {isCurrentStep && (
                 <StepRenderer step={step} context={stepContext} />

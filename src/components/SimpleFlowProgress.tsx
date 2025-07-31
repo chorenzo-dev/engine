@@ -1,4 +1,4 @@
-import { Box } from 'ink';
+import { Box, Text } from 'ink';
 import React, { useState } from 'react';
 
 import { ProgressContext } from '~/contexts/ProgressContext';
@@ -9,30 +9,38 @@ export interface ProgressControls {
   setActivity: (activity: string, isThinking?: boolean) => void;
   setError: (error: string) => void;
   complete: () => void;
-  execute: () => Promise<void>;
+}
+
+export interface StepContext extends ProgressControls {
+  setResult: (result: unknown) => void;
+  getResult: <T = unknown>(stepId: string) => T;
+  options: Record<string, unknown>;
 }
 
 export interface SimpleStep {
   id: string;
   title: string;
-  component?: (context: ProgressControls) => React.ReactNode;
-  execute: (context: ProgressControls) => Promise<void>;
+  component: (context: StepContext) => React.ReactNode;
 }
 
 interface SimpleFlowProgressProps {
   steps: SimpleStep[];
   completionTitle?: string;
-  completionComponent?: React.ReactNode;
+  completionComponent?: (context: StepContext) => React.ReactNode;
+  errorTitle?: string;
+  errorComponent?: (error: Error) => React.ReactNode;
   onComplete?: () => void;
-  onError?: (error: Error) => void;
+  options?: Record<string, unknown>;
 }
 
 export const SimpleFlowProgress: React.FC<SimpleFlowProgressProps> = ({
   steps,
   completionTitle = 'Process completed!',
   completionComponent,
+  errorTitle = 'Process failed!',
+  errorComponent,
   onComplete,
-  onError,
+  options = {},
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
@@ -41,7 +49,8 @@ export const SimpleFlowProgress: React.FC<SimpleFlowProgressProps> = ({
   const [isThinking, setIsThinking] = useState(false);
   const [currentError, setCurrentError] = useState('');
   const [isFlowComplete, setIsFlowComplete] = useState(false);
-  const [isExecuting, setIsExecuting] = useState(false);
+  const [flowError, setFlowError] = useState<Error | null>(null);
+  const [results, setResults] = useState<Record<string, unknown>>({});
 
   const currentStep = steps[currentStepIndex];
 
@@ -53,6 +62,7 @@ export const SimpleFlowProgress: React.FC<SimpleFlowProgressProps> = ({
     setError: (error: string) => {
       setCurrentError(error);
       setErrorSteps((prev) => new Set(prev).add(currentStep.id));
+      setFlowError(new Error(error));
     },
     complete: () => {
       setCompletedSteps((prev) => new Set(prev).add(currentStep.id));
@@ -67,40 +77,33 @@ export const SimpleFlowProgress: React.FC<SimpleFlowProgressProps> = ({
         onComplete?.();
       }
     },
-    execute: async () => {
-      if (currentStep && !isExecuting) {
-        setIsExecuting(true);
-        try {
-          await currentStep.execute(progressControls);
-        } catch (error) {
-          progressControls.setError(
-            error instanceof Error ? error.message : String(error)
-          );
-          if (onError && error instanceof Error) {
-            onError(error);
-          }
-        } finally {
-          setIsExecuting(false);
-        }
-      }
-    },
   };
 
-  React.useEffect(() => {
-    if (
-      currentStep &&
-      !completedSteps.has(currentStep.id) &&
-      !errorSteps.has(currentStep.id) &&
-      !isExecuting
-    ) {
-      progressControls.execute();
-    }
-  }, [currentStepIndex, currentStep]);
+  const stepContext: StepContext = {
+    ...progressControls,
+    setResult: (result: unknown) => {
+      if (currentStep) {
+        setResults((prev) => ({ ...prev, [currentStep.id]: result }));
+      }
+    },
+    getResult: <T = unknown,>(stepId: string): T => results[stepId] as T,
+    options,
+  };
+
+  if (flowError) {
+    return errorComponent ? (
+      errorComponent(flowError)
+    ) : (
+      <StepDisplay title={errorTitle} status="error">
+        <Text color="red">{flowError.message}</Text>
+      </StepDisplay>
+    );
+  }
 
   if (isFlowComplete) {
     return (
       <StepDisplay title={completionTitle} status="completed">
-        {completionComponent}
+        {completionComponent && completionComponent(stepContext)}
       </StepDisplay>
     );
   }
@@ -137,9 +140,7 @@ export const SimpleFlowProgress: React.FC<SimpleFlowProgressProps> = ({
               error={hasError ? currentError : undefined}
               isThinking={isCurrentStep ? isThinking : undefined}
             >
-              {isCurrentStep &&
-                step.component &&
-                step.component(progressControls)}
+              {isCurrentStep && step.component(stepContext)}
             </StepDisplay>
           );
         })}

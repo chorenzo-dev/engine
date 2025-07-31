@@ -1,16 +1,15 @@
-import { Text } from 'ink';
-import TextInput from 'ink-text-input';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { AnalysisResult, performAnalysis } from '~/commands/analyze';
 import { performAuthCheck } from '~/commands/auth';
 import { performInit } from '~/commands/init';
+import { AnalysisPrompt } from '~/components/AnalysisPrompt';
 import { AnalysisResultDisplay } from '~/components/AnalysisResultDisplay';
 import { AuthenticationStep } from '~/components/AuthenticationStep';
 import {
-  ProgressControls,
   SimpleFlowProgress,
   SimpleStep,
+  StepContext,
 } from '~/components/SimpleFlowProgress';
 
 interface InitContainerProps {
@@ -21,64 +20,72 @@ interface InitContainerProps {
     progress?: boolean;
     cost?: boolean;
   };
-  onError: (error: Error) => void;
 }
 
-export const InitContainer: React.FC<InitContainerProps> = ({
-  options,
-  onError,
-}) => {
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
-    null
-  );
-  const [needsAuth, setNeedsAuth] = useState(false);
-  const [showAnalysisPrompt, setShowAnalysisPrompt] = useState(false);
-
+export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
   const steps: SimpleStep[] = [
     {
       id: 'auth',
       title: 'Checking authentication',
-      component: needsAuth
-        ? (context) => (
-            <AuthenticationStep
-              onAuthComplete={() => context.complete()}
-              onAuthError={(errorMessage: string) =>
-                context.setError(errorMessage)
-              }
-              onQuit={() => process.exit(0)}
-            />
-          )
-        : undefined,
-      execute: async (context: ProgressControls) => {
-        try {
-          const isAuthenticated = await performAuthCheck();
+      component: (context: StepContext) => {
+        const [needsAuth, setNeedsAuth] = useState<boolean | null>(null);
 
-          if (!isAuthenticated) {
-            setNeedsAuth(true);
-          } else {
-            context.complete();
-          }
-        } catch (error) {
-          const errorMsg =
-            error instanceof Error ? error.message : String(error);
-          context.setError(errorMsg);
+        useEffect(() => {
+          const checkAuth = async () => {
+            try {
+              const isAuthenticated = await performAuthCheck();
+              if (isAuthenticated) {
+                context.complete();
+              } else {
+                setNeedsAuth(true);
+              }
+            } catch (error) {
+              context.setError(
+                error instanceof Error ? error.message : String(error)
+              );
+            }
+          };
+
+          checkAuth();
+        }, []);
+
+        if (!needsAuth) {
+          return null;
         }
+
+        return (
+          <AuthenticationStep
+            onAuthComplete={() => context.complete()}
+            onAuthError={(errorMessage: string) =>
+              context.setError(errorMessage)
+            }
+            onQuit={() => process.exit(0)}
+          />
+        );
       },
     },
     {
       id: 'setup',
       title: 'Setting up workspace',
-      execute: async (context: ProgressControls) => {
-        try {
-          await performInit(options, (step) => {
-            context.setActivity(step);
-          });
-          context.complete();
-        } catch (error) {
-          const errorMsg =
-            error instanceof Error ? error.message : String(error);
-          context.setError(errorMsg);
-        }
+      component: (context: StepContext) => {
+        useEffect(() => {
+          const setup = async () => {
+            try {
+              await performInit(context.options, (step) => {
+                context.setActivity(step);
+              });
+              context.complete();
+            } catch (error) {
+              context.setError(
+                error instanceof Error ? error.message : String(error)
+              );
+            }
+          };
+
+          setup();
+        }, []);
+
+        return null;
       },
     },
   ];
@@ -87,66 +94,47 @@ export const InitContainer: React.FC<InitContainerProps> = ({
     steps.push({
       id: 'analysis',
       title: 'Running project analysis',
-      component:
-        showAnalysisPrompt && !options.yes
-          ? (context) => {
-              const AnalysisPrompt: React.FC = () => {
-                const [value, setValue] = useState('');
+      component: (context: StepContext) => {
+        const [promptShown, setPromptShown] = useState(false);
 
-                const handleSubmit = async (inputValue: string) => {
-                  if (
-                    inputValue.toLowerCase() === 'y' ||
-                    inputValue.toLowerCase() === 'yes'
-                  ) {
-                    setShowAnalysisPrompt(false);
-                    await context.execute();
-                  } else {
-                    context.complete();
-                  }
-                };
+        const runAnalysis = async () => {
+          try {
+            context.setActivity('Analyzing workspace...');
+            const result = await performAnalysis((step, isThinking) => {
+              if (step) {
+                context.setActivity(step, isThinking);
+              }
+            });
 
-                return (
-                  <Text>
-                    Run code-base analysis now? (y/N){' '}
-                    <TextInput
-                      value={value}
-                      onChange={setValue}
-                      onSubmit={handleSubmit}
-                    />
-                  </Text>
-                );
-              };
-
-              return <AnalysisPrompt />;
+            if (result) {
+              context.setResult(result);
             }
-          : undefined,
-      execute: async (context: ProgressControls) => {
-        if (!options.yes && !showAnalysisPrompt) {
-          setShowAnalysisPrompt(true);
-          return;
-        }
-
-        if (!options.yes && showAnalysisPrompt) {
-          return;
-        }
-
-        try {
-          context.setActivity('Analyzing workspace...');
-          const result = await performAnalysis((step, isThinking) => {
-            if (step) {
-              context.setActivity(step, isThinking);
-            }
-          });
-
-          if (result) {
-            setAnalysisResult(result);
+            context.complete();
+          } catch (error) {
+            context.setError(
+              error instanceof Error ? error.message : String(error)
+            );
           }
-          context.complete();
-        } catch (error) {
-          const errorMsg =
-            error instanceof Error ? error.message : String(error);
-          context.setError(errorMsg);
+        };
+
+        useEffect(() => {
+          if (context.options.yes) {
+            runAnalysis();
+          } else {
+            setPromptShown(true);
+          }
+        }, []);
+
+        if (context.options.yes || !promptShown) {
+          return null;
         }
+
+        return (
+          <AnalysisPrompt
+            onYes={runAnalysis}
+            onNo={async () => context.complete()}
+          />
+        );
       },
     });
   }
@@ -155,15 +143,24 @@ export const InitContainer: React.FC<InitContainerProps> = ({
     <SimpleFlowProgress
       steps={steps}
       completionTitle="Initialization complete!"
-      completionComponent={
-        analysisResult && analysisResult.analysis ? (
-          <AnalysisResultDisplay
-            result={analysisResult}
-            showCost={options.cost}
-          />
-        ) : null
-      }
-      onError={onError}
+      completionComponent={(context: StepContext) => {
+        if (!options.noAnalyze) {
+          const analysisResult = context.getResult<AnalysisResult>('analysis');
+          if (!analysisResult) {
+            context.setError('Analysis was expected but no result was found');
+            return null;
+          }
+          return (
+            <AnalysisResultDisplay
+              result={analysisResult}
+              showCost={context.options.cost as boolean}
+            />
+          );
+        }
+        return null;
+      }}
+      errorTitle="Initialization failed!"
+      options={options}
     />
   );
 };

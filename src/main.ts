@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { render } from 'ink';
 import React from 'react';
 
-import { Shell } from './components/Shell';
+import { Shell } from './Shell';
 
 const program = new Command();
 

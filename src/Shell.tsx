@@ -7,7 +7,7 @@ import { RecipesApplyContainer } from '~/containers/RecipesApplyContainer';
 import { RecipesGenerateContainer } from '~/containers/RecipesGenerateContainer';
 import { RecipesValidateContainer } from '~/containers/RecipesValidateContainer';
 
-import { CommandFlow } from './CommandFlow';
+import { CommandFlow } from './components/CommandFlow';
 
 interface ShellProps {
   command:
@@ -63,9 +63,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           yes: options.yes,
           progress: options.progress,
           cost: options.cost,
-        }}
-        onError={(error) => {
-          setError(error);
         }}
       />
     );

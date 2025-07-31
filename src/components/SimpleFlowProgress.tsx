@@ -33,6 +33,13 @@ interface SimpleFlowProgressProps {
   options?: Record<string, unknown>;
 }
 
+const StepRenderer: React.FC<{
+  step: SimpleStep;
+  context: StepContext;
+}> = ({ step, context }) => {
+  return step.component(context);
+};
+
 export const SimpleFlowProgress: React.FC<SimpleFlowProgressProps> = ({
   steps,
   completionTitle = 'Process completed!',
@@ -140,7 +147,9 @@ export const SimpleFlowProgress: React.FC<SimpleFlowProgressProps> = ({
               error={hasError ? currentError : undefined}
               isThinking={isCurrentStep ? isThinking : undefined}
             >
-              {isCurrentStep && step.component(stepContext)}
+              {isCurrentStep && (
+                <StepRenderer step={step} context={stepContext} />
+              )}
             </StepDisplay>
           );
         })}

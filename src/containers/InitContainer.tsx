@@ -88,10 +88,7 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
         return null;
       },
     },
-  ];
-
-  if (!options.noAnalyze) {
-    steps.push({
+    {
       id: 'analysis',
       title: 'Running project analysis',
       component: (context: StepContext) => {
@@ -136,12 +133,16 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
           />
         );
       },
-    });
-  }
+    },
+  ];
+
+  const filteredSteps = options.noAnalyze
+    ? steps.filter((step) => step.id !== 'analysis')
+    : steps;
 
   return (
     <SimpleFlowProgress
-      steps={steps}
+      steps={filteredSteps}
       completionTitle="Initialization complete!"
       completionComponent={(context: StepContext) => {
         if (!options.noAnalyze) {

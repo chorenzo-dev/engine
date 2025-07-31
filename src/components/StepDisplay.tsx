@@ -99,7 +99,9 @@ export const StepDisplay: React.FC<StepDisplayProps> = ({
         </Box>
       )}
 
-      {children && <Box marginLeft={3}>{children}</Box>}
+      {children && (
+        <Box marginLeft={status === 'in_progress' ? 3 : 0}>{children}</Box>
+      )}
     </Box>
   );
 };

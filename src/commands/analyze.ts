@@ -86,10 +86,25 @@ export async function performAnalysis(
       } catch (error) {
         errorMessage = `Invalid JSON response: ${error instanceof Error ? error.message : String(error)}`;
         analysis = null;
+        Logger.error(
+          {
+            event: 'analysis_json_parse_error',
+            error: errorMessage,
+            rawResult: String(result).substring(0, 500),
+          },
+          'Failed to parse analysis JSON response'
+        );
       }
     },
     onError: (error) => {
       errorMessage = error.message;
+      Logger.error(
+        {
+          event: 'analysis_claude_execution_error',
+          error: error.message,
+        },
+        'Claude execution failed during analysis'
+      );
     },
   };
 
@@ -125,9 +140,28 @@ export async function performAnalysis(
         'Invalid analysis response: missing required fields (isMonorepo or projects)';
       subtype = 'error';
       finalAnalysis = null;
+      Logger.error(
+        {
+          event: 'analysis_validation_error',
+          error: errorMessage,
+          analysis: finalAnalysis,
+        },
+        'Analysis response missing required fields'
+      );
     } else if (finalAnalysis.projects.length === 0) {
       errorMessage = 'No projects found in workspace';
       subtype = 'error';
+      Logger.error(
+        {
+          event: 'analysis_no_projects_error',
+          error: errorMessage,
+          workspaceInfo: {
+            isMonorepo: finalAnalysis.isMonorepo,
+            ecosystem: finalAnalysis.workspaceEcosystem,
+          },
+        },
+        'No projects found during workspace analysis'
+      );
       finalAnalysis = null;
     } else {
       onProgress?.('Validating frameworks...');
@@ -138,12 +172,27 @@ export async function performAnalysis(
         unrecognizedFrameworks = unrecognized;
 
         if (unrecognizedFrameworks.length > 0) {
-          onProgress?.(
-            `Warning: ${unrecognizedFrameworks.length} frameworks not recognized: ${unrecognizedFrameworks.join(', ')}`
+          const warningMessage = `${unrecognizedFrameworks.length} frameworks not recognized: ${unrecognizedFrameworks.join(', ')}`;
+          onProgress?.(`Warning: ${warningMessage}`);
+          Logger.warn(
+            {
+              event: 'analysis_unrecognized_frameworks',
+              unrecognizedFrameworks,
+              count: unrecognizedFrameworks.length,
+            },
+            warningMessage
           );
         }
-      } catch {
-        onProgress?.('Warning: Framework validation failed');
+      } catch (error) {
+        const validationError = 'Framework validation failed';
+        onProgress?.(`Warning: ${validationError}`);
+        Logger.warn(
+          {
+            event: 'analysis_framework_validation_error',
+            error: error instanceof Error ? error.message : String(error),
+          },
+          validationError
+        );
       }
     }
   }
@@ -167,6 +216,25 @@ export async function performAnalysis(
   if (result.analysis) {
     fs.mkdirSync(path.dirname(ANALYSIS_PATH), { recursive: true });
     await writeJson(ANALYSIS_PATH, result.analysis);
+    Logger.info(
+      {
+        event: 'analysis_completed',
+        projectCount: result.analysis.projects.length,
+        isMonorepo: result.analysis.isMonorepo,
+        metadata: result.metadata,
+      },
+      'Analysis completed successfully'
+    );
+  } else {
+    Logger.error(
+      {
+        event: 'analysis_failed',
+        metadata: result.metadata,
+        hasError: !!errorMessage,
+        errorMessage,
+      },
+      'Analysis failed - no analysis data'
+    );
   }
 
   return result;

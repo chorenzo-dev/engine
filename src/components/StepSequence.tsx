@@ -125,11 +125,13 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
   }
 
   if (isFlowComplete) {
-    return (
-      <StepDisplay title={completionTitle} status="completed">
-        {completionComponent && completionComponent(stepContext)}
-      </StepDisplay>
-    );
+    if (completionComponent) {
+      const component = completionComponent(stepContext);
+      if (component) {
+        return <>{component}</>;
+      }
+    }
+    return <StepDisplay title={completionTitle} status="completed" />;
   }
 
   return (

@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 
-import { AnalysisResult as AnalysisResultType } from '~/commands/analyze';
-import { AnalysisFlow } from '~/components/AnalysisFlow';
+import { AnalysisResult, performAnalysis } from '~/commands/analyze';
 import { AnalysisResultDisplay } from '~/components/AnalysisResultDisplay';
-import { ProcessDisplay } from '~/components/ProcessDisplay';
+import { Step, StepContext, StepSequence } from '~/components/StepSequence';
 
 interface AnalyzeContainerProps {
   options: {
@@ -17,53 +16,62 @@ export const AnalyzeContainer: React.FC<AnalyzeContainerProps> = ({
   options,
   onError,
 }) => {
-  const [result, setResult] = useState<AnalysisResultType | null>(null);
-  const [error, setError] = useState<Error | null>(null);
-  const [isComplete, setIsComplete] = useState(false);
-  const [currentStep, setCurrentStep] = useState<string>('');
+  const steps: Step[] = [
+    {
+      id: 'analysis',
+      title: 'Running analysis',
+      component: (context: StepContext) => {
+        useEffect(() => {
+          const runAnalysis = async () => {
+            context.setProcessing(true);
+            let lastActivity = '';
+            try {
+              const result = await performAnalysis((step, isThinking) => {
+                if (step) {
+                  lastActivity = step;
+                  context.setActivity(step, isThinking);
+                } else if (isThinking !== undefined && lastActivity) {
+                  context.setActivity(lastActivity, isThinking);
+                }
+              });
 
-  const handleComplete = (analysisResult: AnalysisResultType) => {
-    setResult(analysisResult);
-    setIsComplete(true);
-  };
+              if (result) {
+                context.setResult(result);
+              }
+              context.complete();
+            } catch (error) {
+              context.setError(
+                error instanceof Error ? error.message : String(error)
+              );
+              onError(
+                error instanceof Error ? error : new Error(String(error))
+              );
+            }
+          };
 
-  const handleError = (err: Error) => {
-    setError(err);
-    onError(err);
-  };
+          runAnalysis();
+        }, []);
 
-  if (error) {
-    return (
-      <ProcessDisplay title="Error" status="error" error={error.message} />
-    );
-  }
-
-  if (isComplete && result) {
-    return <AnalysisResultDisplay result={result} showCost={options.cost} />;
-  }
-
-  if (options.progress === false) {
-    return (
-      <>
-        <ProcessDisplay
-          title={currentStep || 'Analyzing workspace...'}
-          status="in_progress"
-        />
-        <AnalysisFlow
-          showProgress={false}
-          onComplete={handleComplete}
-          onError={handleError}
-          onProgress={setCurrentStep}
-        />
-      </>
-    );
-  }
+        return null;
+      },
+    },
+  ];
 
   return (
-    <AnalysisFlow
-      showProgress={true}
-      onComplete={handleComplete}
-      onError={handleError}
+    <StepSequence
+      steps={steps}
+      completionTitle="Process completed!"
+      completionComponent={(context: StepContext) => {
+        const result = context.getResult<AnalysisResult>('analysis');
+        if (result?.analysis) {
+          return (
+            <AnalysisResultDisplay result={result} showCost={options.cost} />
+          );
+        }
+        return null;
+      }}
+      errorTitle="Analysis failed!"
+      options={options}
     />
   );
 };

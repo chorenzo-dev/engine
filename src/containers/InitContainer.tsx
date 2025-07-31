@@ -95,6 +95,7 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
         const [promptShown, setPromptShown] = useState(false);
 
         const runAnalysis = async () => {
+          setPromptShown(false);
           try {
             context.setActivity('Analyzing workspace...');
             const result = await performAnalysis((step, isThinking) => {

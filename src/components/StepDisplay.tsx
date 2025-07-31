@@ -51,13 +51,28 @@ export const StepDisplay: React.FC<StepDisplayProps> = ({
 
   return (
     <Box flexDirection="column">
-      <Text color={color}>
-        {icon ? `${icon} ${displayTitle}` : displayTitle}
-      </Text>
+      <Box>
+        {status === 'in_progress' ? (
+          <>
+            <Spinner type="dots" />
+            <Text> </Text>
+          </>
+        ) : icon ? (
+          <Text>{icon} </Text>
+        ) : null}
+        <Text color={color}>{displayTitle}</Text>
+      </Box>
 
       {status === 'in_progress' && activity && (
         <Box>
-          {isThinking && <Spinner type="dots" />}
+          {isThinking ? (
+            <>
+              <Spinner type="dots" />
+              <Text> </Text>
+            </>
+          ) : (
+            <Text> </Text>
+          )}
           <Text color={colors.progress}>{activity}</Text>
         </Box>
       )}

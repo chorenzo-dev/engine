@@ -1,12 +1,14 @@
-import { Box, Text } from 'ink';
+import { Box } from 'ink';
 import React, { useEffect, useState } from 'react';
 
 import { ProgressContext } from '~/contexts/ProgressContext';
 import { useDebugMessages } from '~/hooks/useDebugMessages';
 import { Logger } from '~/utils/logger.utils';
 
-import { DebugMessagesList } from './DebugMessagesList';
-import { StepDisplay } from './StepDisplay';
+import { CompletionRenderer } from './StepSequence/CompletionRenderer';
+import { DebugMessagesList } from './StepSequence/DebugMessagesList';
+import { ErrorRenderer } from './StepSequence/ErrorRenderer';
+import { StepDisplay } from './StepSequence/StepDisplay';
 
 export interface ProgressControls {
   setActivity: (activity: string, isProcessing?: boolean) => void;
@@ -70,9 +72,9 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
 
   const isFlowComplete = completedSteps.size === steps.length;
   const flowError = errorSteps.size > 0 ? new Error(currentError) : null;
+  const currentStep = steps[currentStepIndex];
 
   useEffect(() => {
-    const currentStep = steps[currentStepIndex];
     if (debugMode && currentStep && currentStepIndex === 0) {
       addDebugMessage(currentStep.id, 'activity', currentStep.title);
     }
@@ -85,7 +87,6 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
         `setActivity called: ${activity} (processing: ${processing})`
       );
 
-      const currentStep = steps[currentStepIndex];
       if (debugMode && currentStep) {
         addDebugMessage(currentStep.id, 'activity', activity, processing);
       } else {
@@ -94,7 +95,6 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
       }
     },
     setError: (error: string) => {
-      const currentStep = steps[currentStepIndex];
       if (debugMode && currentStep) {
         addDebugMessage(currentStep.id, 'error', error);
       }
@@ -104,7 +104,6 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
       }
     },
     complete: () => {
-      const currentStep = steps[currentStepIndex];
       if (debugMode && currentStep) {
         addDebugMessage(
           currentStep.id,
@@ -134,7 +133,6 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
       }
     },
     setProcessing: (processing: boolean) => {
-      const currentStep = steps[currentStepIndex];
       if (debugMode && currentStep && processing) {
         addDebugMessage(currentStep.id, 'processing', 'Started processing...');
       }
@@ -148,7 +146,6 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
   const stepContext: StepContext = {
     ...progressControls,
     setResult: (result: unknown) => {
-      const currentStep = steps[currentStepIndex];
       if (currentStep) {
         setResults((prev) => ({ ...prev, [currentStep.id]: result }));
       }
@@ -158,41 +155,25 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
   };
 
   if (flowError) {
-    return errorComponent ? (
-      errorComponent(flowError)
-    ) : (
-      <StepDisplay title={errorTitle} status="error">
-        <Text color="red">{flowError.message}</Text>
-      </StepDisplay>
+    return (
+      <ErrorRenderer
+        error={flowError}
+        errorTitle={errorTitle}
+        errorComponent={errorComponent}
+      />
     );
   }
 
   if (isFlowComplete) {
-    if (debugMode) {
-      return (
-        <Box flexDirection="column">
-          <DebugMessagesList messages={debugMessages} />
-
-          {completionComponent ? (
-            <Box marginTop={1}>
-              {completionComponent(stepContext) || (
-                <StepDisplay title={completionTitle} status="completed" />
-              )}
-            </Box>
-          ) : (
-            <StepDisplay title={completionTitle} status="completed" />
-          )}
-        </Box>
-      );
-    }
-
-    if (completionComponent) {
-      const component = completionComponent(stepContext);
-      if (component) {
-        return <>{component}</>;
-      }
-    }
-    return <StepDisplay title={completionTitle} status="completed" />;
+    return (
+      <CompletionRenderer
+        debugMode={debugMode}
+        debugMessages={debugMessages}
+        completionTitle={completionTitle}
+        completionComponent={completionComponent}
+        stepContext={stepContext}
+      />
+    );
   }
 
   return (

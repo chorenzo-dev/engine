@@ -375,8 +375,18 @@ function formatToolMessage(
       return `Running: ${command}`;
     }
 
-    case 'LS':
-      return `Listing ${getRelativePath((input as PathToolInput).path) || 'directory'}`;
+    case 'LS': {
+      const relativePath = getRelativePath((input as PathToolInput).path);
+      let pathDisplay: string;
+      if (relativePath === '') {
+        pathDisplay = 'root directory';
+      } else if (relativePath) {
+        pathDisplay = relativePath;
+      } else {
+        pathDisplay = (input as PathToolInput).path || 'directory';
+      }
+      return `Listing ${pathDisplay}`;
+    }
 
     case 'Glob':
       return `Finding files: ${(input as SearchToolInput).pattern || 'pattern'}`;

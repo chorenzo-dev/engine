@@ -102,7 +102,7 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
         addDebugMessage(
           currentStep.id,
           'complete',
-          `${currentStep.title} completed`
+          `${currentStep.title} - completed`
         );
       }
       if (currentStep) {
@@ -126,7 +126,7 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
         addDebugMessage(
           currentStep.id,
           'processing',
-          `${currentStep.title} started`
+          `${currentStep.title} - started`
         );
       }
       setIsStepProcessing(processing);

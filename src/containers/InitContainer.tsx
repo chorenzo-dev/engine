@@ -2,22 +2,23 @@ import React, { useEffect, useState } from 'react';
 
 import { AnalysisResult, performAnalysis } from '~/commands/analyze';
 import { performAuthCheck } from '~/commands/auth';
-import { performInit } from '~/commands/init';
+import { InitOptions, performInit } from '~/commands/init';
 import { AnalysisPrompt } from '~/components/AnalysisPrompt';
 import { AnalysisResultDisplay } from '~/components/AnalysisResultDisplay';
 import { AuthenticationStep } from '~/components/AuthenticationStep';
 import { Step, StepContext, StepSequence } from '~/components/StepSequence';
 import { Logger } from '~/utils/logger.utils';
 
+interface InitContainerOptions extends InitOptions, Record<string, unknown> {
+  noAnalyze?: boolean;
+  yes?: boolean;
+  progress?: boolean;
+  debug?: boolean;
+  cost?: boolean;
+}
+
 interface InitContainerProps {
-  options: {
-    reset?: boolean;
-    noAnalyze?: boolean;
-    yes?: boolean;
-    progress?: boolean;
-    debug?: boolean;
-    cost?: boolean;
-  };
+  options: InitContainerOptions;
 }
 
 export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {

@@ -57,20 +57,20 @@ export async function performAnalysis(
     'Workspace analysis started'
   );
 
-  onProgress?.('Finding git repository...');
+  onProgress?.('Finding git repository');
   const workspaceRoot = findGitRoot();
 
-  onProgress?.('Building file tree...');
+  onProgress?.('Building file tree');
   const filesStructureSummary = await buildFileTree(workspaceRoot);
 
-  onProgress?.('Loading analysis prompt...');
+  onProgress?.('Loading analysis prompt');
   const promptTemplate = loadPrompt('analyze_workspace');
   const prompt = renderPrompt(promptTemplate, {
     workspace_root: workspaceRoot,
     files_structure_summary: filesStructureSummary,
   });
 
-  onProgress?.('Analyzing workspace with Claude...');
+  onProgress?.('Analyzing workspace with Claude');
 
   let analysis = null;
   let errorMessage: string | undefined;
@@ -164,7 +164,7 @@ export async function performAnalysis(
       );
       finalAnalysis = null;
     } else {
-      onProgress?.('Validating frameworks...');
+      onProgress?.('Validating frameworks');
       try {
         const { validatedAnalysis, unrecognizedFrameworks: unrecognized } =
           await validateFrameworks(finalAnalysis);

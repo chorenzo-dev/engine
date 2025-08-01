@@ -101,7 +101,7 @@ export const RecipesValidateContainer: React.FC<
 
   return (
     <ProcessDisplay
-      title={simpleStep || 'Validating recipe...'}
+      title={simpleStep || 'Validating recipe'}
       status="in_progress"
     />
   );

@@ -51,7 +51,7 @@ export const StepDisplay: React.FC<StepDisplayProps> = ({
 
   const icon = getIcon();
   const color = getColor();
-  const displayTitle = status === 'in_progress' ? `${title}...` : title;
+  const displayTitle = title;
 
   return (
     <Box flexDirection="column">

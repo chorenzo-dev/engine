@@ -68,7 +68,7 @@ export class LibraryManager {
     if (!chorenzoConfig.libraryExists(libraryName)) {
       Logger.info(
         { library: libraryName },
-        'Library not found locally, cloning...'
+        'Library not found locally, cloning'
       );
       await retry(
         () =>
@@ -78,7 +78,7 @@ export class LibraryManager {
           onRetry: (attempt) => {
             Logger.info(
               { library: libraryName, attempt: attempt + 1 },
-              'Retrying clone...'
+              'Retrying clone'
             );
           },
         }
@@ -86,7 +86,7 @@ export class LibraryManager {
       return;
     }
 
-    Logger.info({ library: libraryName }, 'Refreshing library from remote...');
+    Logger.info({ library: libraryName }, 'Refreshing library from remote');
 
     const git = simpleGit(libraryPath);
 
@@ -116,7 +116,7 @@ export class LibraryManager {
             library: libraryName,
             error: error instanceof Error ? error.message : String(error),
           },
-          `Failed to refresh library '${libraryName}', continuing with others...`
+          `Failed to refresh library '${libraryName}', continuing with others`
         );
       }
     }
@@ -202,7 +202,7 @@ export class LibraryManager {
 
       const libPath = this.getLibraryPath(libName);
 
-      onProgress?.(`Cloning ${libName} from ${libConfig.repo}...`);
+      onProgress?.(`Cloning ${libName} from ${libConfig.repo}`);
 
       try {
         await retry(
@@ -211,7 +211,7 @@ export class LibraryManager {
             maxAttempts: 2,
             onRetry: (attempt) => {
               onProgress?.(
-                `Retrying clone of ${libName} (attempt ${attempt + 1})...`
+                `Retrying clone of ${libName} (attempt ${attempt + 1})`
               );
             },
           }
@@ -219,7 +219,7 @@ export class LibraryManager {
         onProgress?.(`Successfully cloned ${libName}`);
       } catch {
         onProgress?.(
-          `Warning: Failed to clone ${libName} after retry, skipping...`
+          `Warning: Failed to clone ${libName} after retry, skipping`
         );
       }
     }

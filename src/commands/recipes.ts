@@ -431,10 +431,10 @@ async function validateGitRepository(
   );
 
   try {
-    onProgress?.('Cloning repository...');
+    onProgress?.('Cloning repository');
     await cloneRepository(gitUrl, tempDir, 'main');
 
-    onProgress?.('Validating cloned recipes...');
+    onProgress?.('Validating cloned recipes');
     const result = await validateLibrary(
       tempDir,
       options,
@@ -473,10 +473,10 @@ export async function performRecipesApply(
   let totalCostUsd = 0;
 
   try {
-    onProgress?.('Loading recipe...');
+    onProgress?.('Loading recipe');
     const recipe = await loadRecipe(options.recipe);
 
-    onProgress?.('Validating recipe structure...');
+    onProgress?.('Validating recipe structure');
     const validationResult = recipe.validate();
     if (!validationResult.valid) {
       const errors = validationResult.errors.map((e) => e.message).join(', ');
@@ -486,10 +486,10 @@ export async function performRecipesApply(
       );
     }
 
-    onProgress?.('Ensuring analysis data...');
+    onProgress?.('Ensuring analysis data');
     const analysis = await ensureAnalysisData();
 
-    onProgress?.('Checking recipe dependencies...');
+    onProgress?.('Checking recipe dependencies');
     const currentState = await readCurrentState();
     const dependencyCheck = await validateWorkspaceDependencies(
       recipe,
@@ -567,7 +567,7 @@ export async function performRecipesApply(
         );
       }
     } else {
-      onProgress?.('Filtering applicable projects...');
+      onProgress?.('Filtering applicable projects');
       const applicableProjects = await filterApplicableProjects(
         analysis,
         recipe,
@@ -678,7 +678,7 @@ async function loadRecipe(recipeName: string): Promise<Recipe> {
       if (foundPaths.length === 0) {
         Logger.info(
           { recipe: recipeName },
-          'Recipe not found locally, refreshing all libraries...'
+          'Recipe not found locally, refreshing all libraries'
         );
         await libraryManager.refreshAllLibraries();
 
@@ -704,7 +704,7 @@ async function loadRecipe(recipeName: string): Promise<Recipe> {
       if (libraryName) {
         Logger.info(
           { recipe: recipeName, library: libraryName },
-          'Recipe is from remote library, refreshing...'
+          'Recipe is from remote library, refreshing'
         );
         await libraryManager.refreshLibrary(libraryName);
       }
@@ -724,7 +724,7 @@ async function loadRecipe(recipeName: string): Promise<Recipe> {
       if (libraryName) {
         Logger.info(
           { recipe: recipeName, library: libraryName },
-          'Recipe is from remote library, refreshing...'
+          'Recipe is from remote library, refreshing'
         );
         await libraryManager.refreshLibrary(libraryName);
       }
@@ -1379,7 +1379,7 @@ export async function performRecipesGenerate(
   let totalCostUsd = 0;
 
   try {
-    onProgress?.('Starting recipe generation...');
+    onProgress?.('Starting recipe generation');
 
     if (!options.name) {
       throw new RecipesError(
@@ -1432,7 +1432,7 @@ export async function performRecipesGenerate(
     fs.mkdirSync(recipePath, { recursive: true });
     fs.mkdirSync(path.join(recipePath, 'fixes'), { recursive: true });
 
-    onProgress?.('Creating recipe files...');
+    onProgress?.('Creating recipe files');
 
     const templateVars = {
       recipe_id: recipeId,
@@ -1442,7 +1442,7 @@ export async function performRecipesGenerate(
     };
 
     if (options.magicGenerate) {
-      onProgress?.('Generating recipe content with AI...');
+      onProgress?.('Generating recipe content with AI');
 
       const recipeGuidelines = loadDoc('recipes');
       const availableOutputs = await loadExistingRecipeOutputs();
@@ -1584,7 +1584,7 @@ async function applyWorkspacePreferredRecipe(
   const projectResults: RecipesApplyExecutionResult[] = [];
 
   if (canApplyAtWorkspace) {
-    onProgress?.('Applying recipe at workspace level...', false);
+    onProgress?.('Applying recipe at workspace level', false);
 
     const variant =
       options.variant ||
@@ -1611,8 +1611,8 @@ async function applyWorkspacePreferredRecipe(
   if (applicableProjects.length > 0) {
     onProgress?.(
       applicableProjects.length === analysis.projects.length
-        ? 'Applying recipe at project level...'
-        : `Applying recipe to ${applicableProjects.length} specific projects...`,
+        ? 'Applying recipe at project level'
+        : `Applying recipe to ${applicableProjects.length} specific projects`,
       false
     );
 

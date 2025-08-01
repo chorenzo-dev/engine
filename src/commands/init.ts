@@ -37,20 +37,20 @@ export async function performInit(
 
   try {
     if (options.reset) {
-      onProgress?.('Resetting workspace...');
+      onProgress?.('Resetting workspace');
       await resetWorkspace();
     }
 
-    onProgress?.('Creating directory structure...');
+    onProgress?.('Creating directory structure');
     await createDirectoryStructure();
 
-    onProgress?.('Setting up configuration files...');
+    onProgress?.('Setting up configuration files');
     await setupConfigFiles();
 
-    onProgress?.('Validating configuration...');
+    onProgress?.('Validating configuration');
     await validateConfig();
 
-    onProgress?.('Cloning recipe libraries...');
+    onProgress?.('Cloning recipe libraries');
     await libraryManager.cloneLibraries(onProgress);
 
     onProgress?.('Initialization complete!');

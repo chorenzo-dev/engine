@@ -215,7 +215,7 @@ describe('Init Command Integration Tests', () => {
     await performInit({}, mockProgress);
 
     expect(mockProgress).toHaveBeenCalledWith(
-      'Warning: Failed to clone core after retry, skipping...'
+      'Warning: Failed to clone core after retry, skipping'
     );
     expect(mockWriteFileSync).toHaveBeenCalledWith(
       '/test/home/.chorenzo/config.yaml',
@@ -273,12 +273,8 @@ describe('Init Command Integration Tests', () => {
       'utf8'
     );
     expect(mockClone).toHaveBeenCalled();
-    expect(mockProgress).toHaveBeenCalledWith(
-      'Creating directory structure...'
-    );
-    expect(mockProgress).toHaveBeenCalledWith(
-      'Setting up configuration files...'
-    );
+    expect(mockProgress).toHaveBeenCalledWith('Creating directory structure');
+    expect(mockProgress).toHaveBeenCalledWith('Setting up configuration files');
   });
 
   it('should handle permission errors during directory creation', async () => {
@@ -318,12 +314,8 @@ describe('Init Command Integration Tests', () => {
     setupDefaultMocks();
 
     await expect(performInit({}, mockProgress)).resolves.not.toThrow();
-    expect(mockProgress).toHaveBeenCalledWith(
-      'Creating directory structure...'
-    );
-    expect(mockProgress).toHaveBeenCalledWith(
-      'Setting up configuration files...'
-    );
-    expect(mockProgress).toHaveBeenCalledWith('Validating configuration...');
+    expect(mockProgress).toHaveBeenCalledWith('Creating directory structure');
+    expect(mockProgress).toHaveBeenCalledWith('Setting up configuration files');
+    expect(mockProgress).toHaveBeenCalledWith('Validating configuration');
   });
 });

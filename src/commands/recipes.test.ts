@@ -526,8 +526,8 @@ outputs:
     expect(mockProgress).toHaveBeenCalledWith(
       'This will clone and validate recipes from: https://github.com/user/recipes.git'
     );
-    expect(mockProgress).toHaveBeenCalledWith('Cloning repository...');
-    expect(mockProgress).toHaveBeenCalledWith('Validating cloned recipes...');
+    expect(mockProgress).toHaveBeenCalledWith('Cloning repository');
+    expect(mockProgress).toHaveBeenCalledWith('Validating cloned recipes');
   });
 
   it('should handle path resolution with tilde', async () => {
@@ -1054,16 +1054,12 @@ outputs:
       expect(result).toBeDefined();
       expect(result.summary.successfulProjects).toBe(1);
 
-      expect(mockProgress).toHaveBeenCalledWith('Loading recipe...');
+      expect(mockProgress).toHaveBeenCalledWith('Loading recipe');
+      expect(mockProgress).toHaveBeenCalledWith('Validating recipe structure');
+      expect(mockProgress).toHaveBeenCalledWith('Ensuring analysis data');
+      expect(mockProgress).toHaveBeenCalledWith('Checking recipe dependencies');
       expect(mockProgress).toHaveBeenCalledWith(
-        'Validating recipe structure...'
-      );
-      expect(mockProgress).toHaveBeenCalledWith('Ensuring analysis data...');
-      expect(mockProgress).toHaveBeenCalledWith(
-        'Checking recipe dependencies...'
-      );
-      expect(mockProgress).toHaveBeenCalledWith(
-        'Filtering applicable projects...'
+        'Filtering applicable projects'
       );
       expect(mockProgress).toHaveBeenCalledWith(
         'Reading src/package.json',
@@ -2504,16 +2500,12 @@ outputs:
       expect(result).toBeDefined();
       expect(result.summary.successfulProjects).toBe(1);
 
-      expect(mockProgress).toHaveBeenCalledWith('Loading recipe...');
+      expect(mockProgress).toHaveBeenCalledWith('Loading recipe');
+      expect(mockProgress).toHaveBeenCalledWith('Validating recipe structure');
+      expect(mockProgress).toHaveBeenCalledWith('Ensuring analysis data');
+      expect(mockProgress).toHaveBeenCalledWith('Checking recipe dependencies');
       expect(mockProgress).toHaveBeenCalledWith(
-        'Validating recipe structure...'
-      );
-      expect(mockProgress).toHaveBeenCalledWith('Ensuring analysis data...');
-      expect(mockProgress).toHaveBeenCalledWith(
-        'Checking recipe dependencies...'
-      );
-      expect(mockProgress).toHaveBeenCalledWith(
-        'Filtering applicable projects...'
+        'Filtering applicable projects'
       );
       expect(mockProgress).toHaveBeenCalledWith(
         'Initializing the chorenzo engine',
@@ -3790,13 +3782,11 @@ outputs:
         mockProgress
       );
 
-      expect(mockProgress).toHaveBeenCalledWith(
-        'Starting recipe generation...'
-      );
+      expect(mockProgress).toHaveBeenCalledWith('Starting recipe generation');
       expect(mockProgress).toHaveBeenCalledWith(
         expect.stringContaining('Creating recipe directory')
       );
-      expect(mockProgress).toHaveBeenCalledWith('Creating recipe files...');
+      expect(mockProgress).toHaveBeenCalledWith('Creating recipe files');
       expect(mockProgress).toHaveBeenCalledWith('Recipe generation complete!');
     });
 

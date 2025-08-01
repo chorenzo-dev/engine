@@ -47,6 +47,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       <AnalyzeContainer
         options={{
           progress: options.progress,
+          debug: options.debug,
           cost: options.cost,
         }}
         onError={(error) => {

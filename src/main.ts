@@ -40,6 +40,7 @@ program
   .command('analyze')
   .description('Analyze your workspace structure and provide insights')
   .option('--no-progress', 'Disable progress UI')
+  .option('--debug', 'Show all progress messages in list format')
   .option('--cost', 'Show LLM cost information')
   .action(async (options) => {
     render(
@@ -47,6 +48,7 @@ program
         command: 'analyze',
         options: {
           progress: options.progress,
+          debug: options.debug,
           cost: options.cost,
         },
       })

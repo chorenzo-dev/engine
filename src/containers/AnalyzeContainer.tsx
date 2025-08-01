@@ -8,6 +8,7 @@ interface AnalyzeContainerProps {
   options: {
     progress?: boolean;
     cost?: boolean;
+    debug?: boolean;
   };
   onError: (error: Error) => void;
 }
@@ -60,6 +61,7 @@ export const AnalyzeContainer: React.FC<AnalyzeContainerProps> = ({
   return (
     <StepSequence
       steps={steps}
+      debugMode={options.debug}
       completionTitle="Process completed!"
       completionComponent={(context: StepContext) => {
         const result = context.getResult<AnalysisResult>('analysis');

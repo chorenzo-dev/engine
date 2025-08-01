@@ -2,9 +2,10 @@ import { Box, Text } from 'ink';
 import React, { useEffect, useState } from 'react';
 
 import { ProgressContext } from '~/contexts/ProgressContext';
-import { colors } from '~/styles/colors';
+import { useDebugMessages } from '~/hooks/useDebugMessages';
 import { Logger } from '~/utils/logger.utils';
 
+import { DebugMessagesList } from './DebugMessagesList';
 import { StepDisplay } from './StepDisplay';
 
 export interface ProgressControls {
@@ -64,17 +65,8 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
   const [isActivityProcessing, setIsActivityProcessing] = useState(false);
   const [isTitleVisible, setIsTitleVisible] = useState(true);
   const [results, setResults] = useState<Record<string, unknown>>({});
-  const [debugMessages, setDebugMessages] = useState<
-    Record<
-      string,
-      Array<{
-        timestamp: string;
-        type: 'activity' | 'error' | 'complete' | 'processing';
-        message: string;
-        isThinking?: boolean;
-      }>
-    >
-  >({});
+
+  const { debugMessages, addDebugMessage } = useDebugMessages(debugMode);
 
   const isFlowComplete = completedSteps.size === steps.length;
   const flowError = errorSteps.size > 0 ? new Error(currentError) : null;
@@ -85,34 +77,6 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
       addDebugMessage(currentStep.id, 'activity', currentStep.title);
     }
   }, [debugMode]);
-
-  const addDebugMessage = (
-    stepId: string,
-    type: 'activity' | 'error' | 'complete' | 'processing',
-    message: string,
-    isThinking?: boolean
-  ) => {
-    if (debugMode) {
-      const timestamp = new Date().toLocaleTimeString();
-      setDebugMessages((prev) => {
-        const stepMessages = prev[stepId] || [];
-        const lastMessage = stepMessages[stepMessages.length - 1];
-
-        if (
-          lastMessage &&
-          lastMessage.message === message &&
-          lastMessage.type === type
-        ) {
-          return prev;
-        }
-
-        return {
-          ...prev,
-          [stepId]: [...stepMessages, { timestamp, type, message, isThinking }],
-        };
-      });
-    }
-  };
 
   const progressControls: ProgressControls = {
     setActivity: (activity: string, processing = false) => {
@@ -193,25 +157,6 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
     options,
   };
 
-  const renderDebugMessages = (messages: (typeof debugMessages)[string]) => {
-    return messages.map((msg, i) => (
-      <Text key={i}>
-        <Text color={colors.muted}>[{msg.timestamp}]</Text>{' '}
-        <Text
-          color={
-            msg.type === 'complete'
-              ? colors.success
-              : msg.type === 'processing'
-                ? colors.info
-                : colors.progress
-          }
-        >
-          {msg.message}
-        </Text>
-      </Text>
-    ));
-  };
-
   if (flowError) {
     return errorComponent ? (
       errorComponent(flowError)
@@ -226,18 +171,7 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
     if (debugMode) {
       return (
         <Box flexDirection="column">
-          {steps.map((step) => {
-            const stepMessages = debugMessages[step.id] || [];
-            if (stepMessages.length === 0) {
-              return null;
-            }
-
-            return (
-              <Box key={step.id} flexDirection="column">
-                {renderDebugMessages(stepMessages)}
-              </Box>
-            );
-          })}
+          <DebugMessagesList messages={debugMessages} />
 
           {completionComponent ? (
             <Box marginTop={1}>
@@ -285,20 +219,15 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
           }
 
           if (debugMode) {
-            const stepMessages = debugMessages[step.id] || [];
-
-            if (stepMessages.length === 0 && !isCurrentStep) {
-              return null;
-            }
-
-            return (
-              <Box key={step.id} flexDirection="column">
-                {renderDebugMessages(stepMessages)}
-                {isCurrentStep && (
+            if (isCurrentStep) {
+              return (
+                <Box key={step.id} flexDirection="column">
+                  <DebugMessagesList messages={debugMessages} />
                   <StepRenderer step={step} context={stepContext} />
-                )}
-              </Box>
-            );
+                </Box>
+              );
+            }
+            return null;
           }
 
           return (

@@ -20,6 +20,7 @@ program
   .option('-A', 'Alias for --no-analyze')
   .option('-y, --yes', 'Skip interactive confirmation')
   .option('--no-progress', 'Disable progress UI')
+  .option('--debug', 'Show all progress messages in list format')
   .option('--cost', 'Show LLM cost information')
   .action(async (options) => {
     render(
@@ -30,6 +31,7 @@ program
           noAnalyze: !options.analyze || options.A,
           yes: options.yes,
           progress: options.progress,
+          debug: options.debug,
           cost: options.cost,
         },
       })

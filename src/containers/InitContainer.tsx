@@ -15,6 +15,7 @@ interface InitContainerProps {
     noAnalyze?: boolean;
     yes?: boolean;
     progress?: boolean;
+    debug?: boolean;
     cost?: boolean;
   };
 }
@@ -98,17 +99,18 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
           setPromptShown(false);
           context.setTitleVisible(true);
           context.setProcessing(true);
+          let lastActivity = '';
           try {
-            context.setActivity('Analyzing workspace...', true);
             const result = await performAnalysis((step, isThinking) => {
               Logger.info(
                 { event: 'analysis_progress', step, isThinking },
                 `Analysis progress: ${step} (isThinking: ${isThinking})`
               );
               if (step) {
+                lastActivity = step;
                 context.setActivity(step, isThinking);
-              } else if (isThinking !== undefined) {
-                context.setActivity('Analyzing workspace...', isThinking);
+              } else if (isThinking !== undefined && lastActivity) {
+                context.setActivity(lastActivity, isThinking);
               }
             });
 
@@ -170,6 +172,7 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
       }}
       errorTitle="Initialization failed!"
       options={options}
+      debugMode={options.debug}
     />
   );
 };

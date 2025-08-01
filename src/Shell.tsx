@@ -65,6 +65,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           noAnalyze: options.noAnalyze,
           yes: options.yes,
           progress: options.progress,
+          debug: options.debug,
           cost: options.cost,
         }}
       />

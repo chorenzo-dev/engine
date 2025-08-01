@@ -60,11 +60,9 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
   const [errorSteps, setErrorSteps] = useState<Set<string>>(new Set());
   const [currentActivity, setCurrentActivity] = useState('');
   const [currentError, setCurrentError] = useState('');
-  const [isFlowComplete, setIsFlowComplete] = useState(false);
   const [isStepProcessing, setIsStepProcessing] = useState(false);
   const [isActivityProcessing, setIsActivityProcessing] = useState(false);
   const [isTitleVisible, setIsTitleVisible] = useState(true);
-  const [flowError, setFlowError] = useState<Error | null>(null);
   const [results, setResults] = useState<Record<string, unknown>>({});
   const [debugMessages, setDebugMessages] = useState<
     Record<
@@ -78,9 +76,11 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
     >
   >({});
 
-  const currentStep = steps[currentStepIndex];
+  const isFlowComplete = completedSteps.size === steps.length;
+  const flowError = errorSteps.size > 0 ? new Error(currentError) : null;
 
   useEffect(() => {
+    const currentStep = steps[currentStepIndex];
     if (debugMode && currentStep && currentStepIndex === 0) {
       addDebugMessage(currentStep.id, 'activity', currentStep.title);
     }
@@ -121,6 +121,7 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
         `setActivity called: ${activity} (processing: ${processing})`
       );
 
+      const currentStep = steps[currentStepIndex];
       if (debugMode && currentStep) {
         addDebugMessage(currentStep.id, 'activity', activity, processing);
       } else {
@@ -129,14 +130,17 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
       }
     },
     setError: (error: string) => {
+      const currentStep = steps[currentStepIndex];
       if (debugMode && currentStep) {
         addDebugMessage(currentStep.id, 'error', error);
       }
       setCurrentError(error);
-      setErrorSteps((prev) => new Set(prev).add(currentStep.id));
-      setFlowError(new Error(error));
+      if (currentStep) {
+        setErrorSteps((prev) => new Set(prev).add(currentStep.id));
+      }
     },
     complete: () => {
+      const currentStep = steps[currentStepIndex];
       if (debugMode && currentStep) {
         addDebugMessage(
           currentStep.id,
@@ -144,7 +148,9 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
           `${currentStep.title} completed`
         );
       }
-      setCompletedSteps((prev) => new Set(prev).add(currentStep.id));
+      if (currentStep) {
+        setCompletedSteps((prev) => new Set(prev).add(currentStep.id));
+      }
       setCurrentActivity('');
       setCurrentError('');
       setIsStepProcessing(false);
@@ -160,11 +166,11 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
           addDebugMessage(nextStep.id, 'activity', nextStep.title);
         }
       } else {
-        setIsFlowComplete(true);
         onComplete?.();
       }
     },
     setProcessing: (processing: boolean) => {
+      const currentStep = steps[currentStepIndex];
       if (debugMode && currentStep && processing) {
         addDebugMessage(currentStep.id, 'processing', 'Started processing...');
       }
@@ -178,6 +184,7 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
   const stepContext: StepContext = {
     ...progressControls,
     setResult: (result: unknown) => {
+      const currentStep = steps[currentStepIndex];
       if (currentStep) {
         setResults((prev) => ({ ...prev, [currentStep.id]: result }));
       }

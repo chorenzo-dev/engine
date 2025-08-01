@@ -148,6 +148,7 @@ export async function performRecipesValidate(
   const messages: ValidationMessage[] = [];
   const handleValidation: ValidationCallback = (type, message) => {
     messages.push({ type, text: message });
+    onProgress?.(message);
   };
 
   try {

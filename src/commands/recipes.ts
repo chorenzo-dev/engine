@@ -13,7 +13,6 @@ import {
   RecipesApplyProgressCallback,
   RecipesApplyResult,
   RecipesApplyState,
-  RecipesApplyValidationCallback,
 } from '~/types/recipes-apply';
 import { WorkspaceState } from '~/types/state';
 import { chorenzoConfig } from '~/utils/chorenzo-config.utils';
@@ -465,8 +464,7 @@ async function validateGitRepository(
 
 export async function performRecipesApply(
   options: RecipesApplyOptions,
-  onProgress?: RecipesApplyProgressCallback,
-  onValidation?: RecipesApplyValidationCallback
+  onProgress?: RecipesApplyProgressCallback
 ): Promise<RecipesApplyResult> {
   const startTime = new Date();
   const startTimeIso = startTime.toISOString();
@@ -533,10 +531,9 @@ export async function performRecipesApply(
       executionResults.push(executionResult);
 
       if (executionResult.success) {
-        onValidation?.('success', `Successfully applied workspace recipe`);
+        onProgress?.('Successfully applied workspace recipe');
       } else {
-        onValidation?.(
-          'error',
+        onProgress?.(
           `Failed to apply workspace recipe: ${executionResult.error}`
         );
       }
@@ -546,8 +543,7 @@ export async function performRecipesApply(
           recipe,
           analysis,
           options,
-          onProgress,
-          onValidation
+          onProgress
         );
 
       if (workspaceResult) {
@@ -598,13 +594,11 @@ export async function performRecipesApply(
         executionResults.push(executionResult);
 
         if (executionResult.success) {
-          onValidation?.(
-            'success',
+          onProgress?.(
             `Successfully applied to ${executionResult.projectPath}`
           );
         } else {
-          onValidation?.(
-            'error',
+          onProgress?.(
             `Failed to apply to ${executionResult.projectPath}: ${executionResult.error}`
           );
         }
@@ -1558,8 +1552,7 @@ async function applyWorkspacePreferredRecipe(
   recipe: Recipe,
   analysis: WorkspaceAnalysis,
   options: RecipesApplyOptions,
-  onProgress?: RecipesApplyProgressCallback,
-  onValidation?: (level: 'info' | 'error' | 'success', message: string) => void
+  onProgress?: RecipesApplyProgressCallback
 ): Promise<WorkspacePreferredResult> {
   const workspaceEcosystem = analysis.workspaceEcosystem || 'unknown';
   const workspaceState = stateManager.getWorkspaceState();
@@ -1599,10 +1592,9 @@ async function applyWorkspacePreferredRecipe(
     );
 
     if (workspaceResult.success) {
-      onValidation?.('success', `Successfully applied workspace recipe`);
+      onProgress?.(`Successfully applied workspace recipe`);
     } else {
-      onValidation?.(
-        'error',
+      onProgress?.(
         `Failed to apply workspace recipe: ${workspaceResult.error}`
       );
     }
@@ -1633,13 +1625,9 @@ async function applyWorkspacePreferredRecipe(
       projectResults.push(executionResult);
 
       if (executionResult.success) {
-        onValidation?.(
-          'success',
-          `Successfully applied to ${executionResult.projectPath}`
-        );
+        onProgress?.(`Successfully applied to ${executionResult.projectPath}`);
       } else {
-        onValidation?.(
-          'error',
+        onProgress?.(
           `Failed to apply to ${executionResult.projectPath}: ${executionResult.error}`
         );
       }

@@ -6,8 +6,6 @@ export interface RecipesApplyOptions {
   variant?: string;
   project?: string;
   yes?: boolean;
-  progress?: boolean;
-  cost?: boolean;
 }
 
 export interface RecipesApplyState {
@@ -58,8 +56,4 @@ export class RecipesApplyError extends Error {
 export type RecipesApplyProgressCallback = (
   step: string | null,
   isThinking?: boolean
-) => void;
-export type RecipesApplyValidationCallback = (
-  type: 'info' | 'success' | 'error' | 'warning',
-  message: string
 ) => void;

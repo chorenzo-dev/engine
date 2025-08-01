@@ -919,7 +919,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(result).toBeDefined();
@@ -1046,7 +1045,6 @@ outputs:
       const result = await performRecipesApply(
         {
           recipe: 'test-recipe',
-          progress: false,
         },
         mockProgress
       );
@@ -1142,7 +1140,6 @@ outputs:
 
       await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(mockPerformAnalysis).toHaveBeenCalled();
@@ -1238,7 +1235,6 @@ outputs:
       await expect(
         performRecipesApply({
           recipe: 'test-recipe',
-          progress: false,
         })
       ).rejects.toThrow('unsatisfied dependencies');
     });
@@ -1289,7 +1285,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(result.summary.failedProjects).toBe(1);
@@ -1347,7 +1342,6 @@ outputs:
       const result = await performRecipesApply({
         recipe: 'test-recipe',
         variant: 'advanced',
-        progress: false,
       });
 
       expect(result).toBeDefined();
@@ -1455,7 +1449,6 @@ outputs:
       const result = await performRecipesApply({
         recipe: 'test-recipe',
         project: 'frontend',
-        progress: false,
       });
 
       expect(result).toBeDefined();
@@ -1573,7 +1566,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(result.summary.totalProjects).toBe(2);
@@ -1671,7 +1663,6 @@ outputs:
       await expect(
         performRecipesApply({
           recipe: 'test-recipe',
-          progress: false,
         })
       ).rejects.toThrow('unsatisfied dependencies');
     });
@@ -1708,7 +1699,6 @@ outputs:
       await expect(
         performRecipesApply({
           recipe: 'nonexistent-recipe',
-          progress: false,
         })
       ).rejects.toThrow("Recipe 'nonexistent-recipe' not found");
     });
@@ -1797,7 +1787,6 @@ outputs:
       await expect(
         performRecipesApply({
           recipe: 'test-recipe',
-          progress: false,
         })
       ).rejects.toThrow('No applicable projects found');
     });
@@ -1898,7 +1887,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(mockPerformAnalysis).toHaveBeenCalled();
@@ -1984,7 +1972,6 @@ outputs:
       await expect(
         performRecipesApply({
           recipe: 'test-recipe',
-          progress: false,
         })
       ).rejects.toThrow('Analysis failed');
     });
@@ -2079,7 +2066,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(result.summary.totalProjects).toBe(1);
@@ -2175,7 +2161,6 @@ outputs:
       const result = await performRecipesApply({
         recipe: 'test-recipe',
         variant: 'nonexistent',
-        progress: false,
       });
 
       expect(result.summary.totalProjects).toBe(1);
@@ -2279,7 +2264,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(result).toBeDefined();
@@ -2377,7 +2361,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(result.summary.totalProjects).toBe(1);
@@ -2492,7 +2475,6 @@ outputs:
       const result = await performRecipesApply(
         {
           recipe: 'test-recipe',
-          progress: false,
         },
         mockProgress
       );
@@ -2518,7 +2500,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(mockQuery).toHaveBeenCalledWith(
@@ -2563,7 +2544,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(result).toBeDefined();
@@ -2667,7 +2647,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'workspace-recipe',
-        progress: false,
       });
 
       expect(result).toBeDefined();
@@ -2765,7 +2744,6 @@ outputs:
       await expect(
         performRecipesApply({
           recipe: 'workspace-recipe',
-          progress: false,
         })
       ).rejects.toThrow('does not support workspace ecosystem');
     });
@@ -2873,7 +2851,6 @@ outputs:
 
         const result = await performRecipesApply({
           recipe: 'workspace-preferred-recipe',
-          progress: false,
         });
 
         expect(result.executionResults).toHaveLength(1);
@@ -2925,7 +2902,6 @@ outputs:
 
         const result = await performRecipesApply({
           recipe: 'workspace-preferred-recipe',
-          progress: false,
         });
 
         expect(result.executionResults).toHaveLength(1);
@@ -2992,7 +2968,6 @@ outputs:
 
         const result = await performRecipesApply({
           recipe: 'multi-ecosystem-recipe',
-          progress: false,
         });
 
         expect(result.executionResults).toHaveLength(2);
@@ -3052,7 +3027,6 @@ outputs:
         await expect(
           performRecipesApply({
             recipe: 'unsupported-recipe',
-            progress: false,
           })
         ).rejects.toThrow('could not be applied at workspace or project level');
       });
@@ -3112,7 +3086,6 @@ outputs:
 
         const result = await performRecipesApply({
           recipe: 'project-only-recipe',
-          progress: false,
         });
 
         expect(result.executionResults).toHaveLength(1);
@@ -3175,7 +3148,6 @@ outputs:
 
         const result = await performRecipesApply({
           recipe: 'workspace-only-recipe',
-          progress: false,
         });
 
         expect(result.executionResults).toHaveLength(1);
@@ -3264,7 +3236,6 @@ outputs:
 
         const result = await performRecipesApply({
           recipe: 'project-ecosystem-recipe',
-          progress: false,
         });
 
         expect(result.executionResults).toHaveLength(1);
@@ -3352,7 +3323,6 @@ outputs:
 
         const result = await performRecipesApply({
           recipe: 'project-type-recipe',
-          progress: false,
         });
 
         expect(result.executionResults).toHaveLength(1);
@@ -3440,7 +3410,6 @@ outputs:
 
         const result = await performRecipesApply({
           recipe: 'workspace-monorepo-recipe',
-          progress: false,
         });
 
         expect(result.executionResults.length).toBeGreaterThan(0);
@@ -3515,7 +3484,6 @@ outputs:
         await expect(
           performRecipesApply({
             recipe: 'project-framework-recipe',
-            progress: false,
           })
         ).rejects.toThrow('No applicable projects found');
       });

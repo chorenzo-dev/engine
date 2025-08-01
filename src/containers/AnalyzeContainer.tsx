@@ -4,12 +4,14 @@ import { AnalysisResult, performAnalysis } from '~/commands/analyze';
 import { AnalysisResultDisplay } from '~/components/AnalysisResultDisplay';
 import { Step, StepContext, StepSequence } from '~/components/StepSequence';
 
+interface AnalyzeContainerOptions extends Record<string, unknown> {
+  progress?: boolean;
+  cost?: boolean;
+  debug?: boolean;
+}
+
 interface AnalyzeContainerProps {
-  options: {
-    progress?: boolean;
-    cost?: boolean;
-    debug?: boolean;
-  };
+  options: AnalyzeContainerOptions;
   onError: (error: Error) => void;
 }
 

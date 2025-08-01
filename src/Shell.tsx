@@ -88,6 +88,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         options={{
           target: options.target,
           progress: options.progress,
+          debug: options.debug,
         }}
         onError={(error) => {
           setError(error);

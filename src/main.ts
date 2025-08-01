@@ -79,6 +79,7 @@ recipesCommand
   .command('validate <target>')
   .description('Validate recipes by name, path, library, or git repository')
   .option('--no-progress', 'Disable progress UI')
+  .option('--debug', 'Show all progress messages in list format')
   .addHelpText(
     'after',
     `
@@ -99,6 +100,7 @@ Examples:
         options: {
           target,
           progress: options.progress,
+          debug: options.debug,
         },
       })
     );

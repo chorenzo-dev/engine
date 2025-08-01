@@ -1,5 +1,5 @@
 import { Box } from 'ink';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import { ProgressContext } from '~/contexts/ProgressContext';
 import { useDebugMessages } from '~/hooks/useDebugMessages';
@@ -74,12 +74,6 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
   const flowError = errorSteps.size > 0 ? new Error(currentError) : null;
   const currentStep = steps[currentStepIndex];
 
-  useEffect(() => {
-    if (debugMode && currentStep && currentStepIndex === 0) {
-      addDebugMessage(currentStep.id, 'activity', currentStep.title);
-    }
-  }, [debugMode]);
-
   const progressControls: ProgressControls = {
     setActivity: (activity: string, processing = false) => {
       Logger.info(
@@ -122,19 +116,18 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
 
       if (currentStepIndex < steps.length - 1) {
         const nextIndex = currentStepIndex + 1;
-        const nextStep = steps[nextIndex];
         setCurrentStepIndex(nextIndex);
-
-        if (debugMode && nextStep) {
-          addDebugMessage(nextStep.id, 'activity', nextStep.title);
-        }
       } else {
         onComplete?.();
       }
     },
     setProcessing: (processing: boolean) => {
       if (debugMode && currentStep && processing) {
-        addDebugMessage(currentStep.id, 'processing', 'Started processing...');
+        addDebugMessage(
+          currentStep.id,
+          'processing',
+          `${currentStep.title} started...`
+        );
       }
       setIsStepProcessing(processing);
     },

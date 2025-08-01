@@ -19,7 +19,7 @@ export const DebugMessagesList: React.FC<DebugMessagesListProps> = ({
           <Text
             color={
               msg.type === 'complete'
-                ? colors.success
+                ? undefined
                 : msg.type === 'processing'
                   ? colors.info
                   : colors.progress

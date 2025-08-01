@@ -11,7 +11,7 @@ import {
 import { buildFileTree } from '~/utils/file-tree.utils';
 import { validateFrameworks } from '~/utils/framework-validation';
 import { findGitRoot } from '~/utils/git.utils';
-import { writeJson } from '~/utils/json.utils';
+import { readJson, writeJson } from '~/utils/json.utils';
 import { Logger } from '~/utils/logger.utils';
 import { loadPrompt, renderPrompt } from '~/utils/prompts.utils';
 
@@ -80,19 +80,31 @@ export async function performAnalysis(
     onThinkingStateChange: (isThinking) => {
       onProgress?.(null, isThinking);
     },
-    onComplete: (result) => {
+    onComplete: async () => {
       try {
-        analysis = JSON.parse(String(result));
+        if (fs.existsSync(ANALYSIS_PATH)) {
+          analysis = await readJson(ANALYSIS_PATH);
+        } else {
+          errorMessage = 'Analysis file was not created by Claude';
+          analysis = null;
+          Logger.error(
+            {
+              event: 'analysis_file_not_found',
+              analysisPath: ANALYSIS_PATH,
+            },
+            'Claude did not write analysis file'
+          );
+        }
       } catch (error) {
-        errorMessage = `Invalid JSON response: ${error instanceof Error ? error.message : String(error)}`;
+        errorMessage = `Failed to read analysis file: ${error instanceof Error ? error.message : String(error)}`;
         analysis = null;
         Logger.error(
           {
-            event: 'analysis_json_parse_error',
+            event: 'analysis_file_read_error',
             error: errorMessage,
-            rawResult: String(result).substring(0, 500),
+            analysisPath: ANALYSIS_PATH,
           },
-          'Failed to parse analysis JSON response'
+          'Failed to read analysis file written by Claude'
         );
       }
     },
@@ -113,8 +125,17 @@ export async function performAnalysis(
       prompt,
       options: {
         model: 'sonnet',
-        maxTurns: 10,
-        allowedTools: ['Read', 'LS', 'Glob', 'Grep'],
+        maxTurns: 15,
+        allowedTools: [
+          'Read',
+          'LS',
+          'Glob',
+          'Grep',
+          'Write',
+          'Bash(ls:*)',
+          'Bash(find:*)',
+          'Bash(grep:*)',
+        ],
         permissionMode: 'bypassPermissions',
       },
     }),

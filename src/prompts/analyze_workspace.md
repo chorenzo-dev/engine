@@ -96,7 +96,7 @@ For each project, check if a Dockerfile exists. Set dockerized to true if presen
 
 For each project, detect which CI/CD system is being used. Set to "none" if no CI/CD configuration found.
 
-CRITICAL: Your response must be ONLY this JSON structure with no other text. Do NOT wrap in markdown code blocks or add any explanations:
+CRITICAL: After your analysis, write the results to `.chorenzo/analysis.json` using the Write tool. The file content must be ONLY this JSON structure with no other text:
 {
 "is_monorepo": boolean,
 "has_workspace_package_manager": boolean,

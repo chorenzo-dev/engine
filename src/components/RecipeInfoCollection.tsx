@@ -40,7 +40,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
     showCustomLocation: false,
   });
 
-  const getNextPhase = useCallback((state = formState) => {
+  const getNextPhase = useCallback((state: typeof formState) => {
     if (!state.name) {
       return 'name';
     }
@@ -64,7 +64,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
     | 'generation-method'
     | 'instructions'
     | 'complete'
-  >(getNextPhase);
+  >(() => getNextPhase(formState));
 
   useEffect(() => {
     if (!shouldUseInput) {

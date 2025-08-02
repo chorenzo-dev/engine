@@ -45,6 +45,7 @@ export default [
       ],
       curly: ['error', 'all'],
       'object-shorthand': ['error', 'always'],
+      '@typescript-eslint/no-non-null-assertion': 'error',
     },
   },
 ];

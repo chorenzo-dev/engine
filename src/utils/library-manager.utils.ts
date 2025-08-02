@@ -349,7 +349,10 @@ export class LibraryManager {
     }
 
     if (analysis.type === LocationType.CategoryFolder) {
-      return [analysis.categoryName!];
+      if (!analysis.categoryName) {
+        throw new Error('CategoryFolder type must have categoryName');
+      }
+      return [analysis.categoryName];
     }
 
     if (analysis.type === LocationType.LibraryRoot && analysis.categories) {
@@ -412,7 +415,11 @@ export class LibraryManager {
     return [];
   }
 
-  determineRecipePath(baseLocation: string, category: string, recipeId: string): string {
+  determineRecipePath(
+    baseLocation: string,
+    category: string,
+    recipeId: string
+  ): string {
     if (!fs.existsSync(baseLocation)) {
       return path.join(baseLocation, category, recipeId);
     }

@@ -101,10 +101,16 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       return <ErrorExitComponent error={error} />;
     }
 
+    if (!options.recipe) {
+      return (
+        <ErrorExitComponent error={new Error('Recipe parameter is required')} />
+      );
+    }
+
     return (
       <RecipesApplyContainer
         options={{
-          recipe: options.recipe!,
+          recipe: options.recipe,
           variant: options.variant,
           project: options.project,
           yes: options.yes,

@@ -386,8 +386,8 @@ outputs:
       expect.arrayContaining(['recipe1', 'recipe2'])
     );
     expect(result.summary).toBeDefined();
-    expect(result.summary!.total).toBe(2);
-    expect(result.summary!.valid).toBe(2);
+    expect(result.summary?.total).toBe(2);
+    expect(result.summary?.valid).toBe(2);
     expect(mockProgress).toHaveBeenCalledWith(
       'This will validate all recipes in the library: /path/to/library'
     );
@@ -522,7 +522,7 @@ outputs:
       'https://github.com/user/recipes.git'
     );
     expect(result.summary).toBeDefined();
-    expect(result.summary!.total).toBe(0);
+    expect(result.summary?.total).toBe(0);
     expect(mockProgress).toHaveBeenCalledWith(
       'This will clone and validate recipes from: https://github.com/user/recipes.git'
     );
@@ -3926,7 +3926,7 @@ outputs:
           typeof call[0] === 'string' && call[0].includes('metadata.yaml')
       );
       expect(metadataCall).toBeDefined();
-      expect(metadataCall![1]).toContain('development');
+      expect(metadataCall?.[1]).toContain('development');
     });
 
     it('should require category when none provided', async () => {
@@ -3965,7 +3965,7 @@ outputs:
           typeof call[0] === 'string' && call[0].includes('prompt.md')
       );
       expect(promptCall).toBeDefined();
-      expect(promptCall![1]).toContain('Custom summary for testing');
+      expect(promptCall?.[1]).toContain('Custom summary for testing');
     });
 
     it('should handle multiline summary correctly', async () => {
@@ -3983,7 +3983,7 @@ outputs:
           typeof call[0] === 'string' && call[0].includes('prompt.md')
       );
       expect(promptCall).toBeDefined();
-      expect(promptCall![1]).toContain(multilineSummary);
+      expect(promptCall?.[1]).toContain(multilineSummary);
     });
 
     it('should handle summary with special characters', async () => {
@@ -4001,7 +4001,7 @@ outputs:
           typeof call[0] === 'string' && call[0].includes('prompt.md')
       );
       expect(promptCall).toBeDefined();
-      expect(promptCall![1]).toContain(specialSummary);
+      expect(promptCall?.[1]).toContain(specialSummary);
     });
 
     it('should trim whitespace from summary', async () => {
@@ -4018,7 +4018,7 @@ outputs:
           typeof call[0] === 'string' && call[0].includes('prompt.md')
       );
       expect(promptCall).toBeDefined();
-      expect(promptCall![1]).toContain('Trimmed summary');
+      expect(promptCall?.[1]).toContain('Trimmed summary');
     });
 
     it('should reject empty summary string', async () => {
@@ -4061,7 +4061,7 @@ outputs:
           typeof call[0] === 'string' && call[0].includes('metadata.yaml')
       );
       expect(metadataCall).toBeDefined();
-      expect(metadataCall![1]).toContain('my-custom-category-123');
+      expect(metadataCall?.[1]).toContain('my-custom-category-123');
     });
 
     it('should create recipe in category subfolder for library root location', async () => {

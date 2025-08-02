@@ -10,6 +10,28 @@ import { DebugMessagesList } from './StepSequence/DebugMessagesList';
 import { ErrorRenderer } from './StepSequence/ErrorRenderer';
 import { StepDisplay } from './StepSequence/StepDisplay';
 
+function getStepStatus(
+  stepId: string,
+  stepIndex: number,
+  currentStepIndex: number,
+  completedSteps: Set<string>,
+  errorSteps: Set<string>
+): 'pending' | 'in_progress' | 'completed' | 'error' {
+  if (errorSteps.has(stepId)) {
+    return 'error';
+  }
+
+  if (completedSteps.has(stepId)) {
+    return 'completed';
+  }
+
+  if (stepIndex === currentStepIndex) {
+    return 'in_progress';
+  }
+
+  return 'pending';
+}
+
 export interface ProgressControls {
   setActivity: (activity: string, isProcessing?: boolean) => void;
   setError: (error: string) => void;
@@ -173,20 +195,15 @@ export const StepSequence: React.FC<StepSequenceProps> = ({
     <ProgressContext.Provider value={progressControls}>
       <Box flexDirection="column">
         {steps.map((step, index) => {
+          const status = getStepStatus(
+            step.id,
+            index,
+            currentStepIndex,
+            completedSteps,
+            errorSteps
+          );
           const isCurrentStep = index === currentStepIndex;
-          const isCompleted = completedSteps.has(step.id);
           const hasError = errorSteps.has(step.id);
-
-          let status: 'pending' | 'in_progress' | 'completed' | 'error';
-          if (hasError) {
-            status = 'error';
-          } else if (isCompleted) {
-            status = 'completed';
-          } else if (isCurrentStep) {
-            status = 'in_progress';
-          } else {
-            status = 'pending';
-          }
 
           if (status === 'pending') {
             return null;

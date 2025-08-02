@@ -1,11 +1,23 @@
 import { SDKMessage } from '@anthropic-ai/claude-code';
 import * as os from 'os';
 
-import { CodeChangesOperation } from '~/components/CodeChangesProgress';
 import { BaseMetadata, OperationMetadata } from '~/types/common';
 import { workspaceConfig } from '~/utils/workspace-config.utils';
 
 import { Logger } from './logger.utils';
+
+export interface CodeChangesOperation {
+  id: string;
+  type: 'analysis' | 'apply' | 'init' | 'validation' | 'generate';
+  description: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'error';
+  startTime?: Date;
+  endTime?: Date;
+  error?: string;
+  currentActivity?: string;
+  isThinking?: boolean;
+  metadata?: Partial<OperationMetadata>;
+}
 
 interface BaseToolInput {
   [key: string]: unknown;

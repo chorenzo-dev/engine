@@ -245,7 +245,7 @@ export class LibraryManager {
     return Object.keys(config.libraries);
   }
 
-  analyzeLocation(locationPath: string): {
+  validateLocationStructure(locationPath: string): {
     type: LocationType;
     categoryName?: string;
     categories?: string[];
@@ -342,7 +342,7 @@ export class LibraryManager {
 
   async getAllCategories(searchPath?: string): Promise<string[]> {
     const recipesDir = searchPath || chorenzoConfig.recipesDir;
-    const analysis = this.analyzeLocation(recipesDir);
+    const analysis = this.validateLocationStructure(recipesDir);
 
     if (analysis.type === LocationType.Empty) {
       return [];
@@ -357,6 +357,101 @@ export class LibraryManager {
     }
 
     return [];
+  }
+
+  getCategoriesForGeneration(locationPath: string): string[] {
+    if (!fs.existsSync(locationPath)) {
+      return [];
+    }
+
+    const stat = fs.statSync(locationPath);
+    if (!stat.isDirectory()) {
+      return [];
+    }
+
+    const entries = fs.readdirSync(locationPath);
+    if (entries.length === 0) {
+      return [];
+    }
+
+    const subfolders = entries.filter((entry) => {
+      const entryPath = path.join(locationPath, entry);
+      try {
+        return fs.statSync(entryPath).isDirectory();
+      } catch {
+        return false;
+      }
+    });
+
+    if (subfolders.length === 0) {
+      return [];
+    }
+
+    let recipeCount = 0;
+    const potentialCategories: string[] = [];
+
+    for (const subfolder of subfolders) {
+      const subfolderPath = path.join(locationPath, subfolder);
+
+      if (this.isRecipeFolder(subfolderPath)) {
+        recipeCount++;
+      } else if (this.isCategoryFolder(subfolderPath)) {
+        potentialCategories.push(subfolder);
+      }
+    }
+
+    if (recipeCount > 0) {
+      const categoryName = path.basename(locationPath);
+      return [categoryName];
+    }
+
+    if (potentialCategories.length > 0) {
+      return potentialCategories.sort();
+    }
+
+    return [];
+  }
+
+  determineRecipePath(baseLocation: string, category: string, recipeId: string): string {
+    if (!fs.existsSync(baseLocation)) {
+      return path.join(baseLocation, category, recipeId);
+    }
+
+    if (!fs.statSync(baseLocation).isDirectory()) {
+      return path.join(baseLocation, category, recipeId);
+    }
+
+    const entries = fs.readdirSync(baseLocation);
+    if (entries.length === 0) {
+      return path.join(baseLocation, category, recipeId);
+    }
+
+    const subfolders = entries.filter((entry) => {
+      const entryPath = path.join(baseLocation, entry);
+      try {
+        return fs.statSync(entryPath).isDirectory();
+      } catch {
+        return false;
+      }
+    });
+
+    if (subfolders.length === 0) {
+      return path.join(baseLocation, category, recipeId);
+    }
+
+    let recipeCount = 0;
+    for (const subfolder of subfolders) {
+      const subfolderPath = path.join(baseLocation, subfolder);
+      if (this.isRecipeFolder(subfolderPath)) {
+        recipeCount++;
+      }
+    }
+
+    if (recipeCount > 0 && path.basename(baseLocation) === category) {
+      return path.join(baseLocation, recipeId);
+    }
+
+    return path.join(baseLocation, category, recipeId);
   }
 }
 

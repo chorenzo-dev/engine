@@ -23,7 +23,7 @@ import {
 import { cloneRepository } from '~/utils/git-operations.utils';
 import { normalizeRepoIdentifier } from '~/utils/git.utils';
 import { readJson } from '~/utils/json.utils';
-import { LocationType, libraryManager } from '~/utils/library-manager.utils';
+import { libraryManager } from '~/utils/library-manager.utils';
 import { Logger } from '~/utils/logger.utils';
 import { resolvePath } from '~/utils/path.utils';
 import {
@@ -1406,14 +1406,7 @@ export async function performRecipesGenerate(
       ? resolvePath(options.saveLocation)
       : process.cwd();
 
-    const analysis = libraryManager.analyzeLocation(baseLocation);
-    let recipePath: string;
-
-    if (analysis.type === LocationType.CategoryFolder) {
-      recipePath = path.join(baseLocation, recipeId);
-    } else {
-      recipePath = path.join(baseLocation, category, recipeId);
-    }
+    const recipePath = libraryManager.determineRecipePath(baseLocation, category, recipeId);
 
     if (fs.existsSync(recipePath)) {
       throw new RecipesError(

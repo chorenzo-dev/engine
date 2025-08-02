@@ -1,81 +1,143 @@
 import { Text } from 'ink';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
+import { performRecipesGenerate } from '~/commands/recipes';
 import { MetadataDisplay } from '~/components/MetadataDisplay';
-import { ProcessDisplay } from '~/components/ProcessDisplay';
-import { RecipesGenerateFlow } from '~/components/RecipesGenerateFlow';
+import { RecipeInfoCollection } from '~/components/RecipeInfoCollection';
+import { Step, StepContext, StepSequence } from '~/components/StepSequence';
 import {
   RecipesGenerateOptions,
   RecipesGenerateResult,
 } from '~/types/recipes-generate';
 
+function buildRetryCliCommand(options: RecipesGenerateOptions): string {
+  if (!options.name) {return '';}
+  
+  let cliCommand = `npx chorenzo recipes generate "${options.name}"`;
+  if (options.category) {
+    cliCommand += ` --category "${options.category}"`;
+  }
+  if (options.summary) {
+    cliCommand += ` --summary "${options.summary}"`;
+  }
+  if (options.saveLocation) {
+    cliCommand += ` --location "${options.saveLocation}"`;
+  }
+  return cliCommand;
+}
+
+interface RecipesGenerateContainerOptions 
+  extends RecipesGenerateOptions,
+    Record<string, unknown> {
+  debug?: boolean;
+}
+
 interface RecipesGenerateContainerProps {
-  options: RecipesGenerateOptions;
+  options: RecipesGenerateContainerOptions;
   onError: (error: Error) => void;
 }
 
 export const RecipesGenerateContainer: React.FC<
   RecipesGenerateContainerProps
 > = ({ options, onError }) => {
-  const [result, setResult] = useState<RecipesGenerateResult | null>(null);
-  const [error, setError] = useState<Error | null>(null);
-  const [isComplete, setIsComplete] = useState(false);
+  const steps: Step[] = [
+    {
+      id: 'collect',
+      title: 'Collect recipe information',
+      component: (context: StepContext) => {
+        const [collectionComplete, setCollectionComplete] = useState(false);
 
-  const handleComplete = (generateResult: RecipesGenerateResult) => {
-    setResult(generateResult);
-    setIsComplete(true);
-  };
+        useEffect(() => {
+          if (collectionComplete) {
+            context.complete();
+          }
+        }, [collectionComplete, context]);
 
-  const handleError = (
-    err: Error,
-    collectedOptions?: RecipesGenerateOptions
-  ) => {
-    if (collectedOptions && collectedOptions.name) {
-      let cliCommand = `npx chorenzo recipes generate "${collectedOptions.name}"`;
-      if (collectedOptions.category) {
-        cliCommand += ` --category "${collectedOptions.category}"`;
-      }
-      if (collectedOptions.summary) {
-        cliCommand += ` --summary "${collectedOptions.summary}"`;
-      }
-      if (collectedOptions.saveLocation) {
-        cliCommand += ` --location "${collectedOptions.saveLocation}"`;
-      }
+        return (
+          <RecipeInfoCollection
+            initialOptions={options}
+            onComplete={(collectedOptions) => {
+              context.setResult(collectedOptions);
+              setCollectionComplete(true);
+            }}
+            onError={(error) => context.setError(error.message)}
+          />
+        );
+      },
+    },
+    {
+      id: 'generate',
+      title: 'Generating recipe',
+      component: (context: StepContext) => {
+        useEffect(() => {
+          const runGenerate = async () => {
+            context.setProcessing(true);
+            let lastActivity = '';
 
-      const enhancedError = new Error(
-        `${err.message}\n\nCLI command to retry:\n${cliCommand}`
-      );
-      setError(enhancedError);
-      onError(enhancedError);
-    } else {
-      setError(err);
-      onError(err);
-    }
-  };
+            try {
+              const collectedOptions = context.getResult<RecipesGenerateOptions>('collect');
+              const finalOptions = { ...options, ...collectedOptions };
 
-  if (error) {
-    return (
-      <ProcessDisplay title="Error" status="error" error={error.message} />
-    );
-  }
+              const result = await performRecipesGenerate(
+                finalOptions,
+                (step, isThinking) => {
+                  if (step) {
+                    lastActivity = step;
+                    context.setActivity(step, isThinking);
+                  } else if (isThinking !== undefined && lastActivity) {
+                    context.setActivity(lastActivity, isThinking);
+                  }
+                }
+              );
 
-  if (isComplete && result) {
-    return (
-      <ProcessDisplay title="Recipe generated successfully!" status="completed">
-        <Text>Path: {result.recipePath}</Text>
-        <Text>Name: {result.recipeName}</Text>
-        {result.metadata && (
-          <MetadataDisplay metadata={result.metadata} showCost={options.cost} />
-        )}
-      </ProcessDisplay>
-    );
-  }
+              if (result) {
+                context.setResult(result);
+              }
+              context.complete();
+            } catch (error) {
+              const collectedOptions = context.getResult<RecipesGenerateOptions>('collect');
+              let errorMessage = error instanceof Error ? error.message : String(error);
+              
+              const cliCommand = buildRetryCliCommand(collectedOptions || {});
+              if (cliCommand) {
+                errorMessage += `\n\nCLI command to retry:\n${cliCommand}`;
+              }
+              
+              context.setError(errorMessage);
+              onError(new Error(errorMessage));
+            }
+          };
+
+          runGenerate();
+        }, []);
+
+        return null;
+      },
+    },
+  ];
 
   return (
-    <RecipesGenerateFlow
+    <StepSequence
+      steps={steps}
+      completionTitle="Recipe generated successfully!"
+      completionComponent={(context: StepContext) => {
+        const result = context.getResult<RecipesGenerateResult>('generate');
+        if (result) {
+          return (
+            <>
+              <Text>Path: {result.recipePath}</Text>
+              <Text>Name: {result.recipeName}</Text>
+              {result.metadata && (
+                <MetadataDisplay metadata={result.metadata} showCost={options.cost} />
+              )}
+            </>
+          );
+        }
+        return null;
+      }}
+      errorTitle="Recipe generation failed!"
       options={options}
-      onComplete={handleComplete}
-      onError={handleError}
+      debugMode={options.debug}
     />
   );
 };

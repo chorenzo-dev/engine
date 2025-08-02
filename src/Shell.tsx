@@ -7,6 +7,7 @@ import { RecipesApplyContainer } from '~/containers/RecipesApplyContainer';
 import { RecipesGenerateContainer } from '~/containers/RecipesGenerateContainer';
 import { RecipesValidateContainer } from '~/containers/RecipesValidateContainer';
 
+import { ErrorExitComponent } from './components/ErrorExitComponent';
 import { ProcessDisplay } from './components/ProcessDisplay';
 
 interface ShellProps {
@@ -38,9 +39,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   const [error, setError] = useState<Error | null>(null);
   if (command === 'analyze') {
     if (error) {
-      return (
-        <ProcessDisplay title="Error" status="error" error={error.message} />
-      );
+      return <ErrorExitComponent error={error} />;
     }
 
     return (
@@ -99,9 +98,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
 
   if (command === 'recipes-apply') {
     if (error) {
-      return (
-        <ProcessDisplay title="Error" status="error" error={error.message} />
-      );
+      return <ErrorExitComponent error={error} />;
     }
 
     return (
@@ -124,9 +121,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
 
   if (command === 'recipes-generate') {
     if (error) {
-      return (
-        <ProcessDisplay title="Error" status="error" error={error.message} />
-      );
+      return <ErrorExitComponent error={error} />;
     }
 
     return (
@@ -134,6 +129,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         options={{
           name: options.name,
           progress: options.progress,
+          debug: options.debug,
           cost: options.cost,
           saveLocation: options.saveLocation,
           category: options.category,

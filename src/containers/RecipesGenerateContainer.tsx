@@ -11,8 +11,10 @@ import {
 } from '~/types/recipes-generate';
 
 function buildRetryCliCommand(options: RecipesGenerateOptions): string {
-  if (!options.name) {return '';}
-  
+  if (!options.name) {
+    return '';
+  }
+
   let cliCommand = `npx chorenzo recipes generate "${options.name}"`;
   if (options.category) {
     cliCommand += ` --category "${options.category}"`;
@@ -26,7 +28,7 @@ function buildRetryCliCommand(options: RecipesGenerateOptions): string {
   return cliCommand;
 }
 
-interface RecipesGenerateContainerOptions 
+interface RecipesGenerateContainerOptions
   extends RecipesGenerateOptions,
     Record<string, unknown> {
   debug?: boolean;
@@ -75,7 +77,8 @@ export const RecipesGenerateContainer: React.FC<
             let lastActivity = '';
 
             try {
-              const collectedOptions = context.getResult<RecipesGenerateOptions>('collect');
+              const collectedOptions =
+                context.getResult<RecipesGenerateOptions>('collect');
               const finalOptions = { ...options, ...collectedOptions };
 
               const result = await performRecipesGenerate(
@@ -95,14 +98,16 @@ export const RecipesGenerateContainer: React.FC<
               }
               context.complete();
             } catch (error) {
-              const collectedOptions = context.getResult<RecipesGenerateOptions>('collect');
-              let errorMessage = error instanceof Error ? error.message : String(error);
-              
+              const collectedOptions =
+                context.getResult<RecipesGenerateOptions>('collect');
+              let errorMessage =
+                error instanceof Error ? error.message : String(error);
+
               const cliCommand = buildRetryCliCommand(collectedOptions || {});
               if (cliCommand) {
                 errorMessage += `\n\nCLI command to retry:\n${cliCommand}`;
               }
-              
+
               context.setError(errorMessage);
               onError(new Error(errorMessage));
             }
@@ -128,7 +133,10 @@ export const RecipesGenerateContainer: React.FC<
               <Text>Path: {result.recipePath}</Text>
               <Text>Name: {result.recipeName}</Text>
               {result.metadata && (
-                <MetadataDisplay metadata={result.metadata} showCost={options.cost} />
+                <MetadataDisplay
+                  metadata={result.metadata}
+                  showCost={options.cost}
+                />
               )}
             </>
           );

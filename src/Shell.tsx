@@ -8,7 +8,6 @@ import { RecipesGenerateContainer } from '~/containers/RecipesGenerateContainer'
 import { RecipesValidateContainer } from '~/containers/RecipesValidateContainer';
 
 import { ErrorExitComponent } from './components/ErrorExitComponent';
-import { ProcessDisplay } from './components/ProcessDisplay';
 
 interface ShellProps {
   command:
@@ -72,13 +71,13 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
   }
 
   if (command === 'recipes-validate') {
+    if (error) {
+      return <ErrorExitComponent error={error} />;
+    }
+
     if (!options.target) {
       return (
-        <ProcessDisplay
-          title="Error"
-          status="error"
-          error="Target parameter is required"
-        />
+        <ErrorExitComponent error={new Error('Target parameter is required')} />
       );
     }
 

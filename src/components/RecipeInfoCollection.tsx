@@ -23,7 +23,8 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
   onError,
 }) => {
   const { isRawModeSupported } = useStdin();
-  const shouldUseInput = initialOptions.progress !== false && isRawModeSupported;
+  const shouldUseInput =
+    initialOptions.progress !== false && isRawModeSupported;
 
   const [formState, setFormState] = useState({
     name: initialOptions.name || '',
@@ -39,53 +40,80 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
     showCustomLocation: false,
   });
 
-  const getNextPhase = useCallback(
-    (state = formState) => {
-      if (!state.name) {return 'name';}
-      if (!state.saveLocation) {return 'location';}
-      if (!state.category) {return 'category';}
-      if (!state.summary) {return 'summary';}
-      return 'generation-method';
-    },
-    []
-  );
+  const getNextPhase = useCallback((state = formState) => {
+    if (!state.name) {
+      return 'name';
+    }
+    if (!state.saveLocation) {
+      return 'location';
+    }
+    if (!state.category) {
+      return 'category';
+    }
+    if (!state.summary) {
+      return 'summary';
+    }
+    return 'generation-method';
+  }, []);
 
   const [phase, setPhase] = useState<
-    'name' | 'location' | 'category' | 'summary' | 'generation-method' | 'instructions' | 'complete'
+    | 'name'
+    | 'location'
+    | 'category'
+    | 'summary'
+    | 'generation-method'
+    | 'instructions'
+    | 'complete'
   >(getNextPhase);
 
   useEffect(() => {
     if (!shouldUseInput) {
       const missingFields = [];
-      if (!formState.name) {missingFields.push('name');}
-      if (!formState.category) {missingFields.push('category');}
-      if (!formState.summary) {missingFields.push('summary');}
-      
+      if (!formState.name) {
+        missingFields.push('name');
+      }
+      if (!formState.category) {
+        missingFields.push('category');
+      }
+      if (!formState.summary) {
+        missingFields.push('summary');
+      }
+
       if (missingFields.length > 0) {
-        onError(new Error(`Missing required fields in non-interactive mode: ${missingFields.join(', ')}`));
+        onError(
+          new Error(
+            `Missing required fields in non-interactive mode: ${missingFields.join(', ')}`
+          )
+        );
         return;
       }
-      
+
       setPhase('generation-method');
     }
   }, [shouldUseInput]);
-
 
   useEffect(() => {
     if (phase === 'category') {
       const loadCategories = () => {
         try {
           const location = resolvePath(formState.saveLocation || process.cwd());
-          const categories = libraryManager.getCategoriesForGeneration(location);
-          
-          if (categories.length === 1 && path.basename(location) === categories[0]) {
+          const categories =
+            libraryManager.getCategoriesForGeneration(location);
+
+          if (
+            categories.length === 1 &&
+            path.basename(location) === categories[0]
+          ) {
             const updatedState = { ...formState, category: categories[0] };
             setFormState(updatedState);
             setPhase(getNextPhase(updatedState));
             return;
           }
 
-          setFormState(prev => ({ ...prev, availableCategories: categories }));
+          setFormState((prev) => ({
+            ...prev,
+            availableCategories: categories,
+          }));
         } catch (error) {
           onError(error instanceof Error ? error : new Error(String(error)));
         }
@@ -96,7 +124,10 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
 
   const locationOptions = [
     { label: `Current folder (${process.cwd()})`, value: 'workspace' },
-    { label: `This machine (${chorenzoConfig.localRecipesDir})`, value: 'machine' },
+    {
+      label: `This machine (${chorenzoConfig.localRecipesDir})`,
+      value: 'machine',
+    },
     { label: 'Choose location', value: 'custom' },
   ];
 
@@ -107,7 +138,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
 
   const handleLocationSelect = (item: { label: string; value: string }) => {
     if (item.value === 'custom') {
-      setFormState(prev => ({ ...prev, showCustomLocation: true }));
+      setFormState((prev) => ({ ...prev, showCustomLocation: true }));
     } else {
       let selectedLocation = '';
       if (item.value === 'workspace') {
@@ -130,7 +161,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
 
   const handleCategorySelect = (item: { label: string; value: string }) => {
     if (item.value === 'custom') {
-      setFormState(prev => ({ ...prev, showCustomCategory: true }));
+      setFormState((prev) => ({ ...prev, showCustomCategory: true }));
     } else {
       const updatedState = { ...formState, category: item.value };
       setFormState(updatedState);
@@ -157,7 +188,9 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
       category: formState.category,
       summary: formState.summary,
       magicGenerate: formState.useMagic,
-      additionalInstructions: formState.useMagic ? formState.instructions : undefined,
+      additionalInstructions: formState.useMagic
+        ? formState.instructions
+        : undefined,
     };
     onComplete(finalOptions);
   };
@@ -169,7 +202,9 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
           <Text>Recipe name: </Text>
           <TextInput
             value={formState.name}
-            onChange={(value) => setFormState(prev => ({ ...prev, name: value }))}
+            onChange={(value) =>
+              setFormState((prev) => ({ ...prev, name: value }))
+            }
             onSubmit={() => {
               if (formState.name.trim()) {
                 setPhase(getNextPhase(formState));
@@ -188,7 +223,9 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
           <Text>Enter location: </Text>
           <TextInput
             value={formState.customLocation}
-            onChange={(value) => setFormState(prev => ({ ...prev, customLocation: value }))}
+            onChange={(value) =>
+              setFormState((prev) => ({ ...prev, customLocation: value }))
+            }
             onSubmit={handleCustomLocationSubmit}
           />
         </Box>
@@ -211,7 +248,9 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
             <Text>Category name: </Text>
             <TextInput
               value={formState.customCategory}
-              onChange={(value) => setFormState(prev => ({ ...prev, customCategory: value }))}
+              onChange={(value) =>
+                setFormState((prev) => ({ ...prev, customCategory: value }))
+              }
               onSubmit={handleCustomCategorySubmit}
             />
           </Box>
@@ -234,7 +273,9 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
           <Text>Recipe summary: </Text>
           <TextInput
             value={formState.summary}
-            onChange={(value) => setFormState(prev => ({ ...prev, summary: value }))}
+            onChange={(value) =>
+              setFormState((prev) => ({ ...prev, summary: value }))
+            }
             onSubmit={() => {
               if (formState.summary.trim()) {
                 setPhase(getNextPhase(formState));
@@ -267,7 +308,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
           items={choiceOptions}
           onSelect={(item) => {
             const useMagicGeneration = item.value === 'magic';
-            setFormState(prev => ({ ...prev, useMagic: useMagicGeneration }));
+            setFormState((prev) => ({ ...prev, useMagic: useMagicGeneration }));
             if (useMagicGeneration) {
               setPhase('instructions');
             } else {
@@ -282,10 +323,14 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
   if (phase === 'instructions' && shouldUseInput) {
     return (
       <Box flexDirection="column">
-        <Text>Any specific requirements? (press Enter to skip or continue):</Text>
+        <Text>
+          Any specific requirements? (press Enter to skip or continue):
+        </Text>
         <TextInput
           value={formState.instructions}
-          onChange={(value) => setFormState(prev => ({ ...prev, instructions: value }))}
+          onChange={(value) =>
+            setFormState((prev) => ({ ...prev, instructions: value }))
+          }
           onSubmit={() => {
             handleComplete();
           }}

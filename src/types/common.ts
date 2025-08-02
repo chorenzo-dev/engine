@@ -11,4 +11,3 @@ export interface OperationMetadata extends BaseMetadata {
   type?: string;
   error?: string;
 }
-

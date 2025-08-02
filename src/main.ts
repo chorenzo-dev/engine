@@ -2,8 +2,9 @@ import { Command } from 'commander';
 import { render } from 'ink';
 import React from 'react';
 
-import { Shell } from './Shell';
 import { Logger } from '~/utils/logger.utils';
+
+import { Shell } from './Shell';
 
 const program = new Command();
 

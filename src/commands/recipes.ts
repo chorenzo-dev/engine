@@ -1406,7 +1406,11 @@ export async function performRecipesGenerate(
       ? resolvePath(options.saveLocation)
       : process.cwd();
 
-    const recipePath = libraryManager.determineRecipePath(baseLocation, category, recipeId);
+    const recipePath = libraryManager.determineRecipePath(
+      baseLocation,
+      category,
+      recipeId
+    );
 
     if (fs.existsSync(recipePath)) {
       throw new RecipesError(

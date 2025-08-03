@@ -35,7 +35,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
     customCategory: '',
     instructions: '',
     useMagic: false,
-    ecosystemAgnostic: initialOptions.ecosystemAgnostic ?? false,
+    ecosystemAgnostic: initialOptions.ecosystemAgnostic,
     availableCategories: [] as string[],
     showCustomCategory: false,
     showCustomLocation: false,
@@ -54,10 +54,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
     if (!state.summary) {
       return 'summary';
     }
-    if (
-      state.ecosystemAgnostic === undefined ||
-      state.ecosystemAgnostic === null
-    ) {
+    if (state.ecosystemAgnostic === undefined) {
       return 'ecosystem-type';
     }
     return 'generation-method';
@@ -85,6 +82,9 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
       }
       if (!formState.summary) {
         missingFields.push('summary');
+      }
+      if (formState.ecosystemAgnostic === undefined) {
+        missingFields.push('ecosystemAgnostic');
       }
 
       if (missingFields.length > 0) {
@@ -301,14 +301,8 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
 
   if (phase === 'ecosystem-type' && shouldUseInput) {
     const ecosystemOptions = [
-      {
-        label: 'Ecosystem-specific (works with specific languages/frameworks)',
-        value: false,
-      },
-      {
-        label: 'Ecosystem-agnostic (works across all languages/ecosystems)',
-        value: true,
-      },
+      { label: 'Yes', value: true },
+      { label: 'No', value: false },
     ];
 
     const handleEcosystemSelect = (item: { value: boolean }) => {
@@ -318,19 +312,15 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
 
     return (
       <Box flexDirection="column">
-        <Box marginBottom={1}>
-          <Text bold>Recipe Type</Text>
-        </Box>
-        <Text color={colors.muted} dimColor>
-          Choose whether this recipe works with specific ecosystems or all
-          ecosystems
+        <Text bold>Should this recipe work across multiple ecosystems?</Text>
+        <Text color={colors.muted}>
+          An ecosystem is a programming language and its runtime environment
+          (e.g., JavaScript/Node.js, Python, Go, Rust).
         </Text>
-        <Box marginTop={1}>
-          <SelectInput
-            items={ecosystemOptions}
-            onSelect={handleEcosystemSelect}
-          />
-        </Box>
+        <SelectInput
+          items={ecosystemOptions}
+          onSelect={handleEcosystemSelect}
+        />
       </Box>
     );
   }

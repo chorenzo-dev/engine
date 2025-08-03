@@ -1,6 +1,6 @@
 ## Goal
 
-Automatically update README.md with complete and accurate documentation of all CLI commands and their parameters.
+Automatically update README.md with complete and accurate documentation of all CLI commands and their parameters, while preserving the existing structure and avoiding redundant sections.
 
 ## Investigation
 
@@ -20,11 +20,13 @@ Automatically update README.md with complete and accurate documentation of all C
    - Identify existing CLI documentation sections
    - Locate command examples and help text sections
    - Determine the current documentation format and style
+   - **IMPORTANT**: Preserve existing structure - do NOT add installation sections or duplicate existing content
 
 4. **Identify CLI help system**
    - Check if the CLI has built-in help commands
    - Test help output format and structure
    - Verify command usage patterns and examples
+   - Use `npx chorenzo` as the primary command format (not global install)
 
 ## Expected Output
 

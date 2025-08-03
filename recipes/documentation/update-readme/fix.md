@@ -12,40 +12,38 @@ Parse the main CLI file to extract all commands, options, and usage patterns:
    - Default values where applicable
    - Usage examples from help text
 
-## Generate Documentation Sections
+## Update README Structure - IMPORTANT GUIDELINES
 
-Create comprehensive CLI documentation sections:
+**CRITICAL**: Preserve existing README structure and avoid redundancy:
 
-### Command Overview
+1. **DO NOT add Installation sections** - The README should focus on usage with `npx chorenzo`
+2. **DO NOT create duplicate CLI Reference sections** - Update existing Usage sections instead
+3. **DO NOT add redundant command overviews** - Work within existing structure
+4. **USE CONSISTENT command format**: Always use `npx chorenzo` (not `chorenzo` or global install)
+5. **Preserve existing content**: Keep all non-CLI documentation intact
+6. **Update CLI sections**: Replace outdated command documentation with current information from source code
+7. **Maintain formatting**: Use consistent markdown formatting throughout
+8. **Focus on existing sections**: Update the existing Usage section structure
 
-- List all available commands with brief descriptions
-- Include command hierarchy and relationships
-- Show global options that apply to all commands
+## Generate Documentation Updates
+
+Update existing command sections with:
 
 ### Individual Command Documentation
 
-For each command, document:
+For each existing command section, update:
 
-- Full command syntax
-- All available options and flags
+- Full command syntax using `npx chorenzo` format
+- All available options and flags with accurate descriptions
 - Parameter descriptions and constraints
 - Usage examples showing common patterns
-- Exit codes and error handling
+- Ensure all examples use `npx chorenzo` consistently
 
 ### Help System Documentation
 
-- Document how to access help for each command
-- Include examples of help command output
+- Update existing help command examples
+- Ensure all help examples use `npx chorenzo` format
 - Show how to get detailed help for specific commands
-
-## Update README Structure
-
-Maintain existing README structure while updating CLI sections:
-
-1. **Preserve existing content**: Keep all non-CLI documentation intact
-2. **Update CLI sections**: Replace outdated command documentation with current information
-3. **Maintain formatting**: Use consistent markdown formatting throughout
-4. **Add missing sections**: Create new sections for undocumented commands
 
 ## Documentation Format
 

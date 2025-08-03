@@ -3,12 +3,9 @@ import React, { useEffect } from 'react';
 import { AnalysisResult, performAnalysis } from '~/commands/analyze';
 import { AnalysisResultDisplay } from '~/components/AnalysisResultDisplay';
 import { Step, StepContext, StepSequence } from '~/components/StepSequence';
+import { BaseContainerOptions } from '~/types/common';
 
-interface AnalyzeContainerOptions extends Record<string, unknown> {
-  progress?: boolean;
-  cost?: boolean;
-  debug?: boolean;
-}
+type AnalyzeContainerOptions = BaseContainerOptions;
 
 interface AnalyzeContainerProps {
   options: AnalyzeContainerOptions;

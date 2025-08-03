@@ -8,11 +8,10 @@ import {
 import { ProcessDisplay } from '~/components/ProcessDisplay';
 import { emojis } from '~/components/ProcessDisplay';
 import { Step, StepContext, StepSequence } from '~/components/StepSequence';
+import { BaseContainerOptions } from '~/types/common';
 
-interface RecipesValidateContainerOptions extends Record<string, unknown> {
+interface RecipesValidateContainerOptions extends BaseContainerOptions {
   target: string;
-  progress?: boolean;
-  debug?: boolean;
 }
 
 interface RecipesValidateContainerProps {

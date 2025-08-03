@@ -5,6 +5,7 @@ import { performRecipesGenerate } from '~/commands/recipes';
 import { MetadataDisplay } from '~/components/MetadataDisplay';
 import { RecipeInfoCollection } from '~/components/RecipeInfoCollection';
 import { Step, StepContext, StepSequence } from '~/components/StepSequence';
+import { BaseContainerOptions } from '~/types/common';
 import {
   RecipesGenerateOptions,
   RecipesGenerateResult,
@@ -30,9 +31,7 @@ function buildRetryCliCommand(options: RecipesGenerateOptions): string {
 
 interface RecipesGenerateContainerOptions
   extends RecipesGenerateOptions,
-    Record<string, unknown> {
-  debug?: boolean;
-}
+    BaseContainerOptions {}
 
 interface RecipesGenerateContainerProps {
   options: RecipesGenerateContainerOptions;

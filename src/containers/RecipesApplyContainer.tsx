@@ -4,15 +4,12 @@ import { performRecipesApply } from '~/commands/recipes';
 import { ProcessDisplay } from '~/components/ProcessDisplay';
 import { RecipesApplyResultDisplay } from '~/components/RecipesApplyResultDisplay';
 import { Step, StepContext, StepSequence } from '~/components/StepSequence';
+import { BaseContainerOptions } from '~/types/common';
 import { RecipesApplyOptions, RecipesApplyResult } from '~/types/recipes-apply';
 
 interface RecipesApplyContainerOptions
   extends RecipesApplyOptions,
-    Record<string, unknown> {
-  progress?: boolean;
-  debug?: boolean;
-  cost?: boolean;
-}
+    BaseContainerOptions {}
 
 interface RecipesApplyContainerProps {
   options: RecipesApplyContainerOptions;

@@ -7,14 +7,12 @@ import { AnalysisPrompt } from '~/components/AnalysisPrompt';
 import { AnalysisResultDisplay } from '~/components/AnalysisResultDisplay';
 import { AuthenticationStep } from '~/components/AuthenticationStep';
 import { Step, StepContext, StepSequence } from '~/components/StepSequence';
+import { BaseContainerOptions } from '~/types/common';
 import { Logger } from '~/utils/logger.utils';
 
-interface InitContainerOptions extends InitOptions, Record<string, unknown> {
+interface InitContainerOptions extends InitOptions, BaseContainerOptions {
   noAnalyze?: boolean;
   yes?: boolean;
-  progress?: boolean;
-  debug?: boolean;
-  cost?: boolean;
 }
 
 interface InitContainerProps {

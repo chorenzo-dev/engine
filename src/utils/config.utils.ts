@@ -2,9 +2,8 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
-import { Config, State } from '~/types/config';
+import type { Config } from '~/types/config';
 
-import { writeJson } from './json.utils';
 import { readYaml, writeYaml } from './yaml.utils';
 
 export class ChorenzoConfig {
@@ -16,12 +15,12 @@ export class ChorenzoConfig {
     return path.join(this.dir, 'config.yaml');
   }
 
-  get statePath(): string {
-    return path.join(this.dir, 'state.json');
-  }
-
   get recipesDir(): string {
     return path.join(this.dir, 'recipes');
+  }
+
+  get localRecipesDir(): string {
+    return path.join(this.recipesDir, 'local');
   }
 
   createRecipesDir(): void {
@@ -52,17 +51,6 @@ export class ChorenzoConfig {
     await writeYaml(this.configPath, config);
   }
 
-  stateExists(): boolean {
-    return fs.existsSync(this.statePath);
-  }
-
-  async writeDefaultState(): Promise<void> {
-    const defaultState: State = {
-      last_checked: '1970-01-01T00:00:00Z',
-    };
-    await writeJson(this.statePath, defaultState);
-  }
-
   removeRecipesDir(): void {
     if (fs.existsSync(this.recipesDir)) {
       fs.rmSync(this.recipesDir, { recursive: true, force: true });
@@ -72,12 +60,6 @@ export class ChorenzoConfig {
   removeConfigFile(): void {
     if (fs.existsSync(this.configPath)) {
       fs.unlinkSync(this.configPath);
-    }
-  }
-
-  removeStateFile(): void {
-    if (fs.existsSync(this.statePath)) {
-      fs.unlinkSync(this.statePath);
     }
   }
 

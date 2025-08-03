@@ -14,10 +14,6 @@ export interface Config {
   auth?: AuthConfig;
 }
 
-export interface State {
-  last_checked: string;
-}
-
 export enum AuthMethod {
   ClaudeCode = 'claude_code',
   AnthropicApi = 'anthropic_api',

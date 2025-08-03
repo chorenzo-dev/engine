@@ -15,11 +15,11 @@ import {
   RecipesApplyState,
 } from '~/types/recipes-apply';
 import { WorkspaceState } from '~/types/state';
-import { chorenzoConfig } from '~/utils/chorenzo-config.utils';
 import {
   CodeChangesEventHandlers,
   executeCodeChangesOperation,
 } from '~/utils/code-changes-events.utils';
+import { chorenzoConfig } from '~/utils/config.utils';
 import { cloneRepository } from '~/utils/git-operations.utils';
 import { normalizeRepoIdentifier } from '~/utils/git.utils';
 import { readJson } from '~/utils/json.utils';

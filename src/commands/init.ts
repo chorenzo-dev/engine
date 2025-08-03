@@ -1,4 +1,4 @@
-import { chorenzoConfig } from '~/utils/chorenzo-config.utils';
+import { chorenzoConfig } from '~/utils/config.utils';
 import { GitError } from '~/utils/git-operations.utils';
 import { libraryManager } from '~/utils/library-manager.utils';
 import { Logger } from '~/utils/logger.utils';
@@ -72,7 +72,6 @@ export async function performInit(
 async function resetWorkspace(): Promise<void> {
   chorenzoConfig.removeRecipesDir();
   chorenzoConfig.removeConfigFile();
-  chorenzoConfig.removeStateFile();
 }
 
 async function createDirectoryStructure(): Promise<void> {
@@ -82,10 +81,6 @@ async function createDirectoryStructure(): Promise<void> {
 async function setupConfigFiles(): Promise<void> {
   if (!chorenzoConfig.configExists()) {
     await chorenzoConfig.writeDefaultConfig();
-  }
-
-  if (!chorenzoConfig.stateExists()) {
-    await chorenzoConfig.writeDefaultState();
   }
 }
 

@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { validateCategoryName } from '~/commands/recipes';
 import { colors } from '~/styles/colors';
 import { RecipesGenerateOptions } from '~/types/recipes-generate';
-import { chorenzoConfig } from '~/utils/chorenzo-config.utils';
+import { chorenzoConfig } from '~/utils/config.utils';
 import { libraryManager } from '~/utils/library-manager.utils';
 import { resolvePath } from '~/utils/path.utils';
 

@@ -5,7 +5,7 @@ import { simpleGit } from 'simple-git';
 
 import type { Config, ConfigLibrary } from '~/types/config';
 
-import { chorenzoConfig } from './chorenzo-config.utils';
+import { chorenzoConfig } from './config.utils';
 import {
   GitError,
   checkGitAvailable,

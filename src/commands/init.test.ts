@@ -128,27 +128,9 @@ describe('Init Command Integration Tests', () => {
     );
   });
 
-  it('should create state.json with default state', async () => {
-    await performInit({});
-
-    expect(mockWriteFileSync).toHaveBeenCalledWith(
-      '/test/home/.chorenzo/state.json',
-      JSON.stringify(
-        {
-          last_checked: '1970-01-01T00:00:00Z',
-        },
-        null,
-        2
-      ),
-      'utf8'
-    );
-  });
-
   it('should not overwrite existing config files', async () => {
     mockExistsSync.mockImplementation((filePath: string) => {
-      return (
-        filePath.includes('config.yaml') || filePath.includes('state.json')
-      );
+      return filePath.includes('config.yaml');
     });
 
     await performInit({});
@@ -162,8 +144,8 @@ describe('Init Command Integration Tests', () => {
       if (filePath.includes('recipes')) {
         return true;
       }
-      if (filePath.includes('config.yaml') || filePath.includes('state.json')) {
-        return unlinkCalls < 2;
+      if (filePath.includes('config.yaml')) {
+        return unlinkCalls < 1;
       }
       return false;
     });
@@ -181,17 +163,9 @@ describe('Init Command Integration Tests', () => {
     expect(mockUnlinkSync).toHaveBeenCalledWith(
       '/test/home/.chorenzo/config.yaml'
     );
-    expect(mockUnlinkSync).toHaveBeenCalledWith(
-      '/test/home/.chorenzo/state.json'
-    );
     expect(mockWriteFileSync).toHaveBeenCalledWith(
       '/test/home/.chorenzo/config.yaml',
       expect.stringContaining('libraries:'),
-      'utf8'
-    );
-    expect(mockWriteFileSync).toHaveBeenCalledWith(
-      '/test/home/.chorenzo/state.json',
-      expect.stringMatching(/^\{[\s\S]*\}$/),
       'utf8'
     );
   });
@@ -230,11 +204,7 @@ describe('Init Command Integration Tests', () => {
     jest.clearAllMocks();
     setupDefaultMocks();
     mockExistsSync.mockImplementation((filePath: string) => {
-      return (
-        filePath.includes('/core') ||
-        filePath.includes('config.yaml') ||
-        filePath.includes('state.yaml')
-      );
+      return filePath.includes('/core') || filePath.includes('config.yaml');
     });
 
     await expect(performInit({}, mockProgress)).resolves.not.toThrow();
@@ -248,9 +218,6 @@ describe('Init Command Integration Tests', () => {
       if (filePath.includes('config.yaml')) {
         return true;
       }
-      if (filePath.includes('state.yaml')) {
-        return false;
-      }
       if (filePath.includes('/core')) {
         return false;
       }
@@ -262,11 +229,6 @@ describe('Init Command Integration Tests', () => {
     expect(mockMkdirSync).toHaveBeenCalledWith('/test/home/.chorenzo/recipes', {
       recursive: true,
     });
-    expect(mockWriteFileSync).toHaveBeenCalledWith(
-      '/test/home/.chorenzo/state.json',
-      expect.stringMatching(/^\{[\s\S]*\}$/),
-      'utf8'
-    );
     expect(mockWriteFileSync).not.toHaveBeenCalledWith(
       '/test/home/.chorenzo/config.yaml',
       expect.stringContaining('libraries:'),

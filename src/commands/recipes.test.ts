@@ -2748,6 +2748,119 @@ outputs:
       ).rejects.toThrow('does not support workspace ecosystem');
     });
 
+    it('should apply ecosystem-agnostic workspace recipe to any ecosystem', async () => {
+      mockExistsSync.mockImplementation((path) => {
+        if (path.includes('analysis.json')) {
+          return true;
+        }
+        if (path.includes('state.json')) {
+          return false;
+        }
+        if (path.includes('.chorenzo/recipes')) {
+          return true;
+        }
+        if (path.includes('agnostic-workspace-recipe')) {
+          return true;
+        }
+        if (path.includes('metadata.yaml')) {
+          return true;
+        }
+        if (path.includes('prompt.md')) {
+          return true;
+        }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        return true;
+      });
+
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
+
+      mockReaddirSync.mockImplementation((dirPath) => {
+        if (dirPath.includes('.chorenzo/recipes')) {
+          return ['agnostic-workspace-recipe'];
+        }
+        return [];
+      });
+
+      const mockYamlData = {
+        config: {
+          libraries: {
+            'agnostic-workspace-recipe': {
+              repo: 'https://github.com/test/agnostic-workspace-recipe.git',
+              ref: 'main',
+            },
+          },
+        },
+        metadata: {
+          id: 'agnostic-workspace-recipe',
+          category: 'test',
+          summary: 'Test ecosystem-agnostic workspace recipe',
+          level: 'workspace-only',
+          ecosystems: [],
+          provides: ['workspace_feature.exists'],
+          requires: [],
+        },
+      };
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('analysis.json')) {
+          return JSON.stringify({
+            isMonorepo: false,
+            hasWorkspacePackageManager: false,
+            workspaceEcosystem: 'python',
+            projects: [
+              {
+                path: '.',
+                language: 'python',
+                ecosystem: 'python',
+                type: 'script',
+                dependencies: [],
+                hasPackageManager: true,
+              },
+            ],
+          });
+        }
+        if (filePath.includes('config.yaml')) {
+          return yamlStringify(mockYamlData.config);
+        }
+        if (filePath.includes('metadata.yaml')) {
+          return yamlStringify(mockYamlData.metadata);
+        }
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+        }
+        if (filePath.includes('fix.md')) {
+          return 'Apply the ecosystem-agnostic recipe to any workspace...';
+        }
+        return '';
+      });
+
+      mockQuery.mockImplementation(async function* () {
+        yield {
+          type: 'result',
+          subtype: 'success',
+          result: 'Execution completed successfully',
+          total_cost_usd: 0.05,
+        };
+      });
+
+      const result = await performRecipesApply({
+        recipe: 'agnostic-workspace-recipe',
+      });
+
+      expect(result).toBeDefined();
+      expect(result.summary.successfulProjects).toBe(1);
+      expect(result.summary.totalProjects).toBe(1);
+      expect(result.executionResults[0].projectPath).toBe('workspace');
+    });
+
     describe('Hierarchical Level Tests', () => {
       const setupHierarchicalLevelMocks = (recipeId: string) => {
         mockReaddirSync.mockImplementation((dirPath) => {

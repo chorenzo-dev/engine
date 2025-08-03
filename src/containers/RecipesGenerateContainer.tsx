@@ -26,6 +26,9 @@ function buildRetryCliCommand(options: RecipesGenerateOptions): string {
   if (options.saveLocation) {
     cliCommand += ` --location "${options.saveLocation}"`;
   }
+  if (options.ecosystemAgnostic) {
+    cliCommand += ` --ecosystem-agnostic`;
+  }
   return cliCommand;
 }
 

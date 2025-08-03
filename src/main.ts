@@ -188,6 +188,10 @@ recipesCommand
   )
   .option('--category <category>', 'Recipe category')
   .option('--summary <summary>', 'Recipe summary')
+  .option(
+    '--ecosystem-agnostic',
+    'Create recipe that works across multiple ecosystems'
+  )
   .addHelpText(
     'after',
     `
@@ -199,6 +203,7 @@ Examples:
   $ chorenzo recipes generate code-formatting               # Generate with name
   $ chorenzo recipes generate linting --category tools --summary "Set up ESLint and Prettier with TypeScript support for consistent code formatting"
   $ chorenzo recipes generate testing --location ~/my-recipes --category development --summary "Configure Jest testing framework with coverage reporting and TypeScript integration"
+  $ chorenzo recipes generate docker --ecosystem-agnostic --category infrastructure --summary "Add Docker support for any project type"
 `
   )
   .action(async (name, options) => {
@@ -213,6 +218,7 @@ Examples:
           saveLocation: options.location,
           category: options.category,
           summary: options.summary,
+          ecosystemAgnostic: options.ecosystemAgnostic,
         },
       })
     );

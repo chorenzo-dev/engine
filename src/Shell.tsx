@@ -31,6 +31,7 @@ interface ShellProps {
     saveLocation?: string;
     category?: string;
     summary?: string;
+    ecosystemAgnostic?: boolean;
   };
 }
 
@@ -139,6 +140,7 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           saveLocation: options.saveLocation,
           category: options.category,
           summary: options.summary,
+          ecosystemAgnostic: options.ecosystemAgnostic,
         }}
         onError={(error) => {
           setError(error);

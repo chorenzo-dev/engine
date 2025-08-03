@@ -192,6 +192,11 @@ recipesCommand
     '--ecosystem-agnostic',
     'Create recipe that works across multiple ecosystems'
   )
+  .option('--magic-generate', 'Generate recipe content using AI (uses Claude)')
+  .option(
+    '--additional-instructions <instructions>',
+    'Additional instructions for AI generation (requires --magic-generate)'
+  )
   .addHelpText(
     'after',
     `
@@ -204,6 +209,8 @@ Examples:
   $ chorenzo recipes generate linting --category tools --summary "Set up ESLint and Prettier with TypeScript support for consistent code formatting"
   $ chorenzo recipes generate testing --location ~/my-recipes --category development --summary "Configure Jest testing framework with coverage reporting and TypeScript integration"
   $ chorenzo recipes generate docker --ecosystem-agnostic --category infrastructure --summary "Add Docker support for any project type"
+  $ chorenzo recipes generate auth --magic-generate --category security --summary "Implement authentication system"
+  $ chorenzo recipes generate api --magic-generate --additional-instructions "Use FastAPI with async support" --summary "Create REST API endpoints"
 `
   )
   .action(async (name, options) => {
@@ -219,6 +226,8 @@ Examples:
           category: options.category,
           summary: options.summary,
           ecosystemAgnostic: options.ecosystemAgnostic,
+          magicGenerate: options.magicGenerate,
+          additionalInstructions: options.additionalInstructions,
         },
       })
     );

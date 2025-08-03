@@ -23,8 +23,18 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
   onError,
 }) => {
   const { isRawModeSupported } = useStdin();
+
+  const hasAllRequiredParams =
+    initialOptions.name &&
+    initialOptions.category &&
+    initialOptions.summary &&
+    initialOptions.magicGenerate !== undefined &&
+    initialOptions.ecosystemAgnostic !== undefined;
+
   const shouldUseInput =
-    initialOptions.progress !== false && isRawModeSupported;
+    initialOptions.progress !== false &&
+    isRawModeSupported === true &&
+    !hasAllRequiredParams;
 
   const [formState, setFormState] = useState({
     name: initialOptions.name || '',
@@ -33,8 +43,11 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
     summary: initialOptions.summary || '',
     customLocation: '',
     customCategory: '',
-    instructions: '',
-    useMagic: false,
+    instructions: initialOptions.additionalInstructions || '',
+    useMagic:
+      initialOptions.magicGenerate !== undefined
+        ? initialOptions.magicGenerate
+        : null,
     ecosystemAgnostic: initialOptions.ecosystemAgnostic,
     availableCategories: [] as string[],
     showCustomCategory: false,
@@ -57,7 +70,13 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
     if (state.ecosystemAgnostic === undefined) {
       return 'ecosystem-type';
     }
-    return 'generation-method';
+    if (state.useMagic === null) {
+      return 'generation-method';
+    }
+    if (state.useMagic && !state.instructions) {
+      return 'instructions';
+    }
+    return 'complete';
   }, []);
 
   const [phase, setPhase] = useState<
@@ -96,7 +115,12 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
         return;
       }
 
-      setPhase('generation-method');
+      const nextPhase = getNextPhase(formState);
+      if (nextPhase === 'complete') {
+        handleComplete();
+      } else {
+        setPhase(nextPhase);
+      }
     }
   }, [shouldUseInput]);
 
@@ -195,7 +219,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
       saveLocation: formState.saveLocation,
       category: formState.category,
       summary: formState.summary,
-      magicGenerate: formState.useMagic,
+      magicGenerate: formState.useMagic ?? undefined,
       ecosystemAgnostic: formState.ecosystemAgnostic,
       additionalInstructions: formState.useMagic
         ? formState.instructions

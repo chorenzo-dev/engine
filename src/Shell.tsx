@@ -32,6 +32,8 @@ interface ShellProps {
     category?: string;
     summary?: string;
     ecosystemAgnostic?: boolean;
+    magicGenerate?: boolean;
+    additionalInstructions?: string;
   };
 }
 
@@ -141,6 +143,8 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           category: options.category,
           summary: options.summary,
           ecosystemAgnostic: options.ecosystemAgnostic,
+          magicGenerate: options.magicGenerate,
+          additionalInstructions: options.additionalInstructions,
         }}
         onError={(error) => {
           setError(error);

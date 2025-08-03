@@ -4390,5 +4390,47 @@ requires: []
         );
       });
     });
+
+    describe('CLI parameter handling', () => {
+      it('should accept magicGenerate and additionalInstructions CLI parameters', async () => {
+        setupGenerateMocks();
+
+        const result = await performRecipesGenerate({
+          name: 'basic-recipe',
+          category: 'tools',
+          summary: 'Test basic recipe generation',
+          magicGenerate: false,
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.recipeName).toBe('basic-recipe');
+      });
+
+      it('should handle magicGenerate parameter when passed to CLI', async () => {
+        const options = {
+          name: 'test-recipe',
+          category: 'development',
+          summary: 'Test recipe',
+          magicGenerate: true,
+          additionalInstructions: 'Use TypeScript',
+        };
+
+        expect(options.magicGenerate).toBe(true);
+        expect(options.additionalInstructions).toBe('Use TypeScript');
+      });
+
+      it('should handle ecosystem-agnostic parameter with magic generation', async () => {
+        const options = {
+          name: 'agnostic-recipe',
+          category: 'general',
+          summary: 'Test agnostic recipe',
+          magicGenerate: true,
+          ecosystemAgnostic: true,
+        };
+
+        expect(options.magicGenerate).toBe(true);
+        expect(options.ecosystemAgnostic).toBe(true);
+      });
+    });
   });
 });

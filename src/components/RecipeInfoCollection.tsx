@@ -23,8 +23,18 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
   onError,
 }) => {
   const { isRawModeSupported } = useStdin();
+
+  const hasAllRequiredParams =
+    initialOptions.name &&
+    initialOptions.category &&
+    initialOptions.summary &&
+    initialOptions.magicGenerate !== undefined &&
+    initialOptions.ecosystemAgnostic !== undefined;
+
   const shouldUseInput =
-    initialOptions.progress !== false && isRawModeSupported;
+    initialOptions.progress !== false &&
+    isRawModeSupported === true &&
+    !hasAllRequiredParams;
 
   const [formState, setFormState] = useState({
     name: initialOptions.name || '',
@@ -105,7 +115,12 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
         return;
       }
 
-      setPhase(getNextPhase(formState));
+      const nextPhase = getNextPhase(formState);
+      if (nextPhase === 'complete') {
+        handleComplete();
+      } else {
+        setPhase(nextPhase);
+      }
     }
   }, [shouldUseInput]);
 

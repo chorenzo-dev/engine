@@ -35,6 +35,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
     customCategory: '',
     instructions: '',
     useMagic: false,
+    ecosystemAgnostic: initialOptions.ecosystemAgnostic,
     availableCategories: [] as string[],
     showCustomCategory: false,
     showCustomLocation: false,
@@ -53,6 +54,9 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
     if (!state.summary) {
       return 'summary';
     }
+    if (state.ecosystemAgnostic === undefined) {
+      return 'ecosystem-type';
+    }
     return 'generation-method';
   }, []);
 
@@ -61,6 +65,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
     | 'location'
     | 'category'
     | 'summary'
+    | 'ecosystem-type'
     | 'generation-method'
     | 'instructions'
     | 'complete'
@@ -77,6 +82,9 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
       }
       if (!formState.summary) {
         missingFields.push('summary');
+      }
+      if (formState.ecosystemAgnostic === undefined) {
+        missingFields.push('ecosystemAgnostic');
       }
 
       if (missingFields.length > 0) {
@@ -188,6 +196,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
       category: formState.category,
       summary: formState.summary,
       magicGenerate: formState.useMagic,
+      ecosystemAgnostic: formState.ecosystemAgnostic,
       additionalInstructions: formState.useMagic
         ? formState.instructions
         : undefined,
@@ -286,6 +295,32 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
         <Text color={colors.muted} dimColor>
           Enter a brief summary of what this recipe does
         </Text>
+      </Box>
+    );
+  }
+
+  if (phase === 'ecosystem-type' && shouldUseInput) {
+    const ecosystemOptions = [
+      { label: 'Yes', value: true },
+      { label: 'No', value: false },
+    ];
+
+    const handleEcosystemSelect = (item: { value: boolean }) => {
+      setFormState((prev) => ({ ...prev, ecosystemAgnostic: item.value }));
+      setPhase(getNextPhase({ ...formState, ecosystemAgnostic: item.value }));
+    };
+
+    return (
+      <Box flexDirection="column">
+        <Text bold>Should this recipe work across multiple ecosystems?</Text>
+        <Text color={colors.muted}>
+          An ecosystem is a programming language and its runtime environment
+          (e.g., JavaScript/Node.js, Python, Go, Rust).
+        </Text>
+        <SelectInput
+          items={ecosystemOptions}
+          onSelect={handleEcosystemSelect}
+        />
       </Box>
     );
   }

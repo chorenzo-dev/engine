@@ -1,0 +1,56 @@
+Generate a Chorenzo ecosystem-agnostic recipe for: {{ recipe_name }}
+
+Summary: {{ summary }}
+Category: {{ category }}
+Recipe ID: {{ recipe_id }}
+Recipe Path: {{ recipe_path }}
+{{ additional_instructions }}
+
+Follow these guidelines for creating the ecosystem-agnostic recipe:
+{{ recipe_guidelines }}
+
+**ECOSYSTEM-AGNOSTIC REQUIREMENTS:**
+
+- This recipe must work across ALL programming languages and ecosystems
+- Use ONLY universal tools and configurations that don't depend on specific languages
+- Focus on tools like: Git hooks, editor configs, documentation tools, CI/CD configurations, etc.
+- Avoid language-specific package managers, frameworks, or runtime dependencies
+
+**PROVIDES/REQUIRES GUIDELINES:**
+
+- Create meaningful, specific output names instead of generic ones
+- Good: `git-hooks.pre-commit-configured`, `editorconfig.setup`, `docs.readme-template`
+- Bad: `recipe-name.configured`, `recipe-name.applied`
+- Only reference existing recipe outputs in requires field
+- Available outputs: {{ available_outputs }}
+
+**INSTRUCTION WRITING RULES:**
+
+- Keep all instructions completely ecosystem-agnostic
+- Use universal commands that work across operating systems when possible
+- Focus on configuration files and setup that don't depend on specific languages
+- Write investigation steps that work regardless of project ecosystem
+- Avoid any language-specific checks or dependencies
+
+**CODE SNIPPET RULES:**
+
+- Avoid language-specific code examples entirely
+- Focus on configuration files that work universally (.gitignore, .editorconfig, etc.)
+- Include only universal setup commands
+- Prefer describing universal configurations rather than showing language-specific code
+
+**FILE STRUCTURE:**
+
+1. Create {{ recipe_path }}/metadata.yaml with:
+   - Empty ecosystems array: `ecosystems: []`
+   - Meaningful provides/requires lists
+   - Universal recipe outputs
+2. Create {{ recipe_path }}/prompt.md with:
+   - Universal investigation steps
+   - Completely ecosystem-agnostic guidance
+3. Create {{ recipe_path }}/fix.md with:
+   - Universal implementation that works across all ecosystems
+   - Configuration files and commands that don't depend on specific languages
+   - Minimal, essential examples using universal tools only
+
+Use the Write tool to create each file following these principles.

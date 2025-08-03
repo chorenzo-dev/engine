@@ -147,6 +147,15 @@ async function parseFixFiles(
 ): Promise<Map<string, string>> {
   const fixFiles = new Map<string, string>();
 
+  if (metadata.ecosystems.length === 0) {
+    const agnosticFixPath = path.join(path.dirname(fixesDir), 'fix.md');
+    if (fs.existsSync(agnosticFixPath)) {
+      const content = fs.readFileSync(agnosticFixPath, 'utf-8');
+      fixFiles.set('fix.md', content);
+    }
+    return fixFiles;
+  }
+
   if (!fs.existsSync(fixesDir)) {
     return fixFiles;
   }
@@ -306,14 +315,24 @@ export function validateRecipe(recipe: Recipe): RecipeValidationResult {
     });
   }
 
-  for (const ecosystem of recipe.metadata.ecosystems) {
-    for (const variant of ecosystem.variants) {
-      if (!recipe.fixFiles.has(variant.fix_prompt)) {
-        errors.push({
-          type: 'fix',
-          message: `Missing fix file: ${variant.fix_prompt}`,
-          file: variant.fix_prompt,
-        });
+  if (recipe.metadata.ecosystems.length === 0) {
+    if (!recipe.fixFiles.has('fix.md')) {
+      errors.push({
+        type: 'fix',
+        message: 'Missing fix.md file for ecosystem-agnostic recipe',
+        file: 'fix.md',
+      });
+    }
+  } else {
+    for (const ecosystem of recipe.metadata.ecosystems) {
+      for (const variant of ecosystem.variants) {
+        if (!recipe.fixFiles.has(variant.fix_prompt)) {
+          errors.push({
+            type: 'fix',
+            message: `Missing fix file: ${variant.fix_prompt}`,
+            file: variant.fix_prompt,
+          });
+        }
       }
     }
   }

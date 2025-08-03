@@ -130,6 +130,9 @@ export class Recipe {
   }
 
   hasEcosystem(ecosystemId: string): boolean {
+    if (this.metadata.ecosystems.length === 0) {
+      return true;
+    }
     return this.metadata.ecosystems.some((eco) => eco.id === ecosystemId);
   }
 

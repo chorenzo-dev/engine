@@ -142,7 +142,11 @@ export async function performRecipesValidate(
     );
   }
 
-  const resolvedTarget = resolvePath(options.target);
+  const inputType = detectInputType(options.target);
+  const resolvedTarget =
+    inputType === InputType.RecipeName || inputType === InputType.GitUrl
+      ? options.target
+      : resolvePath(options.target);
   onProgress?.(`Validating: ${resolvedTarget}`);
 
   const messages: ValidationMessage[] = [];
@@ -152,8 +156,6 @@ export async function performRecipesValidate(
   };
 
   try {
-    const inputType = detectInputType(resolvedTarget);
-
     const baseContext = {
       inputType,
       target: options.target,
@@ -222,12 +224,14 @@ function detectInputType(target: string): InputType {
   if (
     target.startsWith('./') ||
     target.startsWith('../') ||
-    target.startsWith('/')
+    target.startsWith('/') ||
+    target.startsWith('~/')
   ) {
-    if (fs.existsSync(target)) {
-      const stat = fs.statSync(target);
+    const resolvedTarget = resolvePath(target);
+    if (fs.existsSync(resolvedTarget)) {
+      const stat = fs.statSync(resolvedTarget);
       if (stat.isDirectory()) {
-        const metadataPath = path.join(target, 'metadata.yaml');
+        const metadataPath = path.join(resolvedTarget, 'metadata.yaml');
         if (fs.existsSync(metadataPath)) {
           return InputType.RecipeFolder;
         }
@@ -663,8 +667,11 @@ export async function performRecipesApply(
 }
 
 async function loadRecipe(recipeName: string): Promise<Recipe> {
-  const resolvedTarget = resolvePath(recipeName);
-  const inputType = detectInputType(resolvedTarget);
+  const inputType = detectInputType(recipeName);
+  const resolvedTarget =
+    inputType === InputType.RecipeName || inputType === InputType.GitUrl
+      ? recipeName
+      : resolvePath(recipeName);
 
   switch (inputType) {
     case InputType.RecipeName: {

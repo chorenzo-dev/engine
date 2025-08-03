@@ -280,36 +280,25 @@ export class LibraryManager {
       return { type: LocationType.Empty };
     }
 
-    let recipeCount = 0;
-    let categoryCount = 0;
+    const analysis = this.analyzeLocationContents(locationPath, subfolders);
 
-    for (const subfolder of subfolders) {
-      const subfolderPath = path.join(locationPath, subfolder);
-
-      if (this.isRecipeFolder(subfolderPath)) {
-        recipeCount++;
-      } else if (this.isCategoryFolder(subfolderPath)) {
-        categoryCount++;
-      }
-    }
-
-    if (recipeCount > 0 && categoryCount > 0) {
+    if (analysis.recipeCount > 0 && analysis.categoryCount > 0) {
       throw new LibraryManagerError(
         `Invalid hierarchy: location contains both recipe folders and category folders: ${locationPath}`,
         'MIXED_HIERARCHY'
       );
     }
 
-    if (recipeCount > 0) {
+    if (analysis.recipeCount > 0) {
       const categoryName = path.basename(locationPath);
       return { type: LocationType.CategoryFolder, categoryName };
     }
 
-    if (categoryCount > 0) {
-      const categories = subfolders.filter((subfolder) =>
-        this.isCategoryFolder(path.join(locationPath, subfolder))
-      );
-      return { type: LocationType.LibraryRoot, categories };
+    if (analysis.categoryCount > 0) {
+      return {
+        type: LocationType.LibraryRoot,
+        categories: analysis.categories,
+      };
     }
 
     throw new LibraryManagerError(
@@ -338,6 +327,27 @@ export class LibraryManager {
     return subfolders.some((subfolder) =>
       this.isRecipeFolder(path.join(folderPath, subfolder))
     );
+  }
+
+  private analyzeLocationContents(
+    locationPath: string,
+    subfolders: string[]
+  ): { recipeCount: number; categoryCount: number; categories: string[] } {
+    let recipeCount = 0;
+    let categoryCount = 0;
+    const categories: string[] = [];
+
+    for (const subfolder of subfolders) {
+      const subfolderPath = path.join(locationPath, subfolder);
+      if (this.isRecipeFolder(subfolderPath)) {
+        recipeCount++;
+      } else if (this.isCategoryFolder(subfolderPath)) {
+        categoryCount++;
+        categories.push(subfolder);
+      }
+    }
+
+    return { recipeCount, categoryCount, categories };
   }
 
   async getAllCategories(searchPath?: string): Promise<string[]> {
@@ -390,26 +400,22 @@ export class LibraryManager {
       return [];
     }
 
-    let recipeCount = 0;
-    const potentialCategories: string[] = [];
+    const analysis = this.analyzeLocationContents(locationPath, subfolders);
 
-    for (const subfolder of subfolders) {
-      const subfolderPath = path.join(locationPath, subfolder);
-
-      if (this.isRecipeFolder(subfolderPath)) {
-        recipeCount++;
-      } else if (this.isCategoryFolder(subfolderPath)) {
-        potentialCategories.push(subfolder);
-      }
+    if (analysis.recipeCount > 0 && analysis.categoryCount > 0) {
+      throw new LibraryManagerError(
+        'Invalid hierarchy: location contains both recipe folders and category folders',
+        'MIXED_HIERARCHY'
+      );
     }
 
-    if (recipeCount > 0) {
+    if (analysis.recipeCount > 0) {
       const categoryName = path.basename(locationPath);
       return [categoryName];
     }
 
-    if (potentialCategories.length > 0) {
-      return potentialCategories.sort();
+    if (analysis.categories.length > 0) {
+      return analysis.categories.sort();
     }
 
     return [];
@@ -446,15 +452,27 @@ export class LibraryManager {
       return path.join(baseLocation, category, recipeId);
     }
 
-    let recipeCount = 0;
-    for (const subfolder of subfolders) {
-      const subfolderPath = path.join(baseLocation, subfolder);
-      if (this.isRecipeFolder(subfolderPath)) {
-        recipeCount++;
-      }
+    const analysis = this.analyzeLocationContents(baseLocation, subfolders);
+
+    if (analysis.recipeCount > 0 && analysis.categoryCount > 0) {
+      throw new LibraryManagerError(
+        'Invalid hierarchy: location contains both recipe folders and category folders',
+        'MIXED_HIERARCHY'
+      );
     }
 
-    if (recipeCount > 0 && path.basename(baseLocation) === category) {
+    if (
+      analysis.recipeCount === 0 &&
+      analysis.categoryCount === 0 &&
+      subfolders.length > 0
+    ) {
+      throw new LibraryManagerError(
+        `Location "${baseLocation}" contains folders but none are recognized as recipe categories or recipes`,
+        'UNKNOWN_HIERARCHY'
+      );
+    }
+
+    if (analysis.recipeCount > 0 && path.basename(baseLocation) === category) {
       return path.join(baseLocation, recipeId);
     }
 

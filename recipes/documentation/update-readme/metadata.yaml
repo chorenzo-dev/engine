@@ -1,0 +1,10 @@
+id: update-readme
+category: documentation
+summary: Automatically update README.md with all CLI commands and their parameters.
+level: workspace-only
+
+ecosystems: []
+
+provides: []
+
+requires: []

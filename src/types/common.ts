@@ -11,3 +11,9 @@ export interface OperationMetadata extends BaseMetadata {
   type?: string;
   error?: string;
 }
+
+export interface BaseContainerOptions extends Record<string, unknown> {
+  progress?: boolean;
+  debug?: boolean;
+  cost?: boolean;
+}

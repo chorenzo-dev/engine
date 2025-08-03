@@ -1,139 +1,177 @@
-import { Box, Newline, Text } from 'ink';
 import React, { useEffect, useState } from 'react';
 
-import { AnalysisResult } from '~/commands/analyze';
-import { InitError, performInit } from '~/commands/init';
-import { AnalysisStep } from '~/components/AnalysisStep';
+import { AnalysisResult, performAnalysis } from '~/commands/analyze';
+import { performAuthCheck } from '~/commands/auth';
+import { InitOptions, performInit } from '~/commands/init';
+import { AnalysisPrompt } from '~/components/AnalysisPrompt';
+import { AnalysisResultDisplay } from '~/components/AnalysisResultDisplay';
 import { AuthenticationStep } from '~/components/AuthenticationStep';
+import { Step, StepContext, StepSequence } from '~/components/StepSequence';
+import { BaseContainerOptions } from '~/types/common';
+import { Logger } from '~/utils/logger.utils';
 
-interface InitContainerProps {
-  options: {
-    reset?: boolean;
-    noAnalyze?: boolean;
-    yes?: boolean;
-    progress?: boolean;
-    cost?: boolean;
-  };
-  onComplete: (result?: AnalysisResult) => void;
-  onError: (error: Error) => void;
+interface InitContainerOptions extends InitOptions, BaseContainerOptions {
+  noAnalyze?: boolean;
+  yes?: boolean;
 }
 
-type Step =
-  | 'checking_init'
-  | 'authentication'
-  | 'workspace_setup'
-  | 'analysis'
-  | 'complete'
-  | 'error';
+interface InitContainerProps {
+  options: InitContainerOptions;
+}
 
-export const InitContainer: React.FC<InitContainerProps> = ({
-  options,
-  onComplete,
-  onError,
-}) => {
-  const [currentStep, setCurrentStep] = useState<Step>('checking_init');
-  const [error, setError] = useState<string>('');
+export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
+  const steps: Step[] = [
+    {
+      id: 'auth',
+      title: 'Checking authentication',
+      component: (context: StepContext) => {
+        const [needsAuth, setNeedsAuth] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    const runInit = async () => {
-      try {
-        await performInit(options);
-        setCurrentStep('analysis');
-      } catch (error) {
-        if (error instanceof InitError && error.code === 'AUTH_REQUIRED') {
-          setCurrentStep('authentication');
-        } else {
-          setError(error instanceof Error ? error.message : String(error));
-          setCurrentStep('error');
+        useEffect(() => {
+          const checkAuth = async () => {
+            context.setProcessing(true);
+            try {
+              const isAuthenticated = await performAuthCheck();
+              if (isAuthenticated) {
+                context.complete();
+              } else {
+                setNeedsAuth(true);
+                context.setProcessing(false);
+              }
+            } catch (error) {
+              context.setError(
+                error instanceof Error ? error.message : String(error)
+              );
+            }
+          };
+
+          checkAuth();
+        }, []);
+
+        if (!needsAuth) {
+          return null;
         }
-      }
-    };
 
-    if (currentStep === 'checking_init') {
-      runInit();
-    }
-  }, [currentStep, options]);
+        return (
+          <AuthenticationStep
+            onAuthComplete={() => context.complete()}
+            onAuthError={(errorMessage: string) =>
+              context.setError(errorMessage)
+            }
+            onQuit={() => process.exit(0)}
+          />
+        );
+      },
+    },
+    {
+      id: 'setup',
+      title: 'Setting up workspace',
+      component: (context: StepContext) => {
+        useEffect(() => {
+          const setup = async () => {
+            context.setProcessing(true);
+            try {
+              await performInit(context.options, (step) => {
+                context.setActivity(step, true);
+              });
+              context.complete();
+            } catch (error) {
+              context.setError(
+                error instanceof Error ? error.message : String(error)
+              );
+            }
+          };
 
-  const handleAuthComplete = () => {
-    setCurrentStep('checking_init');
-  };
+          setup();
+        }, []);
 
-  const handleAuthError = (errorMessage: string) => {
-    setError(errorMessage);
-    setCurrentStep('error');
-  };
+        return null;
+      },
+    },
+    {
+      id: 'analysis',
+      title: 'Running project analysis',
+      component: (context: StepContext) => {
+        const [promptShown, setPromptShown] = useState(false);
 
-  const handleQuit = () => {
-    process.exit(0);
-  };
+        const runAnalysis = async () => {
+          setPromptShown(false);
+          context.setTitleVisible(true);
+          context.setProcessing(true);
+          let lastActivity = '';
+          try {
+            const result = await performAnalysis((step, isThinking) => {
+              Logger.info(
+                { event: 'analysis_progress', step, isThinking },
+                `Analysis progress: ${step} (isThinking: ${isThinking})`
+              );
+              if (step) {
+                lastActivity = step;
+                context.setActivity(step, isThinking);
+              } else if (isThinking !== undefined && lastActivity) {
+                context.setActivity(lastActivity, isThinking);
+              }
+            });
 
-  const handleAnalysisComplete = (result?: AnalysisResult) => {
-    setCurrentStep('complete');
-    onComplete(result);
-  };
+            if (result) {
+              context.setResult(result);
+            }
+            context.complete();
+          } catch (error) {
+            context.setError(
+              error instanceof Error ? error.message : String(error)
+            );
+          }
+        };
 
-  const handleAnalysisError = (error: Error) => {
-    onError(error);
-  };
+        useEffect(() => {
+          if (context.options.yes) {
+            runAnalysis();
+          } else {
+            setPromptShown(true);
+            context.setTitleVisible(false);
+          }
+        }, []);
 
-  if (currentStep === 'checking_init') {
-    return (
-      <Box flexDirection="column">
-        <Text color="blue">🔍 Checking Claude Code authentication...</Text>
-      </Box>
-    );
-  }
+        if (context.options.yes || !promptShown) {
+          return null;
+        }
 
-  if (currentStep === 'authentication') {
-    return (
-      <Box flexDirection="column">
-        <AuthenticationStep
-          onAuthComplete={handleAuthComplete}
-          onAuthError={handleAuthError}
-          onQuit={handleQuit}
-        />
-      </Box>
-    );
-  }
+        return (
+          <AnalysisPrompt
+            onYes={runAnalysis}
+            onNo={async () => context.complete()}
+          />
+        );
+      },
+    },
+  ];
 
-  if (currentStep === 'analysis') {
-    return (
-      <Box flexDirection="column">
-        <Text color="green">✅ Initialization complete!</Text>
-        <AnalysisStep
-          options={{
-            noAnalyze: options.noAnalyze,
-            yes: options.yes,
-            progress: options.progress,
-            cost: options.cost,
-          }}
-          onAnalysisComplete={handleAnalysisComplete}
-          onAnalysisError={handleAnalysisError}
-        />
-      </Box>
-    );
-  }
+  const filteredSteps = options.noAnalyze
+    ? steps.filter((step) => step.id !== 'analysis')
+    : steps;
 
-  if (currentStep === 'error') {
-    return (
-      <Box flexDirection="column">
-        <Text color="red">❌ Error:</Text>
-        <Text color="red">
-          {error}
-          <Newline />
-        </Text>
-        <Text>Please run 'chorenzo init' again to retry.</Text>
-      </Box>
-    );
-  }
-
-  if (currentStep === 'complete') {
-    return (
-      <Box flexDirection="column">
-        <Text color="green">✅ Initialization complete!</Text>
-      </Box>
-    );
-  }
-
-  return null;
+  return (
+    <StepSequence
+      steps={filteredSteps}
+      completionTitle="Initialization complete!"
+      completionComponent={(context: StepContext) => {
+        if (!options.noAnalyze) {
+          const analysisResult = context.getResult<AnalysisResult>('analysis');
+          if (analysisResult) {
+            return (
+              <AnalysisResultDisplay
+                result={analysisResult}
+                showCost={context.options.cost as boolean}
+              />
+            );
+          }
+        }
+        return null;
+      }}
+      errorTitle="Initialization failed!"
+      options={options}
+      debugMode={options.debug}
+    />
+  );
 };

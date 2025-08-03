@@ -1,11 +1,23 @@
 import { SDKMessage } from '@anthropic-ai/claude-code';
 import * as os from 'os';
 
-import { CodeChangesOperation } from '~/components/CodeChangesProgress';
 import { BaseMetadata, OperationMetadata } from '~/types/common';
 import { workspaceConfig } from '~/utils/workspace-config.utils';
 
 import { Logger } from './logger.utils';
+
+export interface CodeChangesOperation {
+  id: string;
+  type: 'analysis' | 'apply' | 'init' | 'validation' | 'generate';
+  description: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'error';
+  startTime?: Date;
+  endTime?: Date;
+  error?: string;
+  currentActivity?: string;
+  isThinking?: boolean;
+  metadata?: Partial<OperationMetadata>;
+}
 
 interface BaseToolInput {
   [key: string]: unknown;
@@ -375,8 +387,18 @@ function formatToolMessage(
       return `Running: ${command}`;
     }
 
-    case 'LS':
-      return `Listing ${getRelativePath((input as PathToolInput).path) || 'directory'}`;
+    case 'LS': {
+      const relativePath = getRelativePath((input as PathToolInput).path);
+      let pathDisplay: string;
+      if (relativePath === '') {
+        pathDisplay = 'root directory';
+      } else if (relativePath) {
+        pathDisplay = relativePath;
+      } else {
+        pathDisplay = (input as PathToolInput).path || 'directory';
+      }
+      return `Listing ${pathDisplay}`;
+    }
 
     case 'Glob':
       return `Finding files: ${(input as SearchToolInput).pattern || 'pattern'}`;

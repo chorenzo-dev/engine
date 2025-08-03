@@ -68,7 +68,7 @@ export class LibraryManager {
     if (!chorenzoConfig.libraryExists(libraryName)) {
       Logger.info(
         { library: libraryName },
-        'Library not found locally, cloning...'
+        'Library not found locally, cloning'
       );
       await retry(
         () =>
@@ -78,7 +78,7 @@ export class LibraryManager {
           onRetry: (attempt) => {
             Logger.info(
               { library: libraryName, attempt: attempt + 1 },
-              'Retrying clone...'
+              'Retrying clone'
             );
           },
         }
@@ -86,7 +86,7 @@ export class LibraryManager {
       return;
     }
 
-    Logger.info({ library: libraryName }, 'Refreshing library from remote...');
+    Logger.info({ library: libraryName }, 'Refreshing library from remote');
 
     const git = simpleGit(libraryPath);
 
@@ -116,7 +116,7 @@ export class LibraryManager {
             library: libraryName,
             error: error instanceof Error ? error.message : String(error),
           },
-          `Failed to refresh library '${libraryName}', continuing with others...`
+          `Failed to refresh library '${libraryName}', continuing with others`
         );
       }
     }
@@ -202,7 +202,7 @@ export class LibraryManager {
 
       const libPath = this.getLibraryPath(libName);
 
-      onProgress?.(`Cloning ${libName} from ${libConfig.repo}...`);
+      onProgress?.(`Cloning ${libName} from ${libConfig.repo}`);
 
       try {
         await retry(
@@ -211,7 +211,7 @@ export class LibraryManager {
             maxAttempts: 2,
             onRetry: (attempt) => {
               onProgress?.(
-                `Retrying clone of ${libName} (attempt ${attempt + 1})...`
+                `Retrying clone of ${libName} (attempt ${attempt + 1})`
               );
             },
           }
@@ -219,7 +219,7 @@ export class LibraryManager {
         onProgress?.(`Successfully cloned ${libName}`);
       } catch {
         onProgress?.(
-          `Warning: Failed to clone ${libName} after retry, skipping...`
+          `Warning: Failed to clone ${libName} after retry, skipping`
         );
       }
     }
@@ -245,7 +245,7 @@ export class LibraryManager {
     return Object.keys(config.libraries);
   }
 
-  analyzeLocation(locationPath: string): {
+  validateLocationStructure(locationPath: string): {
     type: LocationType;
     categoryName?: string;
     categories?: string[];
@@ -280,36 +280,25 @@ export class LibraryManager {
       return { type: LocationType.Empty };
     }
 
-    let recipeCount = 0;
-    let categoryCount = 0;
+    const analysis = this.analyzeLocationContents(locationPath, subfolders);
 
-    for (const subfolder of subfolders) {
-      const subfolderPath = path.join(locationPath, subfolder);
-
-      if (this.isRecipeFolder(subfolderPath)) {
-        recipeCount++;
-      } else if (this.isCategoryFolder(subfolderPath)) {
-        categoryCount++;
-      }
-    }
-
-    if (recipeCount > 0 && categoryCount > 0) {
+    if (analysis.recipeCount > 0 && analysis.categoryCount > 0) {
       throw new LibraryManagerError(
         `Invalid hierarchy: location contains both recipe folders and category folders: ${locationPath}`,
         'MIXED_HIERARCHY'
       );
     }
 
-    if (recipeCount > 0) {
+    if (analysis.recipeCount > 0) {
       const categoryName = path.basename(locationPath);
       return { type: LocationType.CategoryFolder, categoryName };
     }
 
-    if (categoryCount > 0) {
-      const categories = subfolders.filter((subfolder) =>
-        this.isCategoryFolder(path.join(locationPath, subfolder))
-      );
-      return { type: LocationType.LibraryRoot, categories };
+    if (analysis.categoryCount > 0) {
+      return {
+        type: LocationType.LibraryRoot,
+        categories: analysis.categories,
+      };
     }
 
     throw new LibraryManagerError(
@@ -340,16 +329,40 @@ export class LibraryManager {
     );
   }
 
+  private analyzeLocationContents(
+    locationPath: string,
+    subfolders: string[]
+  ): { recipeCount: number; categoryCount: number; categories: string[] } {
+    let recipeCount = 0;
+    let categoryCount = 0;
+    const categories: string[] = [];
+
+    for (const subfolder of subfolders) {
+      const subfolderPath = path.join(locationPath, subfolder);
+      if (this.isRecipeFolder(subfolderPath)) {
+        recipeCount++;
+      } else if (this.isCategoryFolder(subfolderPath)) {
+        categoryCount++;
+        categories.push(subfolder);
+      }
+    }
+
+    return { recipeCount, categoryCount, categories };
+  }
+
   async getAllCategories(searchPath?: string): Promise<string[]> {
     const recipesDir = searchPath || chorenzoConfig.recipesDir;
-    const analysis = this.analyzeLocation(recipesDir);
+    const analysis = this.validateLocationStructure(recipesDir);
 
     if (analysis.type === LocationType.Empty) {
       return [];
     }
 
     if (analysis.type === LocationType.CategoryFolder) {
-      return [analysis.categoryName!];
+      if (!analysis.categoryName) {
+        throw new Error('CategoryFolder type must have categoryName');
+      }
+      return [analysis.categoryName];
     }
 
     if (analysis.type === LocationType.LibraryRoot && analysis.categories) {
@@ -357,6 +370,113 @@ export class LibraryManager {
     }
 
     return [];
+  }
+
+  getCategoriesForGeneration(locationPath: string): string[] {
+    if (!fs.existsSync(locationPath)) {
+      return [];
+    }
+
+    const stat = fs.statSync(locationPath);
+    if (!stat.isDirectory()) {
+      return [];
+    }
+
+    const entries = fs.readdirSync(locationPath);
+    if (entries.length === 0) {
+      return [];
+    }
+
+    const subfolders = entries.filter((entry) => {
+      const entryPath = path.join(locationPath, entry);
+      try {
+        return fs.statSync(entryPath).isDirectory();
+      } catch {
+        return false;
+      }
+    });
+
+    if (subfolders.length === 0) {
+      return [];
+    }
+
+    const analysis = this.analyzeLocationContents(locationPath, subfolders);
+
+    if (analysis.recipeCount > 0 && analysis.categoryCount > 0) {
+      throw new LibraryManagerError(
+        'Invalid hierarchy: location contains both recipe folders and category folders',
+        'MIXED_HIERARCHY'
+      );
+    }
+
+    if (analysis.recipeCount > 0) {
+      const categoryName = path.basename(locationPath);
+      return [categoryName];
+    }
+
+    if (analysis.categories.length > 0) {
+      return analysis.categories.sort();
+    }
+
+    return [];
+  }
+
+  determineRecipePath(
+    baseLocation: string,
+    category: string,
+    recipeId: string
+  ): string {
+    if (!fs.existsSync(baseLocation)) {
+      return path.join(baseLocation, category, recipeId);
+    }
+
+    if (!fs.statSync(baseLocation).isDirectory()) {
+      return path.join(baseLocation, category, recipeId);
+    }
+
+    const entries = fs.readdirSync(baseLocation);
+    if (entries.length === 0) {
+      return path.join(baseLocation, category, recipeId);
+    }
+
+    const subfolders = entries.filter((entry) => {
+      const entryPath = path.join(baseLocation, entry);
+      try {
+        return fs.statSync(entryPath).isDirectory();
+      } catch {
+        return false;
+      }
+    });
+
+    if (subfolders.length === 0) {
+      return path.join(baseLocation, category, recipeId);
+    }
+
+    const analysis = this.analyzeLocationContents(baseLocation, subfolders);
+
+    if (analysis.recipeCount > 0 && analysis.categoryCount > 0) {
+      throw new LibraryManagerError(
+        'Invalid hierarchy: location contains both recipe folders and category folders',
+        'MIXED_HIERARCHY'
+      );
+    }
+
+    if (
+      analysis.recipeCount === 0 &&
+      analysis.categoryCount === 0 &&
+      subfolders.length > 0
+    ) {
+      throw new LibraryManagerError(
+        `Location "${baseLocation}" contains folders but none are recognized as recipe categories or recipes`,
+        'UNKNOWN_HIERARCHY'
+      );
+    }
+
+    if (analysis.recipeCount > 0 && path.basename(baseLocation) === category) {
+      return path.join(baseLocation, recipeId);
+    }
+
+    return path.join(baseLocation, category, recipeId);
   }
 }
 

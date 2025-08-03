@@ -5,5 +5,5 @@ export function resolvePath(target: string): string {
   if (target.startsWith('~/')) {
     return path.join(os.homedir(), target.slice(2));
   }
-  return target;
+  return path.resolve(target);
 }

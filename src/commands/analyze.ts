@@ -11,7 +11,7 @@ import {
 import { buildFileTree } from '~/utils/file-tree.utils';
 import { validateFrameworks } from '~/utils/framework-validation';
 import { findGitRoot } from '~/utils/git.utils';
-import { writeJson } from '~/utils/json.utils';
+import { readJson, writeJson } from '~/utils/json.utils';
 import { Logger } from '~/utils/logger.utils';
 import { loadPrompt, renderPrompt } from '~/utils/prompts.utils';
 
@@ -57,20 +57,20 @@ export async function performAnalysis(
     'Workspace analysis started'
   );
 
-  onProgress?.('Finding git repository...');
+  onProgress?.('Finding git repository');
   const workspaceRoot = findGitRoot();
 
-  onProgress?.('Building file tree...');
+  onProgress?.('Building file tree');
   const filesStructureSummary = await buildFileTree(workspaceRoot);
 
-  onProgress?.('Loading analysis prompt...');
+  onProgress?.('Loading analysis prompt');
   const promptTemplate = loadPrompt('analyze_workspace');
   const prompt = renderPrompt(promptTemplate, {
     workspace_root: workspaceRoot,
     files_structure_summary: filesStructureSummary,
   });
 
-  onProgress?.('Analyzing workspace with Claude...');
+  onProgress?.('Analyzing workspace with Claude');
 
   let analysis = null;
   let errorMessage: string | undefined;
@@ -80,16 +80,43 @@ export async function performAnalysis(
     onThinkingStateChange: (isThinking) => {
       onProgress?.(null, isThinking);
     },
-    onComplete: (result) => {
+    onComplete: async () => {
       try {
-        analysis = JSON.parse(String(result));
+        if (fs.existsSync(ANALYSIS_PATH)) {
+          analysis = await readJson(ANALYSIS_PATH);
+        } else {
+          errorMessage = 'Analysis file was not created by Claude';
+          analysis = null;
+          Logger.error(
+            {
+              event: 'analysis_file_not_found',
+              analysisPath: ANALYSIS_PATH,
+            },
+            'Claude did not write analysis file'
+          );
+        }
       } catch (error) {
-        errorMessage = `Invalid JSON response: ${error instanceof Error ? error.message : String(error)}`;
+        errorMessage = `Failed to read analysis file: ${error instanceof Error ? error.message : String(error)}`;
         analysis = null;
+        Logger.error(
+          {
+            event: 'analysis_file_read_error',
+            error: errorMessage,
+            analysisPath: ANALYSIS_PATH,
+          },
+          'Failed to read analysis file written by Claude'
+        );
       }
     },
     onError: (error) => {
       errorMessage = error.message;
+      Logger.error(
+        {
+          event: 'analysis_claude_execution_error',
+          error: error.message,
+        },
+        'Claude execution failed during analysis'
+      );
     },
   };
 
@@ -98,8 +125,17 @@ export async function performAnalysis(
       prompt,
       options: {
         model: 'sonnet',
-        maxTurns: 10,
-        allowedTools: ['Read', 'LS', 'Glob', 'Grep'],
+        maxTurns: 15,
+        allowedTools: [
+          'Read',
+          'LS',
+          'Glob',
+          'Grep',
+          'Write',
+          'Bash(ls:*)',
+          'Bash(find:*)',
+          'Bash(grep:*)',
+        ],
         permissionMode: 'bypassPermissions',
       },
     }),
@@ -125,12 +161,31 @@ export async function performAnalysis(
         'Invalid analysis response: missing required fields (isMonorepo or projects)';
       subtype = 'error';
       finalAnalysis = null;
+      Logger.error(
+        {
+          event: 'analysis_validation_error',
+          error: errorMessage,
+          analysis: finalAnalysis,
+        },
+        'Analysis response missing required fields'
+      );
     } else if (finalAnalysis.projects.length === 0) {
       errorMessage = 'No projects found in workspace';
       subtype = 'error';
+      Logger.error(
+        {
+          event: 'analysis_no_projects_error',
+          error: errorMessage,
+          workspaceInfo: {
+            isMonorepo: finalAnalysis.isMonorepo,
+            ecosystem: finalAnalysis.workspaceEcosystem,
+          },
+        },
+        'No projects found during workspace analysis'
+      );
       finalAnalysis = null;
     } else {
-      onProgress?.('Validating frameworks...');
+      onProgress?.('Validating frameworks');
       try {
         const { validatedAnalysis, unrecognizedFrameworks: unrecognized } =
           await validateFrameworks(finalAnalysis);
@@ -138,12 +193,27 @@ export async function performAnalysis(
         unrecognizedFrameworks = unrecognized;
 
         if (unrecognizedFrameworks.length > 0) {
-          onProgress?.(
-            `Warning: ${unrecognizedFrameworks.length} frameworks not recognized: ${unrecognizedFrameworks.join(', ')}`
+          const warningMessage = `${unrecognizedFrameworks.length} frameworks not recognized: ${unrecognizedFrameworks.join(', ')}`;
+          onProgress?.(`Warning: ${warningMessage}`);
+          Logger.warn(
+            {
+              event: 'analysis_unrecognized_frameworks',
+              unrecognizedFrameworks,
+              count: unrecognizedFrameworks.length,
+            },
+            warningMessage
           );
         }
-      } catch {
-        onProgress?.('Warning: Framework validation failed');
+      } catch (error) {
+        const validationError = 'Framework validation failed';
+        onProgress?.(`Warning: ${validationError}`);
+        Logger.warn(
+          {
+            event: 'analysis_framework_validation_error',
+            error: error instanceof Error ? error.message : String(error),
+          },
+          validationError
+        );
       }
     }
   }
@@ -167,6 +237,25 @@ export async function performAnalysis(
   if (result.analysis) {
     fs.mkdirSync(path.dirname(ANALYSIS_PATH), { recursive: true });
     await writeJson(ANALYSIS_PATH, result.analysis);
+    Logger.info(
+      {
+        event: 'analysis_completed',
+        projectCount: result.analysis.projects.length,
+        isMonorepo: result.analysis.isMonorepo,
+        metadata: result.metadata,
+      },
+      'Analysis completed successfully'
+    );
+  } else {
+    Logger.error(
+      {
+        event: 'analysis_failed',
+        metadata: result.metadata,
+        hasError: !!errorMessage,
+        errorMessage,
+      },
+      'Analysis failed - no analysis data'
+    );
   }
 
   return result;

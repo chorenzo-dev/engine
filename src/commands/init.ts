@@ -1,4 +1,3 @@
-import { checkClaudeCodeAuth } from '~/utils/claude.utils';
 import { chorenzoConfig } from '~/utils/config.utils';
 import { GitError } from '~/utils/git-operations.utils';
 import { libraryManager } from '~/utils/library-manager.utils';
@@ -38,30 +37,20 @@ export async function performInit(
 
   try {
     if (options.reset) {
-      onProgress?.('Resetting workspace...');
+      onProgress?.('Resetting workspace');
       await resetWorkspace();
     }
 
-    onProgress?.('Checking Claude Code authentication...');
-    const isAuthenticated = await checkClaudeCodeAuth();
-
-    if (!isAuthenticated) {
-      throw new InitError(
-        'Claude Code is not authenticated. Please complete authentication setup.',
-        'AUTH_REQUIRED'
-      );
-    }
-
-    onProgress?.('Creating directory structure...');
+    onProgress?.('Creating directory structure');
     await createDirectoryStructure();
 
-    onProgress?.('Setting up configuration files...');
+    onProgress?.('Setting up configuration files');
     await setupConfigFiles();
 
-    onProgress?.('Validating configuration...');
+    onProgress?.('Validating configuration');
     await validateConfig();
 
-    onProgress?.('Cloning recipe libraries...');
+    onProgress?.('Cloning recipe libraries');
     await libraryManager.cloneLibraries(onProgress);
 
     onProgress?.('Initialization complete!');

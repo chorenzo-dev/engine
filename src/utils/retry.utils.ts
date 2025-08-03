@@ -10,7 +10,7 @@ export async function retry<T>(
 ): Promise<T> {
   const { maxAttempts = 2, delayMs = 0, onRetry } = options;
 
-  let lastError: Error;
+  let lastError: Error | undefined;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -28,5 +28,5 @@ export async function retry<T>(
     }
   }
 
-  throw lastError!;
+  throw lastError || new Error('Operation failed with unknown error');
 }

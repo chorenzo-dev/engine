@@ -2,7 +2,9 @@ import { Command } from 'commander';
 import { render } from 'ink';
 import React from 'react';
 
-import { Shell } from './components/Shell';
+import { Logger } from '~/utils/logger.utils';
+
+import { Shell } from './Shell';
 
 const program = new Command();
 
@@ -20,9 +22,10 @@ program
   .option('-A', 'Alias for --no-analyze')
   .option('-y, --yes', 'Skip interactive confirmation')
   .option('--no-progress', 'Disable progress UI')
+  .option('--debug', 'Show all progress messages in list format')
   .option('--cost', 'Show LLM cost information')
   .action(async (options) => {
-    render(
+    const { waitUntilExit } = render(
       React.createElement(Shell, {
         command: 'init',
         options: {
@@ -30,27 +33,44 @@ program
           noAnalyze: !options.analyze || options.A,
           yes: options.yes,
           progress: options.progress,
+          debug: options.debug,
           cost: options.cost,
         },
       })
     );
+
+    try {
+      await waitUntilExit();
+    } catch (error) {
+      Logger.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
   });
 
 program
   .command('analyze')
   .description('Analyze your workspace structure and provide insights')
   .option('--no-progress', 'Disable progress UI')
+  .option('--debug', 'Show all progress messages in list format')
   .option('--cost', 'Show LLM cost information')
   .action(async (options) => {
-    render(
+    const { waitUntilExit } = render(
       React.createElement(Shell, {
         command: 'analyze',
         options: {
           progress: options.progress,
+          debug: options.debug,
           cost: options.cost,
         },
       })
     );
+
+    try {
+      await waitUntilExit();
+    } catch (error) {
+      Logger.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
   });
 
 const recipesCommand = program
@@ -75,6 +95,7 @@ recipesCommand
   .command('validate <target>')
   .description('Validate recipes by name, path, library, or git repository')
   .option('--no-progress', 'Disable progress UI')
+  .option('--debug', 'Show all progress messages in list format')
   .addHelpText(
     'after',
     `
@@ -89,15 +110,23 @@ Examples:
 `
   )
   .action(async (target, options) => {
-    render(
+    const { waitUntilExit } = render(
       React.createElement(Shell, {
         command: 'recipes-validate',
         options: {
           target,
           progress: options.progress,
+          debug: options.debug,
         },
       })
     );
+
+    try {
+      await waitUntilExit();
+    } catch (error) {
+      Logger.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
   });
 
 recipesCommand
@@ -124,7 +153,7 @@ Examples:
 `
   )
   .action(async (recipe, options) => {
-    render(
+    const { waitUntilExit } = render(
       React.createElement(Shell, {
         command: 'recipes-apply',
         options: {
@@ -138,12 +167,20 @@ Examples:
         },
       })
     );
+
+    try {
+      await waitUntilExit();
+    } catch (error) {
+      Logger.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
   });
 
 recipesCommand
   .command('generate [name]')
   .description('Generate a new recipe')
   .option('--no-progress', 'Disable progress UI')
+  .option('--debug', 'Show all progress messages in list format')
   .option('--cost', 'Show LLM cost information')
   .option('--location <path>', 'Custom save location for the recipe')
   .option('--category <category>', 'Recipe category')
@@ -167,12 +204,13 @@ Examples:
 `
   )
   .action(async (name, options) => {
-    render(
+    const { waitUntilExit } = render(
       React.createElement(Shell, {
         command: 'recipes-generate',
         options: {
           name,
           progress: options.progress,
+          debug: options.debug,
           cost: options.cost,
           saveLocation: options.location,
           category: options.category,
@@ -180,6 +218,13 @@ Examples:
         },
       })
     );
+
+    try {
+      await waitUntilExit();
+    } catch (error) {
+      Logger.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
   });
 
 program.parse();

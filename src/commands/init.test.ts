@@ -189,7 +189,7 @@ describe('Init Command Integration Tests', () => {
     await performInit({}, mockProgress);
 
     expect(mockProgress).toHaveBeenCalledWith(
-      'Warning: Failed to clone core after retry, skipping...'
+      'Warning: Failed to clone core after retry, skipping'
     );
     expect(mockWriteFileSync).toHaveBeenCalledWith(
       '/test/home/.chorenzo/config.yaml',
@@ -235,12 +235,8 @@ describe('Init Command Integration Tests', () => {
       'utf8'
     );
     expect(mockClone).toHaveBeenCalled();
-    expect(mockProgress).toHaveBeenCalledWith(
-      'Creating directory structure...'
-    );
-    expect(mockProgress).toHaveBeenCalledWith(
-      'Setting up configuration files...'
-    );
+    expect(mockProgress).toHaveBeenCalledWith('Creating directory structure');
+    expect(mockProgress).toHaveBeenCalledWith('Setting up configuration files');
   });
 
   it('should handle permission errors during directory creation', async () => {
@@ -276,60 +272,12 @@ describe('Init Command Integration Tests', () => {
     );
   });
 
-  it('should succeed when Claude Code is authenticated via environment variables', async () => {
+  it('should complete initialization workflow successfully', async () => {
     setupDefaultMocks();
-    const originalEnv = process.env.ANTHROPIC_API_KEY;
-    process.env.ANTHROPIC_API_KEY = 'sk-ant-test-key';
 
-    try {
-      await expect(performInit({}, mockProgress)).resolves.not.toThrow();
-      expect(mockProgress).toHaveBeenCalledWith(
-        'Checking Claude Code authentication...'
-      );
-    } finally {
-      if (originalEnv) {
-        process.env.ANTHROPIC_API_KEY = originalEnv;
-      } else {
-        delete process.env.ANTHROPIC_API_KEY;
-      }
-    }
-  });
-
-  it('should fail when Claude Code is not authenticated', async () => {
-    setupDefaultMocks();
-    mockSpawnSync.mockImplementation(() => ({
-      error: new Error('Command not found'),
-      status: -1,
-      stdout: '',
-      stderr: 'claude: command not found',
-      signal: undefined,
-    }));
-
-    await expect(performInit({})).rejects.toThrow(
-      'Claude Code is not authenticated. Please complete authentication setup.'
-    );
-  });
-
-  it('should fail when Claude Code CLI reports authentication required', async () => {
-    setupDefaultMocks();
-    mockSpawnSync
-      .mockImplementationOnce(() => ({
-        error: undefined,
-        status: 0,
-        stdout: 'claude version 1.0.0',
-        stderr: '',
-        signal: undefined,
-      }))
-      .mockImplementationOnce(() => ({
-        error: undefined,
-        status: 1,
-        stdout: 'Please run `/login` to authenticate',
-        stderr: '',
-        signal: undefined,
-      }));
-
-    await expect(performInit({})).rejects.toThrow(
-      'Claude Code is not authenticated. Please complete authentication setup.'
-    );
+    await expect(performInit({}, mockProgress)).resolves.not.toThrow();
+    expect(mockProgress).toHaveBeenCalledWith('Creating directory structure');
+    expect(mockProgress).toHaveBeenCalledWith('Setting up configuration files');
+    expect(mockProgress).toHaveBeenCalledWith('Validating configuration');
   });
 });

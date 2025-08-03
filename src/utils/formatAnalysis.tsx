@@ -1,6 +1,7 @@
 import { Box, Text } from 'ink';
 import React from 'react';
 
+import { colors } from '~/styles/colors';
 import {
   CiCdSystem,
   ProjectAnalysis,
@@ -15,8 +16,8 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({
   if (isMonorepo) {
     return (
       <Box flexDirection="column">
-        <Text color="blue" bold>
-          📁 Workspace Structure
+        <Text color={colors.info} bold>
+          Workspace Structure
         </Text>
         <Text>├─ Type: Monorepo</Text>
         {workspaceEcosystem ? (
@@ -26,8 +27,8 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({
         )}
 
         <Box marginTop={1}>
-          <Text color="blue" bold>
-            📦 Projects ({projects.length})
+          <Text color={colors.info} bold>
+            Projects ({projects.length})
           </Text>
         </Box>
         {projects.map((project, index) => (
@@ -53,8 +54,8 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({
     const project = projects[0];
     return (
       <Box flexDirection="column">
-        <Text color="blue" bold>
-          📁 Project Analysis
+        <Text color={colors.info} bold>
+          Project Analysis
         </Text>
         <Text>Type: {formatProjectType(project.type)}</Text>
         <Text>Language: {capitalize(project.language)}</Text>

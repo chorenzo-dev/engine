@@ -4,17 +4,16 @@ import * as os from 'os';
 import * as path from 'path';
 
 import { ProjectAnalysis, WorkspaceAnalysis } from '~/types/analysis';
-import {
-  ApplyError,
-  ApplyOptions,
-  ApplyProgressCallback,
-  ApplyRecipeResult,
-  ApplyValidationCallback,
-  DependencyValidationResult,
-  ExecutionResult,
-  RecipeState,
-} from '~/types/apply';
 import { Recipe, RecipeDependency } from '~/types/recipe';
+import {
+  RecipesApplyDependencyValidationResult,
+  RecipesApplyError,
+  RecipesApplyExecutionResult,
+  RecipesApplyOptions,
+  RecipesApplyProgressCallback,
+  RecipesApplyResult,
+  RecipesApplyState,
+} from '~/types/recipes-apply';
 import { WorkspaceState } from '~/types/state';
 import {
   CodeChangesEventHandlers,
@@ -24,7 +23,7 @@ import { chorenzoConfig } from '~/utils/config.utils';
 import { cloneRepository } from '~/utils/git-operations.utils';
 import { normalizeRepoIdentifier } from '~/utils/git.utils';
 import { readJson } from '~/utils/json.utils';
-import { LocationType, libraryManager } from '~/utils/library-manager.utils';
+import { libraryManager } from '~/utils/library-manager.utils';
 import { Logger } from '~/utils/logger.utils';
 import { resolvePath } from '~/utils/path.utils';
 import {
@@ -75,7 +74,7 @@ export interface ValidateOptions extends RecipesOptions {
   target: string;
 }
 
-export interface GenerateOptions extends RecipesOptions {
+export interface RecipesGenerateOptions extends RecipesOptions {
   name?: string;
   cost?: boolean;
   magicGenerate?: boolean;
@@ -86,7 +85,7 @@ export interface GenerateOptions extends RecipesOptions {
   additionalInstructions?: string;
 }
 
-export interface GenerateResult {
+export interface RecipesGenerateResult {
   recipePath: string;
   recipeName: string;
   success: boolean;
@@ -143,17 +142,20 @@ export async function performRecipesValidate(
     );
   }
 
-  const resolvedTarget = resolvePath(options.target);
+  const inputType = detectInputType(options.target);
+  const resolvedTarget =
+    inputType === InputType.RecipeName || inputType === InputType.GitUrl
+      ? options.target
+      : resolvePath(options.target);
   onProgress?.(`Validating: ${resolvedTarget}`);
 
   const messages: ValidationMessage[] = [];
   const handleValidation: ValidationCallback = (type, message) => {
     messages.push({ type, text: message });
+    onProgress?.(message);
   };
 
   try {
-    const inputType = detectInputType(resolvedTarget);
-
     const baseContext = {
       inputType,
       target: options.target,
@@ -222,12 +224,14 @@ function detectInputType(target: string): InputType {
   if (
     target.startsWith('./') ||
     target.startsWith('../') ||
-    target.startsWith('/')
+    target.startsWith('/') ||
+    target.startsWith('~/')
   ) {
-    if (fs.existsSync(target)) {
-      const stat = fs.statSync(target);
+    const resolvedTarget = resolvePath(target);
+    if (fs.existsSync(resolvedTarget)) {
+      const stat = fs.statSync(resolvedTarget);
       if (stat.isDirectory()) {
-        const metadataPath = path.join(target, 'metadata.yaml');
+        const metadataPath = path.join(resolvedTarget, 'metadata.yaml');
         if (fs.existsSync(metadataPath)) {
           return InputType.RecipeFolder;
         }
@@ -431,10 +435,10 @@ async function validateGitRepository(
   );
 
   try {
-    onProgress?.('Cloning repository...');
+    onProgress?.('Cloning repository');
     await cloneRepository(gitUrl, tempDir, 'main');
 
-    onProgress?.('Validating cloned recipes...');
+    onProgress?.('Validating cloned recipes');
     const result = await validateLibrary(
       tempDir,
       options,
@@ -464,32 +468,31 @@ async function validateGitRepository(
 }
 
 export async function performRecipesApply(
-  options: ApplyOptions,
-  onProgress?: ApplyProgressCallback,
-  onValidation?: ApplyValidationCallback
-): Promise<ApplyRecipeResult> {
+  options: RecipesApplyOptions,
+  onProgress?: RecipesApplyProgressCallback
+): Promise<RecipesApplyResult> {
   const startTime = new Date();
   const startTimeIso = startTime.toISOString();
   let totalCostUsd = 0;
 
   try {
-    onProgress?.('Loading recipe...');
+    onProgress?.('Loading recipe');
     const recipe = await loadRecipe(options.recipe);
 
-    onProgress?.('Validating recipe structure...');
+    onProgress?.('Validating recipe structure');
     const validationResult = recipe.validate();
     if (!validationResult.valid) {
       const errors = validationResult.errors.map((e) => e.message).join(', ');
-      throw new ApplyError(
+      throw new RecipesApplyError(
         `Recipe validation failed: ${errors}`,
         'RECIPE_INVALID'
       );
     }
 
-    onProgress?.('Ensuring analysis data...');
+    onProgress?.('Ensuring analysis data');
     const analysis = await ensureAnalysisData();
 
-    onProgress?.('Checking recipe dependencies...');
+    onProgress?.('Checking recipe dependencies');
     const currentState = await readCurrentState();
     const dependencyCheck = await validateWorkspaceDependencies(
       recipe,
@@ -502,16 +505,16 @@ export async function performRecipesApply(
         dependencyCheck,
         currentState
       );
-      throw new ApplyError(errorMsg, 'DEPENDENCIES_NOT_SATISFIED');
+      throw new RecipesApplyError(errorMsg, 'DEPENDENCIES_NOT_SATISFIED');
     }
 
     onProgress?.('Initializing the chorenzo engine');
-    const executionResults: ExecutionResult[] = [];
+    const executionResults: RecipesApplyExecutionResult[] = [];
 
     if (recipe.isWorkspaceOnly()) {
       const workspaceEcosystem = analysis.workspaceEcosystem || 'unknown';
       if (!recipe.hasEcosystem(workspaceEcosystem)) {
-        throw new ApplyError(
+        throw new RecipesApplyError(
           `Workspace-only recipe '${recipe.getId()}' does not support workspace ecosystem '${workspaceEcosystem}'`,
           'ECOSYSTEM_NOT_SUPPORTED'
         );
@@ -533,10 +536,9 @@ export async function performRecipesApply(
       executionResults.push(executionResult);
 
       if (executionResult.success) {
-        onValidation?.('success', `Successfully applied workspace recipe`);
+        onProgress?.('Successfully applied workspace recipe');
       } else {
-        onValidation?.(
-          'error',
+        onProgress?.(
           `Failed to apply workspace recipe: ${executionResult.error}`
         );
       }
@@ -546,8 +548,7 @@ export async function performRecipesApply(
           recipe,
           analysis,
           options,
-          onProgress,
-          onValidation
+          onProgress
         );
 
       if (workspaceResult) {
@@ -561,13 +562,13 @@ export async function performRecipesApply(
       }
 
       if (executionResults.length === 0) {
-        throw new ApplyError(
+        throw new RecipesApplyError(
           `Recipe '${recipe.getId()}' could not be applied at workspace or project level`,
           'NO_APPLICABLE_SCOPE'
         );
       }
     } else {
-      onProgress?.('Filtering applicable projects...');
+      onProgress?.('Filtering applicable projects');
       const applicableProjects = await filterApplicableProjects(
         analysis,
         recipe,
@@ -575,7 +576,7 @@ export async function performRecipesApply(
       );
 
       if (applicableProjects.length === 0) {
-        throw new ApplyError(
+        throw new RecipesApplyError(
           `No applicable projects found for recipe '${recipe.getId()}'`,
           'NO_APPLICABLE_PROJECTS'
         );
@@ -598,13 +599,11 @@ export async function performRecipesApply(
         executionResults.push(executionResult);
 
         if (executionResult.success) {
-          onValidation?.(
-            'success',
+          onProgress?.(
             `Successfully applied to ${executionResult.projectPath}`
           );
         } else {
-          onValidation?.(
-            'error',
+          onProgress?.(
             `Failed to apply to ${executionResult.projectPath}: ${executionResult.error}`
           );
         }
@@ -657,10 +656,10 @@ export async function performRecipesApply(
       'Recipe application failed'
     );
 
-    if (error instanceof ApplyError) {
+    if (error instanceof RecipesApplyError) {
       throw error;
     }
-    throw new ApplyError(
+    throw new RecipesApplyError(
       `Apply operation failed: ${error instanceof Error ? error.message : String(error)}`,
       'APPLY_FAILED'
     );
@@ -668,8 +667,11 @@ export async function performRecipesApply(
 }
 
 async function loadRecipe(recipeName: string): Promise<Recipe> {
-  const resolvedTarget = resolvePath(recipeName);
-  const inputType = detectInputType(resolvedTarget);
+  const inputType = detectInputType(recipeName);
+  const resolvedTarget =
+    inputType === InputType.RecipeName || inputType === InputType.GitUrl
+      ? recipeName
+      : resolvePath(recipeName);
 
   switch (inputType) {
     case InputType.RecipeName: {
@@ -678,13 +680,13 @@ async function loadRecipe(recipeName: string): Promise<Recipe> {
       if (foundPaths.length === 0) {
         Logger.info(
           { recipe: recipeName },
-          'Recipe not found locally, refreshing all libraries...'
+          'Recipe not found locally, refreshing all libraries'
         );
         await libraryManager.refreshAllLibraries();
 
         foundPaths = await findRecipeByName(resolvedTarget);
         if (foundPaths.length === 0) {
-          throw new ApplyError(
+          throw new RecipesApplyError(
             `Recipe '${recipeName}' not found in recipe libraries even after refreshing`,
             'RECIPE_NOT_FOUND'
           );
@@ -693,7 +695,7 @@ async function loadRecipe(recipeName: string): Promise<Recipe> {
 
       if (foundPaths.length > 1) {
         const pathsList = foundPaths.map((p) => `  - ${p}`).join('\n');
-        throw new ApplyError(
+        throw new RecipesApplyError(
           `Multiple recipes named '${recipeName}' found:\n${pathsList}\nPlease specify the full path.`,
           'MULTIPLE_RECIPES_FOUND'
         );
@@ -704,7 +706,7 @@ async function loadRecipe(recipeName: string): Promise<Recipe> {
       if (libraryName) {
         Logger.info(
           { recipe: recipeName, library: libraryName },
-          'Recipe is from remote library, refreshing...'
+          'Recipe is from remote library, refreshing'
         );
         await libraryManager.refreshLibrary(libraryName);
       }
@@ -714,7 +716,7 @@ async function loadRecipe(recipeName: string): Promise<Recipe> {
 
     case InputType.RecipeFolder: {
       if (!fs.existsSync(resolvedTarget)) {
-        throw new ApplyError(
+        throw new RecipesApplyError(
           `Recipe folder does not exist: ${resolvedTarget}`,
           'RECIPE_NOT_FOUND'
         );
@@ -724,7 +726,7 @@ async function loadRecipe(recipeName: string): Promise<Recipe> {
       if (libraryName) {
         Logger.info(
           { recipe: recipeName, library: libraryName },
-          'Recipe is from remote library, refreshing...'
+          'Recipe is from remote library, refreshing'
         );
         await libraryManager.refreshLibrary(libraryName);
       }
@@ -733,7 +735,7 @@ async function loadRecipe(recipeName: string): Promise<Recipe> {
     }
 
     default:
-      throw new ApplyError(
+      throw new RecipesApplyError(
         `Invalid recipe target: ${recipeName}`,
         'INVALID_RECIPE_TARGET'
       );
@@ -760,7 +762,7 @@ async function ensureAnalysisData(): Promise<WorkspaceAnalysis> {
 
   const analysisResult = await performAnalysis();
   if (!analysisResult.analysis) {
-    throw new ApplyError(
+    throw new RecipesApplyError(
       `Analysis failed: ${analysisResult.metadata?.error || 'Unknown error'}`,
       'ANALYSIS_FAILED'
     );
@@ -769,12 +771,12 @@ async function ensureAnalysisData(): Promise<WorkspaceAnalysis> {
   return analysisResult.analysis;
 }
 
-async function readCurrentState(): Promise<RecipeState> {
+async function readCurrentState(): Promise<RecipesApplyState> {
   try {
     const workspaceState = stateManager.getWorkspaceState();
-    return (workspaceState.workspace || {}) as RecipeState;
+    return (workspaceState.workspace || {}) as RecipesApplyState;
   } catch (error) {
-    throw new ApplyError(
+    throw new RecipesApplyError(
       `Failed to read state file: ${error instanceof Error ? error.message : String(error)}`,
       'STATE_READ_FAILED'
     );
@@ -783,8 +785,8 @@ async function readCurrentState(): Promise<RecipeState> {
 
 async function validateWorkspaceDependencies(
   recipe: Recipe,
-  currentState: RecipeState
-): Promise<DependencyValidationResult> {
+  currentState: RecipesApplyState
+): Promise<RecipesApplyDependencyValidationResult> {
   const missing: RecipeDependency[] = [];
   const conflicting: Array<{ key: string; required: string; current: string }> =
     [];
@@ -835,9 +837,9 @@ async function validateWorkspaceDependencies(
 
 async function validateDependencies(
   recipe: Recipe,
-  currentState: RecipeState,
+  currentState: RecipesApplyState,
   projectPath?: string
-): Promise<DependencyValidationResult> {
+): Promise<RecipesApplyDependencyValidationResult> {
   const missing: RecipeDependency[] = [];
   const conflicting: Array<{ key: string; required: string; current: string }> =
     [];
@@ -900,8 +902,8 @@ async function validateDependencies(
 
 function formatDependencyError(
   recipeId: string,
-  validationResult: DependencyValidationResult,
-  currentState: RecipeState
+  validationResult: RecipesApplyDependencyValidationResult,
+  currentState: RecipesApplyState
 ): string {
   const lines = [`Recipe '${recipeId}' has unsatisfied dependencies:`];
 
@@ -951,7 +953,7 @@ async function filterApplicableProjects(
       project.path
     );
     const projectState = (workspaceState.projects?.[relativePath] ||
-      {}) as RecipeState;
+      {}) as RecipesApplyState;
 
     const dependencyCheck = await validateDependencies(
       recipe,
@@ -1030,8 +1032,8 @@ async function applyWorkspaceRecipe(
   recipe: Recipe,
   variant: string,
   analysis: WorkspaceAnalysis,
-  onProgress?: ApplyProgressCallback
-): Promise<ExecutionResult> {
+  onProgress?: RecipesApplyProgressCallback
+): Promise<RecipesApplyExecutionResult> {
   const targetEcosystem = analysis.workspaceEcosystem || 'unknown';
 
   Logger.info(
@@ -1060,8 +1062,8 @@ async function applyProjectRecipe(
   project: ProjectAnalysis,
   variant: string,
   analysis: WorkspaceAnalysis,
-  onProgress?: ApplyProgressCallback
-): Promise<ExecutionResult> {
+  onProgress?: RecipesApplyProgressCallback
+): Promise<RecipesApplyExecutionResult> {
   const projectPath = project.path === '.' ? 'workspace' : project.path;
   const targetEcosystem = project.ecosystem || 'unknown';
 
@@ -1093,10 +1095,10 @@ async function executeRecipe(
   targetEcosystem: string,
   projectPath: string,
   analysis: WorkspaceAnalysis,
-  onProgress?: ApplyProgressCallback,
+  onProgress?: RecipesApplyProgressCallback,
   logEventPrefix?: string,
   project?: ProjectAnalysis
-): Promise<ExecutionResult> {
+): Promise<RecipesApplyExecutionResult> {
   const workspaceRoot = workspaceConfig.getWorkspaceRoot();
 
   try {
@@ -1372,14 +1374,14 @@ async function loadExistingRecipeOutputs(): Promise<string[]> {
 }
 
 export async function performRecipesGenerate(
-  options: GenerateOptions,
+  options: RecipesGenerateOptions,
   onProgress?: ProgressCallback
-): Promise<GenerateResult> {
+): Promise<RecipesGenerateResult> {
   const startTime = new Date();
   let totalCostUsd = 0;
 
   try {
-    onProgress?.('Starting recipe generation...');
+    onProgress?.('Starting recipe generation');
 
     if (!options.name) {
       throw new RecipesError(
@@ -1411,14 +1413,11 @@ export async function performRecipesGenerate(
       ? resolvePath(options.saveLocation)
       : process.cwd();
 
-    const analysis = libraryManager.analyzeLocation(baseLocation);
-    let recipePath: string;
-
-    if (analysis.type === LocationType.CategoryFolder) {
-      recipePath = path.join(baseLocation, recipeId);
-    } else {
-      recipePath = path.join(baseLocation, category, recipeId);
-    }
+    const recipePath = libraryManager.determineRecipePath(
+      baseLocation,
+      category,
+      recipeId
+    );
 
     if (fs.existsSync(recipePath)) {
       throw new RecipesError(
@@ -1432,7 +1431,7 @@ export async function performRecipesGenerate(
     fs.mkdirSync(recipePath, { recursive: true });
     fs.mkdirSync(path.join(recipePath, 'fixes'), { recursive: true });
 
-    onProgress?.('Creating recipe files...');
+    onProgress?.('Creating recipe files');
 
     const templateVars = {
       recipe_id: recipeId,
@@ -1442,7 +1441,7 @@ export async function performRecipesGenerate(
     };
 
     if (options.magicGenerate) {
-      onProgress?.('Generating recipe content with AI...');
+      onProgress?.('Generating recipe content with AI');
 
       const recipeGuidelines = loadDoc('recipes');
       const availableOutputs = await loadExistingRecipeOutputs();
@@ -1550,25 +1549,25 @@ export async function performRecipesGenerate(
 }
 
 interface WorkspacePreferredResult {
-  workspaceResult: ExecutionResult | null;
-  projectResults: ExecutionResult[];
+  workspaceResult: RecipesApplyExecutionResult | null;
+  projectResults: RecipesApplyExecutionResult[];
 }
 
 async function applyWorkspacePreferredRecipe(
   recipe: Recipe,
   analysis: WorkspaceAnalysis,
-  options: ApplyOptions,
-  onProgress?: ApplyProgressCallback,
-  onValidation?: (level: 'info' | 'error' | 'success', message: string) => void
+  options: RecipesApplyOptions,
+  onProgress?: RecipesApplyProgressCallback
 ): Promise<WorkspacePreferredResult> {
   const workspaceEcosystem = analysis.workspaceEcosystem || 'unknown';
   const workspaceState = stateManager.getWorkspaceState();
-  const workspaceRecipeState = (workspaceState.workspace || {}) as RecipeState;
+  const workspaceRecipesApplyState = (workspaceState.workspace ||
+    {}) as RecipesApplyState;
 
   const canApplyAtWorkspace = await canApplyRecipeAtWorkspace(
     recipe,
     analysis,
-    workspaceRecipeState
+    workspaceRecipesApplyState
   );
 
   const applicableProjects = await getApplicableProjectsForWorkspacePreferred(
@@ -1579,11 +1578,11 @@ async function applyWorkspacePreferredRecipe(
     options.project
   );
 
-  let workspaceResult: ExecutionResult | null = null;
-  const projectResults: ExecutionResult[] = [];
+  let workspaceResult: RecipesApplyExecutionResult | null = null;
+  const projectResults: RecipesApplyExecutionResult[] = [];
 
   if (canApplyAtWorkspace) {
-    onProgress?.('Applying recipe at workspace level...', false);
+    onProgress?.('Applying recipe at workspace level', false);
 
     const variant =
       options.variant ||
@@ -1598,10 +1597,9 @@ async function applyWorkspacePreferredRecipe(
     );
 
     if (workspaceResult.success) {
-      onValidation?.('success', `Successfully applied workspace recipe`);
+      onProgress?.(`Successfully applied workspace recipe`);
     } else {
-      onValidation?.(
-        'error',
+      onProgress?.(
         `Failed to apply workspace recipe: ${workspaceResult.error}`
       );
     }
@@ -1610,8 +1608,8 @@ async function applyWorkspacePreferredRecipe(
   if (applicableProjects.length > 0) {
     onProgress?.(
       applicableProjects.length === analysis.projects.length
-        ? 'Applying recipe at project level...'
-        : `Applying recipe to ${applicableProjects.length} specific projects...`,
+        ? 'Applying recipe at project level'
+        : `Applying recipe to ${applicableProjects.length} specific projects`,
       false
     );
 
@@ -1632,13 +1630,9 @@ async function applyWorkspacePreferredRecipe(
       projectResults.push(executionResult);
 
       if (executionResult.success) {
-        onValidation?.(
-          'success',
-          `Successfully applied to ${executionResult.projectPath}`
-        );
+        onProgress?.(`Successfully applied to ${executionResult.projectPath}`);
       } else {
-        onValidation?.(
-          'error',
+        onProgress?.(
           `Failed to apply to ${executionResult.projectPath}: ${executionResult.error}`
         );
       }
@@ -1651,7 +1645,7 @@ async function applyWorkspacePreferredRecipe(
 async function canApplyRecipeAtWorkspace(
   recipe: Recipe,
   analysis: WorkspaceAnalysis,
-  currentState: RecipeState
+  currentState: RecipesApplyState
 ): Promise<boolean> {
   const workspaceEcosystem = analysis.workspaceEcosystem || 'unknown';
 
@@ -1670,7 +1664,8 @@ async function getApplicableProjectsForWorkspacePreferred(
   workspaceState: WorkspaceState,
   projectFilter?: string
 ): Promise<ProjectAnalysis[]> {
-  const workspaceRecipeState = (workspaceState.workspace || {}) as RecipeState;
+  const workspaceRecipesApplyState = (workspaceState.workspace ||
+    {}) as RecipesApplyState;
   const applicableProjects: ProjectAnalysis[] = [];
 
   for (const project of analysis.projects) {
@@ -1692,7 +1687,7 @@ async function getApplicableProjectsForWorkspacePreferred(
         project.path
       );
       const projectState = (workspaceState.projects?.[relativePath] ||
-        {}) as RecipeState;
+        {}) as RecipesApplyState;
 
       const dependencyCheck = await validateDependencies(
         recipe,
@@ -1711,7 +1706,7 @@ async function getApplicableProjectsForWorkspacePreferred(
       project.path
     );
     const projectState = (workspaceState.projects?.[relativePath] ||
-      {}) as RecipeState;
+      {}) as RecipesApplyState;
 
     const requires = recipe.getRequires();
     let shouldInclude = false;
@@ -1728,7 +1723,7 @@ async function getApplicableProjectsForWorkspacePreferred(
           break;
         }
       } else {
-        const workspaceValue = workspaceRecipeState[requirement.key];
+        const workspaceValue = workspaceRecipesApplyState[requirement.key];
         const projectValue = projectState[requirement.key];
 
         if (

@@ -386,8 +386,8 @@ outputs:
       expect.arrayContaining(['recipe1', 'recipe2'])
     );
     expect(result.summary).toBeDefined();
-    expect(result.summary!.total).toBe(2);
-    expect(result.summary!.valid).toBe(2);
+    expect(result.summary?.total).toBe(2);
+    expect(result.summary?.valid).toBe(2);
     expect(mockProgress).toHaveBeenCalledWith(
       'This will validate all recipes in the library: /path/to/library'
     );
@@ -522,12 +522,12 @@ outputs:
       'https://github.com/user/recipes.git'
     );
     expect(result.summary).toBeDefined();
-    expect(result.summary!.total).toBe(0);
+    expect(result.summary?.total).toBe(0);
     expect(mockProgress).toHaveBeenCalledWith(
       'This will clone and validate recipes from: https://github.com/user/recipes.git'
     );
-    expect(mockProgress).toHaveBeenCalledWith('Cloning repository...');
-    expect(mockProgress).toHaveBeenCalledWith('Validating cloned recipes...');
+    expect(mockProgress).toHaveBeenCalledWith('Cloning repository');
+    expect(mockProgress).toHaveBeenCalledWith('Validating cloned recipes');
   });
 
   it('should handle path resolution with tilde', async () => {
@@ -919,7 +919,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(result).toBeDefined();
@@ -1046,7 +1045,6 @@ outputs:
       const result = await performRecipesApply(
         {
           recipe: 'test-recipe',
-          progress: false,
         },
         mockProgress
       );
@@ -1054,16 +1052,12 @@ outputs:
       expect(result).toBeDefined();
       expect(result.summary.successfulProjects).toBe(1);
 
-      expect(mockProgress).toHaveBeenCalledWith('Loading recipe...');
+      expect(mockProgress).toHaveBeenCalledWith('Loading recipe');
+      expect(mockProgress).toHaveBeenCalledWith('Validating recipe structure');
+      expect(mockProgress).toHaveBeenCalledWith('Ensuring analysis data');
+      expect(mockProgress).toHaveBeenCalledWith('Checking recipe dependencies');
       expect(mockProgress).toHaveBeenCalledWith(
-        'Validating recipe structure...'
-      );
-      expect(mockProgress).toHaveBeenCalledWith('Ensuring analysis data...');
-      expect(mockProgress).toHaveBeenCalledWith(
-        'Checking recipe dependencies...'
-      );
-      expect(mockProgress).toHaveBeenCalledWith(
-        'Filtering applicable projects...'
+        'Filtering applicable projects'
       );
       expect(mockProgress).toHaveBeenCalledWith(
         'Reading src/package.json',
@@ -1146,7 +1140,6 @@ outputs:
 
       await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(mockPerformAnalysis).toHaveBeenCalled();
@@ -1242,7 +1235,6 @@ outputs:
       await expect(
         performRecipesApply({
           recipe: 'test-recipe',
-          progress: false,
         })
       ).rejects.toThrow('unsatisfied dependencies');
     });
@@ -1293,7 +1285,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(result.summary.failedProjects).toBe(1);
@@ -1351,7 +1342,6 @@ outputs:
       const result = await performRecipesApply({
         recipe: 'test-recipe',
         variant: 'advanced',
-        progress: false,
       });
 
       expect(result).toBeDefined();
@@ -1459,7 +1449,6 @@ outputs:
       const result = await performRecipesApply({
         recipe: 'test-recipe',
         project: 'frontend',
-        progress: false,
       });
 
       expect(result).toBeDefined();
@@ -1577,7 +1566,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(result.summary.totalProjects).toBe(2);
@@ -1675,7 +1663,6 @@ outputs:
       await expect(
         performRecipesApply({
           recipe: 'test-recipe',
-          progress: false,
         })
       ).rejects.toThrow('unsatisfied dependencies');
     });
@@ -1712,7 +1699,6 @@ outputs:
       await expect(
         performRecipesApply({
           recipe: 'nonexistent-recipe',
-          progress: false,
         })
       ).rejects.toThrow("Recipe 'nonexistent-recipe' not found");
     });
@@ -1801,7 +1787,6 @@ outputs:
       await expect(
         performRecipesApply({
           recipe: 'test-recipe',
-          progress: false,
         })
       ).rejects.toThrow('No applicable projects found');
     });
@@ -1902,7 +1887,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(mockPerformAnalysis).toHaveBeenCalled();
@@ -1988,7 +1972,6 @@ outputs:
       await expect(
         performRecipesApply({
           recipe: 'test-recipe',
-          progress: false,
         })
       ).rejects.toThrow('Analysis failed');
     });
@@ -2083,7 +2066,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(result.summary.totalProjects).toBe(1);
@@ -2179,7 +2161,6 @@ outputs:
       const result = await performRecipesApply({
         recipe: 'test-recipe',
         variant: 'nonexistent',
-        progress: false,
       });
 
       expect(result.summary.totalProjects).toBe(1);
@@ -2283,7 +2264,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(result).toBeDefined();
@@ -2381,7 +2361,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(result.summary.totalProjects).toBe(1);
@@ -2496,7 +2475,6 @@ outputs:
       const result = await performRecipesApply(
         {
           recipe: 'test-recipe',
-          progress: false,
         },
         mockProgress
       );
@@ -2504,16 +2482,12 @@ outputs:
       expect(result).toBeDefined();
       expect(result.summary.successfulProjects).toBe(1);
 
-      expect(mockProgress).toHaveBeenCalledWith('Loading recipe...');
+      expect(mockProgress).toHaveBeenCalledWith('Loading recipe');
+      expect(mockProgress).toHaveBeenCalledWith('Validating recipe structure');
+      expect(mockProgress).toHaveBeenCalledWith('Ensuring analysis data');
+      expect(mockProgress).toHaveBeenCalledWith('Checking recipe dependencies');
       expect(mockProgress).toHaveBeenCalledWith(
-        'Validating recipe structure...'
-      );
-      expect(mockProgress).toHaveBeenCalledWith('Ensuring analysis data...');
-      expect(mockProgress).toHaveBeenCalledWith(
-        'Checking recipe dependencies...'
-      );
-      expect(mockProgress).toHaveBeenCalledWith(
-        'Filtering applicable projects...'
+        'Filtering applicable projects'
       );
       expect(mockProgress).toHaveBeenCalledWith(
         'Initializing the chorenzo engine',
@@ -2526,7 +2500,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(mockQuery).toHaveBeenCalledWith(
@@ -2571,7 +2544,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
-        progress: false,
       });
 
       expect(result).toBeDefined();
@@ -2675,7 +2647,6 @@ outputs:
 
       const result = await performRecipesApply({
         recipe: 'workspace-recipe',
-        progress: false,
       });
 
       expect(result).toBeDefined();
@@ -2773,7 +2744,6 @@ outputs:
       await expect(
         performRecipesApply({
           recipe: 'workspace-recipe',
-          progress: false,
         })
       ).rejects.toThrow('does not support workspace ecosystem');
     });
@@ -2881,7 +2851,6 @@ outputs:
 
         const result = await performRecipesApply({
           recipe: 'workspace-preferred-recipe',
-          progress: false,
         });
 
         expect(result.executionResults).toHaveLength(1);
@@ -2933,7 +2902,6 @@ outputs:
 
         const result = await performRecipesApply({
           recipe: 'workspace-preferred-recipe',
-          progress: false,
         });
 
         expect(result.executionResults).toHaveLength(1);
@@ -3000,7 +2968,6 @@ outputs:
 
         const result = await performRecipesApply({
           recipe: 'multi-ecosystem-recipe',
-          progress: false,
         });
 
         expect(result.executionResults).toHaveLength(2);
@@ -3060,7 +3027,6 @@ outputs:
         await expect(
           performRecipesApply({
             recipe: 'unsupported-recipe',
-            progress: false,
           })
         ).rejects.toThrow('could not be applied at workspace or project level');
       });
@@ -3120,7 +3086,6 @@ outputs:
 
         const result = await performRecipesApply({
           recipe: 'project-only-recipe',
-          progress: false,
         });
 
         expect(result.executionResults).toHaveLength(1);
@@ -3183,7 +3148,6 @@ outputs:
 
         const result = await performRecipesApply({
           recipe: 'workspace-only-recipe',
-          progress: false,
         });
 
         expect(result.executionResults).toHaveLength(1);
@@ -3272,7 +3236,6 @@ outputs:
 
         const result = await performRecipesApply({
           recipe: 'project-ecosystem-recipe',
-          progress: false,
         });
 
         expect(result.executionResults).toHaveLength(1);
@@ -3360,7 +3323,6 @@ outputs:
 
         const result = await performRecipesApply({
           recipe: 'project-type-recipe',
-          progress: false,
         });
 
         expect(result.executionResults).toHaveLength(1);
@@ -3448,7 +3410,6 @@ outputs:
 
         const result = await performRecipesApply({
           recipe: 'workspace-monorepo-recipe',
-          progress: false,
         });
 
         expect(result.executionResults.length).toBeGreaterThan(0);
@@ -3523,7 +3484,6 @@ outputs:
         await expect(
           performRecipesApply({
             recipe: 'project-framework-recipe',
-            progress: false,
           })
         ).rejects.toThrow('No applicable projects found');
       });
@@ -3790,13 +3750,11 @@ outputs:
         mockProgress
       );
 
-      expect(mockProgress).toHaveBeenCalledWith(
-        'Starting recipe generation...'
-      );
+      expect(mockProgress).toHaveBeenCalledWith('Starting recipe generation');
       expect(mockProgress).toHaveBeenCalledWith(
         expect.stringContaining('Creating recipe directory')
       );
-      expect(mockProgress).toHaveBeenCalledWith('Creating recipe files...');
+      expect(mockProgress).toHaveBeenCalledWith('Creating recipe files');
       expect(mockProgress).toHaveBeenCalledWith('Recipe generation complete!');
     });
 
@@ -3968,7 +3926,7 @@ outputs:
           typeof call[0] === 'string' && call[0].includes('metadata.yaml')
       );
       expect(metadataCall).toBeDefined();
-      expect(metadataCall![1]).toContain('development');
+      expect(metadataCall?.[1]).toContain('development');
     });
 
     it('should require category when none provided', async () => {
@@ -4007,7 +3965,7 @@ outputs:
           typeof call[0] === 'string' && call[0].includes('prompt.md')
       );
       expect(promptCall).toBeDefined();
-      expect(promptCall![1]).toContain('Custom summary for testing');
+      expect(promptCall?.[1]).toContain('Custom summary for testing');
     });
 
     it('should handle multiline summary correctly', async () => {
@@ -4025,7 +3983,7 @@ outputs:
           typeof call[0] === 'string' && call[0].includes('prompt.md')
       );
       expect(promptCall).toBeDefined();
-      expect(promptCall![1]).toContain(multilineSummary);
+      expect(promptCall?.[1]).toContain(multilineSummary);
     });
 
     it('should handle summary with special characters', async () => {
@@ -4043,7 +4001,7 @@ outputs:
           typeof call[0] === 'string' && call[0].includes('prompt.md')
       );
       expect(promptCall).toBeDefined();
-      expect(promptCall![1]).toContain(specialSummary);
+      expect(promptCall?.[1]).toContain(specialSummary);
     });
 
     it('should trim whitespace from summary', async () => {
@@ -4060,7 +4018,7 @@ outputs:
           typeof call[0] === 'string' && call[0].includes('prompt.md')
       );
       expect(promptCall).toBeDefined();
-      expect(promptCall![1]).toContain('Trimmed summary');
+      expect(promptCall?.[1]).toContain('Trimmed summary');
     });
 
     it('should reject empty summary string', async () => {
@@ -4103,7 +4061,7 @@ outputs:
           typeof call[0] === 'string' && call[0].includes('metadata.yaml')
       );
       expect(metadataCall).toBeDefined();
-      expect(metadataCall![1]).toContain('my-custom-category-123');
+      expect(metadataCall?.[1]).toContain('my-custom-category-123');
     });
 
     it('should create recipe in category subfolder for library root location', async () => {

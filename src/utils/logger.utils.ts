@@ -69,7 +69,10 @@ class Logger {
     if (!this.instance) {
       this.initialize();
     }
-    return this.instance!;
+    if (!this.instance) {
+      throw new Error('Failed to initialize logger instance');
+    }
+    return this.instance;
   }
 
   static debug(obj: unknown, msg?: string): void {

@@ -1,20 +1,18 @@
 import { OperationMetadata } from './common';
 import { Recipe, RecipeDependency } from './recipe';
 
-export interface ApplyOptions {
+export interface RecipesApplyOptions {
   recipe: string;
   variant?: string;
   project?: string;
   yes?: boolean;
-  progress?: boolean;
-  cost?: boolean;
 }
 
-export interface RecipeState {
+export interface RecipesApplyState {
   [key: string]: string | boolean;
 }
 
-export interface DependencyValidationResult {
+export interface RecipesApplyDependencyValidationResult {
   satisfied: boolean;
   missing: RecipeDependency[];
   conflicting: Array<{
@@ -24,7 +22,7 @@ export interface DependencyValidationResult {
   }>;
 }
 
-export interface ExecutionResult {
+export interface RecipesApplyExecutionResult {
   projectPath: string;
   recipeId: string;
   success: boolean;
@@ -32,10 +30,10 @@ export interface ExecutionResult {
   costUsd: number;
 }
 
-export interface ApplyRecipeResult {
+export interface RecipesApplyResult {
   recipe: Recipe;
-  dependencyCheck: DependencyValidationResult;
-  executionResults: ExecutionResult[];
+  dependencyCheck: RecipesApplyDependencyValidationResult;
+  executionResults: RecipesApplyExecutionResult[];
   summary: {
     totalProjects: number;
     successfulProjects: number;
@@ -45,23 +43,17 @@ export interface ApplyRecipeResult {
   metadata: OperationMetadata;
 }
 
-export type ApplyResult = ApplyRecipeResult;
-
-export class ApplyError extends Error {
+export class RecipesApplyError extends Error {
   constructor(
     message: string,
     public readonly code: string
   ) {
     super(message);
-    this.name = 'ApplyError';
+    this.name = 'RecipesApplyError';
   }
 }
 
-export type ApplyProgressCallback = (
+export type RecipesApplyProgressCallback = (
   step: string | null,
   isThinking?: boolean
-) => void;
-export type ApplyValidationCallback = (
-  type: 'info' | 'success' | 'error' | 'warning',
-  message: string
 ) => void;

@@ -94,6 +94,25 @@ describe('Analyze Command Integration Tests', () => {
   }>;
   let mockProgress: jest.MockedFunction<(message: string | null) => void>;
 
+  const createAnalysisJsonMock = (analysisData: object) => {
+    mockExistsSync.mockImplementation((filePath: string) => {
+      if (filePath.includes('analysis.json')) {
+        return true;
+      }
+      return filePath.includes('.git');
+    });
+
+    mockReadFileSync.mockImplementation((filePath: string) => {
+      if (filePath.includes('analysis.json')) {
+        return JSON.stringify(analysisData);
+      }
+      if (filePath.includes('frameworks.yaml')) {
+        return frameworksYamlContent;
+      }
+      return '';
+    });
+  };
+
   const setupDefaultMocks = () => {
     mockExistsSync.mockImplementation((filePath: string) => {
       if (
@@ -103,7 +122,8 @@ describe('Analyze Command Integration Tests', () => {
         filePath.includes('src/') ||
         filePath.includes('test-fixtures/') ||
         filePath.includes('frameworks.yaml') ||
-        filePath.includes('resources')
+        filePath.includes('resources') ||
+        filePath.includes('analysis.json')
       ) {
         return true;
       }
@@ -119,6 +139,14 @@ describe('Analyze Command Integration Tests', () => {
       }
       if (filePath.includes('frameworks.yaml')) {
         return frameworksYamlContent;
+      }
+      if (filePath.includes('analysis.json')) {
+        return JSON.stringify({
+          is_monorepo: false,
+          has_workspace_package_manager: false,
+          workspace_ecosystem: 'javascript',
+          projects: [],
+        });
       }
       return 'mock file content';
     });
@@ -194,27 +222,31 @@ describe('Analyze Command Integration Tests', () => {
       ],
     };
 
+    const analysisJson = {
+      is_monorepo: false,
+      has_workspace_package_manager: false,
+      workspace_ecosystem: 'javascript',
+      projects: [
+        {
+          path: '.',
+          language: 'javascript',
+          type: 'api_server',
+          framework: 'express',
+          dependencies: ['express', 'dotenv'],
+          has_package_manager: true,
+          ecosystem: 'javascript',
+          dockerized: false,
+        },
+      ],
+    };
+
+    createAnalysisJsonMock(analysisJson);
+
     mockQuery.mockImplementation(async function* () {
       yield {
         type: 'result',
         subtype: 'success',
-        result: JSON.stringify({
-          is_monorepo: false,
-          has_workspace_package_manager: false,
-          workspace_ecosystem: 'javascript',
-          projects: [
-            {
-              path: '.',
-              language: 'javascript',
-              type: 'api_server',
-              framework: 'express',
-              dependencies: ['express', 'dotenv'],
-              has_package_manager: true,
-              ecosystem: 'javascript',
-              dockerized: false,
-            },
-          ],
-        }),
+        result: '',
         total_cost_usd: 0.05,
         num_turns: 3,
       };
@@ -232,13 +264,13 @@ describe('Analyze Command Integration Tests', () => {
     });
     expect(result.unrecognizedFrameworks).toBeUndefined();
 
-    expect(mockProgress).toHaveBeenCalledWith('Finding git repository...');
-    expect(mockProgress).toHaveBeenCalledWith('Building file tree...');
-    expect(mockProgress).toHaveBeenCalledWith('Loading analysis prompt...');
+    expect(mockProgress).toHaveBeenCalledWith('Finding git repository');
+    expect(mockProgress).toHaveBeenCalledWith('Building file tree');
+    expect(mockProgress).toHaveBeenCalledWith('Loading analysis prompt');
     expect(mockProgress).toHaveBeenCalledWith(
-      'Analyzing workspace with Claude...'
+      'Analyzing workspace with Claude'
     );
-    expect(mockProgress).toHaveBeenCalledWith('Validating frameworks...');
+    expect(mockProgress).toHaveBeenCalledWith('Validating frameworks');
 
     expect(mockWriteFileSync).toHaveBeenCalledWith(
       path.join(process.cwd(), '.chorenzo', 'analysis.json'),
@@ -250,27 +282,31 @@ describe('Analyze Command Integration Tests', () => {
   it('should handle unrecognized frameworks', async () => {
     setupFixture('simple-express', { addGitRepo: true });
 
+    const analysisJson = {
+      is_monorepo: false,
+      has_workspace_package_manager: false,
+      workspace_ecosystem: 'javascript',
+      projects: [
+        {
+          path: '.',
+          language: 'javascript',
+          type: 'web_app',
+          framework: 'unknown-framework',
+          dependencies: ['unknown-framework'],
+          has_package_manager: true,
+          ecosystem: 'javascript',
+          dockerized: false,
+        },
+      ],
+    };
+
+    createAnalysisJsonMock(analysisJson);
+
     mockQuery.mockImplementation(async function* () {
       yield {
         type: 'result',
         subtype: 'success',
-        result: JSON.stringify({
-          is_monorepo: false,
-          has_workspace_package_manager: false,
-          workspace_ecosystem: 'javascript',
-          projects: [
-            {
-              path: '.',
-              language: 'javascript',
-              type: 'web_app',
-              framework: 'unknown-framework',
-              dependencies: ['unknown-framework'],
-              has_package_manager: true,
-              ecosystem: 'javascript',
-              dockerized: false,
-            },
-          ],
-        }),
+        result: '',
         total_cost_usd: 0.05,
         num_turns: 3,
       };
@@ -305,24 +341,40 @@ describe('Analyze Command Integration Tests', () => {
   it('should handle git repository not found', async () => {
     setupFixture('simple-express');
 
+    const analysisJson = {
+      is_monorepo: false,
+      has_workspace_package_manager: false,
+      workspace_ecosystem: 'javascript',
+      projects: [
+        {
+          path: '.',
+          language: 'javascript',
+          type: 'library',
+          dependencies: [],
+          has_package_manager: false,
+        },
+      ],
+    };
+
+    mockExistsSync.mockImplementation((filePath: string) => {
+      if (filePath.includes('analysis.json')) {
+        return true;
+      }
+      return false;
+    });
+
+    mockReadFileSync.mockImplementation((filePath: string) => {
+      if (filePath.includes('analysis.json')) {
+        return JSON.stringify(analysisJson);
+      }
+      return '';
+    });
+
     mockQuery.mockImplementation(async function* () {
       yield {
         type: 'result',
         subtype: 'success',
-        result: JSON.stringify({
-          is_monorepo: false,
-          has_workspace_package_manager: false,
-          workspace_ecosystem: 'javascript',
-          projects: [
-            {
-              path: '.',
-              language: 'javascript',
-              type: 'library',
-              dependencies: [],
-              has_package_manager: false,
-            },
-          ],
-        }),
+        result: '',
         total_cost_usd: 0.03,
         num_turns: 2,
       };
@@ -340,6 +392,26 @@ describe('Analyze Command Integration Tests', () => {
 
   it('should verify tool-specific progress events and thinking state', async () => {
     setupFixture('simple-express', { addGitRepo: true });
+
+    const analysisJson = {
+      is_monorepo: false,
+      has_workspace_package_manager: false,
+      workspace_ecosystem: 'javascript',
+      projects: [
+        {
+          path: '.',
+          language: 'javascript',
+          type: 'api_server',
+          framework: 'express',
+          dependencies: ['express', 'dotenv'],
+          has_package_manager: true,
+          ecosystem: 'javascript',
+          dockerized: false,
+        },
+      ],
+    };
+
+    createAnalysisJsonMock(analysisJson);
 
     mockQuery.mockImplementation(async function* () {
       yield {
@@ -373,23 +445,7 @@ describe('Analyze Command Integration Tests', () => {
       yield {
         type: 'result',
         subtype: 'success',
-        result: JSON.stringify({
-          is_monorepo: false,
-          has_workspace_package_manager: false,
-          workspace_ecosystem: 'javascript',
-          projects: [
-            {
-              path: '.',
-              language: 'javascript',
-              type: 'api_server',
-              framework: 'express',
-              dependencies: ['express', 'dotenv'],
-              has_package_manager: true,
-              ecosystem: 'javascript',
-              dockerized: false,
-            },
-          ],
-        }),
+        result: '',
         total_cost_usd: 0.05,
         num_turns: 3,
       };
@@ -401,17 +457,17 @@ describe('Analyze Command Integration Tests', () => {
     expect(result.analysis).toBeDefined();
     expect(result.metadata?.subtype).toBe('success');
 
-    expect(mockProgress).toHaveBeenCalledWith('Finding git repository...');
-    expect(mockProgress).toHaveBeenCalledWith('Building file tree...');
-    expect(mockProgress).toHaveBeenCalledWith('Loading analysis prompt...');
+    expect(mockProgress).toHaveBeenCalledWith('Finding git repository');
+    expect(mockProgress).toHaveBeenCalledWith('Building file tree');
+    expect(mockProgress).toHaveBeenCalledWith('Loading analysis prompt');
     expect(mockProgress).toHaveBeenCalledWith(
-      'Analyzing workspace with Claude...'
+      'Analyzing workspace with Claude'
     );
     expect(mockProgress).toHaveBeenCalledWith('Reading package.json', false);
     expect(mockProgress).toHaveBeenCalledWith(null, true);
     expect(mockProgress).toHaveBeenCalledWith(null, false);
     expect(mockProgress).toHaveBeenCalledWith('Listing /workspace', false);
-    expect(mockProgress).toHaveBeenCalledWith('Validating frameworks...');
+    expect(mockProgress).toHaveBeenCalledWith('Validating frameworks');
   });
 
   it('should analyze monorepo with mixed languages', async () => {
@@ -455,52 +511,51 @@ describe('Analyze Command Integration Tests', () => {
       ],
     };
 
+    const analysisJson = {
+      is_monorepo: true,
+      has_workspace_package_manager: true,
+      workspace_ecosystem: 'javascript',
+      ci_cd: 'github_actions',
+      projects: [
+        {
+          path: 'apps/web-app',
+          language: 'typescript',
+          type: 'web_app',
+          framework: 'nextjs',
+          dependencies: ['next', 'react', 'react-dom', '@monorepo/shared-lib'],
+          has_package_manager: true,
+          ecosystem: 'javascript',
+          dockerized: false,
+        },
+        {
+          path: 'apps/api-service',
+          language: 'python',
+          type: 'api_server',
+          framework: 'fastapi',
+          dependencies: ['fastapi', 'uvicorn', 'pydantic'],
+          has_package_manager: true,
+          ecosystem: 'python',
+          dockerized: false,
+        },
+        {
+          path: 'apps/shared-lib',
+          language: 'typescript',
+          type: 'library',
+          dependencies: ['react'],
+          has_package_manager: true,
+          ecosystem: 'javascript',
+          dockerized: false,
+        },
+      ],
+    };
+
+    createAnalysisJsonMock(analysisJson);
+
     mockQuery.mockImplementation(async function* () {
       yield {
         type: 'result',
         subtype: 'success',
-        result: JSON.stringify({
-          is_monorepo: true,
-          has_workspace_package_manager: true,
-          workspace_ecosystem: 'javascript',
-          ci_cd: 'github_actions',
-          projects: [
-            {
-              path: 'apps/web-app',
-              language: 'typescript',
-              type: 'web_app',
-              framework: 'nextjs',
-              dependencies: [
-                'next',
-                'react',
-                'react-dom',
-                '@monorepo/shared-lib',
-              ],
-              has_package_manager: true,
-              ecosystem: 'javascript',
-              dockerized: false,
-            },
-            {
-              path: 'apps/api-service',
-              language: 'python',
-              type: 'api_server',
-              framework: 'fastapi',
-              dependencies: ['fastapi', 'uvicorn', 'pydantic'],
-              has_package_manager: true,
-              ecosystem: 'python',
-              dockerized: false,
-            },
-            {
-              path: 'apps/shared-lib',
-              language: 'typescript',
-              type: 'library',
-              dependencies: ['react'],
-              has_package_manager: true,
-              ecosystem: 'javascript',
-              dockerized: false,
-            },
-          ],
-        }),
+        result: '',
         total_cost_usd: 0.08,
         num_turns: 4,
       };
@@ -518,13 +573,13 @@ describe('Analyze Command Integration Tests', () => {
     });
     expect(result.unrecognizedFrameworks).toBeUndefined();
 
-    expect(mockProgress).toHaveBeenCalledWith('Finding git repository...');
-    expect(mockProgress).toHaveBeenCalledWith('Building file tree...');
-    expect(mockProgress).toHaveBeenCalledWith('Loading analysis prompt...');
+    expect(mockProgress).toHaveBeenCalledWith('Finding git repository');
+    expect(mockProgress).toHaveBeenCalledWith('Building file tree');
+    expect(mockProgress).toHaveBeenCalledWith('Loading analysis prompt');
     expect(mockProgress).toHaveBeenCalledWith(
-      'Analyzing workspace with Claude...'
+      'Analyzing workspace with Claude'
     );
-    expect(mockProgress).toHaveBeenCalledWith('Validating frameworks...');
+    expect(mockProgress).toHaveBeenCalledWith('Validating frameworks');
 
     expect(mockWriteFileSync).toHaveBeenCalledWith(
       path.join(process.cwd(), '.chorenzo', 'analysis.json'),
@@ -534,29 +589,34 @@ describe('Analyze Command Integration Tests', () => {
   });
   it('should convert snake_case to camelCase in analysis results', async () => {
     setupFixture('simple-express', { addGitRepo: true });
+
+    const analysisJson = {
+      is_monorepo: false,
+      has_workspace_package_manager: true,
+      workspace_ecosystem: 'typescript',
+      workspace_dependencies: ['typescript', 'next'],
+      ci_cd: 'github_actions',
+      projects: [
+        {
+          path: '.',
+          language: 'typescript',
+          type: 'web_app',
+          framework: 'nextjs',
+          dependencies: ['next', 'react'],
+          has_package_manager: true,
+          ecosystem: 'javascript',
+          dockerized: true,
+        },
+      ],
+    };
+
+    createAnalysisJsonMock(analysisJson);
+
     mockQuery.mockImplementation(async function* () {
       yield {
         type: 'result',
         subtype: 'success',
-        result: JSON.stringify({
-          is_monorepo: false,
-          has_workspace_package_manager: true,
-          workspace_ecosystem: 'typescript',
-          workspace_dependencies: ['typescript', 'next'],
-          ci_cd: 'github_actions',
-          projects: [
-            {
-              path: '.',
-              language: 'typescript',
-              type: 'web_app',
-              framework: 'nextjs',
-              dependencies: ['next', 'react'],
-              has_package_manager: true,
-              ecosystem: 'javascript',
-              dockerized: true,
-            },
-          ],
-        }),
+        result: '',
         total_cost_usd: 0.06,
         num_turns: 4,
       };
@@ -585,14 +645,24 @@ describe('Analyze Command Integration Tests', () => {
     });
   });
 
-  it('should handle invalid JSON response from Claude', async () => {
+  it('should handle analysis file not created by Claude', async () => {
     setupFixture('simple-express', { addGitRepo: true });
+
+    mockExistsSync.mockImplementation((filePath: string) => {
+      if (filePath.includes('analysis.json')) {
+        return false;
+      }
+      if (filePath.includes('.git')) {
+        return true;
+      }
+      return false;
+    });
 
     mockQuery.mockImplementation(async function* () {
       yield {
         type: 'result',
         subtype: 'success',
-        result: 'not valid json at all',
+        result: '',
         total_cost_usd: 0.05,
         num_turns: 3,
       };
@@ -602,12 +672,34 @@ describe('Analyze Command Integration Tests', () => {
 
     expect(result.analysis).toBeNull();
     expect(result.metadata?.subtype).toBe('error');
-    expect(result.metadata?.error).toContain('Invalid JSON response');
+    expect(result.metadata?.error).toContain(
+      'Analysis file was not created by Claude'
+    );
     expect(mockWriteFileSync).not.toHaveBeenCalled();
   });
 
   it('should filter out TodoWrite and TodoRead progress events', async () => {
     setupFixture('simple-express', { addGitRepo: true });
+
+    const analysisJson = {
+      is_monorepo: false,
+      has_workspace_package_manager: false,
+      workspace_ecosystem: 'javascript',
+      projects: [
+        {
+          path: '.',
+          language: 'javascript',
+          type: 'api_server',
+          framework: 'express',
+          dependencies: ['express'],
+          has_package_manager: true,
+          ecosystem: 'javascript',
+          dockerized: false,
+        },
+      ],
+    };
+
+    createAnalysisJsonMock(analysisJson);
 
     mockQuery.mockImplementation(async function* () {
       yield {
@@ -637,23 +729,7 @@ describe('Analyze Command Integration Tests', () => {
       yield {
         type: 'result',
         subtype: 'success',
-        result: JSON.stringify({
-          is_monorepo: false,
-          has_workspace_package_manager: false,
-          workspace_ecosystem: 'javascript',
-          projects: [
-            {
-              path: '.',
-              language: 'javascript',
-              type: 'api_server',
-              framework: 'express',
-              dependencies: ['express'],
-              has_package_manager: true,
-              ecosystem: 'javascript',
-              dockerized: false,
-            },
-          ],
-        }),
+        result: '',
         total_cost_usd: 0.03,
         num_turns: 2,
       };
@@ -677,18 +753,22 @@ describe('Analyze Command Integration Tests', () => {
   it('should handle partial response missing required fields', async () => {
     setupFixture('simple-express', { addGitRepo: true });
 
+    const analysisJson = {
+      projects: [
+        {
+          path: '.',
+          language: 'javascript',
+        },
+      ],
+    };
+
+    createAnalysisJsonMock(analysisJson);
+
     mockQuery.mockImplementation(async function* () {
       yield {
         type: 'result',
         subtype: 'success',
-        result: JSON.stringify({
-          projects: [
-            {
-              path: '.',
-              language: 'javascript',
-            },
-          ],
-        }),
+        result: '',
         total_cost_usd: 0.05,
         num_turns: 3,
       };
@@ -705,15 +785,19 @@ describe('Analyze Command Integration Tests', () => {
   it('should handle empty workspace with no code files', async () => {
     setupFixture('simple-express', { addGitRepo: true });
 
+    const analysisJson = {
+      is_monorepo: false,
+      has_workspace_package_manager: false,
+      projects: [],
+    };
+
+    createAnalysisJsonMock(analysisJson);
+
     mockQuery.mockImplementation(async function* () {
       yield {
         type: 'result',
         subtype: 'success',
-        result: JSON.stringify({
-          is_monorepo: false,
-          has_workspace_package_manager: false,
-          projects: [],
-        }),
+        result: '',
         total_cost_usd: 0.03,
         num_turns: 2,
       };
@@ -729,6 +813,26 @@ describe('Analyze Command Integration Tests', () => {
 
   it('should verify chorenzo directory operations show initialization progress', async () => {
     setupFixture('simple-express', { addGitRepo: true });
+
+    const analysisJson = {
+      is_monorepo: false,
+      has_workspace_package_manager: false,
+      workspace_ecosystem: 'javascript',
+      projects: [
+        {
+          path: '.',
+          language: 'javascript',
+          type: 'api_server',
+          framework: 'express',
+          dependencies: ['express'],
+          has_package_manager: true,
+          ecosystem: 'javascript',
+          dockerized: false,
+        },
+      ],
+    };
+
+    createAnalysisJsonMock(analysisJson);
 
     mockQuery.mockImplementation(async function* () {
       yield {
@@ -746,23 +850,7 @@ describe('Analyze Command Integration Tests', () => {
       yield {
         type: 'result',
         subtype: 'success',
-        result: JSON.stringify({
-          is_monorepo: false,
-          has_workspace_package_manager: false,
-          workspace_ecosystem: 'javascript',
-          projects: [
-            {
-              path: '.',
-              language: 'javascript',
-              type: 'api_server',
-              framework: 'express',
-              dependencies: ['express'],
-              has_package_manager: true,
-              ecosystem: 'javascript',
-              dockerized: false,
-            },
-          ],
-        }),
+        result: '',
         total_cost_usd: 0.03,
         num_turns: 2,
       };

@@ -1,88 +1,78 @@
-import { Box, Text } from 'ink';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
 import { AnalysisResult, performAnalysis } from '~/commands/analyze';
-import { AnalysisDisplay } from '~/components/AnalysisDisplay';
-import { AnalysisProgress } from '~/components/AnalysisProgress';
+import { AnalysisResultDisplay } from '~/components/AnalysisResultDisplay';
+import { Step, StepContext, StepSequence } from '~/components/StepSequence';
+import { BaseContainerOptions } from '~/types/common';
+
+type AnalyzeContainerOptions = BaseContainerOptions;
 
 interface AnalyzeContainerProps {
-  options: {
-    progress?: boolean;
-    cost?: boolean;
-  };
-  onComplete: (result: AnalysisResult) => void;
+  options: AnalyzeContainerOptions;
   onError: (error: Error) => void;
 }
 
 export const AnalyzeContainer: React.FC<AnalyzeContainerProps> = ({
   options,
-  onComplete,
   onError,
 }) => {
-  const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [error, setError] = useState<Error | null>(null);
-  const [isComplete, setIsComplete] = useState(false);
-  const [simpleStep, setSimpleStep] = useState<string>('');
+  const steps: Step[] = [
+    {
+      id: 'analysis',
+      title: 'Running analysis',
+      component: (context: StepContext) => {
+        useEffect(() => {
+          const runAnalysis = async () => {
+            context.setProcessing(true);
+            let lastActivity = '';
+            try {
+              const result = await performAnalysis((step, isThinking) => {
+                if (step) {
+                  lastActivity = step;
+                  context.setActivity(step, isThinking);
+                } else if (isThinking !== undefined && lastActivity) {
+                  context.setActivity(lastActivity, isThinking);
+                }
+              });
 
-  useEffect(() => {
-    if (options.progress === false && !isComplete && !error) {
-      const runSimpleAnalysis = async () => {
-        try {
-          const analysisResult = await performAnalysis((step) => {
-            setSimpleStep(step || '');
-          });
-          setResult(analysisResult);
-          setIsComplete(true);
-          onComplete(analysisResult);
-        } catch (err) {
-          const errorObj = err instanceof Error ? err : new Error(String(err));
-          setError(errorObj);
-          onError(errorObj);
-        }
-      };
-      runSimpleAnalysis();
-    }
-  }, [options.progress, isComplete, error, onComplete, onError]);
+              if (result) {
+                context.setResult(result);
+              }
+              context.complete();
+            } catch (error) {
+              context.setError(
+                error instanceof Error ? error.message : String(error)
+              );
+              onError(
+                error instanceof Error ? error : new Error(String(error))
+              );
+            }
+          };
 
-  if (options.progress === false) {
-    if (error) {
-      return (
-        <Box flexDirection="column">
-          <Text color="red">❌ Error: {error.message}</Text>
-        </Box>
-      );
-    }
+          runAnalysis();
+        }, []);
 
-    if (isComplete && result) {
-      return <AnalysisDisplay result={result} showCost={options.cost} />;
-    }
-
-    return (
-      <Box flexDirection="column">
-        <Text color="blue">🔍 {simpleStep || 'Analyzing workspace...'}</Text>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box flexDirection="column">
-        <Text color="red">❌ Error: {error.message}</Text>
-      </Box>
-    );
-  }
+        return null;
+      },
+    },
+  ];
 
   return (
-    <AnalysisProgress
-      onComplete={(analysisResult) => {
-        setResult(analysisResult);
-        setIsComplete(true);
-        onComplete(analysisResult);
+    <StepSequence
+      steps={steps}
+      debugMode={options.debug}
+      completionTitle="Process completed!"
+      completionComponent={(context: StepContext) => {
+        const result = context.getResult<AnalysisResult>('analysis');
+        if (result?.analysis) {
+          return (
+            <AnalysisResultDisplay result={result} showCost={options.cost} />
+          );
+        }
+        return null;
       }}
-      onError={(error) => {
-        setError(error);
-        onError(error);
-      }}
+      errorTitle="Analysis failed!"
+      options={options}
     />
   );
 };

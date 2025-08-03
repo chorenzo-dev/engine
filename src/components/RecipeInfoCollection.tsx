@@ -35,6 +35,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
     customCategory: '',
     instructions: '',
     useMagic: false,
+    ecosystemAgnostic: initialOptions.ecosystemAgnostic ?? false,
     availableCategories: [] as string[],
     showCustomCategory: false,
     showCustomLocation: false,
@@ -53,6 +54,12 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
     if (!state.summary) {
       return 'summary';
     }
+    if (
+      state.ecosystemAgnostic === undefined ||
+      state.ecosystemAgnostic === null
+    ) {
+      return 'ecosystem-type';
+    }
     return 'generation-method';
   }, []);
 
@@ -61,6 +68,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
     | 'location'
     | 'category'
     | 'summary'
+    | 'ecosystem-type'
     | 'generation-method'
     | 'instructions'
     | 'complete'
@@ -188,6 +196,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
       category: formState.category,
       summary: formState.summary,
       magicGenerate: formState.useMagic,
+      ecosystemAgnostic: formState.ecosystemAgnostic,
       additionalInstructions: formState.useMagic
         ? formState.instructions
         : undefined,
@@ -286,6 +295,42 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
         <Text color={colors.muted} dimColor>
           Enter a brief summary of what this recipe does
         </Text>
+      </Box>
+    );
+  }
+
+  if (phase === 'ecosystem-type' && shouldUseInput) {
+    const ecosystemOptions = [
+      {
+        label: 'Ecosystem-specific (works with specific languages/frameworks)',
+        value: false,
+      },
+      {
+        label: 'Ecosystem-agnostic (works across all languages/ecosystems)',
+        value: true,
+      },
+    ];
+
+    const handleEcosystemSelect = (item: { value: boolean }) => {
+      setFormState((prev) => ({ ...prev, ecosystemAgnostic: item.value }));
+      setPhase(getNextPhase({ ...formState, ecosystemAgnostic: item.value }));
+    };
+
+    return (
+      <Box flexDirection="column">
+        <Box marginBottom={1}>
+          <Text bold>Recipe Type</Text>
+        </Box>
+        <Text color={colors.muted} dimColor>
+          Choose whether this recipe works with specific ecosystems or all
+          ecosystems
+        </Text>
+        <Box marginTop={1}>
+          <SelectInput
+            items={ecosystemOptions}
+            onSelect={handleEcosystemSelect}
+          />
+        </Box>
       </Box>
     );
   }

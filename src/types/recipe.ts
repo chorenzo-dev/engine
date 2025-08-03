@@ -125,6 +125,10 @@ export class Recipe {
     return this.metadata.level === 'workspace-preferred';
   }
 
+  isEcosystemAgnostic(): boolean {
+    return this.metadata.ecosystems.length === 0;
+  }
+
   hasEcosystem(ecosystemId: string): boolean {
     return this.metadata.ecosystems.some((eco) => eco.id === ecosystemId);
   }
@@ -145,6 +149,13 @@ export class Recipe {
 
   getPrompt(): RecipePrompt {
     return this.prompt;
+  }
+
+  getAgnosticFixContent(): string | undefined {
+    if (!this.isEcosystemAgnostic()) {
+      return undefined;
+    }
+    return this.fixFiles.get('fix.md');
   }
 }
 

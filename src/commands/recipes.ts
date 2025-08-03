@@ -83,6 +83,7 @@ export interface RecipesGenerateOptions extends RecipesOptions {
   location?: string;
   saveLocation?: string;
   additionalInstructions?: string;
+  ecosystemAgnostic?: boolean;
 }
 
 export interface RecipesGenerateResult {
@@ -1102,51 +1103,73 @@ async function executeRecipe(
   const workspaceRoot = workspaceConfig.getWorkspaceRoot();
 
   try {
-    const ecosystem = recipe
-      .getEcosystems()
-      .find((eco) => eco.id === targetEcosystem);
-    if (!ecosystem) {
-      Logger.warn(
-        {
-          event: 'ecosystem_not_supported',
-          ecosystem: targetEcosystem,
-          recipe: recipe.getId(),
-        },
-        `Recipe does not support ecosystem: ${targetEcosystem}`
-      );
-      return {
-        projectPath,
-        recipeId: recipe.getId(),
-        success: false,
-        error: `Recipe '${recipe.getId()}' does not support ecosystem '${targetEcosystem}'`,
-        costUsd: 0,
-      };
+    let fixContent: string;
+
+    if (recipe.isEcosystemAgnostic()) {
+      fixContent = recipe.getAgnosticFixContent() || '';
+      if (!fixContent) {
+        Logger.warn(
+          {
+            event: 'agnostic_fix_missing',
+            recipe: recipe.getId(),
+          },
+          `Ecosystem-agnostic recipe missing fix.md file`
+        );
+        return {
+          projectPath,
+          recipeId: recipe.getId(),
+          success: false,
+          error: `Recipe '${recipe.getId()}' is missing fix.md file`,
+          costUsd: 0,
+        };
+      }
+    } else {
+      const ecosystem = recipe
+        .getEcosystems()
+        .find((eco) => eco.id === targetEcosystem);
+      if (!ecosystem) {
+        Logger.warn(
+          {
+            event: 'ecosystem_not_supported',
+            ecosystem: targetEcosystem,
+            recipe: recipe.getId(),
+          },
+          `Recipe does not support ecosystem: ${targetEcosystem}`
+        );
+        return {
+          projectPath,
+          recipeId: recipe.getId(),
+          success: false,
+          error: `Recipe '${recipe.getId()}' does not support ecosystem '${targetEcosystem}'`,
+          costUsd: 0,
+        };
+      }
+
+      const variants = recipe.getVariantsForEcosystem(targetEcosystem);
+      const variantObj = variants.find((v) => v.id === variant);
+
+      if (!variantObj) {
+        Logger.warn(
+          {
+            event: 'variant_not_found',
+            ecosystem: targetEcosystem,
+            variant,
+            recipe: recipe.getId(),
+          },
+          `Variant '${variant}' not found for ecosystem ${targetEcosystem}`
+        );
+        return {
+          projectPath,
+          recipeId: recipe.getId(),
+          success: false,
+          error: `Variant '${variant}' not found for ecosystem '${targetEcosystem}'`,
+          costUsd: 0,
+        };
+      }
+
+      fixContent =
+        recipe.fixFiles.get(variantObj.fix_prompt) || variantObj.fix_prompt;
     }
-
-    const variants = recipe.getVariantsForEcosystem(targetEcosystem);
-    const variantObj = variants.find((v) => v.id === variant);
-
-    if (!variantObj) {
-      Logger.warn(
-        {
-          event: 'variant_not_found',
-          ecosystem: targetEcosystem,
-          variant,
-          recipe: recipe.getId(),
-        },
-        `Variant '${variant}' not found for ecosystem ${targetEcosystem}`
-      );
-      return {
-        projectPath,
-        recipeId: recipe.getId(),
-        success: false,
-        error: `Variant '${variant}' not found for ecosystem '${targetEcosystem}'`,
-        costUsd: 0,
-      };
-    }
-
-    const fixContent =
-      recipe.fixFiles.get(variantObj.fix_prompt) || variantObj.fix_prompt;
     const recipePrompt = recipe.getPrompt();
 
     const promptTemplate = loadPrompt('apply_recipe');
@@ -1429,7 +1452,9 @@ export async function performRecipesGenerate(
     onProgress?.(`Creating recipe directory: ${recipePath}`);
 
     fs.mkdirSync(recipePath, { recursive: true });
-    fs.mkdirSync(path.join(recipePath, 'fixes'), { recursive: true });
+    if (!options.ecosystemAgnostic) {
+      fs.mkdirSync(path.join(recipePath, 'fixes'), { recursive: true });
+    }
 
     onProgress?.('Creating recipe files');
 
@@ -1446,7 +1471,10 @@ export async function performRecipesGenerate(
       const recipeGuidelines = loadDoc('recipes');
       const availableOutputs = await loadExistingRecipeOutputs();
 
-      const magicPromptTemplate = loadTemplate('recipe_magic_generate');
+      const templateName = options.ecosystemAgnostic
+        ? 'recipe_magic_generate_agnostic'
+        : 'recipe_magic_generate';
+      const magicPromptTemplate = loadTemplate(templateName);
       const additionalInstructionsText = options.additionalInstructions
         ? `\nAdditional Instructions: ${options.additionalInstructions}`
         : '';
@@ -1517,10 +1545,15 @@ export async function performRecipesGenerate(
 
       const fixTemplate = loadTemplate('recipe_fix');
       const fixContent = renderPrompt(fixTemplate, templateVars);
-      fs.writeFileSync(
-        path.join(recipePath, 'fixes', 'javascript_default.md'),
-        fixContent
-      );
+
+      if (options.ecosystemAgnostic) {
+        fs.writeFileSync(path.join(recipePath, 'fix.md'), fixContent);
+      } else {
+        fs.writeFileSync(
+          path.join(recipePath, 'fixes', 'javascript_default.md'),
+          fixContent
+        );
+      }
     }
 
     const endTime = new Date();

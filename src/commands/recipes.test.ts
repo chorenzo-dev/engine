@@ -3488,6 +3488,103 @@ outputs:
         ).rejects.toThrow('No applicable projects found');
       });
     });
+
+    describe('Ecosystem-agnostic recipe validation', () => {
+      beforeEach(() => {
+        mockExistsSync.mockImplementation((filePath: string) => {
+          if (filePath === '/path/to/agnostic-recipe') {
+            return true;
+          }
+          if (filePath === '/path/to/agnostic-recipe/metadata.yaml') {
+            return true;
+          }
+          if (filePath === '/path/to/agnostic-recipe/prompt.md') {
+            return true;
+          }
+          if (filePath === '/path/to/agnostic-recipe/fix.md') {
+            return true;
+          }
+          return false;
+        });
+
+        mockStatSync.mockImplementation(
+          (filePath: string) =>
+            ({
+              isDirectory: () => !filePath.includes('.'),
+              isFile: () => filePath.includes('.'),
+            }) as fs.Stats
+        );
+
+        mockReadFileSync.mockImplementation((filePath: string) => {
+          if (filePath === '/path/to/agnostic-recipe/metadata.yaml') {
+            return `
+id: agnostic-recipe
+category: utilities
+summary: Test ecosystem-agnostic recipe
+level: workspace-preferred
+ecosystems: []
+provides: []
+requires: []
+`;
+          }
+          if (filePath === '/path/to/agnostic-recipe/prompt.md') {
+            return '## Goal\nTest goal\n## Investigation\nTest investigation\n## Expected Output\nTest output';
+          }
+          if (filePath === '/path/to/agnostic-recipe/fix.md') {
+            return '# Agnostic Fix\nThis works for any ecosystem.';
+          }
+          return '';
+        });
+      });
+
+      it('should validate ecosystem-agnostic recipe successfully', async () => {
+        const options = { target: '/path/to/agnostic-recipe' };
+
+        const result = await performRecipesValidate(options);
+
+        expect(result.context.target).toBe('/path/to/agnostic-recipe');
+        expect(result.context.recipesValidated).toEqual(['agnostic-recipe']);
+        expect(result.messages).toBeDefined();
+        expect(
+          result.messages.some(
+            (msg) =>
+              msg.type === 'success' &&
+              msg.text.includes("Recipe 'agnostic-recipe' is valid")
+          )
+        ).toBe(true);
+      });
+
+      it('should fail validation when fix.md is missing for ecosystem-agnostic recipe', async () => {
+        mockExistsSync.mockImplementation((filePath: string) => {
+          if (filePath === '/path/to/agnostic-recipe') {
+            return true;
+          }
+          if (filePath === '/path/to/agnostic-recipe/metadata.yaml') {
+            return true;
+          }
+          if (filePath === '/path/to/agnostic-recipe/prompt.md') {
+            return true;
+          }
+          return false;
+        });
+
+        const options = { target: '/path/to/agnostic-recipe' };
+
+        const result = await performRecipesValidate(options);
+
+        expect(result.context.target).toBe('/path/to/agnostic-recipe');
+        expect(result.messages).toBeDefined();
+        expect(
+          result.messages.some(
+            (msg) =>
+              msg.type === 'error' &&
+              msg.text.includes(
+                'Missing fix.md file for ecosystem-agnostic recipe'
+              )
+          )
+        ).toBe(true);
+      });
+    });
   });
 
   describe('Recipe Generation', () => {
@@ -4227,6 +4324,71 @@ outputs:
           magicGenerate: false,
         })
       ).rejects.toThrow('Recipe "existing-recipe" already exists at');
+    });
+
+    describe('Ecosystem-agnostic recipes', () => {
+      it('should generate ecosystem-agnostic recipe with fix.md file', async () => {
+        setupGenerateMocks();
+
+        const result = await performRecipesGenerate({
+          name: 'agnostic-recipe',
+          category: 'utilities',
+          summary: 'Test ecosystem-agnostic recipe',
+          magicGenerate: false,
+          ecosystemAgnostic: true,
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.recipeName).toBe('agnostic-recipe');
+        expect(result.recipePath).toContain('agnostic-recipe');
+
+        expect(mockMkdirSync).toHaveBeenCalledWith(
+          expect.stringContaining('agnostic-recipe'),
+          { recursive: true }
+        );
+        expect(mockMkdirSync).not.toHaveBeenCalledWith(
+          expect.stringContaining('fixes'),
+          { recursive: true }
+        );
+
+        expect(mockWriteFileSync).toHaveBeenCalledWith(
+          expect.stringContaining('fix.md'),
+          expect.any(String)
+        );
+        expect(mockWriteFileSync).not.toHaveBeenCalledWith(
+          expect.stringContaining('fixes/javascript_default.md'),
+          expect.any(String)
+        );
+      });
+
+      it('should generate regular recipe with fixes directory when not ecosystem-agnostic', async () => {
+        setupGenerateMocks();
+
+        const result = await performRecipesGenerate({
+          name: 'regular-recipe',
+          category: 'utilities',
+          summary: 'Test regular recipe',
+          magicGenerate: false,
+          ecosystemAgnostic: false,
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.recipeName).toBe('regular-recipe');
+
+        expect(mockMkdirSync).toHaveBeenCalledWith(
+          expect.stringContaining('fixes'),
+          { recursive: true }
+        );
+
+        expect(mockWriteFileSync).toHaveBeenCalledWith(
+          expect.stringContaining('fixes/javascript_default.md'),
+          expect.any(String)
+        );
+        expect(mockWriteFileSync).not.toHaveBeenCalledWith(
+          expect.stringContaining('fix.md'),
+          expect.any(String)
+        );
+      });
     });
   });
 });

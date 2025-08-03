@@ -42,7 +42,7 @@ Intelligently apply at workspace or project level based on ecosystem and state c
 
 ## Recipe Structure
 
-Each recipe is a self-contained folder with a specific structure:
+Each recipe is a self-contained folder with a specific structure. Most recipes are **ecosystem-specific** and work with particular programming languages or frameworks:
 
 ```
 recipe_id/
@@ -52,6 +52,8 @@ recipe_id/
     ├── variant_a.md   # Fix instructions for variant A
     └── variant_b.md   # Fix instructions for variant B
 ```
+
+**Ecosystem-agnostic recipes** work across all programming languages and use a simpler structure with `ecosystems: []` and a single `fix.md` file instead of the `fixes/` directory.
 
 ## File Contents
 
@@ -79,6 +81,8 @@ provides: # Facts this recipe outputs
 
 requires: [] # Dependencies (array of {key: fact, equals: value}) or project characteristics
 ```
+
+> **Note**: For ecosystem-agnostic recipes, use `ecosystems: []` (empty array) instead of listing specific ecosystems. These recipes work across all programming languages and use a single `fix.md` file.
 
 ### prompt.md
 
@@ -108,23 +112,25 @@ One-sentence goal describing what this recipe accomplishes.
 
 ### fixes/variant.md
 
-Variant-specific implementation instructions:
+Implementation instructions for specific ecosystems and tool variants:
 
 ```markdown
-# Setting up [Tool Name]
+# Setting up [Tool Name] for [Ecosystem]
 
 ## Installation
 
-Concrete commands to install the tool.
+Concrete commands to install the tool for this specific ecosystem.
 
 ## Configuration
 
-Example configuration with sensible defaults.
+Example configuration with ecosystem-specific defaults.
 
 ## Verification
 
-How to verify the tool is working correctly.
+How to verify the tool is working correctly in this ecosystem.
 ```
+
+> **Note**: Ecosystem-agnostic recipes use a single `fix.md` file with universal instructions that work across all programming languages, instead of the `fixes/` directory.
 
 ## Recipe Design Principles
 
@@ -180,12 +186,16 @@ See `code_quality/code_formatting/` for a complete example implementing code for
 1. Create a folder matching your recipe ID (kebab-case)
 2. Add `metadata.yaml` with at least: id, summary, level, ecosystems, provides
 3. Write `prompt.md` with Goal, Investigation, and Expected Output sections
-4. Add variant-specific fix prompts under `fixes/`
+4. Add fix implementation:
+   - **Most recipes**: Add variant-specific fix prompts under `fixes/` directory
+   - **Universal tools only**: Use `ecosystems: []` and create a single `fix.md` file
 5. Ensure all paths in metadata.yaml match actual file locations
 6. Choose the appropriate level:
    - `workspace-only` for global tools that must never apply per-project
    - `project-only` for per-project setup that must never apply globally
    - `workspace-preferred` for tools that work best globally but handle mixed ecosystems
+
+> **Ecosystem-agnostic recipes** should only be used for truly universal tools like Git hooks, editor configs, or documentation templates that work identically across all programming languages.
 
 ## Project Characteristics
 

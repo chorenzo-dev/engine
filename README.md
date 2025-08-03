@@ -14,6 +14,22 @@ npx chorenzo init
 
 # Reset workspace and re-initialize
 npx chorenzo init --reset
+
+# Skip automatic workspace analysis
+npx chorenzo init --no-analyze
+# Or use alias
+npx chorenzo init -A
+
+# Skip interactive confirmation
+npx chorenzo init -y
+# Or combine with other options
+npx chorenzo init --reset -y
+
+# Show detailed debug output
+npx chorenzo init --debug
+
+# Show LLM cost information
+npx chorenzo init --cost
 ```
 
 ### Analyze Command
@@ -24,8 +40,11 @@ Analyze your workspace and get detailed insights about project structure, depend
 # With progress UI (default)
 npx chorenzo analyze
 
-# Simple text output without progress UI
+# Disable progress UI for simple text output
 npx chorenzo analyze --no-progress
+
+# Show detailed debug output
+npx chorenzo analyze --debug
 
 # Show LLM cost information
 npx chorenzo analyze --cost
@@ -49,6 +68,12 @@ npx chorenzo recipes validate ~/.chorenzo/recipes/core
 
 # Validate recipes from a git repository
 npx chorenzo recipes validate https://github.com/chorenzo-dev/recipes-core.git
+
+# Disable progress UI for simple text output
+npx chorenzo recipes validate code-formatting --no-progress
+
+# Show detailed debug output
+npx chorenzo recipes validate code-formatting --debug
 ```
 
 #### Apply Recipes
@@ -59,20 +84,29 @@ Apply automation recipes to your workspace:
 # Apply a recipe by name
 npx chorenzo recipes apply code-formatting
 
+# Apply a local recipe folder
+npx chorenzo recipes apply ./my-recipe
+
 # Apply with custom variant
 npx chorenzo recipes apply linting --variant strict
 
 # Apply to specific project in monorepo
 npx chorenzo recipes apply testing --project frontend
 
-# Apply with progress UI disabled
+# Skip interactive confirmations
+npx chorenzo recipes apply eslint-config -y
+
+# Disable progress UI for simple text output
 npx chorenzo recipes apply ci-cd --no-progress
+
+# Show detailed debug output
+npx chorenzo recipes apply linting --debug
 
 # Show LLM cost information
 npx chorenzo recipes apply code-formatting --cost
 
 # Combine flags for detailed output
-npx chorenzo recipes apply linting --cost --debug
+npx chorenzo recipes apply linting --cost --debug -y
 ```
 
 #### Generate Recipes
@@ -96,6 +130,12 @@ npx chorenzo recipes generate testing \
   --location ~/my-recipes \
   --category development \
   --summary "Configure Jest testing framework with coverage reporting and TypeScript integration"
+
+# Disable progress UI for simple text output
+npx chorenzo recipes generate my-recipe --no-progress
+
+# Show detailed debug output
+npx chorenzo recipes generate my-recipe --debug
 
 # Show LLM cost for AI-generated recipes
 npx chorenzo recipes generate my-recipe --cost
@@ -139,6 +179,14 @@ requires:
 
 See our [recipes documentation](docs/recipes.md) for detailed information about creating and using recipes, including the full list of available project characteristics.
 
+### Common Flags
+
+Most commands support these common flags:
+
+- `--no-progress`: Disable progress UI for simple text output
+- `--debug`: Show detailed debug output with all progress messages
+- `--cost`: Show LLM cost information (for commands that use AI)
+
 ### Help
 
 ```bash
@@ -146,8 +194,14 @@ See our [recipes documentation](docs/recipes.md) for detailed information about 
 npx chorenzo --help
 
 # Show help for specific command
+npx chorenzo init --help
 npx chorenzo analyze --help
 npx chorenzo recipes --help
+
+# Show help for recipe subcommands
+npx chorenzo recipes validate --help
+npx chorenzo recipes apply --help
+npx chorenzo recipes generate --help
 ```
 
 ## Requirements

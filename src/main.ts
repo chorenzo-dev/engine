@@ -182,7 +182,10 @@ recipesCommand
   .option('--no-progress', 'Disable progress UI')
   .option('--debug', 'Show all progress messages in list format')
   .option('--cost', 'Show LLM cost information')
-  .option('--location <path>', 'Custom save location for the recipe')
+  .option(
+    '--location <path>',
+    'Custom save location (supports ~ for home directory)'
+  )
   .option('--category <category>', 'Recipe category')
   .option('--summary <summary>', 'Recipe summary')
   .addHelpText(
@@ -190,11 +193,6 @@ recipesCommand
     `
 Arguments:  
   name      Recipe name (optional, will prompt if not provided)
-
-Options:
-  --location <path>    Custom path to save recipe (supports ~ for home directory)
-  --category <name>    Recipe category (required in non-interactive mode)
-  --summary <text>     Recipe summary (required in non-interactive mode)
 
 Examples:
   $ chorenzo recipes generate                               # Interactive generation

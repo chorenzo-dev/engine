@@ -192,6 +192,10 @@ recipesCommand
     '--ecosystem-agnostic',
     'Create recipe that works across multiple ecosystems'
   )
+  .option(
+    '--ecosystem-specific',
+    'Create recipe for specific ecosystems (opposite of --ecosystem-agnostic)'
+  )
   .option('--magic-generate', 'Generate recipe content using AI (uses Claude)')
   .option(
     '--additional-instructions <instructions>',
@@ -209,11 +213,24 @@ Examples:
   $ chorenzo recipes generate linting --category tools --summary "Set up ESLint and Prettier with TypeScript support for consistent code formatting"
   $ chorenzo recipes generate testing --location ~/my-recipes --category development --summary "Configure Jest testing framework with coverage reporting and TypeScript integration"
   $ chorenzo recipes generate docker --ecosystem-agnostic --category infrastructure --summary "Add Docker support for any project type"
+  $ chorenzo recipes generate typescript --ecosystem-specific --category tools --summary "Set up TypeScript configuration for JavaScript projects"
   $ chorenzo recipes generate auth --magic-generate --category security --summary "Implement authentication system"
   $ chorenzo recipes generate api --magic-generate --additional-instructions "Use FastAPI with async support" --summary "Create REST API endpoints"
 `
   )
   .action(async (name, options) => {
+    if (options.ecosystemAgnostic && options.ecosystemSpecific) {
+      console.error(
+        'Error: Cannot use both --ecosystem-agnostic and --ecosystem-specific flags together'
+      );
+      process.exit(1);
+    }
+
+    let ecosystemAgnostic = options.ecosystemAgnostic;
+    if (options.ecosystemSpecific !== undefined) {
+      ecosystemAgnostic = !options.ecosystemSpecific;
+    }
+
     const { waitUntilExit } = render(
       React.createElement(Shell, {
         command: 'recipes-generate',
@@ -225,7 +242,7 @@ Examples:
           saveLocation: options.location,
           category: options.category,
           summary: options.summary,
-          ecosystemAgnostic: options.ecosystemAgnostic,
+          ecosystemAgnostic,
           magicGenerate: options.magicGenerate,
           additionalInstructions: options.additionalInstructions,
         },

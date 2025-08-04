@@ -145,6 +145,11 @@ npx chorenzo recipes generate docker-setup --ecosystem-agnostic \
   --category infrastructure \
   --summary "Add Docker support for any project type"
 
+# Generate ecosystem-specific recipe
+npx chorenzo recipes generate typescript-setup --ecosystem-specific \
+  --category tools \
+  --summary "Set up TypeScript configuration for JavaScript projects"
+
 # Generate AI-powered recipe content
 npx chorenzo recipes generate auth-system --magic-generate \
   --category security \
@@ -165,7 +170,8 @@ npx chorenzo recipes generate api-endpoints --magic-generate \
 - `--location <path>`: Custom save location (supports ~ for home directory)
 - `--category <category>`: Recipe category (required for non-interactive mode)
 - `--summary <summary>`: Recipe summary (required for non-interactive mode)
-- `--ecosystem-agnostic`: Create recipe that works across multiple ecosystems
+- `--ecosystem-agnostic`: Create recipe that works across multiple ecosystems (generates single fix.md file)
+- `--ecosystem-specific`: Create recipe with separate fixes for each ecosystem (generates fixes/ directory with ecosystem-specific files)
 - `--magic-generate`: Generate recipe content using AI (uses Claude)
 - `--additional-instructions <instructions>`: Additional instructions for AI generation (requires --magic-generate)
 

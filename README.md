@@ -139,7 +139,35 @@ npx chorenzo recipes generate my-recipe --debug
 
 # Show LLM cost for AI-generated recipes
 npx chorenzo recipes generate my-recipe --cost
+
+# Generate ecosystem-agnostic recipe
+npx chorenzo recipes generate docker-setup --ecosystem-agnostic \
+  --category infrastructure \
+  --summary "Add Docker support for any project type"
+
+# Generate AI-powered recipe content
+npx chorenzo recipes generate auth-system --magic-generate \
+  --category security \
+  --summary "Implement authentication system"
+
+# Generate with additional AI instructions
+npx chorenzo recipes generate api-endpoints --magic-generate \
+  --additional-instructions "Use FastAPI with async support" \
+  --category api \
+  --summary "Create REST API endpoints"
 ```
+
+**Options:**
+
+- `--no-progress`: Disable progress UI for simple text output
+- `--debug`: Show detailed debug output with all progress messages
+- `--cost`: Show LLM cost information (for AI-generated recipes)
+- `--location <path>`: Custom save location (supports ~ for home directory)
+- `--category <category>`: Recipe category (required for non-interactive mode)
+- `--summary <summary>`: Recipe summary (required for non-interactive mode)
+- `--ecosystem-agnostic`: Create recipe that works across multiple ecosystems
+- `--magic-generate`: Generate recipe content using AI (uses Claude)
+- `--additional-instructions <instructions>`: Additional instructions for AI generation (requires --magic-generate)
 
 **Interactive Mode:**
 When run without required parameters, the generate command will prompt you interactively for:

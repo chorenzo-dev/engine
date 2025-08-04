@@ -27,9 +27,18 @@ Follow these guidelines for creating the recipe:
 
 **PROVIDES/REQUIRES GUIDELINES:**
 
-- Create meaningful, specific output names instead of generic ones
-- Good: `formatting.prettier-configured`, `linting.eslint-setup`
-- Bad: `recipe-name.configured`, `recipe-name.applied`
+**CRITICAL: Provides variables should be SCARCE. Default to empty `provides: []` in most cases.**
+
+- **DEFAULT BEHAVIOR**: Use empty `provides: []` - Most recipes should have no provides variables
+- **ONLY add provides when absolutely certain** other recipes would depend on this state
+- **When in doubt, don't add** - It's better to require manual addition than create clutter
+- **Focus on infrastructure/tooling state** that other recipes genuinely need to know about
+
+**When to add provides variables:**
+- Only when the recipe sets up fundamental infrastructure that other recipes genuinely need
+- Only when there's a clear, obvious case that other recipes would depend on this state
+- Never for internal recipe state, completion status, or generic file operations
+
 - Only reference existing recipe outputs in requires field
 - Available outputs: {{ available_outputs }}
 
@@ -52,7 +61,8 @@ Follow these guidelines for creating the recipe:
 **FILE STRUCTURE:**
 
 1. Create {{ recipe_path }}/metadata.yaml with:
-   - Meaningful provides/requires lists
+   - **IMPORTANT: Default to empty `provides: []` unless absolutely necessary**
+   - Conservative requires lists referencing only essential dependencies
    - Separate variants for each tool/approach you identified
 2. Create {{ recipe_path }}/prompt.md with:
    - Generic investigation steps

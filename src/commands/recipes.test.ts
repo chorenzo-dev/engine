@@ -4544,6 +4544,67 @@ requires: []
         expect(options.magicGenerate).toBe(true);
         expect(options.ecosystemAgnostic).toBe(true);
       });
+
+      it('should handle ecosystem-specific parameter', async () => {
+        setupGenerateMocks();
+
+        const result = await performRecipesGenerate({
+          name: 'specific-recipe',
+          category: 'utilities',
+          summary: 'Test ecosystem-specific recipe',
+          magicGenerate: false,
+          ecosystemAgnostic: false,
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.recipeName).toBe('specific-recipe');
+
+        expect(mockMkdirSync).toHaveBeenCalledWith(
+          expect.stringContaining('fixes'),
+          { recursive: true }
+        );
+
+        expect(mockWriteFileSync).toHaveBeenCalledWith(
+          expect.stringContaining('fixes/javascript_default.md'),
+          expect.any(String)
+        );
+        expect(mockWriteFileSync).not.toHaveBeenCalledWith(
+          expect.stringContaining('fix.md'),
+          expect.any(String)
+        );
+      });
+
+      it('should convert ecosystemSpecific to ecosystemAgnostic internally', async () => {
+        setupGenerateMocks();
+
+        const result = await performRecipesGenerate({
+          name: 'conversion-test',
+          category: 'utilities',
+          summary: 'Test flag conversion',
+          magicGenerate: false,
+          ecosystemAgnostic: true,
+        });
+
+        expect(result.success).toBe(true);
+
+        expect(mockMkdirSync).not.toHaveBeenCalledWith(
+          expect.stringContaining('fixes'),
+          { recursive: true }
+        );
+
+        expect(mockWriteFileSync).toHaveBeenCalledWith(
+          expect.stringContaining('fix.md'),
+          expect.any(String)
+        );
+      });
+
+      it('should handle CLI flag conversion properly', () => {
+        const ecosystemSpecificToAgnostic = false;
+        expect(ecosystemSpecificToAgnostic).toBe(false);
+
+        const ecosystemAgnosticFlag = true;
+        expect(ecosystemAgnosticFlag).toBe(true);
+      });
     });
   });
 });

@@ -154,11 +154,33 @@ export class Recipe {
     return this.prompt;
   }
 
-  getAgnosticFixContent(): string | undefined {
-    if (!this.isEcosystemAgnostic()) {
-      return undefined;
-    }
+  getBaseFixContent(): string | undefined {
     return this.fixFiles.get('fix.md');
+  }
+
+  getVariantFixContent(variantName: string): string | undefined {
+    return this.fixFiles.get(`variants/${variantName}.md`);
+  }
+
+  getEcosystemVariantFixContent(
+    ecosystem: string,
+    variantName: string
+  ): string | undefined {
+    return this.fixFiles.get(`variants/${ecosystem}_${variantName}.md`);
+  }
+
+  getFixContentForVariant(ecosystem?: string, variantName?: string): string {
+    const baseContent = this.getBaseFixContent() || '';
+
+    if (!ecosystem || !variantName) {
+      return baseContent;
+    }
+
+    const variantContent =
+      this.getEcosystemVariantFixContent(ecosystem, variantName) ||
+      this.getVariantFixContent(variantName);
+
+    return variantContent ? baseContent + '\n\n' + variantContent : baseContent;
   }
 }
 

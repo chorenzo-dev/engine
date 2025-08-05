@@ -58,19 +58,41 @@ Follow these guidelines for creating the recipe:
 - Let developers implement the actual code
 - Prefer describing what to configure rather than showing trivial code
 
+**LEVEL SELECTION GUIDELINES:**
+
+Choose the appropriate recipe level based on the recipe's scope and intended usage:
+
+- **`workspace-only`**: Use for tools that MUST be global across the entire workspace
+  - Examples: Git hooks, workspace-wide package manager setup, global linting rules
+  - Never applies to individual projects, even in mixed-ecosystem scenarios
+  
+- **`project-only`**: Use for tools that MUST be per-project and never global
+  - Examples: Framework setup, project-specific build configurations, test setup
+  - Never applies at workspace level, always targets individual projects
+  
+- **`workspace-preferred`**: Use for tools that work best globally but can handle mixed ecosystems
+  - Examples: Code formatting that prefers workspace-wide rules but adapts to project differences
+  - Intelligently applies at workspace or project level based on ecosystem compatibility
+  
+**CRITICAL: Analyze your recipe's purpose and choose the most appropriate level. Default to `workspace-preferred` only if the tool genuinely benefits from workspace-level application but can handle project-level scenarios.**
+
 **FILE STRUCTURE:**
 
 1. Create {{ recipe_path }}/metadata.yaml with:
+   - **IMPORTANT: Choose appropriate `level` field based on guidelines above**
    - **IMPORTANT: Default to empty `provides: []` unless absolutely necessary**
    - Conservative requires lists referencing only essential dependencies
    - Separate variants for each tool/approach you identified
 2. Create {{ recipe_path }}/prompt.md with:
    - Generic investigation steps
    - Ecosystem-agnostic guidance
-3. Create {{ recipe_path }}/fixes/[ecosystem]\_[variant].md with:
-   - ONE tool/approach per fix file
+3. Create {{ recipe_path }}/fix.md with:
+   - Base instructions that work for all ecosystems
+   - Common setup and configuration steps
+4. Create {{ recipe_path }}/variants/[ecosystem]\_[variant].md or {{ recipe_path }}/variants/[variant].md with:
+   - ONE tool/approach per variant file
    - Specific implementation for that ecosystem and variant
    - Minimal, essential code examples only
-   - If multiple tools exist, create multiple fix files
+   - If multiple tools exist, create multiple variant files
 
 Use the Write tool to create each file following these principles.

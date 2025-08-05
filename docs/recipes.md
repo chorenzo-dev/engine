@@ -42,18 +42,21 @@ Intelligently apply at workspace or project level based on ecosystem and state c
 
 ## Recipe Structure
 
-Each recipe is a self-contained folder with a specific structure. Most recipes are **ecosystem-specific** and work with particular programming languages or frameworks:
+All recipes use a unified structure with a mandatory base `fix.md` file and optional variant-specific additions:
 
 ```
 recipe_id/
 ├── metadata.yaml      # Recipe configuration and dependencies
 ├── prompt.md          # Consolidated LLM instructions
-└── fixes/
-    ├── variant_a.md   # Fix instructions for variant A
-    └── variant_b.md   # Fix instructions for variant B
+├── fix.md             # REQUIRED: Base instructions for all ecosystems
+└── variants/          # OPTIONAL: Variant-specific additions
+    ├── eslint.md               # Simple variant name
+    ├── github-actions.md       # Simple variant name
+    ├── javascript_eslint.md    # Ecosystem-prefixed variant
+    └── python_ruff.md          # Ecosystem-prefixed variant
 ```
 
-**Ecosystem-agnostic recipes** work across all programming languages and use a simpler structure with `ecosystems: []` and a single `fix.md` file instead of the `fixes/` directory.
+**All recipes** must have a `fix.md` file containing base instructions. **Ecosystem-agnostic recipes** use `ecosystems: []` and typically only need the base `fix.md` file. **Ecosystem-specific recipes** can add variant files in the `variants/` directory for specialized implementations.
 
 ## File Contents
 
@@ -72,7 +75,7 @@ ecosystems: # Languages/runtimes this recipe supports
     default_variant: prettier
     variants:
       - id: prettier
-        fix_prompt: fixes/javascript_prettier.md
+        fix_prompt: variants/javascript_prettier.md
 
 provides: # Facts this recipe outputs
   - recipe_id.exists
@@ -110,27 +113,47 @@ One-sentence goal describing what this recipe accomplishes.
 
 **Important**: Investigation and fix prompts are consumed by machines, not humans. Use definitive, declarative language (e.g., "Install the package" not "You should install the package").
 
-### fixes/variant.md
+### fix.md
 
-Implementation instructions for specific ecosystems and tool variants:
+Base implementation instructions that work for all ecosystems:
 
 ```markdown
-# Setting up [Tool Name] for [Ecosystem]
+# Setting up [Recipe Name]
 
 ## Installation
 
-Concrete commands to install the tool for this specific ecosystem.
+Common installation steps that work across ecosystems.
 
 ## Configuration
 
-Example configuration with ecosystem-specific defaults.
+Base configuration that applies universally.
 
 ## Verification
 
-How to verify the tool is working correctly in this ecosystem.
+How to verify the setup is working correctly.
 ```
 
-> **Note**: Ecosystem-agnostic recipes use a single `fix.md` file with universal instructions that work across all programming languages, instead of the `fixes/` directory.
+### variants/[variant].md
+
+Optional variant-specific additions for specific tools or ecosystems:
+
+```markdown
+# [Variant Name] specific additions
+
+## Additional Installation
+
+Additional steps specific to this variant.
+
+## Variant Configuration
+
+Configuration specific to this tool or ecosystem.
+
+## Variant Verification
+
+Additional verification steps for this variant.
+```
+
+**Content Concatenation**: When applying a recipe with a variant, the system automatically concatenates `fix.md` content with the variant content: `baseContent + '\n\n' + variantContent`. This allows for shared base instructions with variant-specific additions.
 
 ## Recipe Design Principles
 
@@ -187,7 +210,7 @@ See `code_quality/code_formatting/` for a complete example implementing code for
 2. Add `metadata.yaml` with at least: id, summary, level, ecosystems, provides
 3. Write `prompt.md` with Goal, Investigation, and Expected Output sections
 4. Add fix implementation:
-   - **Most recipes**: Add variant-specific fix prompts under `fixes/` directory
+   - **Most recipes**: Add variant-specific fix prompts under `variants/` directory
    - **Universal tools only**: Use `ecosystems: []` and create a single `fix.md` file
 5. Ensure all paths in metadata.yaml match actual file locations
 6. Choose the appropriate level:

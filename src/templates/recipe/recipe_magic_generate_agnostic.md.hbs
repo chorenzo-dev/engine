@@ -48,10 +48,29 @@ Follow these guidelines for creating the ecosystem-agnostic recipe:
 - Include only universal setup commands
 - Prefer describing universal configurations rather than showing language-specific code
 
+**LEVEL SELECTION GUIDELINES:**
+
+Choose the appropriate recipe level based on the recipe's scope and intended usage:
+
+- **`workspace-only`**: Use for universal tools that MUST be global across the entire workspace
+  - Examples: Git hooks, .editorconfig, global documentation configs, workspace-wide CI/CD setup
+  - Never applies to individual projects, works identically across all ecosystems
+  
+- **`project-only`**: Use for universal tools that MUST be per-project
+  - Examples: Project-specific documentation templates, individual project CI/CD configs
+  - Never applies at workspace level, needed separately in each project
+  
+- **`workspace-preferred`**: Use for universal tools that work best globally but might need project-specific handling
+  - Examples: Universal formatting rules that prefer workspace-wide but adapt to project differences
+  - Intelligently applies at workspace or project level based on requirements
+  
+**CRITICAL: Most ecosystem-agnostic recipes should be `workspace-only` since universal tools typically work best at the workspace level. Choose `project-only` only if the tool genuinely needs per-project configuration.**
+
 **FILE STRUCTURE:**
 
 1. Create {{ recipe_path }}/metadata.yaml with:
    - Empty ecosystems array: `ecosystems: []`
+   - **IMPORTANT: Choose appropriate `level` field based on guidelines above**
    - **IMPORTANT: Default to empty `provides: []` unless absolutely necessary**
    - Conservative requires lists referencing only essential dependencies
    - Universal recipe outputs (only if genuinely needed by other recipes)

@@ -171,7 +171,7 @@ npx chorenzo recipes generate api-endpoints --magic-generate \
 - `--category <category>`: Recipe category (required for non-interactive mode)
 - `--summary <summary>`: Recipe summary (required for non-interactive mode)
 - `--ecosystem-agnostic`: Create recipe that works across multiple ecosystems (generates single fix.md file)
-- `--ecosystem-specific`: Create recipe with separate fixes for each ecosystem (generates fixes/ directory with ecosystem-specific files)
+- `--ecosystem-specific`: Create recipe with separate fixes for each ecosystem (generates fix.md base file plus variants/ directory with ecosystem-specific files)
 - `--magic-generate`: Generate recipe content using AI (uses Claude)
 - `--additional-instructions <instructions>`: Additional instructions for AI generation (requires --magic-generate)
 

@@ -42,7 +42,6 @@ export async function parseRecipeFromDirectory(
 
   const metadataPath = path.join(recipePath, 'metadata.yaml');
   const promptPath = path.join(recipePath, 'prompt.md');
-  const fixesDir = path.join(recipePath, 'fixes');
 
   if (!fs.existsSync(metadataPath)) {
     throw new RecipeParsingError(
@@ -61,7 +60,7 @@ export async function parseRecipeFromDirectory(
   try {
     const metadata = await parseMetadata(metadataPath);
     const prompt = await parsePrompt(promptPath);
-    const fixFiles = await parseFixFiles(fixesDir, metadata);
+    const fixFiles = await parseFixFiles(recipePath);
 
     return new Recipe(recipePath, metadata, prompt, fixFiles);
   } catch (error) {
@@ -141,31 +140,28 @@ async function parsePrompt(promptPath: string): Promise<RecipePrompt> {
   }
 }
 
-async function parseFixFiles(
-  fixesDir: string,
-  metadata: RecipeMetadata
-): Promise<Map<string, string>> {
+async function parseFixFiles(recipePath: string): Promise<Map<string, string>> {
   const fixFiles = new Map<string, string>();
 
-  if (metadata.ecosystems.length === 0) {
-    const agnosticFixPath = path.join(path.dirname(fixesDir), 'fix.md');
-    if (fs.existsSync(agnosticFixPath)) {
-      const content = fs.readFileSync(agnosticFixPath, 'utf-8');
-      fixFiles.set('fix.md', content);
-    }
-    return fixFiles;
+  const baseFixPath = path.join(recipePath, 'fix.md');
+  if (!fs.existsSync(baseFixPath)) {
+    throw new RecipeParsingError(
+      `Missing required fix.md file in recipe: ${recipePath}`,
+      recipePath
+    );
   }
 
-  if (!fs.existsSync(fixesDir)) {
-    return fixFiles;
-  }
+  const content = fs.readFileSync(baseFixPath, 'utf-8');
+  fixFiles.set('fix.md', content);
 
-  for (const ecosystem of metadata.ecosystems) {
-    for (const variant of ecosystem.variants) {
-      const fixPath = path.join(path.dirname(fixesDir), variant.fix_prompt);
-      if (fs.existsSync(fixPath)) {
-        const content = fs.readFileSync(fixPath, 'utf-8');
-        fixFiles.set(variant.fix_prompt, content);
+  const variantsDir = path.join(recipePath, 'variants');
+  if (fs.existsSync(variantsDir) && fs.statSync(variantsDir).isDirectory()) {
+    const variantFiles = fs.readdirSync(variantsDir);
+    for (const file of variantFiles) {
+      if (file.endsWith('.md')) {
+        const filePath = path.join(variantsDir, file);
+        const content = fs.readFileSync(filePath, 'utf-8');
+        fixFiles.set(`variants/${file}`, content);
       }
     }
   }
@@ -315,22 +311,21 @@ export function validateRecipe(recipe: Recipe): RecipeValidationResult {
     });
   }
 
-  if (recipe.metadata.ecosystems.length === 0) {
-    if (!recipe.fixFiles.has('fix.md')) {
-      errors.push({
-        type: 'fix',
-        message: 'Missing fix.md file for ecosystem-agnostic recipe',
-        file: 'fix.md',
-      });
-    }
-  } else {
+  if (recipe.metadata.ecosystems.length > 0) {
     for (const ecosystem of recipe.metadata.ecosystems) {
       for (const variant of ecosystem.variants) {
-        if (!recipe.fixFiles.has(variant.fix_prompt)) {
-          errors.push({
+        const hasEcosystemVariant = recipe.fixFiles.has(
+          `variants/${ecosystem.id}_${variant.id}.md`
+        );
+        const hasSimpleVariant = recipe.fixFiles.has(
+          `variants/${variant.id}.md`
+        );
+
+        if (!hasEcosystemVariant && !hasSimpleVariant) {
+          warnings.push({
             type: 'fix',
-            message: `Missing fix file: ${variant.fix_prompt}`,
-            file: variant.fix_prompt,
+            message: `No variant fix file found for ${ecosystem.id}:${variant.id}. Expected one of: variants/${ecosystem.id}_${variant.id}.md or variants/${variant.id}.md`,
+            file: `variants/${ecosystem.id}_${variant.id}.md`,
           });
         }
       }

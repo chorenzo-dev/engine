@@ -1103,26 +1103,28 @@ async function executeRecipe(
   const workspaceRoot = workspaceConfig.getWorkspaceRoot();
 
   try {
+    const baseFixContent = recipe.getBaseFixContent();
+    if (!baseFixContent) {
+      Logger.warn(
+        {
+          event: 'base_fix_missing',
+          recipe: recipe.getId(),
+        },
+        `Recipe missing required fix.md file`
+      );
+      return {
+        projectPath,
+        recipeId: recipe.getId(),
+        success: false,
+        error: `Recipe '${recipe.getId()}' is missing required fix.md file`,
+        costUsd: 0,
+      };
+    }
+
     let fixContent: string;
 
     if (recipe.isEcosystemAgnostic()) {
-      fixContent = recipe.getAgnosticFixContent() || '';
-      if (!fixContent) {
-        Logger.warn(
-          {
-            event: 'agnostic_fix_missing',
-            recipe: recipe.getId(),
-          },
-          `Ecosystem-agnostic recipe missing fix.md file`
-        );
-        return {
-          projectPath,
-          recipeId: recipe.getId(),
-          success: false,
-          error: `Recipe '${recipe.getId()}' is missing fix.md file`,
-          costUsd: 0,
-        };
-      }
+      fixContent = baseFixContent;
     } else {
       const ecosystem = recipe
         .getEcosystems()
@@ -1167,8 +1169,7 @@ async function executeRecipe(
         };
       }
 
-      fixContent =
-        recipe.fixFiles.get(variantObj.fix_prompt) || variantObj.fix_prompt;
+      fixContent = recipe.getFixContentForVariant(targetEcosystem, variant);
     }
     const recipePrompt = recipe.getPrompt();
 
@@ -1452,9 +1453,7 @@ export async function performRecipesGenerate(
     onProgress?.(`Creating recipe directory: ${recipePath}`);
 
     fs.mkdirSync(recipePath, { recursive: true });
-    if (!options.ecosystemAgnostic) {
-      fs.mkdirSync(path.join(recipePath, 'fixes'), { recursive: true });
-    }
+    fs.mkdirSync(path.join(recipePath, 'variants'), { recursive: true });
 
     onProgress?.('Creating recipe files');
 
@@ -1463,6 +1462,9 @@ export async function performRecipesGenerate(
       recipe_name: recipeName,
       category,
       summary,
+      ...(options.magicGenerate
+        ? {}
+        : { level: 'workspace-preferred' as const }),
     };
 
     if (options.magicGenerate) {
@@ -1545,13 +1547,13 @@ export async function performRecipesGenerate(
 
       const fixTemplate = loadTemplate('recipe_fix');
       const fixContent = renderPrompt(fixTemplate, templateVars);
+      fs.writeFileSync(path.join(recipePath, 'fix.md'), fixContent);
 
-      if (options.ecosystemAgnostic) {
-        fs.writeFileSync(path.join(recipePath, 'fix.md'), fixContent);
-      } else {
+      if (!options.ecosystemAgnostic) {
+        const variantContent = renderPrompt(fixTemplate, templateVars);
         fs.writeFileSync(
-          path.join(recipePath, 'fixes', 'javascript_default.md'),
-          fixContent
+          path.join(recipePath, 'variants', 'javascript_default.md'),
+          variantContent
         );
       }
     }

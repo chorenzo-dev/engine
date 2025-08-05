@@ -111,7 +111,7 @@ describe('Recipes Command Integration Tests', () => {
       recipeId = 'test-recipe',
       category = 'test',
       level = 'project-only',
-      variants = [{ id: 'basic', fix_prompt: 'fixes/basic.md' }],
+      variants = [{ id: 'basic', fix_prompt: 'variants/basic.md' }],
       requires = [],
       provides = ['test-functionality'],
     } = options;
@@ -161,8 +161,10 @@ describe('Recipes Command Integration Tests', () => {
     mockReadFileSync.mockImplementation((filePath: string) => {
       if (filePath.includes('prompt.md')) {
         return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
-      } else if (filePath.includes('fixes/basic.md')) {
+      } else if (filePath.includes('fix.md')) {
         return 'Basic fix prompt content';
+      } else if (filePath.includes('variants/basic.md')) {
+        return 'Basic variant fix prompt content';
       } else if (filePath.includes('plan') && filePath.includes('.md')) {
         return `title: "test plan"
 steps:
@@ -237,7 +239,7 @@ outputs:
           variants: [
             {
               id: 'basic',
-              fix_prompt: 'fixes/basic.md',
+              fix_prompt: 'variants/basic.md',
             },
           ],
         },
@@ -249,8 +251,10 @@ outputs:
     mockReadFileSync.mockImplementation((filePath: string) => {
       if (filePath.includes('prompt.md')) {
         return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
-      } else if (filePath.includes('fixes/basic.md')) {
+      } else if (filePath.includes('fix.md')) {
         return 'Basic fix prompt content';
+      } else if (filePath.includes('variants/basic.md')) {
+        return 'Basic variant fix prompt content';
       } else if (filePath.includes('metadata.yaml')) {
         return yamlStringify(recipeData);
       }
@@ -305,16 +309,22 @@ outputs:
       if (filePath === '/path/to/library/recipe2/prompt.md') {
         return true;
       }
-      if (filePath === '/path/to/library/recipe1/fixes') {
+      if (filePath === '/path/to/library/recipe1/fix.md') {
         return true;
       }
-      if (filePath === '/path/to/library/recipe2/fixes') {
+      if (filePath === '/path/to/library/recipe2/fix.md') {
         return true;
       }
-      if (filePath === '/path/to/library/recipe1/fixes/basic.md') {
+      if (filePath === '/path/to/library/recipe1/variants') {
         return true;
       }
-      if (filePath === '/path/to/library/recipe2/fixes/basic.md') {
+      if (filePath === '/path/to/library/recipe2/variants') {
+        return true;
+      }
+      if (filePath === '/path/to/library/recipe1/variants/basic.md') {
+        return true;
+      }
+      if (filePath === '/path/to/library/recipe2/variants/basic.md') {
         return true;
       }
       return false;
@@ -338,8 +348,10 @@ outputs:
     mockReadFileSync.mockImplementation((filePath: string) => {
       if (filePath.includes('prompt.md')) {
         return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
-      } else if (filePath.includes('fixes/basic.md')) {
+      } else if (filePath.includes('fix.md')) {
         return 'Basic fix prompt content';
+      } else if (filePath.includes('variants/basic.md')) {
+        return 'Basic variant fix prompt content';
       } else if (filePath.includes('recipe1/metadata.yaml')) {
         return yamlStringify({
           id: 'recipe1',
@@ -350,7 +362,7 @@ outputs:
             {
               id: 'javascript',
               default_variant: 'basic',
-              variants: [{ id: 'basic', fix_prompt: 'fixes/basic.md' }],
+              variants: [{ id: 'basic', fix_prompt: 'variants/basic.md' }],
             },
           ],
           provides: ['feature1'],
@@ -366,7 +378,7 @@ outputs:
             {
               id: 'python',
               default_variant: 'basic',
-              variants: [{ id: 'basic', fix_prompt: 'fixes/basic.md' }],
+              variants: [{ id: 'basic', fix_prompt: 'variants/basic.md' }],
             },
           ],
           provides: ['feature2'],
@@ -421,13 +433,23 @@ outputs:
         return true;
       }
       if (
-        filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/fixes'
+        filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/variants'
+      ) {
+        return true;
+      }
+      if (
+        filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/fix.md'
+      ) {
+        return true;
+      }
+      if (
+        filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/variants'
       ) {
         return true;
       }
       if (
         filePath ===
-        '/test/home/.chorenzo/recipes/lib1/nested-recipe/fixes/basic.md'
+        '/test/home/.chorenzo/recipes/lib1/nested-recipe/variants/basic.md'
       ) {
         return true;
       }
@@ -442,7 +464,9 @@ outputs:
               filePath === '/test/home/.chorenzo/recipes' ||
               filePath === '/test/home/.chorenzo/recipes/lib1' ||
               filePath === '/test/home/.chorenzo/recipes/lib2' ||
-              filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe'
+              filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe' ||
+              filePath ===
+                '/test/home/.chorenzo/recipes/lib1/nested-recipe/variants'
             );
           },
           isFile: () => filePath.includes('.'),
@@ -456,6 +480,10 @@ outputs:
         return ['nested-recipe'];
       } else if (dirPath === '/test/home/.chorenzo/recipes/lib2') {
         return [];
+      } else if (
+        dirPath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/variants'
+      ) {
+        return ['basic.md'];
       }
       return [];
     });
@@ -463,8 +491,10 @@ outputs:
     mockReadFileSync.mockImplementation((filePath: string) => {
       if (filePath.includes('prompt.md')) {
         return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
-      } else if (filePath.includes('fixes/basic.md')) {
+      } else if (filePath.includes('fix.md')) {
         return 'Basic fix prompt content';
+      } else if (filePath.includes('variants/basic.md')) {
+        return 'Basic variant fix prompt content';
       } else if (filePath.includes('metadata.yaml')) {
         return yamlStringify({
           id: 'nested-recipe',
@@ -478,7 +508,7 @@ outputs:
               variants: [
                 {
                   id: 'basic',
-                  fix_prompt: 'fixes/basic.md',
+                  fix_prompt: 'variants/basic.md',
                 },
               ],
             },
@@ -536,8 +566,10 @@ outputs:
     mockReadFileSync.mockImplementation((filePath: string) => {
       if (filePath.includes('prompt.md')) {
         return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
-      } else if (filePath.includes('fixes/basic.md')) {
+      } else if (filePath.includes('fix.md')) {
         return 'Basic fix prompt content';
+      } else if (filePath.includes('variants/basic.md')) {
+        return 'Basic variant fix prompt content';
       } else if (filePath.includes('metadata.yaml')) {
         return yamlStringify({
           id: 'test-recipe',
@@ -551,7 +583,7 @@ outputs:
               variants: [
                 {
                   id: 'basic',
-                  fix_prompt: 'fixes/basic.md',
+                  fix_prompt: 'variants/basic.md',
                 },
               ],
             },
@@ -829,6 +861,12 @@ outputs:
         if (path.includes('apply_recipe.md')) {
           return true;
         }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
+          return true;
+        }
         return true;
       });
 
@@ -906,6 +944,9 @@ outputs:
         if (filePath.includes('apply_recipe.md')) {
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
         }
+        if (filePath.includes('fix.md')) {
+          return 'Base fix instructions for all variants.';
+        }
         return '';
       });
     };
@@ -947,6 +988,12 @@ outputs:
           return true;
         }
         if (path.includes('apply_recipe.md')) {
+          return true;
+        }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
           return true;
         }
         return true;
@@ -1000,6 +1047,9 @@ outputs:
         }
         if (filePath.includes('apply_recipe.md')) {
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        if (filePath.includes('fix.md')) {
+          return 'Base fix instructions for all variants.';
         }
         return '';
       });
@@ -1094,6 +1144,12 @@ outputs:
         if (path.includes('apply_recipe.md')) {
           return true;
         }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
+          return true;
+        }
         return true;
       });
 
@@ -1113,6 +1169,12 @@ outputs:
         }
         if (filePath.includes('apply_recipe.md')) {
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        if (filePath.includes('fix.md')) {
+          return 'Basic fix prompt content';
+        }
+        if (filePath.includes('variants/basic.md')) {
+          return 'Basic variant fix content';
         }
         if (filePath.includes('state.json')) {
           return '{"last_checked": "1970-01-01T00:00:00Z"}';
@@ -1166,6 +1228,12 @@ outputs:
           return true;
         }
         if (path.includes('apply_recipe.md')) {
+          return true;
+        }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
           return true;
         }
         return true;
@@ -1277,6 +1345,12 @@ outputs:
         if (filePath.includes('apply_recipe.md')) {
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
         }
+        if (filePath.includes('fix.md')) {
+          return 'Basic fix prompt content';
+        }
+        if (filePath.includes('variants/basic.md')) {
+          return 'Basic variant fix content';
+        }
         if (filePath.includes('state.json')) {
           return '{"last_checked": "1970-01-01T00:00:00Z"}';
         }
@@ -1297,8 +1371,8 @@ outputs:
 
       const mockYamlData = createMockYamlData({
         variants: [
-          { id: 'basic', fix_prompt: 'Basic fix' },
-          { id: 'advanced', fix_prompt: 'Advanced fix' },
+          { id: 'basic', fix_prompt: 'variants/basic.md' },
+          { id: 'advanced', fix_prompt: 'variants/advanced.md' },
         ],
         provides: ['test_feature.exists'],
       });
@@ -1330,8 +1404,23 @@ outputs:
         if (filePath.includes('prompt.md')) {
           return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
         }
+        if (filePath.includes('fix.md')) {
+          return 'Basic fix prompt content';
+        }
+        if (filePath.includes('variants/basic.md')) {
+          return 'Basic variant fix content';
+        }
+        if (filePath.includes('variants/advanced.md')) {
+          return 'Advanced variant fix content';
+        }
         if (filePath.includes('apply_recipe.md')) {
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        if (filePath.includes('fix.md')) {
+          return 'Basic fix prompt content';
+        }
+        if (filePath.includes('variants/basic.md')) {
+          return 'Basic variant fix content';
         }
         if (filePath.includes('state.json')) {
           return '{"last_checked": "1970-01-01T00:00:00Z"}';
@@ -1369,6 +1458,12 @@ outputs:
           return true;
         }
         if (path.includes('apply_recipe.md')) {
+          return true;
+        }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
           return true;
         }
         return true;
@@ -1431,6 +1526,12 @@ outputs:
         if (filePath.includes('apply_recipe.md')) {
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
         }
+        if (filePath.includes('fix.md')) {
+          return 'Basic fix prompt content';
+        }
+        if (filePath.includes('variants/basic.md')) {
+          return 'Basic variant fix content';
+        }
         if (filePath.includes('state.json')) {
           return '{"last_checked": "1970-01-01T00:00:00Z"}';
         }
@@ -1477,6 +1578,12 @@ outputs:
           return true;
         }
         if (path.includes('apply_recipe.md')) {
+          return true;
+        }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
           return true;
         }
         return true;
@@ -1539,6 +1646,12 @@ outputs:
         if (filePath.includes('apply_recipe.md')) {
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
         }
+        if (filePath.includes('fix.md')) {
+          return 'Basic fix prompt content';
+        }
+        if (filePath.includes('variants/basic.md')) {
+          return 'Basic variant fix content';
+        }
         if (filePath.includes('state.json')) {
           return '{"last_checked": "1970-01-01T00:00:00Z"}';
         }
@@ -1594,6 +1707,12 @@ outputs:
           return true;
         }
         if (path.includes('apply_recipe.md')) {
+          return true;
+        }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
           return true;
         }
         return true;
@@ -1726,6 +1845,12 @@ outputs:
         if (path.includes('apply_recipe.md')) {
           return true;
         }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
+          return true;
+        }
         return true;
       });
 
@@ -1778,6 +1903,12 @@ outputs:
         if (filePath.includes('apply_recipe.md')) {
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
         }
+        if (filePath.includes('fix.md')) {
+          return 'Basic fix prompt content';
+        }
+        if (filePath.includes('variants/basic.md')) {
+          return 'Basic variant fix content';
+        }
         if (filePath.includes('state.json')) {
           return '{"last_checked": "1970-01-01T00:00:00Z"}';
         }
@@ -1812,6 +1943,12 @@ outputs:
           return true;
         }
         if (path.includes('apply_recipe.md')) {
+          return true;
+        }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
           return true;
         }
         return true;
@@ -1851,6 +1988,12 @@ outputs:
         }
         if (filePath.includes('apply_recipe.md')) {
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        if (filePath.includes('fix.md')) {
+          return 'Basic fix prompt content';
+        }
+        if (filePath.includes('variants/basic.md')) {
+          return 'Basic variant fix content';
         }
         if (filePath.includes('state.json')) {
           return '{"last_checked": "1970-01-01T00:00:00Z"}';
@@ -1916,6 +2059,12 @@ outputs:
         if (path.includes('apply_recipe.md')) {
           return true;
         }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
+          return true;
+        }
         return true;
       });
 
@@ -1950,6 +2099,12 @@ outputs:
         }
         if (filePath.includes('apply_recipe.md')) {
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        if (filePath.includes('fix.md')) {
+          return 'Basic fix prompt content';
+        }
+        if (filePath.includes('variants/basic.md')) {
+          return 'Basic variant fix content';
         }
         if (filePath.includes('state.json')) {
           return '{"last_checked": "1970-01-01T00:00:00Z"}';
@@ -1997,6 +2152,12 @@ outputs:
           return true;
         }
         if (path.includes('apply_recipe.md')) {
+          return true;
+        }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
           return true;
         }
         return true;
@@ -2050,6 +2211,12 @@ outputs:
         }
         if (filePath.includes('apply_recipe.md')) {
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        if (filePath.includes('fix.md')) {
+          return 'Basic fix prompt content';
+        }
+        if (filePath.includes('variants/basic.md')) {
+          return 'Basic variant fix content';
         }
         if (filePath.includes('state.json')) {
           return '{"last_checked": "1970-01-01T00:00:00Z"}';
@@ -2100,6 +2267,12 @@ outputs:
         if (path.includes('apply_recipe.md')) {
           return true;
         }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
+          return true;
+        }
         return true;
       });
 
@@ -2152,6 +2325,12 @@ outputs:
         if (filePath.includes('apply_recipe.md')) {
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
         }
+        if (filePath.includes('fix.md')) {
+          return 'Basic fix prompt content';
+        }
+        if (filePath.includes('variants/basic.md')) {
+          return 'Basic variant fix content';
+        }
         if (filePath.includes('state.json')) {
           return '{"last_checked": "1970-01-01T00:00:00Z"}';
         }
@@ -2193,6 +2372,12 @@ outputs:
           return true;
         }
         if (path.includes('apply_recipe.md')) {
+          return true;
+        }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
           return true;
         }
         return true;
@@ -2293,6 +2478,12 @@ outputs:
         if (path.includes('apply_recipe.md')) {
           return true;
         }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
+          return true;
+        }
         return true;
       });
 
@@ -2344,6 +2535,12 @@ outputs:
         }
         if (filePath.includes('apply_recipe.md')) {
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        if (filePath.includes('fix.md')) {
+          return 'Basic fix prompt content';
+        }
+        if (filePath.includes('variants/basic.md')) {
+          return 'Basic variant fix content';
         }
         if (filePath.includes('state.json')) {
           return '{"last_checked": "1970-01-01T00:00:00Z"}';
@@ -2392,6 +2589,12 @@ outputs:
         if (path.includes('apply_recipe.md')) {
           return true;
         }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
+          return true;
+        }
         return true;
       });
 
@@ -2443,6 +2646,12 @@ outputs:
         }
         if (filePath.includes('apply_recipe.md')) {
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        if (filePath.includes('fix.md')) {
+          return 'Basic fix prompt content';
+        }
+        if (filePath.includes('variants/basic.md')) {
+          return 'Basic variant fix content';
         }
         if (filePath.includes('state.json')) {
           return '{"last_checked": "1970-01-01T00:00:00Z"}';
@@ -2573,6 +2782,12 @@ outputs:
         if (path.includes('apply_recipe.md')) {
           return true;
         }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
+          return true;
+        }
         return true;
       });
 
@@ -2633,6 +2848,9 @@ outputs:
         if (filePath.includes('apply_recipe.md')) {
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
         }
+        if (filePath.includes('fix.md')) {
+          return 'Base fix instructions for all variants.';
+        }
         return '';
       });
 
@@ -2676,6 +2894,12 @@ outputs:
           return true;
         }
         if (path.includes('apply_recipe.md')) {
+          return true;
+        }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
           return true;
         }
         return true;
@@ -2737,6 +2961,9 @@ outputs:
         }
         if (filePath.includes('apply_recipe.md')) {
           return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        if (filePath.includes('fix.md')) {
+          return 'Base fix instructions for all variants.';
         }
         return '';
       });
@@ -2910,6 +3137,21 @@ outputs:
           if (filePath.includes('prompt.md')) {
             return '## Goal\nAdd formatter\n\n## Investigation\nCheck formatter\n\n## Expected Output\nFormatter configured';
           }
+          if (filePath.includes('fix.md')) {
+            return 'Basic fix prompt content';
+          }
+          if (filePath.includes('variants/basic.md')) {
+            return 'Basic variant fix content';
+          }
+          if (filePath.includes('variants/black.md')) {
+            return 'Black formatter fix content';
+          }
+          if (filePath.includes('variants/prettier.md')) {
+            return 'Prettier formatter fix content';
+          }
+          if (filePath.includes('variants/gofmt.md')) {
+            return 'Gofmt formatter fix content';
+          }
           if (
             filePath.includes(
               'apply_recipe_workspace_application_instructions.md'
@@ -2991,7 +3233,7 @@ outputs:
           {
             id: 'python',
             default_variant: 'black',
-            variants: [{ id: 'black', fix_prompt: 'fixes/black.md' }],
+            variants: [{ id: 'black', fix_prompt: 'variants/black.md' }],
           },
         ];
 
@@ -3044,12 +3286,12 @@ outputs:
           {
             id: 'javascript',
             default_variant: 'prettier',
-            variants: [{ id: 'prettier', fix_prompt: 'fixes/prettier.md' }],
+            variants: [{ id: 'prettier', fix_prompt: 'variants/prettier.md' }],
           },
           {
             id: 'python',
             default_variant: 'black',
-            variants: [{ id: 'black', fix_prompt: 'fixes/black.md' }],
+            variants: [{ id: 'black', fix_prompt: 'variants/black.md' }],
           },
         ];
 
@@ -3115,7 +3357,7 @@ outputs:
           {
             id: 'go',
             default_variant: 'gofmt',
-            variants: [{ id: 'gofmt', fix_prompt: 'fixes/gofmt.md' }],
+            variants: [{ id: 'gofmt', fix_prompt: 'variants/gofmt.md' }],
           },
         ];
 
@@ -3160,42 +3402,23 @@ outputs:
           ref: 'main',
         };
 
-        mockReadFileSync.mockImplementation((filePath: string) => {
-          if (filePath.includes('analysis.json')) {
-            return JSON.stringify({
-              isMonorepo: false,
-              hasWorkspacePackageManager: true,
-              workspaceEcosystem: 'javascript',
-              projects: [
-                {
-                  path: '/workspace/app',
-                  language: 'javascript',
-                  ecosystem: 'javascript',
-                  type: 'application',
-                  dependencies: [],
-                  hasPackageManager: true,
-                },
-              ],
-            });
-          }
-          if (filePath.includes('config.yaml')) {
-            return yamlStringify(mockYamlData.config);
-          }
-          if (filePath.includes('metadata.yaml')) {
-            return yamlStringify(mockYamlData.metadata);
-          }
-          if (filePath.includes('prompt.md')) {
-            return '## Goal\nAdd project feature\n\n## Investigation\nCheck project\n\n## Expected Output\nProject configured';
-          }
-          if (
-            filePath.includes(
-              'apply_recipe_project_application_instructions.md'
-            )
-          ) {
-            return 'Apply {{ recipe_id }} to {{ project_path }}...';
-          }
-          return '';
-        });
+        const analysisData = {
+          isMonorepo: false,
+          hasWorkspacePackageManager: true,
+          workspaceEcosystem: 'javascript',
+          projects: [
+            {
+              path: '/workspace/app',
+              language: 'javascript',
+              ecosystem: 'javascript',
+              type: 'application',
+              dependencies: [],
+              hasPackageManager: true,
+            },
+          ],
+        };
+
+        setupHierarchicalLevelReadFileSync(mockYamlData, analysisData);
 
         const result = await performRecipesApply({
           recipe: 'project-only-recipe',
@@ -3222,42 +3445,23 @@ outputs:
           ref: 'main',
         };
 
-        mockReadFileSync.mockImplementation((filePath: string) => {
-          if (filePath.includes('analysis.json')) {
-            return JSON.stringify({
-              isMonorepo: false,
-              hasWorkspacePackageManager: true,
-              workspaceEcosystem: 'javascript',
-              projects: [
-                {
-                  path: '/workspace/app',
-                  language: 'javascript',
-                  ecosystem: 'javascript',
-                  type: 'application',
-                  dependencies: [],
-                  hasPackageManager: true,
-                },
-              ],
-            });
-          }
-          if (filePath.includes('config.yaml')) {
-            return yamlStringify(mockYamlData.config);
-          }
-          if (filePath.includes('metadata.yaml')) {
-            return yamlStringify(mockYamlData.metadata);
-          }
-          if (filePath.includes('prompt.md')) {
-            return '## Goal\nAdd workspace feature\n\n## Investigation\nCheck workspace\n\n## Expected Output\nWorkspace configured';
-          }
-          if (
-            filePath.includes(
-              'apply_recipe_workspace_application_instructions.md'
-            )
-          ) {
-            return 'Apply {{ recipe_id }} at workspace level...';
-          }
-          return '';
-        });
+        const analysisData = {
+          isMonorepo: false,
+          hasWorkspacePackageManager: true,
+          workspaceEcosystem: 'javascript',
+          projects: [
+            {
+              path: '/workspace/app',
+              language: 'javascript',
+              ecosystem: 'javascript',
+              type: 'application',
+              dependencies: [],
+              hasPackageManager: true,
+            },
+          ],
+        };
+
+        setupHierarchicalLevelReadFileSync(mockYamlData, analysisData);
 
         const result = await performRecipesApply({
           recipe: 'workspace-only-recipe',
@@ -3283,7 +3487,7 @@ outputs:
           {
             id: 'python',
             default_variant: 'basic',
-            variants: [{ id: 'basic', fix_prompt: 'fixes/basic.md' }],
+            variants: [{ id: 'basic', fix_prompt: 'variants/basic.md' }],
           },
         ];
         (mockYamlData.config.libraries as Record<string, unknown>)[
@@ -3370,7 +3574,7 @@ outputs:
           {
             id: 'javascript',
             default_variant: 'basic',
-            variants: [{ id: 'basic', fix_prompt: 'fixes/basic.md' }],
+            variants: [{ id: 'basic', fix_prompt: 'variants/basic.md' }],
           },
         ];
         (mockYamlData.config.libraries as Record<string, unknown>)[
@@ -3457,7 +3661,7 @@ outputs:
           {
             id: 'javascript',
             default_variant: 'basic',
-            variants: [{ id: 'basic', fix_prompt: 'fixes/basic.md' }],
+            variants: [{ id: 'basic', fix_prompt: 'variants/basic.md' }],
           },
         ];
         (mockYamlData.config.libraries as Record<string, unknown>)[
@@ -3546,7 +3750,7 @@ outputs:
           {
             id: 'javascript',
             default_variant: 'basic',
-            variants: [{ id: 'basic', fix_prompt: 'fixes/basic.md' }],
+            variants: [{ id: 'basic', fix_prompt: 'variants/basic.md' }],
           },
         ];
         (mockYamlData.config.libraries as Record<string, unknown>)[
@@ -3683,19 +3887,9 @@ requires: []
 
         const options = { target: '/path/to/agnostic-recipe' };
 
-        const result = await performRecipesValidate(options);
-
-        expect(result.context.target).toBe('/path/to/agnostic-recipe');
-        expect(result.messages).toBeDefined();
-        expect(
-          result.messages.some(
-            (msg) =>
-              msg.type === 'error' &&
-              msg.text.includes(
-                'Missing fix.md file for ecosystem-agnostic recipe'
-              )
-          )
-        ).toBe(true);
+        await expect(performRecipesValidate(options)).rejects.toThrow(
+          'Missing required fix.md file'
+        );
       });
     });
   });
@@ -3756,10 +3950,10 @@ requires: []
         { recursive: true }
       );
       expect(mockMkdirSync).toHaveBeenCalledWith(
-        expect.stringContaining('fixes'),
+        expect.stringContaining('variants'),
         { recursive: true }
       );
-      expect(mockWriteFileSync).toHaveBeenCalledTimes(3);
+      expect(mockWriteFileSync).toHaveBeenCalledTimes(4);
     });
 
     it('should validate recipe name and convert spaces to dashes', async () => {
@@ -3941,7 +4135,11 @@ requires: []
         expect.stringContaining('Test summary')
       );
       expect(mockWriteFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('javascript_default.md'),
+        expect.stringContaining('fix.md'),
+        expect.stringContaining('render-test')
+      );
+      expect(mockWriteFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('variants/javascript_default.md'),
         expect.stringContaining('render-test')
       );
     });
@@ -4012,7 +4210,7 @@ requires: []
         { recursive: true }
       );
       expect(mockMkdirSync).toHaveBeenCalledWith(
-        expect.stringContaining('structure-test/fixes'),
+        expect.stringContaining('structure-test/variants'),
         { recursive: true }
       );
     });
@@ -4459,8 +4657,8 @@ requires: []
           expect.stringContaining('agnostic-recipe'),
           { recursive: true }
         );
-        expect(mockMkdirSync).not.toHaveBeenCalledWith(
-          expect.stringContaining('fixes'),
+        expect(mockMkdirSync).toHaveBeenCalledWith(
+          expect.stringContaining('variants'),
           { recursive: true }
         );
 
@@ -4469,7 +4667,7 @@ requires: []
           expect.any(String)
         );
         expect(mockWriteFileSync).not.toHaveBeenCalledWith(
-          expect.stringContaining('fixes/javascript_default.md'),
+          expect.stringContaining('variants/javascript_default.md'),
           expect.any(String)
         );
       });
@@ -4489,16 +4687,16 @@ requires: []
         expect(result.recipeName).toBe('regular-recipe');
 
         expect(mockMkdirSync).toHaveBeenCalledWith(
-          expect.stringContaining('fixes'),
+          expect.stringContaining('variants'),
           { recursive: true }
         );
 
         expect(mockWriteFileSync).toHaveBeenCalledWith(
-          expect.stringContaining('fixes/javascript_default.md'),
+          expect.stringContaining('fix.md'),
           expect.any(String)
         );
-        expect(mockWriteFileSync).not.toHaveBeenCalledWith(
-          expect.stringContaining('fix.md'),
+        expect(mockWriteFileSync).toHaveBeenCalledWith(
+          expect.stringContaining('variants/javascript_default.md'),
           expect.any(String)
         );
       });
@@ -4560,16 +4758,16 @@ requires: []
         expect(result.recipeName).toBe('specific-recipe');
 
         expect(mockMkdirSync).toHaveBeenCalledWith(
-          expect.stringContaining('fixes'),
+          expect.stringContaining('variants'),
           { recursive: true }
         );
 
         expect(mockWriteFileSync).toHaveBeenCalledWith(
-          expect.stringContaining('fixes/javascript_default.md'),
+          expect.stringContaining('fix.md'),
           expect.any(String)
         );
-        expect(mockWriteFileSync).not.toHaveBeenCalledWith(
-          expect.stringContaining('fix.md'),
+        expect(mockWriteFileSync).toHaveBeenCalledWith(
+          expect.stringContaining('variants/javascript_default.md'),
           expect.any(String)
         );
       });
@@ -4587,8 +4785,8 @@ requires: []
 
         expect(result.success).toBe(true);
 
-        expect(mockMkdirSync).not.toHaveBeenCalledWith(
-          expect.stringContaining('fixes'),
+        expect(mockMkdirSync).toHaveBeenCalledWith(
+          expect.stringContaining('variants'),
           { recursive: true }
         );
 

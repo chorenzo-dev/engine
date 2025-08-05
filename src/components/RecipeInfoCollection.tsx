@@ -117,7 +117,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
 
       const nextPhase = getNextPhase(formState);
       if (nextPhase === 'complete') {
-        handleComplete();
+        setTimeout(() => handleComplete(), 0);
       } else {
         setPhase(nextPhase);
       }
@@ -351,7 +351,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
 
   if (phase === 'generation-method') {
     if (!shouldUseInput) {
-      handleComplete();
+      setTimeout(() => handleComplete(), 0);
       return null;
     }
 
@@ -371,7 +371,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
             if (useMagicGeneration) {
               setPhase('instructions');
             } else {
-              handleComplete();
+              setTimeout(() => handleComplete(), 0);
             }
           }}
         />
@@ -391,7 +391,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
             setFormState((prev) => ({ ...prev, instructions: value }))
           }
           onSubmit={() => {
-            handleComplete();
+            setTimeout(() => handleComplete(), 0);
           }}
         />
       </Box>

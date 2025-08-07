@@ -29,11 +29,18 @@ export function loadTemplate(
   templateName: string,
   extension: string = 'md'
 ): string {
-  const templatePath = join(
-    TEMPLATES_DIR,
-    'recipe',
-    `${templateName}.${extension}.hbs`
-  );
+  let templatePath: string;
+
+  if (templateName.includes('/')) {
+    templatePath = join(TEMPLATES_DIR, `${templateName}.${extension}.hbs`);
+  } else {
+    templatePath = join(
+      TEMPLATES_DIR,
+      'recipe',
+      `${templateName}.${extension}.hbs`
+    );
+  }
+
   try {
     return readFileSync(templatePath, 'utf-8');
   } catch (error) {
@@ -45,7 +52,10 @@ export function loadTemplate(
 
 export function renderPrompt(
   template: string,
-  variables: Record<string, string | number | boolean>
+  variables: Record<
+    string,
+    string | number | boolean | Array<string | Record<string, unknown>>
+  >
 ): string {
   const compiledTemplate = Handlebars.compile(template, { noEscape: true });
   return compiledTemplate(variables);

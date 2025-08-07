@@ -166,12 +166,18 @@ describe('Recipes Command Integration Tests', () => {
       } else if (filePath.includes('variants/basic.md')) {
         return 'Basic variant fix prompt content';
       } else if (filePath.includes('plan') && filePath.includes('.md')) {
-        return `title: "test plan"
-steps:
-  - type: configure
-    description: test
-outputs:
-  test_feature.exists: true`;
+        return yamlStringify({
+          title: 'test plan',
+          steps: [
+            {
+              type: 'configure',
+              description: 'test',
+            },
+          ],
+          outputs: {
+            'test_feature.exists': true,
+          },
+        });
       } else if (filePath.includes('config.yaml')) {
         return yamlStringify(mockYamlData.config);
       } else if (filePath.includes('metadata.yaml')) {
@@ -4803,6 +4809,506 @@ requires: []
         const ecosystemAgnosticFlag = true;
         expect(ecosystemAgnosticFlag).toBe(true);
       });
+    });
+  });
+
+  describe('Code Sample Validation Integration', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      setupDefaultMocks();
+    });
+
+    it('should run code sample validation during recipe validation and handle failures gracefully', async () => {
+      const recipesModule = await import('./recipes');
+      const performRecipesValidate = recipesModule.performRecipesValidate;
+      mockExistsSync.mockImplementation((filePath: string) => {
+        if (filePath === '/path/to/recipe-with-violations') {
+          return true;
+        }
+        if (filePath === '/path/to/recipe-with-violations/metadata.yaml') {
+          return true;
+        }
+        if (filePath === '/path/to/recipe-with-violations/prompt.md') {
+          return true;
+        }
+        if (filePath === '/path/to/recipe-with-violations/fix.md') {
+          return true;
+        }
+        return false;
+      });
+
+      mockStatSync.mockImplementation(
+        (filePath: string) =>
+          ({
+            isDirectory: () => !filePath.includes('.'),
+            isFile: () => filePath.includes('.'),
+          }) as fs.Stats
+      );
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath === '/path/to/recipe-with-violations/metadata.yaml') {
+          return yamlStringify({
+            id: 'recipe-with-violations',
+            category: 'test',
+            summary: 'Recipe with code sample violations',
+            level: 'workspace-preferred',
+            ecosystems: [],
+            provides: [],
+            requires: [],
+          });
+        }
+        if (filePath === '/path/to/recipe-with-violations/prompt.md') {
+          return '## Goal\nTest goal\n## Investigation\nTest investigation\n## Expected Output\nTest output';
+        }
+        if (filePath === '/path/to/recipe-with-violations/fix.md') {
+          return '```javascript\nconst YOUR_API_KEY = "placeholder";\nconsole.log("TODO: implement this");\n```';
+        }
+        if (filePath.includes('validation/code_sample_validation.md')) {
+          return 'Validate code samples in: {{#each files}}{{this.path}}{{/each}}';
+        }
+        return '';
+      });
+
+      mockQuery.mockImplementation(async function* () {
+        yield {
+          type: 'result',
+          subtype: 'success',
+          result: JSON.stringify({
+            valid: false,
+            violations: [
+              {
+                file: 'fix.md',
+                line: 2,
+                type: 'generic_placeholder',
+                description: 'Uses generic placeholder YOUR_API_KEY',
+                suggestion:
+                  'Use a specific example like process.env.OPENAI_API_KEY',
+                codeSnippet: 'const YOUR_API_KEY = "placeholder";',
+              },
+              {
+                file: 'fix.md',
+                line: 3,
+                type: 'incomplete_fragment',
+                description: 'Contains TODO comment indicating incomplete code',
+                suggestion: 'Provide complete implementation example',
+                codeSnippet: 'console.log("TODO: implement this");',
+              },
+            ],
+            summary: {
+              totalFiles: 1,
+              filesWithViolations: 1,
+              totalViolations: 2,
+              violationTypes: {
+                generic_placeholder: 1,
+                incomplete_fragment: 1,
+                abstract_pseudocode: 0,
+                overly_simplistic: 0,
+              },
+            },
+          }),
+        };
+      });
+
+      const result = await performRecipesValidate({
+        target: '/path/to/recipe-with-violations',
+      });
+
+      expect(result.context.target).toBe('/path/to/recipe-with-violations');
+      expect(result.context.recipesValidated).toEqual([
+        'recipe-with-violations',
+      ]);
+      expect(result.messages).toBeDefined();
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'success' &&
+            msg.text.includes("Recipe 'recipe-with-violations' is valid")
+        )
+      ).toBe(true);
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'warning' && msg.text.includes('Code Sample Issues:')
+        )
+      ).toBe(true);
+    });
+
+    it('should integrate code sample validation into recipe validation workflow', async () => {
+      const recipesModule = await import('./recipes');
+      const performRecipesValidate = recipesModule.performRecipesValidate;
+      mockExistsSync.mockImplementation((filePath: string) => {
+        if (filePath === '/path/to/recipe-integration-test') {
+          return true;
+        }
+        if (filePath === '/path/to/recipe-integration-test/metadata.yaml') {
+          return true;
+        }
+        if (filePath === '/path/to/recipe-integration-test/prompt.md') {
+          return true;
+        }
+        if (filePath === '/path/to/recipe-integration-test/fix.md') {
+          return true;
+        }
+        return false;
+      });
+
+      mockStatSync.mockImplementation(
+        (filePath: string) =>
+          ({
+            isDirectory: () => !filePath.includes('.'),
+            isFile: () => filePath.includes('.'),
+          }) as fs.Stats
+      );
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath === '/path/to/recipe-integration-test/metadata.yaml') {
+          return yamlStringify({
+            id: 'recipe-integration-test',
+            category: 'test',
+            summary: 'Integration test recipe',
+            level: 'workspace-preferred',
+            ecosystems: [],
+            provides: [],
+            requires: [],
+          });
+        }
+        if (filePath === '/path/to/recipe-integration-test/prompt.md') {
+          return '## Goal\nTest goal\n## Investigation\nTest investigation\n## Expected Output\nTest output';
+        }
+        if (filePath === '/path/to/recipe-integration-test/fix.md') {
+          return 'Integration test content';
+        }
+        if (filePath.includes('validation/code_sample_validation.md')) {
+          return 'Validate code samples in: {{#each files}}{{this.path}}{{/each}}';
+        }
+        return '';
+      });
+
+      mockQuery.mockImplementation(async function* () {
+        yield {
+          type: 'result',
+          subtype: 'success',
+          result: JSON.stringify({
+            valid: true,
+            violations: [],
+            summary: {
+              totalFiles: 1,
+              filesWithViolations: 0,
+              totalViolations: 0,
+              violationTypes: {
+                generic_placeholder: 0,
+                incomplete_fragment: 0,
+                abstract_pseudocode: 0,
+                overly_simplistic: 0,
+              },
+            },
+          }),
+        };
+      });
+
+      const result = await performRecipesValidate({
+        target: '/path/to/recipe-integration-test',
+      });
+
+      expect(result.context.target).toBe('/path/to/recipe-integration-test');
+      expect(result.context.recipesValidated).toEqual([
+        'recipe-integration-test',
+      ]);
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'success' &&
+            msg.text.includes("Recipe 'recipe-integration-test' is valid")
+        )
+      ).toBe(true);
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'warning' && msg.text.includes('Code Sample Issues:')
+        )
+      ).toBe(false);
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'warning' &&
+            msg.text.includes('Code sample validation failed')
+        )
+      ).toBe(false);
+    });
+
+    it('should handle code sample validation failures gracefully', async () => {
+      const recipesModule = await import('./recipes');
+      const performRecipesValidate = recipesModule.performRecipesValidate;
+      mockExistsSync.mockImplementation((filePath: string) => {
+        if (filePath === '/path/to/recipe-validation-error') {
+          return true;
+        }
+        if (filePath === '/path/to/recipe-validation-error/metadata.yaml') {
+          return true;
+        }
+        if (filePath === '/path/to/recipe-validation-error/prompt.md') {
+          return true;
+        }
+        if (filePath === '/path/to/recipe-validation-error/fix.md') {
+          return true;
+        }
+        return false;
+      });
+
+      mockStatSync.mockImplementation(
+        (filePath: string) =>
+          ({
+            isDirectory: () => !filePath.includes('.'),
+            isFile: () => filePath.includes('.'),
+          }) as fs.Stats
+      );
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath === '/path/to/recipe-validation-error/metadata.yaml') {
+          return yamlStringify({
+            id: 'recipe-validation-error',
+            category: 'test',
+            summary: 'Recipe that causes validation error',
+            level: 'workspace-preferred',
+            ecosystems: [],
+            provides: [],
+            requires: [],
+          });
+        }
+        if (filePath === '/path/to/recipe-validation-error/prompt.md') {
+          return '## Goal\nTest goal\n## Investigation\nTest investigation\n## Expected Output\nTest output';
+        }
+        if (filePath === '/path/to/recipe-validation-error/fix.md') {
+          return 'Some fix content';
+        }
+        if (filePath.includes('validation/code_sample_validation.md')) {
+          return 'Validate code samples in: {{#each files}}{{this.path}}{{/each}}';
+        }
+        return '';
+      });
+
+      const result = await performRecipesValidate({
+        target: '/path/to/recipe-validation-error',
+      });
+
+      expect(result.context.target).toBe('/path/to/recipe-validation-error');
+      expect(result.context.recipesValidated).toEqual([
+        'recipe-validation-error',
+      ]);
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'success' &&
+            msg.text.includes("Recipe 'recipe-validation-error' is valid")
+        )
+      ).toBe(true);
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'warning' &&
+            msg.text.includes('Code sample validation failed')
+        )
+      ).toBe(true);
+    });
+
+    it.skip('should validate code samples for library validation', async () => {
+      const recipesModule = await import('./recipes');
+      const performRecipesValidate = recipesModule.performRecipesValidate;
+      mockExistsSync.mockImplementation((filePath: string) => {
+        if (filePath === '/path/to/test-library') {
+          return true;
+        }
+        if (
+          filePath.includes('recipe-one') ||
+          filePath.includes('recipe-two')
+        ) {
+          return true;
+        }
+        if (
+          filePath.includes('metadata.yaml') ||
+          filePath.includes('prompt.md') ||
+          filePath.includes('fix.md')
+        ) {
+          return true;
+        }
+        return false;
+      });
+
+      mockStatSync.mockImplementation(
+        (filePath: string) =>
+          ({
+            isDirectory: () => !filePath.includes('.'),
+            isFile: () => filePath.includes('.'),
+          }) as fs.Stats
+      );
+
+      mockReaddirSync.mockImplementation((dirPath: string) => {
+        if (dirPath === '/path/to/test-library') {
+          return ['recipe-one', 'recipe-two'];
+        }
+        if (dirPath.includes('recipe-one') && !dirPath.includes('.')) {
+          return [];
+        }
+        if (dirPath.includes('recipe-two') && !dirPath.includes('.')) {
+          return [];
+        }
+        return [];
+      });
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('recipe-one/metadata.yaml')) {
+          return `
+id: recipe-one
+category: test
+summary: First recipe
+level: workspace-preferred
+ecosystems: []
+provides: []
+requires: []
+`;
+        }
+        if (filePath.includes('recipe-two/metadata.yaml')) {
+          return `
+id: recipe-two
+category: test
+summary: Second recipe
+level: workspace-preferred
+ecosystems: []
+provides: []
+requires: []
+`;
+        }
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest goal\n## Investigation\nTest investigation\n## Expected Output\nTest output';
+        }
+        if (filePath.includes('fix.md')) {
+          return 'Fix content';
+        }
+        if (filePath.includes('validation/code_sample_validation.md')) {
+          return 'Validate code samples in: {{#each files}}{{this.path}}{{/each}}';
+        }
+        return '';
+      });
+
+      const result = await performRecipesValidate({
+        target: '/path/to/test-library',
+      });
+
+      expect(result.context.target).toBe('/path/to/test-library');
+      expect(result.context.recipesValidated).toEqual([
+        'recipe-one',
+        'recipe-two',
+      ]);
+      expect(result.summary).toBeDefined();
+      expect(result.summary?.total).toBe(2);
+
+      expect(
+        result.messages.some(
+          (msg) => msg.type === 'success' && msg.text === 'recipe-one'
+        )
+      ).toBe(true);
+      expect(
+        result.messages.some(
+          (msg) => msg.type === 'success' && msg.text === 'recipe-two'
+        )
+      ).toBe(true);
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'warning' &&
+            msg.text.includes('recipe-two code sample issues:')
+        )
+      ).toBe(true);
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'warning' &&
+            msg.text.includes('fix.md:1 (overly_simplistic)')
+        )
+      ).toBe(true);
+    });
+
+    it('should skip code sample validation for recipes with no fix files', async () => {
+      const recipesModule = await import('./recipes');
+      const performRecipesValidate = recipesModule.performRecipesValidate;
+      mockExistsSync.mockImplementation((filePath: string) => {
+        if (filePath === '/path/to/recipe-no-fixes') {
+          return true;
+        }
+        if (filePath === '/path/to/recipe-no-fixes/metadata.yaml') {
+          return true;
+        }
+        if (filePath === '/path/to/recipe-no-fixes/prompt.md') {
+          return true;
+        }
+        if (filePath === '/path/to/recipe-no-fixes/fix.md') {
+          return true;
+        }
+        return false;
+      });
+
+      mockStatSync.mockImplementation(
+        (filePath: string) =>
+          ({
+            isDirectory: () => !filePath.includes('.'),
+            isFile: () => filePath.includes('.'),
+          }) as fs.Stats
+      );
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath === '/path/to/recipe-no-fixes/metadata.yaml') {
+          return yamlStringify({
+            id: 'recipe-no-fixes',
+            category: 'test',
+            summary: 'Recipe with no fix content',
+            level: 'workspace-preferred',
+            ecosystems: [],
+            provides: [],
+            requires: [],
+          });
+        }
+        if (filePath === '/path/to/recipe-no-fixes/prompt.md') {
+          return '## Goal\nTest goal\n## Investigation\nTest investigation\n## Expected Output\nTest output';
+        }
+        if (filePath === '/path/to/recipe-no-fixes/fix.md') {
+          return ''; // Empty fix file
+        }
+        if (filePath.includes('validation/code_sample_validation.md')) {
+          return 'Validate code samples in: {{#each files}}{{this.path}}{{/each}}';
+        }
+        return '';
+      });
+
+      const result = await performRecipesValidate({
+        target: '/path/to/recipe-no-fixes',
+      });
+
+      expect(result.context.target).toBe('/path/to/recipe-no-fixes');
+      expect(result.context.recipesValidated).toEqual(['recipe-no-fixes']);
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'success' &&
+            msg.text.includes("Recipe 'recipe-no-fixes' is valid")
+        )
+      ).toBe(true);
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'warning' && msg.text.includes('Code Sample Issues:')
+        )
+      ).toBe(false);
     });
   });
 });

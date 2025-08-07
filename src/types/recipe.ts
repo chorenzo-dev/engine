@@ -55,6 +55,40 @@ export interface RecipeValidationResult {
   warnings: RecipeValidationError[];
 }
 
+export type CodeSampleViolationType =
+  | 'generic_placeholder'
+  | 'incomplete_fragment'
+  | 'abstract_pseudocode'
+  | 'overly_simplistic';
+
+export interface CodeSampleViolation {
+  file: string;
+  line: number;
+  type: CodeSampleViolationType;
+  description: string;
+  suggestion: string;
+  codeSnippet: string;
+}
+
+export interface CodeSampleValidationSummary {
+  totalFiles: number;
+  filesWithViolations: number;
+  totalViolations: number;
+  violationTypes: Record<CodeSampleViolationType, number>;
+}
+
+export interface CodeSampleValidationResult {
+  valid: boolean;
+  violations: CodeSampleViolation[];
+  summary: CodeSampleValidationSummary;
+}
+
+export interface FileToValidate {
+  path: string;
+  content: string;
+  language?: string;
+}
+
 export class Recipe {
   constructor(
     public readonly path: string,

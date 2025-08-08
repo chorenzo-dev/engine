@@ -5118,12 +5118,46 @@ requires: []
       ).toBe(true);
     });
 
-    it.skip('should validate code samples for library validation', async () => {
+    it('should validate code samples for library validation', async () => {
+      mockQuery.mockImplementation(async function* () {
+        yield {
+          type: 'result',
+          subtype: 'success',
+          result: JSON.stringify({
+            valid: false,
+            violations: [
+              {
+                file: 'fix.md',
+                line: 1,
+                type: 'overly_simplistic',
+                description: 'Code is too basic',
+                suggestion: 'Provide more detailed implementation',
+                codeSnippet: 'Fix content',
+              },
+            ],
+            summary: {
+              totalFiles: 1,
+              filesWithViolations: 1,
+              totalViolations: 1,
+              violationTypes: {
+                generic_placeholder: 0,
+                incomplete_fragment: 0,
+                abstract_pseudocode: 0,
+                overly_simplistic: 1,
+              },
+            },
+          }),
+        };
+      });
+
       const recipesModule = await import('./recipes');
       const performRecipesValidate = recipesModule.performRecipesValidate;
       mockExistsSync.mockImplementation((filePath: string) => {
         if (filePath === '/path/to/test-library') {
           return true;
+        }
+        if (filePath === '/path/to/test-library/metadata.yaml') {
+          return false;
         }
         if (
           filePath.includes('recipe-one') ||

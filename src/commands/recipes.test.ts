@@ -5198,26 +5198,26 @@ requires: []
 
       mockReadFileSync.mockImplementation((filePath: string) => {
         if (filePath.includes('recipe-one/metadata.yaml')) {
-          return `
-id: recipe-one
-category: test
-summary: First recipe
-level: workspace-preferred
-ecosystems: []
-provides: []
-requires: []
-`;
+          return yamlStringify({
+            id: 'recipe-one',
+            category: 'test',
+            summary: 'First recipe',
+            level: 'workspace-preferred',
+            ecosystems: [],
+            provides: [],
+            requires: [],
+          });
         }
         if (filePath.includes('recipe-two/metadata.yaml')) {
-          return `
-id: recipe-two
-category: test
-summary: Second recipe
-level: workspace-preferred
-ecosystems: []
-provides: []
-requires: []
-`;
+          return yamlStringify({
+            id: 'recipe-two',
+            category: 'test',
+            summary: 'Second recipe',
+            level: 'workspace-preferred',
+            ecosystems: [],
+            provides: [],
+            requires: [],
+          });
         }
         if (filePath.includes('prompt.md')) {
           return '## Goal\nTest goal\n## Investigation\nTest investigation\n## Expected Output\nTest output';

@@ -4,7 +4,13 @@ import * as os from 'os';
 import * as path from 'path';
 
 import { ProjectAnalysis, WorkspaceAnalysis } from '~/types/analysis';
-import { Recipe, RecipeDependency } from '~/types/recipe';
+import {
+  CodeSampleValidationResult,
+  CodeSampleViolationType,
+  FileToValidate,
+  Recipe,
+  RecipeDependency,
+} from '~/types/recipe';
 import {
   RecipesApplyDependencyValidationResult,
   RecipesApplyError,
@@ -49,6 +55,222 @@ import { stateManager } from '~/utils/state-manager.utils';
 import { workspaceConfig } from '~/utils/workspace-config.utils';
 
 import { performAnalysis } from './analyze';
+
+const RECIPE_FIX_FILE_TYPE = 'markdown';
+const DEFAULT_AI_MODEL = 'sonnet';
+
+class CodeSampleValidationError extends Error {
+  constructor(
+    message: string,
+    public readonly code: string
+  ) {
+    super(message);
+    this.name = 'CodeSampleValidationError';
+  }
+}
+
+async function performCodeSampleValidation(
+  recipe: Recipe
+): Promise<CodeSampleValidationResult> {
+  try {
+    const filesToValidate: FileToValidate[] = [];
+
+    for (const [filePath, content] of recipe.fixFiles.entries()) {
+      filesToValidate.push({
+        path: filePath,
+        content,
+        language: RECIPE_FIX_FILE_TYPE,
+      });
+    }
+
+    if (filesToValidate.length === 0) {
+      return {
+        valid: true,
+        violations: [],
+        summary: {
+          totalFiles: 0,
+          filesWithViolations: 0,
+          totalViolations: 0,
+          violationTypes: {
+            generic_placeholder: 0,
+            incomplete_fragment: 0,
+            abstract_pseudocode: 0,
+            overly_simplistic: 0,
+          },
+        },
+      };
+    }
+
+    const validationResult = await validateRecipeFixContent(filesToValidate);
+    return validationResult;
+  } catch (error) {
+    throw new CodeSampleValidationError(
+      `Code sample validation failed: ${error instanceof Error ? error.message : String(error)}`,
+      'VALIDATION_FAILED'
+    );
+  }
+}
+
+async function validateRecipeFixContent(
+  files: FileToValidate[]
+): Promise<CodeSampleValidationResult> {
+  try {
+    const template = loadTemplate('validation/code_sample_validation');
+    const prompt = renderPrompt(template, {
+      files: files.map((file) => ({
+        path: file.path,
+        content: file.content,
+        language: RECIPE_FIX_FILE_TYPE,
+      })),
+    });
+
+    let responseText = '';
+
+    const handlers: CodeChangesEventHandlers = {
+      onProgress: () => {},
+      onThinkingStateChange: () => {},
+      onComplete: () => {},
+      onError: (error) => {
+        throw new CodeSampleValidationError(
+          `AI validation failed: ${error.message}`,
+          'AI_VALIDATION_FAILED'
+        );
+      },
+    };
+
+    const operationStartTime = new Date();
+    const operationResult = await executeCodeChangesOperation(
+      query({
+        prompt,
+        options: {
+          model: DEFAULT_AI_MODEL,
+          allowedTools: [],
+          permissionMode: 'bypassPermissions',
+        },
+      }),
+      handlers,
+      operationStartTime
+    );
+
+    if (!operationResult.success) {
+      throw new CodeSampleValidationError(
+        operationResult.error || 'AI validation failed',
+        'AI_VALIDATION_FAILED'
+      );
+    }
+
+    responseText = String(operationResult.result || '');
+    const validationResult = parseFixContentValidationResponse(responseText);
+
+    return validationResult;
+  } catch (error) {
+    throw new CodeSampleValidationError(
+      `AI validation failed: ${error instanceof Error ? error.message : String(error)}`,
+      'AI_VALIDATION_FAILED'
+    );
+  }
+}
+
+function parseFixContentValidationResponse(
+  response: string
+): CodeSampleValidationResult {
+  try {
+    let jsonString: string;
+
+    const codeBlockMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
+    if (codeBlockMatch) {
+      jsonString = codeBlockMatch[1];
+    } else {
+      const objectMatch = response.match(/\{[\s\S]*\}/);
+      if (objectMatch) {
+        jsonString = objectMatch[0];
+      } else {
+        jsonString = response.trim();
+      }
+    }
+
+    const parsed = JSON.parse(jsonString);
+
+    if (!isValidFixContentValidationResponse(parsed)) {
+      throw new Error('Invalid response structure');
+    }
+
+    return parsed;
+  } catch (error) {
+    throw new CodeSampleValidationError(
+      `Failed to parse AI validation response: ${error instanceof Error ? error.message : String(error)}`,
+      'RESPONSE_PARSE_FAILED'
+    );
+  }
+}
+
+function isValidFixContentValidationResponse(
+  obj: unknown
+): obj is CodeSampleValidationResult {
+  const isObject = (value: unknown): value is Record<string, unknown> =>
+    value !== null && typeof value === 'object';
+
+  if (!isObject(obj)) {
+    return false;
+  }
+
+  if (typeof obj.valid !== 'boolean') {
+    return false;
+  }
+
+  if (!Array.isArray(obj.violations)) {
+    return false;
+  }
+
+  if (!isObject(obj.summary)) {
+    return false;
+  }
+
+  const summary = obj.summary;
+  const requiredSummaryFields = [
+    'totalFiles',
+    'filesWithViolations',
+    'totalViolations',
+    'violationTypes',
+  ] as const;
+  if (!requiredSummaryFields.every((field) => field in summary)) {
+    return false;
+  }
+
+  const validTypes: Set<CodeSampleViolationType> = new Set([
+    'generic_placeholder',
+    'incomplete_fragment',
+    'abstract_pseudocode',
+    'overly_simplistic',
+  ]);
+
+  for (const violation of obj.violations) {
+    if (!isObject(violation)) {
+      return false;
+    }
+
+    const requiredViolationFields = [
+      'file',
+      'line',
+      'type',
+      'description',
+      'suggestion',
+      'codeSnippet',
+    ] as const;
+    if (!requiredViolationFields.every((field) => field in violation)) {
+      return false;
+    }
+
+    if (
+      typeof violation.type !== 'string' ||
+      !validTypes.has(violation.type as CodeSampleViolationType)
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 export enum InputType {
   RecipeName = 'recipe-name',
@@ -298,6 +520,15 @@ async function validateRecipeFolder(
 
     const messages: ValidationMessage[] = [];
 
+    let codeSampleValidation;
+    try {
+      codeSampleValidation = await performCodeSampleValidation(recipe);
+    } catch (error) {
+      const warningMsg = `Code sample validation failed: ${error instanceof Error ? error.message : String(error)}`;
+      messages.push({ type: 'warning', text: warningMsg });
+      onValidation?.('warning', warningMsg);
+    }
+
     if (result.valid) {
       const msg = `Recipe '${recipe.getId()}' is valid`;
       messages.push({ type: 'success', text: msg });
@@ -324,6 +555,28 @@ async function validateRecipeFolder(
         messages.push({ type: 'warning', text: warningMsg });
         onValidation?.('warning', warningMsg);
       }
+    }
+
+    if (codeSampleValidation && codeSampleValidation.violations.length > 0) {
+      const codeSampleHeader = 'Code Sample Issues:';
+      messages.push({ type: 'warning', text: codeSampleHeader });
+      onValidation?.('warning', codeSampleHeader);
+
+      for (const violation of codeSampleValidation.violations) {
+        const violationMsg = `  - ${violation.file}:${violation.line} (${violation.type}): ${violation.description}`;
+        messages.push({ type: 'warning', text: violationMsg });
+        onValidation?.('warning', violationMsg);
+
+        if (violation.suggestion) {
+          const suggestionMsg = `    Suggestion: ${violation.suggestion}`;
+          messages.push({ type: 'info', text: suggestionMsg });
+          onValidation?.('info', suggestionMsg);
+        }
+      }
+
+      const summaryMsg = `  Total code sample violations: ${codeSampleValidation.summary.totalViolations} across ${codeSampleValidation.summary.filesWithViolations} files`;
+      messages.push({ type: 'info', text: summaryMsg });
+      onValidation?.('info', summaryMsg);
     }
 
     return {
@@ -361,6 +614,18 @@ async function validateLibrary(
     let totalWarnings = 0;
 
     for (const [recipeId, result] of results) {
+      const recipe = library.recipes.find((r) => r.getId() === recipeId);
+      let codeSampleValidation;
+      if (recipe) {
+        try {
+          codeSampleValidation = await performCodeSampleValidation(recipe);
+        } catch (error) {
+          const warningMsg = `${recipeId} code sample validation failed: ${error instanceof Error ? error.message : String(error)}`;
+          messages.push({ type: 'warning', text: warningMsg });
+          onValidation?.('warning', warningMsg);
+          totalWarnings++;
+        }
+      }
       if (result.valid) {
         validCount++;
         messages.push({ type: 'success', text: recipeId });
@@ -387,6 +652,19 @@ async function validateLibrary(
           const warningMsg = `  - ${warning.message}${warning.file ? ` (${warning.file})` : ''}`;
           messages.push({ type: 'warning', text: warningMsg });
           onValidation?.('warning', warningMsg);
+          totalWarnings++;
+        }
+      }
+
+      if (codeSampleValidation && codeSampleValidation.violations.length > 0) {
+        const codeSampleHeader = `${recipeId} code sample issues:`;
+        messages.push({ type: 'warning', text: codeSampleHeader });
+        onValidation?.('warning', codeSampleHeader);
+
+        for (const violation of codeSampleValidation.violations) {
+          const violationMsg = `  - ${violation.file}:${violation.line} (${violation.type}): ${violation.description}`;
+          messages.push({ type: 'warning', text: violationMsg });
+          onValidation?.('warning', violationMsg);
           totalWarnings++;
         }
       }

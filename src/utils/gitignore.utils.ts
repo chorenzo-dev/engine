@@ -6,7 +6,7 @@ import { Logger } from './logger.utils';
 export class GitignoreManager {
   private static readonly CHORENZO_SECTION_START = '# Chorenzo';
   private static readonly CHORENZO_PATTERNS = [
-    '/.chorenzo/',
+    '/.chorenzo/*',
     '!/.chorenzo/state.json',
     '!/.chorenzo/analysis.json',
   ];
@@ -61,15 +61,10 @@ export class GitignoreManager {
   }
 
   private static updateChorenzoPatterns(content: string): string {
-    const hasOldChorenzoPattern = content.includes('/.chorenzo/');
     const hasChorenzoSection = content.includes(this.CHORENZO_SECTION_START);
 
     if (hasChorenzoSection) {
       return this.replaceChorenzoSection(content);
-    }
-
-    if (hasOldChorenzoPattern) {
-      return this.replaceOldChorenzoPattern(content);
     }
 
     return this.appendChorenzoSection(content);
@@ -119,19 +114,6 @@ export class GitignoreManager {
       separator +
       afterTrimmed
     );
-  }
-
-  private static replaceOldChorenzoPattern(content: string): string {
-    const lines = content.split('\n');
-    const updatedLines = lines.map((line) => {
-      if (line.trim() === '/.chorenzo/') {
-        return '';
-      }
-      return line;
-    });
-
-    const cleanedContent = updatedLines.join('\n').replace(/\n\n+/g, '\n\n');
-    return this.appendChorenzoSection(cleanedContent);
   }
 
   private static appendChorenzoSection(content: string): string {

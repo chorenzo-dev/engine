@@ -294,7 +294,7 @@ describe('Init Command Integration Tests', () => {
 
     const gitignoreContent = gitignoreCalls[0][1] as string;
     expect(gitignoreContent).toContain('# Chorenzo');
-    expect(gitignoreContent).toContain('/.chorenzo/');
+    expect(gitignoreContent).toContain('/.chorenzo/*');
     expect(gitignoreContent).toContain('!/.chorenzo/state.json');
     expect(gitignoreContent).toContain('!/.chorenzo/analysis.json');
   });
@@ -312,7 +312,7 @@ describe('Init Command Integration Tests', () => {
 node_modules/
         
 # Chorenzo
-/.chorenzo/
+/.chorenzo/*
 !/.chorenzo/state.json
 
 # More content`;
@@ -330,7 +330,7 @@ node_modules/
     const gitignoreContent = gitignoreCalls[0][1] as string;
     expect(gitignoreContent).toContain('# Some existing content');
     expect(gitignoreContent).toContain('# Chorenzo');
-    expect(gitignoreContent).toContain('/.chorenzo/');
+    expect(gitignoreContent).toContain('/.chorenzo/*');
     expect(gitignoreContent).toContain('!/.chorenzo/state.json');
     expect(gitignoreContent).toContain('!/.chorenzo/analysis.json');
     expect(gitignoreContent).toContain('# More content');

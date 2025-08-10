@@ -3,35 +3,33 @@ name: Build
 on:
   push:
     branches: [main]
+    paths:
+      - '**/*.js'
+      - '**/*.ts'
+      - '**/*.jsx'
+      - '**/*.tsx'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'tsconfig.*.json'
+      - 'tsup.config.ts'
+      - 'eslint.config.mjs'
   pull_request:
     branches: [main]
+    paths:
+      - '**/*.js'
+      - '**/*.ts'
+      - '**/*.jsx'
+      - '**/*.tsx'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'tsconfig.*.json'
+      - 'tsup.config.ts'
+      - 'eslint.config.mjs'
 
 jobs:
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      src: ${{ steps.changes.outputs.src }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v2
-        id: changes
-        with:
-          filters: |
-            src:
-              - '**/*.js'
-              - '**/*.ts'
-              - '**/*.jsx'
-              - '**/*.tsx'
-              - 'package.json'
-              - 'package-lock.json'
-              - 'tsconfig.json'
-              - 'tsconfig.*.json'
-              - 'tsup.config.ts'
-              - 'eslint.config.mjs'
-
   build:
-    needs: changes
-    if: ${{ needs.changes.outputs.src == 'true' }}
     runs-on: ubuntu-latest
 
     steps:

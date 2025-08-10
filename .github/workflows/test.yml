@@ -3,38 +3,39 @@ name: Test
 on:
   push:
     branches: [main]
+    paths:
+      - '**/*.js'
+      - '**/*.ts'
+      - '**/*.jsx'
+      - '**/*.tsx'
+      - '**/*.test.*'
+      - '**/*.spec.*'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'jest.config.*'
+      - 'jest.d.ts'
+      - 'jest.resolver.*'
+      - 'tsconfig.json'
+      - 'tsconfig.*.json'
   pull_request:
     branches: [main]
+    paths:
+      - '**/*.js'
+      - '**/*.ts'
+      - '**/*.jsx'
+      - '**/*.tsx'
+      - '**/*.test.*'
+      - '**/*.spec.*'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'jest.config.*'
+      - 'jest.d.ts'
+      - 'jest.resolver.*'
+      - 'tsconfig.json'
+      - 'tsconfig.*.json'
 
 jobs:
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      test: ${{ steps.changes.outputs.test }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v2
-        id: changes
-        with:
-          filters: |
-            test:
-              - '**/*.js'
-              - '**/*.ts'
-              - '**/*.jsx'
-              - '**/*.tsx'
-              - '**/*.test.*'
-              - '**/*.spec.*'
-              - 'package.json'
-              - 'package-lock.json'
-              - 'jest.config.*'
-              - 'jest.d.ts'
-              - 'jest.resolver.*'
-              - 'tsconfig.json'
-              - 'tsconfig.*.json'
-
   test:
-    needs: changes
-    if: ${{ needs.changes.outputs.test == 'true' }}
     runs-on: ubuntu-latest
 
     steps:

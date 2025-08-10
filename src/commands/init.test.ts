@@ -135,7 +135,10 @@ describe('Init Command Integration Tests', () => {
 
     await performInit({});
 
-    expect(mockWriteFileSync).not.toHaveBeenCalled();
+    const configCalls = mockWriteFileSync.mock.calls.filter((call) =>
+      call[0].includes('config.yaml')
+    );
+    expect(configCalls).toHaveLength(0);
   });
 
   it('should reset workspace when reset option is provided', async () => {

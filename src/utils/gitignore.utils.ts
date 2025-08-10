@@ -116,4 +116,72 @@ export class GitignoreManager {
     const patterns = this.CHORENZO_PATTERNS.join('\n');
     return `${this.CHORENZO_SECTION_START}\n${patterns}\n${this.CHORENZO_SECTION_END}\n`;
   }
+
+  static loadGitIgnorePatternsForDir(
+    directory: string,
+    parentPatterns: Set<string> = new Set()
+  ): Set<string> {
+    const patterns = new Set(parentPatterns);
+    const gitignorePath = path.join(directory, '.gitignore');
+
+    if (fs.existsSync(gitignorePath)) {
+      try {
+        const content = fs.readFileSync(gitignorePath, 'utf-8');
+        const lines = content
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line && !line.startsWith('#'));
+
+        for (const line of lines) {
+          patterns.add(line);
+        }
+      } catch (error) {
+        Logger.warn(
+          {
+            event: 'gitignore_read_failed',
+            path: gitignorePath,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          'Failed to read .gitignore file'
+        );
+      }
+    }
+
+    return patterns;
+  }
+
+  static isIgnored(
+    filePath: string,
+    rootDir: string,
+    ignorePatterns: Set<string>
+  ): boolean {
+    const relPath = path.relative(rootDir, filePath);
+    const parts = relPath.split(path.sep);
+
+    for (const pattern of ignorePatterns) {
+      if (
+        this.matchGitIgnorePattern(relPath, pattern) ||
+        relPath.startsWith(pattern) ||
+        parts.includes(pattern)
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private static matchGitIgnorePattern(
+    filePath: string,
+    pattern: string
+  ): boolean {
+    const regexPattern = pattern
+      .replace(/\./g, '\\.')
+      .replace(/\*/g, '[^/]*')
+      .replace(/\?/g, '[^/]')
+      .replace(/\*\*/g, '.*');
+
+    const regex = new RegExp(`^${regexPattern}$`);
+    return regex.test(filePath) || regex.test(path.basename(filePath));
+  }
 }

@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-import { isIgnored, loadGitIgnorePatternsForDir } from './validation';
+import { GitignoreManager } from './gitignore.utils';
 
 const lockFiles = new Set([
   'package-lock.json',
@@ -39,8 +39,11 @@ export async function buildFileTree(
     }
     seen.add(absPath);
 
-    const patterns = loadGitIgnorePatternsForDir(currentPath, parentPatterns);
-    if (isIgnored(currentPath, rootDir, patterns)) {
+    const patterns = GitignoreManager.loadGitIgnorePatternsForDir(
+      currentPath,
+      parentPatterns
+    );
+    if (GitignoreManager.isIgnored(currentPath, rootDir, patterns)) {
       return null;
     }
 
@@ -75,7 +78,7 @@ export async function buildFileTree(
             children[entry] = subtree as TreeNode;
           }
         } else if (childStats.isFile()) {
-          if (!isIgnored(childPath, rootDir, patterns)) {
+          if (!GitignoreManager.isIgnored(childPath, rootDir, patterns)) {
             files.push(entry);
           }
         }

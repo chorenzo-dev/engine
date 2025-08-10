@@ -1,0 +1,60 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      test: ${{ steps.changes.outputs.test }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            test:
+              - '**/*.js'
+              - '**/*.ts'
+              - '**/*.jsx'
+              - '**/*.tsx'
+              - '**/*.test.*'
+              - '**/*.spec.*'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'jest.config.*'
+              - 'jest.d.ts'
+              - 'jest.resolver.*'
+              - 'tsconfig.json'
+              - 'tsconfig.*.json'
+
+  test:
+    needs: changes
+    if: ${{ needs.changes.outputs.test == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: coverage/
+          retention-days: 30

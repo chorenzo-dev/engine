@@ -1,0 +1,5 @@
+#!/bin/sh
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ "$BRANCH" = "main" ]; then
+  npx commitlint --edit $1
+fi

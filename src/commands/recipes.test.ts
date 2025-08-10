@@ -3145,6 +3145,150 @@ describe('Recipes Command Integration Tests', () => {
       expect(result.executionResults[0].projectPath).toBe('workspace');
     });
 
+    describe('Re-application Prevention Tests', () => {
+      const setupReApplicationScenario = (stateData: object) => {
+        setupStandardFileSystemMocks();
+        setupSuccessfulQueryMock();
+
+        mockExistsSync.mockImplementation((path) => {
+          if (path.includes('analysis.json')) {
+            return true;
+          }
+          if (path.includes('state.json')) {
+            return true;
+          }
+          if (path.includes('.chorenzo/recipes')) {
+            return true;
+          }
+          if (path.includes('test-recipe')) {
+            return true;
+          }
+          if (path.includes('metadata.yaml')) {
+            return true;
+          }
+          if (path.includes('prompt.md')) {
+            return true;
+          }
+          if (path.includes('apply_recipe.md')) {
+            return true;
+          }
+          if (path.includes('fix.md')) {
+            return true;
+          }
+          if (path.includes('variants')) {
+            return true;
+          }
+          return true;
+        });
+
+        const mockYamlData = createMockYamlData({
+          provides: ['test_feature.exists'],
+        });
+
+        mockReadFileSync.mockImplementation((filePath: string) => {
+          if (filePath.includes('analysis.json')) {
+            return JSON.stringify({
+              isMonorepo: false,
+              hasWorkspacePackageManager: false,
+              workspaceEcosystem: 'javascript',
+              projects: [
+                {
+                  path: '.',
+                  language: 'javascript',
+                  ecosystem: 'javascript',
+                  type: 'web_app',
+                  dependencies: [],
+                  hasPackageManager: true,
+                },
+              ],
+            });
+          }
+          if (filePath.includes('config.yaml')) {
+            return yamlStringify(mockYamlData.config);
+          }
+          if (filePath.includes('metadata.yaml')) {
+            return yamlStringify(mockYamlData.metadata);
+          }
+          if (filePath.includes('prompt.md')) {
+            return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+          }
+          if (filePath.includes('apply_recipe.md')) {
+            return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+          }
+          if (filePath.includes('fix.md')) {
+            return 'Basic fix prompt content';
+          }
+          if (filePath.includes('variants/basic.md')) {
+            return 'Basic variant fix content';
+          }
+          if (filePath.includes('state.json')) {
+            return JSON.stringify(stateData);
+          }
+          return '';
+        });
+      };
+
+      it('should proceed normally when recipe has not been applied before', async () => {
+        const stateData = {
+          workspace: {},
+          projects: {},
+        };
+
+        setupReApplicationScenario(stateData);
+
+        // Mock console.log to ensure no warning is shown
+        const consoleSpy = jest
+          .spyOn(console, 'log')
+          .mockImplementation(() => {});
+
+        const result = await performRecipesApply({
+          recipe: 'test-recipe',
+        });
+
+        expect(result).toBeDefined();
+        expect(result.summary.successfulProjects).toBe(1);
+        expect(consoleSpy).not.toHaveBeenCalledWith(
+          expect.stringContaining(
+            "Warning: Recipe 'test-recipe' has already been applied!"
+          )
+        );
+
+        consoleSpy.mockRestore();
+      });
+
+      it('should skip confirmation with --yes flag for re-application', async () => {
+        const stateData = {
+          workspace: {
+            'test-recipe.applied': true,
+          },
+          projects: {},
+        };
+
+        setupReApplicationScenario(stateData);
+
+        // Mock console.log to capture any output
+        const consoleSpy = jest
+          .spyOn(console, 'log')
+          .mockImplementation(() => {});
+
+        const result = await performRecipesApply({
+          recipe: 'test-recipe',
+          yes: true,
+        });
+
+        expect(result).toBeDefined();
+        expect(result.summary.successfulProjects).toBe(1);
+        // Should not show warning when --yes is used
+        expect(consoleSpy).not.toHaveBeenCalledWith(
+          expect.stringContaining(
+            "Warning: Recipe 'test-recipe' has already been applied!"
+          )
+        );
+
+        consoleSpy.mockRestore();
+      });
+    });
+
     describe('Hierarchical Level Tests', () => {
       const setupHierarchicalLevelMocks = (recipeId: string) => {
         mockReaddirSync.mockImplementation((dirPath) => {

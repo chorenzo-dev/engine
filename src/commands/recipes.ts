@@ -12,6 +12,8 @@ import {
   RecipeDependency,
 } from '~/types/recipe';
 import {
+  ReApplicationCheckResult,
+  ReApplicationTarget,
   RecipesApplyDependencyValidationResult,
   RecipesApplyError,
   RecipesApplyExecutionResult,
@@ -746,6 +748,55 @@ async function validateGitRepository(
   }
 }
 
+export async function checkRecipeReApplication(
+  options: RecipesApplyOptions,
+  onProgress?: RecipesApplyProgressCallback
+): Promise<{ recipeId: string; reApplicationCheck: ReApplicationCheckResult }> {
+  onProgress?.('Loading recipe');
+  const recipe = await loadRecipe(options.recipe);
+
+  onProgress?.('Validating recipe structure');
+  const validationResult = recipe.validate();
+  if (!validationResult.valid) {
+    const errors = validationResult.errors.map((e) => e.message).join(', ');
+    throw new RecipesApplyError(
+      `Recipe validation failed: ${errors}`,
+      'RECIPE_INVALID'
+    );
+  }
+
+  onProgress?.('Ensuring analysis data');
+  const analysis = await ensureAnalysisData();
+
+  onProgress?.('Checking recipe dependencies');
+  const currentState = await readCurrentState();
+  const dependencyCheck = await validateWorkspaceDependencies(
+    recipe,
+    currentState
+  );
+
+  if (!dependencyCheck.satisfied) {
+    const errorMsg = formatDependencyError(
+      recipe.getId(),
+      dependencyCheck,
+      currentState
+    );
+    throw new RecipesApplyError(errorMsg, 'DEPENDENCIES_NOT_SATISFIED');
+  }
+
+  onProgress?.('Checking for previous recipe applications');
+  const reApplicationCheck = await checkReApplication(
+    recipe,
+    analysis,
+    options
+  );
+
+  return {
+    recipeId: recipe.getId(),
+    reApplicationCheck,
+  };
+}
+
 export async function performRecipesApply(
   options: RecipesApplyOptions,
   onProgress?: RecipesApplyProgressCallback
@@ -785,6 +836,23 @@ export async function performRecipesApply(
         currentState
       );
       throw new RecipesApplyError(errorMsg, 'DEPENDENCIES_NOT_SATISFIED');
+    }
+
+    onProgress?.('Checking for previous recipe applications');
+    const reApplicationCheck = await checkReApplication(
+      recipe,
+      analysis,
+      options
+    );
+
+    if (
+      reApplicationCheck.hasAlreadyApplied &&
+      !reApplicationCheck.userConfirmedProceed
+    ) {
+      throw new RecipesApplyError(
+        'Recipe application cancelled by user due to previous application',
+        'USER_CANCELLED_REAPPLICATION'
+      );
     }
 
     onProgress?.('Initializing the chorenzo engine');
@@ -1201,6 +1269,73 @@ function formatDependencyError(
   lines.push('Consider running prerequisite recipes first.');
 
   return lines.join('\n');
+}
+
+async function checkReApplication(
+  recipe: Recipe,
+  analysis: WorkspaceAnalysis,
+  options: RecipesApplyOptions
+): Promise<ReApplicationCheckResult> {
+  const targets: ReApplicationTarget[] = [];
+  const recipeId = recipe.getId();
+
+  if (recipe.isWorkspaceOnly()) {
+    if (stateManager.isRecipeApplied(recipeId, 'workspace')) {
+      targets.push({ level: 'workspace' });
+    }
+  } else if (recipe.isWorkspacePreferred()) {
+    const workspaceEcosystem = analysis.workspaceEcosystem || 'unknown';
+    const workspaceState = stateManager.getWorkspaceState();
+    const workspaceRecipesApplyState = (workspaceState.workspace ||
+      {}) as RecipesApplyState;
+
+    const canApplyAtWorkspace = await canApplyRecipeAtWorkspace(
+      recipe,
+      analysis,
+      workspaceRecipesApplyState
+    );
+
+    if (
+      canApplyAtWorkspace &&
+      stateManager.isRecipeApplied(recipeId, 'workspace')
+    ) {
+      targets.push({ level: 'workspace' });
+    }
+
+    const applicableProjects = await getApplicableProjectsForWorkspacePreferred(
+      recipe,
+      analysis,
+      workspaceEcosystem,
+      workspaceState,
+      options.project
+    );
+
+    for (const project of applicableProjects) {
+      if (stateManager.isRecipeApplied(recipeId, 'project', project.path)) {
+        targets.push({ level: 'project', path: project.path });
+      }
+    }
+  } else {
+    const applicableProjects = await filterApplicableProjects(
+      analysis,
+      recipe,
+      options.project
+    );
+
+    for (const project of applicableProjects) {
+      if (stateManager.isRecipeApplied(recipeId, 'project', project.path)) {
+        targets.push({ level: 'project', path: project.path });
+      }
+    }
+  }
+
+  const hasAlreadyApplied = targets.length > 0;
+
+  return {
+    hasAlreadyApplied,
+    targets,
+    userConfirmedProceed: !hasAlreadyApplied || Boolean(options.yes),
+  };
 }
 
 async function filterApplicableProjects(

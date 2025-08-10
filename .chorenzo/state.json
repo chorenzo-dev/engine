@@ -1,0 +1,250 @@
+{
+  "projects": {
+    "": {
+      "typescript-path-alias.alias_symbol": "~",
+      "typescript-path-alias.configured": true
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-4vPtki/frontend": {
+      "project.setup": "complete"
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-DkWn4g/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:45:04.333Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-F3NJFZ/frontend": {
+      "project.setup": "complete"
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-FsTNQH/frontend": {
+      "test-recipe.applied": {
+        "timestamp": "2025-08-10T06:45:25.092Z"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-HOPsm9/frontend": {
+      "project.setup": "complete"
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-HysB1E/frontend": {
+      "test-recipe.applied": {
+        "timestamp": "2025-08-10T06:45:30.392Z"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-Il9zGB/frontend": {
+      "project.setup": "complete"
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-LOriPv/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:45:30.394Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-PMgZle/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:45:14.413Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-QpHakx/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:45:56.101Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-SmlRug/frontend": {
+      "test-recipe.applied": {
+        "timestamp": "2025-08-10T06:45:56.125Z"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-WCXWuR/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:45:14.424Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-X2PzyR/frontend": {
+      "test-recipe.applied": {
+        "timestamp": "2025-08-10T06:45:46.323Z"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-ZJGs1O/frontend": {
+      "project.setup": "complete"
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-Zi0fxX/frontend": {
+      "test-recipe.applied": {
+        "timestamp": "2025-08-10T06:45:43.232Z"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-a9FXWJ/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:45:56.128Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-aR73DA/frontend": {
+      "test-recipe.applied": {
+        "timestamp": "2025-08-10T06:45:14.422Z"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-apY6EY/frontend": {
+      "test-recipe.applied": {
+        "timestamp": "2025-08-10T06:45:04.340Z"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-ecNG4e/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:45:04.345Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-f8IPsG/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:45:25.096Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-fC6u4o/frontend": {
+      "test-recipe.applied": {
+        "timestamp": "2025-08-10T06:45:37.019Z"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-fNZHCW/frontend": {
+      "project.setup": "complete"
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-gPFrHT/frontend": {
+      "test-recipe.applied": {
+        "timestamp": "2025-08-10T06:46:10.580Z"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-gcPwJg/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:45:46.315Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-heM4Ug/frontend": {
+      "project.setup": "complete"
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-j8hpGT/frontend": {
+      "project.setup": "complete"
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-kie2OJ/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:45:43.235Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-kyBCGc/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:46:14.042Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-lamtGn/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:45:30.386Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-lthUT5/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:45:46.326Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-mvQKLJ/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:45:37.012Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-nFllGu/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:46:10.558Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-p2Aq7C/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:45:37.022Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-pl3GVF/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:45:43.226Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-quN8OD/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:46:10.583Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-rDqyWf/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:45:25.085Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-vvCyFC/frontend": {
+      "test-recipe.applied": {
+        "ecosystem": "javascript",
+        "timestamp": "2025-08-10T06:45:59.313Z",
+        "variant": "react"
+      }
+    },
+    "../../../../var/folders/ky/h2r1_ztn3k144v2ph1xkcxj80000gn/T/chorenzo-state-test-wwYqop/frontend": {
+      "project.setup": "complete"
+    }
+  },
+  "workspace": {
+    "alpha.applied": true,
+    "code-formatting-sort-imports.configured": true,
+    "code-formatting-sort-imports.exists": true,
+    "code-formatting-sort-imports.variant": "prettier-plugin-sort-imports",
+    "code-formatting.applied": true,
+    "code-formatting.exists": true,
+    "code-formatting.variant": "prettier",
+    "code-linting.applied": false,
+    "code-linting.exists": true,
+    "code-linting.variant": "eslint",
+    "existing.config": true,
+    "new.applied": true,
+    "pre-commit-checks.checks_found": true,
+    "pre-commit-checks.hooks_configured": true,
+    "regular.config": true,
+    "secret-scanner.applied": true,
+    "secret-scanner.configured": true,
+    "test-recipe.applied": {
+      "timestamp": "2025-08-10T06:46:10.588Z",
+      "variant": "default"
+    },
+    "test.applied": true,
+    "update-readme.cli-documented": true,
+    "update-readme.commands-extracted": true,
+    "update-readme.configured": true,
+    "update-readme.readme-exists": true,
+    "zebra.applied": true,
+    "ci-pipeline.platform": "github-actions"
+  }
+}

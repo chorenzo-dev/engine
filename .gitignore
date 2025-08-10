@@ -139,7 +139,7 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 # Chorenzo
-/.chorenzo/
+/.chorenzo/*
 !/.chorenzo/state.json
 !/.chorenzo/analysis.json
 

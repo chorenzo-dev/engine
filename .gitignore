@@ -140,6 +140,9 @@ vite.config.ts.timestamp-*
 
 # Chorenzo
 /.chorenzo/
+!/.chorenzo/state.json
+!/.chorenzo/analysis.json
+# End Chorenzo
 
 # Claude
 .claude/commands/

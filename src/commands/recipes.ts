@@ -30,6 +30,7 @@ import {
 import { chorenzoConfig } from '~/utils/config.utils';
 import { cloneRepository } from '~/utils/git-operations.utils';
 import { normalizeRepoIdentifier } from '~/utils/git.utils';
+import { GitignoreManager } from '~/utils/gitignore.utils';
 import { readJson } from '~/utils/json.utils';
 import { libraryManager } from '~/utils/library-manager.utils';
 import { Logger } from '~/utils/logger.utils';
@@ -857,6 +858,10 @@ export async function performRecipesApply(
 
     onProgress?.('Initializing the chorenzo engine');
     const executionResults: RecipesApplyExecutionResult[] = [];
+
+    onProgress?.('Setting up git ignore patterns');
+    const workspaceRoot = workspaceConfig.getWorkspaceRoot();
+    GitignoreManager.ensureChorenzoIgnorePatterns(workspaceRoot);
 
     if (recipe.isWorkspaceOnly()) {
       const workspaceEcosystem = analysis.workspaceEcosystem || 'unknown';

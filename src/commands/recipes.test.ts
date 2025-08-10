@@ -839,6 +839,53 @@ describe('Recipes Command Integration Tests', () => {
       );
       expect(errorMessages).toHaveLength(3);
     });
+    it('should reject .applied suffix in provides field', async () => {
+      const options = { target: '/path/to/test-recipe' };
+      mockExistsSync.mockImplementation(() => true);
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
+      mockReaddirSync.mockImplementation(() => []);
+      const mockYamlData = createMockYamlData({
+        provides: ['my-recipe.applied', 'another.applied', 'valid.key'],
+      });
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        }
+        if (filePath.includes('metadata.yaml')) {
+          return yamlStringify(mockYamlData.metadata);
+        }
+        return '';
+      });
+      const result = await performRecipesValidate(options);
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'error' &&
+            msg.text.includes(
+              'Recipe provides list cannot contain reserved keywords: my-recipe.applied'
+            )
+        )
+      ).toBe(true);
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'error' &&
+            msg.text.includes(
+              'Recipe provides list cannot contain reserved keywords: another.applied'
+            )
+        )
+      ).toBe(true);
+      const errorMessages = result.messages.filter(
+        (msg) => msg.type === 'error'
+      );
+      expect(errorMessages).toHaveLength(3);
+    });
   });
 
   describe('Apply Command Integration', () => {

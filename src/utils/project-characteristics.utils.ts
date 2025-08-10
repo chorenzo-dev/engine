@@ -6,7 +6,11 @@ import { ProjectAnalysis, WorkspaceAnalysis } from '~/types/analysis';
 const ANALYSIS_PATH = path.join(process.cwd(), '.chorenzo', 'analysis.json');
 
 export function isReservedKeyword(key: string): boolean {
-  return key.startsWith('workspace.') || key.startsWith('project.');
+  return (
+    key.startsWith('workspace.') ||
+    key.startsWith('project.') ||
+    key.endsWith('.applied')
+  );
 }
 
 export function isWorkspaceKeyword(key: string): boolean {

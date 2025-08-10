@@ -356,7 +356,7 @@ export function validateRecipe(recipe: Recipe): RecipeValidationResult {
     if (isReservedKeyword(providedKey)) {
       errors.push({
         type: 'metadata',
-        message: `Recipe provides list cannot contain reserved keywords: ${providedKey}. Reserved keywords (workspace.*, project.*) can only be used in requires field.`,
+        message: `Recipe provides list cannot contain reserved keywords: ${providedKey}. Reserved keywords (workspace.*, project.*, *.applied) can only be used in requires field.`,
         field: 'provides',
       });
     }

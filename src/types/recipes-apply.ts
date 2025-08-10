@@ -28,6 +28,7 @@ export interface RecipesApplyExecutionResult {
   success: boolean;
   error?: string;
   costUsd: number;
+  output?: string;
 }
 
 export interface RecipesApplyResult {

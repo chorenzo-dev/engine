@@ -63,6 +63,26 @@ export const RecipesApplyResultDisplay: React.FC<
           </Box>
         )}
 
+        {executionResults.some((result) => result.output) && (
+          <Box flexDirection="column" marginBottom={1}>
+            <Text bold>Recipe Results:</Text>
+            {executionResults
+              .filter((result) => result.output)
+              .map((result, i) => (
+                <Box
+                  key={i}
+                  flexDirection="column"
+                  marginBottom={executionResults.length > 1 ? 1 : 0}
+                >
+                  {executionResults.length > 1 && (
+                    <Text color={colors.muted}>{result.projectPath}:</Text>
+                  )}
+                  <Text>{result.output}</Text>
+                </Box>
+              ))}
+          </Box>
+        )}
+
         {recipe.getProvides().length > 0 && (
           <Box flexDirection="column" marginTop={1}>
             <Text bold>Recipe Outputs:</Text>

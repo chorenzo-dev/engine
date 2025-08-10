@@ -1484,6 +1484,7 @@ async function executeRecipe(
 
     let executionCost = 0;
     let success = false;
+    let recipeOutput: string | undefined;
     const operationStartTime = new Date();
 
     const handlers: CodeChangesEventHandlers = {
@@ -1496,6 +1497,9 @@ async function executeRecipe(
       onComplete: (result, metadata) => {
         executionCost = metadata?.costUsd || 0;
         success = true;
+        if (result && typeof result === 'string' && result.trim().length > 0) {
+          recipeOutput = result;
+        }
         Logger.info(
           {
             event: 'claude_execution_completed',
@@ -1559,10 +1563,23 @@ async function executeRecipe(
     );
 
     executionCost = operationResult.metadata.costUsd;
-    success = operationResult.success;
+
+    if (operationResult.success) {
+      success = true;
+      if (
+        !recipeOutput &&
+        operationResult.result &&
+        typeof operationResult.result === 'string' &&
+        operationResult.result.trim().length > 0
+      ) {
+        recipeOutput = operationResult.result;
+      }
+    } else {
+      success = false;
+    }
 
     if (!success) {
-      return {
+      const result: RecipesApplyExecutionResult = {
         projectPath,
         recipeId: recipe.getId(),
         success: false,
@@ -1570,6 +1587,10 @@ async function executeRecipe(
           operationResult.error || 'Recipe application failed during execution',
         costUsd: executionCost,
       };
+      if (recipeOutput) {
+        result.output = recipeOutput;
+      }
+      return result;
     }
 
     Logger.info(
@@ -1579,12 +1600,16 @@ async function executeRecipe(
       'Recipe application completed successfully'
     );
 
-    return {
+    const result: RecipesApplyExecutionResult = {
       projectPath,
       recipeId: recipe.getId(),
       success: true,
       costUsd: executionCost,
     };
+    if (recipeOutput) {
+      result.output = recipeOutput;
+    }
+    return result;
   } catch (error) {
     Logger.error(
       {

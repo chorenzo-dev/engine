@@ -9,6 +9,8 @@ import {
 import * as fs from 'fs';
 import { stringify as yamlStringify } from 'yaml';
 
+import { RecipesApplyOptions } from '~/types/recipes-apply';
+
 const mockHomedir = jest.fn<() => string>(() => '/test/home');
 const mockTmpdir = jest.fn<() => string>(() => '/tmp');
 const mockExistsSync = jest.fn<(path: string) => boolean>();
@@ -75,6 +77,7 @@ jest.unstable_mockModule('simple-git', () => ({
 describe('Recipes Command Integration Tests', () => {
   let performRecipesValidate: typeof import('./recipes').performRecipesValidate;
   let performRecipesApply: typeof import('./recipes').performRecipesApply;
+  let checkRecipeReApplication: typeof import('./recipes').checkRecipeReApplication;
 
   const setupLocationMocks = (
     fileStructure: Record<string, boolean>,
@@ -223,6 +226,7 @@ describe('Recipes Command Integration Tests', () => {
     const recipesModule = await import('./recipes');
     performRecipesValidate = recipesModule.performRecipesValidate;
     performRecipesApply = recipesModule.performRecipesApply;
+    checkRecipeReApplication = recipesModule.checkRecipeReApplication;
   });
 
   afterEach(() => {
@@ -3182,6 +3186,7 @@ describe('Recipes Command Integration Tests', () => {
         });
 
         const mockYamlData = createMockYamlData({
+          level: 'workspace-only',
           provides: ['test_feature.exists'],
         });
 
@@ -3236,24 +3241,34 @@ describe('Recipes Command Integration Tests', () => {
 
         setupReApplicationScenario(stateData);
 
-        // Mock console.log to ensure no warning is shown
-        const consoleSpy = jest
-          .spyOn(console, 'log')
-          .mockImplementation(() => {});
-
         const result = await performRecipesApply({
           recipe: 'test-recipe',
         });
 
         expect(result).toBeDefined();
         expect(result.summary.successfulProjects).toBe(1);
-        expect(consoleSpy).not.toHaveBeenCalledWith(
-          expect.stringContaining(
-            "Warning: Recipe 'test-recipe' has already been applied!"
-          )
-        );
+      });
 
-        consoleSpy.mockRestore();
+      it('should detect re-application and require confirmation', async () => {
+        const stateData = {
+          workspace: {
+            'test-recipe.applied': true,
+          },
+          projects: {},
+        };
+
+        setupReApplicationScenario(stateData);
+
+        const checkResult = await checkRecipeReApplication({
+          recipe: 'test-recipe',
+        } as RecipesApplyOptions);
+
+        expect(checkResult).toBeDefined();
+        expect(checkResult.reApplicationCheck.hasAlreadyApplied).toBe(true);
+        expect(checkResult.reApplicationCheck.targets).toEqual([
+          { level: 'workspace' },
+        ]);
+        expect(checkResult.reApplicationCheck.userConfirmedProceed).toBe(false);
       });
 
       it('should skip confirmation with --yes flag for re-application', async () => {
@@ -3266,11 +3281,6 @@ describe('Recipes Command Integration Tests', () => {
 
         setupReApplicationScenario(stateData);
 
-        // Mock console.log to capture any output
-        const consoleSpy = jest
-          .spyOn(console, 'log')
-          .mockImplementation(() => {});
-
         const result = await performRecipesApply({
           recipe: 'test-recipe',
           yes: true,
@@ -3278,14 +3288,25 @@ describe('Recipes Command Integration Tests', () => {
 
         expect(result).toBeDefined();
         expect(result.summary.successfulProjects).toBe(1);
-        // Should not show warning when --yes is used
-        expect(consoleSpy).not.toHaveBeenCalledWith(
-          expect.stringContaining(
-            "Warning: Recipe 'test-recipe' has already been applied!"
-          )
-        );
+      });
 
-        consoleSpy.mockRestore();
+      it('should skip confirmation with --force flag for re-application', async () => {
+        const stateData = {
+          workspace: {
+            'test-recipe.applied': true,
+          },
+          projects: {},
+        };
+        setupReApplicationScenario(stateData);
+
+        const checkResult = await checkRecipeReApplication({
+          recipe: 'test-recipe',
+          yes: true,
+        } as RecipesApplyOptions);
+
+        expect(checkResult).toBeDefined();
+        expect(checkResult.reApplicationCheck.hasAlreadyApplied).toBe(true);
+        expect(checkResult.reApplicationCheck.userConfirmedProceed).toBe(true);
       });
     });
 

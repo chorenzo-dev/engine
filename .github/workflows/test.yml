@@ -2,9 +2,9 @@ name: Test
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
 
 jobs:
   changes:
@@ -36,17 +36,14 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.test == 'true' }}
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18, 20]
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version-file: '.nvmrc'
           cache: 'npm'
 
       - name: Install dependencies
@@ -57,11 +54,9 @@ jobs:
 
       - name: Run tests with coverage
         run: npm run test:coverage
-        if: matrix.node-version == 20
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v3
-        if: matrix.node-version == 20
         with:
           name: coverage-reports
           path: coverage/

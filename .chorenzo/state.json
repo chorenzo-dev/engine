@@ -1,6 +1,10 @@
 {
   "projects": {},
   "workspace": {
+    "ci-pipeline.applied": true,
+    "ci-pipeline.has_build_pipeline": true,
+    "ci-pipeline.has_test_pipeline": true,
+    "ci-pipeline.platform": "github-actions",
     "code-formatting-sort-imports.configured": true,
     "code-formatting-sort-imports.exists": true,
     "code-formatting-sort-imports.variant": "prettier-plugin-sort-imports",

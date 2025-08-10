@@ -37,6 +37,7 @@
     "tsx",
     "typescript"
   ],
+  "ciCd": "github_actions",
   "projects": [
     {
       "path": ".",
@@ -44,7 +45,6 @@
       "type": "cli_tool",
       "framework": "commander",
       "dockerized": false,
-      "ciCd": "none",
       "dependencies": [
         "@anthropic-ai/claude-code",
         "commander",

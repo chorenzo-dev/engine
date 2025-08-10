@@ -1,0 +1,70 @@
+name: Build
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      src: ${{ steps.changes.outputs.src }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            src:
+              - '**/*.js'
+              - '**/*.ts'
+              - '**/*.jsx'
+              - '**/*.tsx'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'tsconfig.json'
+              - 'tsconfig.*.json'
+              - 'tsup.config.ts'
+              - 'eslint.config.mjs'
+
+  build:
+    needs: changes
+    if: ${{ needs.changes.outputs.src == 'true' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run type checking
+        run: npm run typecheck
+
+      - name: Build project
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        if: matrix.node-version == 20
+        with:
+          name: build-artifacts
+          path: dist/
+          retention-days: 7

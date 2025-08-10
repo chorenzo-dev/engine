@@ -1600,6 +1600,12 @@ async function executeRecipe(
       'Recipe application completed successfully'
     );
 
+    const level = projectPath === 'workspace' ? 'workspace' : 'project';
+    const actualProjectPath =
+      projectPath === 'workspace' ? undefined : projectPath;
+
+    stateManager.recordAppliedRecipe(recipe.getId(), level, actualProjectPath);
+
     const result: RecipesApplyExecutionResult = {
       projectPath,
       recipeId: recipe.getId(),

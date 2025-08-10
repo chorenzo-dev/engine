@@ -58,3 +58,14 @@ export type RecipesApplyProgressCallback = (
   step: string | null,
   isThinking?: boolean
 ) => void;
+
+export interface ReApplicationTarget {
+  level: 'workspace' | 'project';
+  path?: string;
+}
+
+export interface ReApplicationCheckResult {
+  hasAlreadyApplied: boolean;
+  targets: ReApplicationTarget[];
+  userConfirmedProceed: boolean;
+}

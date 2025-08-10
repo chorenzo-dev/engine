@@ -135,6 +135,7 @@ recipesCommand
   .option('--variant <id>', 'Specific variant to use')
   .option('--project <path>', 'Apply to specific project only')
   .option('-y, --yes', 'Skip interactive confirmations')
+  .option('--force', 'Bypass re-application warnings (alias for --yes)')
   .option('--no-progress', 'Disable progress UI')
   .option('--debug', 'Show all progress messages in list format')
   .option('--cost', 'Show LLM cost information')
@@ -150,6 +151,7 @@ Examples:
   $ chorenzo recipes apply code-formatting --variant prettier
   $ chorenzo recipes apply testing-setup --project apps/web
   $ chorenzo recipes apply eslint-config -y                  # Skip confirmations
+  $ chorenzo recipes apply docker-setup --force             # Force re-application
 `
   )
   .action(async (recipe, options) => {
@@ -160,7 +162,7 @@ Examples:
           recipe,
           variant: options.variant,
           project: options.project,
-          yes: options.yes,
+          yes: options.yes || options.force,
           progress: options.progress,
           debug: options.debug,
           cost: options.cost,

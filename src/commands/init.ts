@@ -1,7 +1,9 @@
 import { chorenzoConfig } from '~/utils/config.utils';
 import { GitError } from '~/utils/git-operations.utils';
+import { GitignoreManager } from '~/utils/gitignore.utils';
 import { libraryManager } from '~/utils/library-manager.utils';
 import { Logger } from '~/utils/logger.utils';
+import { workspaceConfig } from '~/utils/workspace-config.utils';
 import { YamlError } from '~/utils/yaml.utils';
 
 export type { Config } from '~/types/config';
@@ -47,6 +49,9 @@ export async function performInit(
     onProgress?.('Setting up configuration files');
     await setupConfigFiles();
 
+    onProgress?.('Setting up git ignore patterns');
+    await setupGitIgnore();
+
     onProgress?.('Validating configuration');
     await validateConfig();
 
@@ -76,12 +81,18 @@ async function resetWorkspace(): Promise<void> {
 
 async function createDirectoryStructure(): Promise<void> {
   chorenzoConfig.createRecipesDir();
+  workspaceConfig.ensureChorenzoDir();
 }
 
 async function setupConfigFiles(): Promise<void> {
   if (!chorenzoConfig.configExists()) {
     await chorenzoConfig.writeDefaultConfig();
   }
+}
+
+async function setupGitIgnore(): Promise<void> {
+  const workspaceRoot = workspaceConfig.getWorkspaceRoot();
+  GitignoreManager.ensureChorenzoIgnorePatterns(workspaceRoot);
 }
 
 async function validateConfig(): Promise<void> {

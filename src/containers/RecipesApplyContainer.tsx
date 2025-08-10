@@ -1,11 +1,19 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
-import { performRecipesApply } from '~/commands/recipes';
+import {
+  checkRecipeReApplication,
+  performRecipesApply,
+} from '~/commands/recipes';
 import { ProcessDisplay } from '~/components/ProcessDisplay';
+import { ReApplicationPrompt } from '~/components/ReApplicationPrompt';
 import { RecipesApplyResultDisplay } from '~/components/RecipesApplyResultDisplay';
 import { Step, StepContext, StepSequence } from '~/components/StepSequence';
 import { BaseContainerOptions } from '~/types/common';
-import { RecipesApplyOptions, RecipesApplyResult } from '~/types/recipes-apply';
+import {
+  ReApplicationCheckResult,
+  RecipesApplyOptions,
+  RecipesApplyResult,
+} from '~/types/recipes-apply';
 
 interface RecipesApplyContainerOptions
   extends RecipesApplyOptions,
@@ -20,6 +28,8 @@ export const RecipesApplyContainer: React.FC<RecipesApplyContainerProps> = ({
   options,
   onError,
 }) => {
+  const [userCancelled, setUserCancelled] = useState(false);
+
   if (!options.recipe) {
     return (
       <ProcessDisplay
@@ -30,7 +40,86 @@ export const RecipesApplyContainer: React.FC<RecipesApplyContainerProps> = ({
     );
   }
 
+  if (userCancelled) {
+    return (
+      <ProcessDisplay
+        title="Recipe application cancelled"
+        status="error"
+        error="User cancelled re-application of recipe"
+      />
+    );
+  }
+
   const steps: Step[] = [
+    {
+      id: 'reapplication-check',
+      title: 'Checking recipe status',
+      component: (context: StepContext) => {
+        const [showPrompt, setShowPrompt] = useState(false);
+        const [reApplicationData, setReApplicationData] = useState<{
+          recipeId: string;
+          reApplicationCheck: ReApplicationCheckResult;
+        } | null>(null);
+
+        useEffect(() => {
+          const runCheck = async () => {
+            context.setProcessing(true);
+            let lastActivity = '';
+
+            try {
+              const result = await checkRecipeReApplication(
+                options,
+                (step, isThinking) => {
+                  if (step) {
+                    lastActivity = step;
+                    context.setActivity(step, isThinking);
+                  } else if (isThinking !== undefined && lastActivity) {
+                    context.setActivity(lastActivity, isThinking);
+                  }
+                }
+              );
+
+              if (result.reApplicationCheck.hasAlreadyApplied && !options.yes) {
+                setReApplicationData(result);
+                setShowPrompt(true);
+                context.setProcessing(false);
+              } else {
+                context.setResult(result);
+                context.complete();
+              }
+            } catch (error) {
+              context.setError(
+                error instanceof Error ? error.message : String(error)
+              );
+              onError(
+                error instanceof Error ? error : new Error(String(error))
+              );
+            }
+          };
+
+          runCheck();
+        }, []);
+
+        if (showPrompt && reApplicationData) {
+          return (
+            <ReApplicationPrompt
+              recipeId={reApplicationData.recipeId}
+              targets={reApplicationData.reApplicationCheck.targets}
+              onYes={async () => {
+                context.setResult(reApplicationData);
+                context.complete();
+                setShowPrompt(false);
+              }}
+              onNo={async () => {
+                setUserCancelled(true);
+              }}
+            />
+          );
+        }
+
+        return null;
+      },
+    },
     {
       id: 'apply',
       title: 'Applying recipe',

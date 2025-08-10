@@ -839,6 +839,53 @@ describe('Recipes Command Integration Tests', () => {
       );
       expect(errorMessages).toHaveLength(3);
     });
+    it('should reject .applied suffix in provides field', async () => {
+      const options = { target: '/path/to/test-recipe' };
+      mockExistsSync.mockImplementation(() => true);
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
+      mockReaddirSync.mockImplementation(() => []);
+      const mockYamlData = createMockYamlData({
+        provides: ['my-recipe.applied', 'another.applied', 'valid.key'],
+      });
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest\n## Investigation\nTest\n## Expected Output\nTest';
+        }
+        if (filePath.includes('metadata.yaml')) {
+          return yamlStringify(mockYamlData.metadata);
+        }
+        return '';
+      });
+      const result = await performRecipesValidate(options);
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'error' &&
+            msg.text.includes(
+              'Recipe provides list cannot contain reserved keywords: my-recipe.applied'
+            )
+        )
+      ).toBe(true);
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'error' &&
+            msg.text.includes(
+              'Recipe provides list cannot contain reserved keywords: another.applied'
+            )
+        )
+      ).toBe(true);
+      const errorMessages = result.messages.filter(
+        (msg) => msg.type === 'error'
+      );
+      expect(errorMessages).toHaveLength(3);
+    });
   });
 
   describe('Apply Command Integration', () => {
@@ -3096,6 +3143,163 @@ describe('Recipes Command Integration Tests', () => {
       expect(result.summary.successfulProjects).toBe(1);
       expect(result.summary.totalProjects).toBe(1);
       expect(result.executionResults[0].projectPath).toBe('workspace');
+    });
+
+    describe('Re-application Prevention Tests', () => {
+      const setupReApplicationScenario = (stateData: object) => {
+        setupStandardFileSystemMocks();
+        setupSuccessfulQueryMock();
+
+        mockExistsSync.mockImplementation((path) => {
+          if (path.includes('analysis.json')) {
+            return true;
+          }
+          if (path.includes('state.json')) {
+            return true;
+          }
+          if (path.includes('.chorenzo/recipes')) {
+            return true;
+          }
+          if (path.includes('test-recipe')) {
+            return true;
+          }
+          if (path.includes('metadata.yaml')) {
+            return true;
+          }
+          if (path.includes('prompt.md')) {
+            return true;
+          }
+          if (path.includes('apply_recipe.md')) {
+            return true;
+          }
+          if (path.includes('fix.md')) {
+            return true;
+          }
+          if (path.includes('variants')) {
+            return true;
+          }
+          return true;
+        });
+
+        const mockYamlData = createMockYamlData({
+          level: 'workspace-only',
+          provides: ['test_feature.exists'],
+        });
+
+        mockReadFileSync.mockImplementation((filePath: string) => {
+          if (filePath.includes('analysis.json')) {
+            return JSON.stringify({
+              isMonorepo: false,
+              hasWorkspacePackageManager: false,
+              workspaceEcosystem: 'javascript',
+              projects: [
+                {
+                  path: '.',
+                  language: 'javascript',
+                  ecosystem: 'javascript',
+                  type: 'web_app',
+                  dependencies: [],
+                  hasPackageManager: true,
+                },
+              ],
+            });
+          }
+          if (filePath.includes('config.yaml')) {
+            return yamlStringify(mockYamlData.config);
+          }
+          if (filePath.includes('metadata.yaml')) {
+            return yamlStringify(mockYamlData.metadata);
+          }
+          if (filePath.includes('prompt.md')) {
+            return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+          }
+          if (filePath.includes('apply_recipe.md')) {
+            return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+          }
+          if (filePath.includes('fix.md')) {
+            return 'Basic fix prompt content';
+          }
+          if (filePath.includes('variants/basic.md')) {
+            return 'Basic variant fix content';
+          }
+          if (filePath.includes('state.json')) {
+            return JSON.stringify(stateData);
+          }
+          return '';
+        });
+      };
+
+      it('should proceed normally when recipe has not been applied before', async () => {
+        const stateData = {
+          workspace: {},
+          projects: {},
+        };
+
+        setupReApplicationScenario(stateData);
+
+        const result = await performRecipesApply({
+          recipe: 'test-recipe',
+        });
+
+        expect(result).toBeDefined();
+        expect(result.summary.successfulProjects).toBe(1);
+      });
+
+      it('should detect re-application and show warning prompt', async () => {
+        const stateData = {
+          workspace: {
+            'test-recipe.applied': true,
+          },
+          projects: {},
+        };
+
+        setupReApplicationScenario(stateData);
+
+        await expect(
+          performRecipesApply({
+            recipe: 'test-recipe',
+          })
+        ).rejects.toThrow(
+          'Recipe application cancelled by user due to previous application'
+        );
+      });
+
+      it('should skip confirmation with --yes flag for re-application', async () => {
+        const stateData = {
+          workspace: {
+            'test-recipe.applied': true,
+          },
+          projects: {},
+        };
+
+        setupReApplicationScenario(stateData);
+
+        const result = await performRecipesApply({
+          recipe: 'test-recipe',
+          yes: true,
+        });
+
+        expect(result).toBeDefined();
+        expect(result.summary.successfulProjects).toBe(1);
+      });
+
+      it('should skip confirmation with --force flag for re-application', async () => {
+        const stateData = {
+          workspace: {
+            'test-recipe.applied': true,
+          },
+          projects: {},
+        };
+        setupReApplicationScenario(stateData);
+
+        const result = await performRecipesApply({
+          recipe: 'test-recipe',
+          yes: true,
+        });
+
+        expect(result).toBeDefined();
+        expect(result.summary.successfulProjects).toBe(1);
+      });
     });
 
     describe('Hierarchical Level Tests', () => {

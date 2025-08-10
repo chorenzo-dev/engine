@@ -135,7 +135,10 @@ describe('Init Command Integration Tests', () => {
 
     await performInit({});
 
-    expect(mockWriteFileSync).not.toHaveBeenCalled();
+    const configCalls = mockWriteFileSync.mock.calls.filter((call) =>
+      call[0].includes('config.yaml')
+    );
+    expect(configCalls).toHaveLength(0);
   });
 
   it('should reset workspace when reset option is provided', async () => {
@@ -279,5 +282,57 @@ describe('Init Command Integration Tests', () => {
     expect(mockProgress).toHaveBeenCalledWith('Creating directory structure');
     expect(mockProgress).toHaveBeenCalledWith('Setting up configuration files');
     expect(mockProgress).toHaveBeenCalledWith('Validating configuration');
+  });
+
+  it('should create proper gitignore patterns without end marker', async () => {
+    await performInit({});
+
+    const gitignoreCalls = mockWriteFileSync.mock.calls.filter((call) =>
+      call[0].includes('.gitignore')
+    );
+    expect(gitignoreCalls).toHaveLength(1);
+
+    const gitignoreContent = gitignoreCalls[0][1] as string;
+    expect(gitignoreContent).toContain('# Chorenzo');
+    expect(gitignoreContent).toContain('/.chorenzo/*');
+    expect(gitignoreContent).toContain('!/.chorenzo/state.json');
+    expect(gitignoreContent).toContain('!/.chorenzo/analysis.json');
+  });
+
+  it('should update existing gitignore patterns correctly', async () => {
+    mockExistsSync.mockImplementation((filePath: string) => {
+      return (
+        filePath.includes('.gitignore') || filePath.includes('config.yaml')
+      );
+    });
+
+    mockReadFileSync.mockImplementation((filePath: string) => {
+      if (filePath.includes('.gitignore')) {
+        return `# Some existing content
+node_modules/
+        
+# Chorenzo
+/.chorenzo/*
+!/.chorenzo/state.json
+
+# More content`;
+      }
+      return 'libraries:\n  core:\n    url: git@github.com:chorenzo/recipes-core.git';
+    });
+
+    await performInit({});
+
+    const gitignoreCalls = mockWriteFileSync.mock.calls.filter((call) =>
+      call[0].includes('.gitignore')
+    );
+    expect(gitignoreCalls).toHaveLength(1);
+
+    const gitignoreContent = gitignoreCalls[0][1] as string;
+    expect(gitignoreContent).toContain('# Some existing content');
+    expect(gitignoreContent).toContain('# Chorenzo');
+    expect(gitignoreContent).toContain('/.chorenzo/*');
+    expect(gitignoreContent).toContain('!/.chorenzo/state.json');
+    expect(gitignoreContent).toContain('!/.chorenzo/analysis.json');
+    expect(gitignoreContent).toContain('# More content');
   });
 });

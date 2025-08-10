@@ -80,6 +80,47 @@ export class WorkspaceStateManager {
 
     return sorted;
   }
+
+  recordAppliedRecipe(
+    recipeName: string,
+    level: 'workspace' | 'project',
+    projectPath?: string
+  ): void {
+    const appliedKey = `${recipeName}.applied`;
+
+    if (level === 'workspace') {
+      this.setWorkspaceValue(appliedKey, true);
+    } else if (level === 'project' && projectPath) {
+      this.setProjectValue(projectPath, appliedKey, true);
+    } else {
+      throw new Error(
+        'Project path is required when recording applied recipe at project level'
+      );
+    }
+  }
+
+  isRecipeApplied(
+    recipeName: string,
+    level: 'workspace' | 'project',
+    projectPath?: string
+  ): boolean {
+    const appliedKey = `${recipeName}.applied`;
+    const state = this.loadState();
+
+    if (level === 'workspace') {
+      return state.workspace?.[appliedKey] === true;
+    } else if (level === 'project' && projectPath) {
+      const relativePath = path.relative(
+        workspaceConfig.getWorkspaceRoot(),
+        projectPath
+      );
+      return state.projects?.[relativePath]?.[appliedKey] === true;
+    } else {
+      throw new Error(
+        'Project path is required when checking applied recipe at project level'
+      );
+    }
+  }
 }
 
 export const stateManager = new WorkspaceStateManager();

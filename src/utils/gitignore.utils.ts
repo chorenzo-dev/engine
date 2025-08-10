@@ -5,7 +5,6 @@ import { Logger } from './logger.utils';
 
 export class GitignoreManager {
   private static readonly CHORENZO_SECTION_START = '# Chorenzo';
-  private static readonly CHORENZO_SECTION_END = '# End Chorenzo';
   private static readonly CHORENZO_PATTERNS = [
     '/.chorenzo/',
     '!/.chorenzo/state.json',
@@ -78,19 +77,48 @@ export class GitignoreManager {
 
   private static replaceChorenzoSection(content: string): string {
     const startIndex = content.indexOf(this.CHORENZO_SECTION_START);
-    const endIndex = content.indexOf(this.CHORENZO_SECTION_END);
 
-    if (startIndex === -1 || endIndex === -1) {
+    if (startIndex === -1) {
       return this.appendChorenzoSection(content);
     }
 
-    const before = content.substring(0, startIndex);
-    const after = content.substring(
-      endIndex + this.CHORENZO_SECTION_END.length
+    const lines = content.split('\n');
+    const startLineIndex = lines.findIndex((line) =>
+      line.includes(this.CHORENZO_SECTION_START)
     );
+
+    if (startLineIndex === -1) {
+      return this.appendChorenzoSection(content);
+    }
+
+    let endLineIndex = startLineIndex + 1;
+    while (endLineIndex < lines.length) {
+      const line = lines[endLineIndex].trim();
+      if (
+        !line ||
+        (!line.startsWith('/.chorenzo') && !line.startsWith('!/.chorenzo'))
+      ) {
+        break;
+      }
+      endLineIndex++;
+    }
+
+    const before = lines.slice(0, startLineIndex).join('\n');
+    const after = lines.slice(endLineIndex).join('\n');
     const newSection = this.generateChorenzoSection();
 
-    return before + newSection + after;
+    const beforeTrimmed = before.trim();
+    const afterTrimmed = after.trim();
+    const separator =
+      beforeTrimmed && afterTrimmed ? '\n\n' : beforeTrimmed ? '\n' : '';
+
+    return (
+      beforeTrimmed +
+      (beforeTrimmed ? '\n\n' : '') +
+      newSection +
+      separator +
+      afterTrimmed
+    );
   }
 
   private static replaceOldChorenzoPattern(content: string): string {
@@ -114,7 +142,7 @@ export class GitignoreManager {
 
   private static generateChorenzoSection(): string {
     const patterns = this.CHORENZO_PATTERNS.join('\n');
-    return `${this.CHORENZO_SECTION_START}\n${patterns}\n${this.CHORENZO_SECTION_END}\n`;
+    return `${this.CHORENZO_SECTION_START}\n${patterns}\n`;
   }
 
   static loadGitIgnorePatternsForDir(

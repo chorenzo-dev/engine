@@ -352,11 +352,20 @@ export function validateRecipe(recipe: Recipe): RecipeValidationResult {
     });
   }
 
-  for (const providedKey of recipe.metadata.provides) {
-    if (isReservedKeyword(providedKey)) {
+  for (const provided of recipe.metadata.provides) {
+    if (typeof provided !== 'string') {
       errors.push({
         type: 'metadata',
-        message: `Recipe provides list cannot contain reserved keywords: ${providedKey}. Reserved keywords (workspace.*, project.*, *.applied) can only be used in requires field.`,
+        message: `Recipe provides list must contain only strings, found object: ${JSON.stringify(provided)}. Use simple string identifiers instead.`,
+        field: 'provides',
+      });
+      continue;
+    }
+
+    if (isReservedKeyword(provided)) {
+      errors.push({
+        type: 'metadata',
+        message: `Recipe provides list cannot contain reserved keywords: ${provided}. Reserved keywords (workspace.*, project.*, *.applied) can only be used in requires field.`,
         field: 'provides',
       });
     }

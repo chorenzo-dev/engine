@@ -970,6 +970,9 @@ describe('Recipes Command Integration Tests', () => {
 
       expect(result).toBeDefined();
       expect(result.summary.successfulProjects).toBe(1);
+      expect(result.executionResults[0].output).toBe(
+        'Execution completed successfully'
+      );
       expect(mockQuery).toHaveBeenCalledTimes(1);
     });
 
@@ -1369,6 +1372,7 @@ describe('Recipes Command Integration Tests', () => {
 
       expect(result.summary.failedProjects).toBe(1);
       expect(result.executionResults[0].success).toBe(false);
+      expect(result.executionResults[0]).not.toHaveProperty('output');
     });
 
     it('should apply recipe with custom variant', async () => {

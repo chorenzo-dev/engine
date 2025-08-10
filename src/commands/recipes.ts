@@ -1563,15 +1563,19 @@ async function executeRecipe(
     );
 
     executionCost = operationResult.metadata.costUsd;
-    success = operationResult.success;
 
-    if (
-      !recipeOutput &&
-      operationResult.result &&
-      typeof operationResult.result === 'string' &&
-      operationResult.result.trim().length > 0
-    ) {
-      recipeOutput = operationResult.result;
+    if (operationResult.success) {
+      success = true;
+      if (
+        !recipeOutput &&
+        operationResult.result &&
+        typeof operationResult.result === 'string' &&
+        operationResult.result.trim().length > 0
+      ) {
+        recipeOutput = operationResult.result;
+      }
+    } else {
+      success = false;
     }
 
     if (!success) {

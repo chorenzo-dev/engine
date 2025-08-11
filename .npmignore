@@ -1,0 +1,47 @@
+# Source files (TypeScript sources not needed in published package)
+src/
+*.ts
+!dist/**/*.d.ts
+
+# Config files
+eslint.config.mjs
+.prettierrc.json
+.prettierignore
+tsconfig.json
+tsconfig.test.json
+tsup.config.ts
+jest.config.cjs
+jest.d.ts
+jest.resolver.cjs
+commitlint.config.cjs
+.lintstagedrc.json
+.nvmrc
+
+# Test files
+*.test.ts
+*.test.js
+test-fixtures/
+
+# CI/CD and Git hooks
+.github/
+.husky/
+
+# Documentation source
+docs/
+CONTRIBUTING.md
+CLAUDE.md
+
+# Local development recipes
+recipes/
+
+# IDE files
+.vscode/
+.idea/
+.claude/
+
+# Chorenzo local state
+.chorenzo/
+
+# Development dependencies that might be created
+coverage/
+.nyc_output/

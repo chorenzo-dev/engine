@@ -19,11 +19,13 @@
     "test": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --watch",
     "test:coverage": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --coverage",
-    "prepare": "husky"
+    "prepare": "husky",
+    "prepublishOnly": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "prepack": "npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/chorenzo-dev/engine"
+    "url": "git+https://github.com/chorenzo-dev/engine.git"
   },
   "keywords": [
     "cli",
@@ -39,10 +41,35 @@
     "workflow",
     "recipes",
     "engineering-automation",
-    "claude-ai"
+    "claude-ai",
+    "workspace-analysis",
+    "monorepo",
+    "project-setup",
+    "developer-tools",
+    "code-formatting",
+    "linting",
+    "testing-setup",
+    "infrastructure-as-code",
+    "configuration-management",
+    "npx",
+    "chorenzo"
   ],
-  "author": "",
+  "author": "Chorenzo Development Team",
   "license": "Apache-2.0",
+  "homepage": "https://github.com/chorenzo-dev/engine#readme",
+  "bugs": {
+    "url": "https://github.com/chorenzo-dev/engine/issues"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "package.json"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
@@ -51,6 +78,8 @@
     "@commitlint/config-conventional": "^19.8.1",
     "@eslint/js": "^9.31.0",
     "@jest/globals": "^30.0.4",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.4",
     "@trivago/prettier-plugin-sort-imports": "^5.2.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.10",
@@ -65,6 +94,7 @@
     "lint-staged": "^16.1.2",
     "memfs": "^4.17.2",
     "prettier": "^3.6.2",
+    "semantic-release": "^24.2.7",
     "ts-jest": "^29.4.0",
     "tsup": "^8.5.0",
     "tsx": "^4.20.3",

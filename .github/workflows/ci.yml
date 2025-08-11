@@ -1,4 +1,4 @@
-name: Build
+name: CI
 
 on:
   push:
@@ -8,12 +8,17 @@ on:
       - '**/*.ts'
       - '**/*.jsx'
       - '**/*.tsx'
+      - '**/*.test.*'
+      - '**/*.spec.*'
       - 'package.json'
       - 'package-lock.json'
       - 'tsconfig.json'
       - 'tsconfig.*.json'
       - 'tsup.config.ts'
       - 'eslint.config.mjs'
+      - 'jest.config.*'
+      - 'jest.d.ts'
+      - 'jest.resolver.*'
   pull_request:
     branches: [main]
     paths:
@@ -21,15 +26,20 @@ on:
       - '**/*.ts'
       - '**/*.jsx'
       - '**/*.tsx'
+      - '**/*.test.*'
+      - '**/*.spec.*'
       - 'package.json'
       - 'package-lock.json'
       - 'tsconfig.json'
       - 'tsconfig.*.json'
       - 'tsup.config.ts'
       - 'eslint.config.mjs'
+      - 'jest.config.*'
+      - 'jest.d.ts'
+      - 'jest.resolver.*'
 
 jobs:
-  build:
+  ci:
     runs-on: ubuntu-latest
 
     steps:
@@ -53,6 +63,9 @@ jobs:
       - name: Run type checking
         run: npm run typecheck
 
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
       - name: Build project
         run: npm run build
 
@@ -62,3 +75,10 @@ jobs:
           name: build-artifacts
           path: dist/
           retention-days: 7
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: coverage/
+          retention-days: 30

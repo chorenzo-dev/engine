@@ -78,6 +78,8 @@
     "@commitlint/config-conventional": "^19.8.1",
     "@eslint/js": "^9.31.0",
     "@jest/globals": "^30.0.4",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.4",
     "@trivago/prettier-plugin-sort-imports": "^5.2.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.10",

@@ -7,4 +7,8 @@ module.exports = {
       ['feat', 'fix', 'docs', 'chore', 'ci', 'refactor'],
     ],
   },
+  ignores: [
+    (message) => message.includes('[skip ci]'),
+    (message) => message.startsWith('chore(release):'),
+  ],
 };

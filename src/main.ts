@@ -4,13 +4,14 @@ import React from 'react';
 
 import { Logger } from '~/utils/logger.utils';
 
+import packageJson from '../package.json' with { type: 'json' };
 import { Shell } from './Shell';
 
 const program = new Command();
 
 program
   .name('chorenzo')
-  .version('0.1.0')
+  .version(packageJson.version)
   .description('Open-source CLI engine for workspace analysis and automation')
   .showHelpAfterError();
 

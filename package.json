@@ -1,5 +1,5 @@
 {
-  "name": "@chorenzo/engine",
+  "name": "chorenzo",
   "version": "0.1.0",
   "description": "Open-source CLI engine that automates your engineering workflow with AI-powered workspace analysis and recipe application",
   "main": "dist/main.js",
@@ -19,9 +19,7 @@
     "test": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --watch",
     "test:coverage": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --coverage",
-    "prepare": "husky",
-    "prepublishOnly": "npm run typecheck && npm run lint && npm run test && npm run build",
-    "prepack": "npm run build"
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",
@@ -78,6 +76,7 @@
     "@commitlint/config-conventional": "^19.8.1",
     "@eslint/js": "^9.31.0",
     "@jest/globals": "^30.0.4",
+    "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^11.0.4",
     "@trivago/prettier-plugin-sort-imports": "^5.2.2",

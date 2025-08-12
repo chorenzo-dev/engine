@@ -4,15 +4,17 @@
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
     [
-      "@semantic-release/npm",
+      "@semantic-release/exec",
       {
-        "npmPublish": true
+        "prepareCmd": "npm version ${nextRelease.version} --no-git-tag-version && npm run build"
       }
     ],
+    "@semantic-release/npm",
     [
       "@semantic-release/github",
       {
-        "successComment": "This ${issue.pull_request ? 'PR is included' : 'issue has been resolved'} in version ${nextRelease.version} :tada:",
+        "successComment": false,
+        "failComment": false,
         "labels": false,
         "releasedLabels": false
       }

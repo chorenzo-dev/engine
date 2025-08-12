@@ -23,6 +23,7 @@ const mockMkdirSync = jest.fn();
 const mockWriteFileSync = jest.fn();
 const mockAppendFileSync = jest.fn();
 const mockCreateWriteStream = jest.fn();
+const mockWriteFileAtomicSync = jest.fn();
 
 jest.unstable_mockModule('os', () => ({
   homedir: mockHomedir,
@@ -47,6 +48,10 @@ jest.unstable_mockModule('@anthropic-ai/claude-code', () => ({
 
 jest.unstable_mockModule('./analyze', () => ({
   performAnalysis: mockPerformAnalysis,
+}));
+
+jest.unstable_mockModule('write-file-atomic', () => ({
+  sync: mockWriteFileAtomicSync,
 }));
 
 jest.unstable_mockModule('simple-git', () => ({
@@ -146,6 +151,7 @@ describe('Recipes Command Integration Tests', () => {
   const setupDefaultMocks = () => {
     mockHomedir.mockImplementation(() => '/test/home');
     mockTmpdir.mockImplementation(() => '/tmp');
+    mockWriteFileAtomicSync.mockImplementation(() => {});
     mockExistsSync.mockImplementation(() => {
       return true;
     });
@@ -2504,12 +2510,11 @@ describe('Recipes Command Integration Tests', () => {
         };
       });
 
-      const result = await performRecipesApply({
-        recipe: 'test-recipe',
-      });
-
-      expect(result).toBeDefined();
-      expect(result.summary.totalProjects).toBe(1);
+      await expect(
+        performRecipesApply({
+          recipe: 'test-recipe',
+        })
+      ).rejects.toThrow(/Failed to read state file: Permission denied/);
     });
 
     it('should handle empty recipe application result', async () => {
@@ -3684,6 +3689,18 @@ describe('Recipes Command Integration Tests', () => {
         expect(result.executionResults).toHaveLength(1);
         expect(result.executionResults[0].success).toBe(true);
         expect(result.executionResults[0].projectPath).toBe('workspace');
+
+        expect(mockWriteFileAtomicSync).toHaveBeenCalled();
+        const writeCall = mockWriteFileAtomicSync.mock.calls.find((call) =>
+          (call[0] as string).includes('state.json')
+        );
+        expect(writeCall).toBeDefined();
+        if (writeCall) {
+          const stateContent = JSON.parse(writeCall[1] as string);
+          expect(stateContent.workspace['workspace-only-recipe.applied']).toBe(
+            true
+          );
+        }
       });
 
       it('should apply recipe with project.ecosystem requirement', async () => {
@@ -5551,6 +5568,141 @@ requires: []
             msg.type === 'warning' && msg.text.includes('Code Sample Issues:')
         )
       ).toBe(false);
+    });
+
+    it('should handle malicious project paths and prevent path traversal attacks', async () => {
+      const recipesModule = await import('./recipes');
+      const performRecipesApply = recipesModule.performRecipesApply;
+
+      mockExistsSync.mockImplementation((path) => {
+        if (path === '/path/to/test-recipe') {
+          return true;
+        }
+        if (path === '/path/to/test-recipe/metadata.yaml') {
+          return true;
+        }
+        if (path === '/path/to/test-recipe/prompt.md') {
+          return true;
+        }
+        if (path === '/path/to/test-recipe/fix.md') {
+          return true;
+        }
+        if (path.includes('analysis.json')) {
+          return true;
+        }
+        if (path.includes('.chorenzo')) {
+          return true;
+        }
+        return false;
+      });
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('metadata.yaml')) {
+          return yamlStringify({
+            id: 'test-recipe',
+            category: 'test',
+            summary: 'Test recipe',
+            level: 'project-only',
+            ecosystems: [],
+            provides: [],
+            requires: [],
+          });
+        }
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest goal\n## Investigation\nTest investigation\n## Expected Output\nTest output';
+        }
+        if (filePath.includes('fix.md')) {
+          return 'Test fix content';
+        }
+        if (filePath.includes('analysis.json')) {
+          return JSON.stringify({
+            workspaceEcosystem: 'typescript',
+            projects: [
+              { path: '../../../etc/passwd', ecosystem: 'typescript' },
+            ],
+          });
+        }
+        if (filePath.includes('.chorenzo/state.json')) {
+          return JSON.stringify({ workspace: {}, projects: {} });
+        }
+        if (filePath.includes('apply_recipe.md')) {
+          return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        return '';
+      });
+
+      await expect(
+        performRecipesApply({
+          recipe: '/path/to/test-recipe',
+          project: '../../../etc/passwd',
+        })
+      ).rejects.toThrow(/Path traversal detected|Invalid project path/);
+    });
+
+    it('should handle corrupted state file JSON gracefully', async () => {
+      const recipesModule = await import('./recipes');
+      const performRecipesApply = recipesModule.performRecipesApply;
+
+      mockExistsSync.mockImplementation((path) => {
+        if (path === '/path/to/test-recipe') {
+          return true;
+        }
+        if (path === '/path/to/test-recipe/metadata.yaml') {
+          return true;
+        }
+        if (path === '/path/to/test-recipe/prompt.md') {
+          return true;
+        }
+        if (path === '/path/to/test-recipe/fix.md') {
+          return true;
+        }
+        if (path.includes('analysis.json')) {
+          return true;
+        }
+        if (path.includes('.chorenzo')) {
+          return true;
+        }
+        return false;
+      });
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('.chorenzo/state.json')) {
+          return '{"workspace": invalid json}';
+        }
+        if (filePath.includes('metadata.yaml')) {
+          return yamlStringify({
+            id: 'test-recipe',
+            category: 'test',
+            summary: 'Test recipe',
+            level: 'workspace-only',
+            ecosystems: [],
+            provides: [],
+            requires: [],
+          });
+        }
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest goal\n## Investigation\nTest investigation\n## Expected Output\nTest output';
+        }
+        if (filePath.includes('fix.md')) {
+          return 'Test fix content';
+        }
+        if (filePath.includes('analysis.json')) {
+          return JSON.stringify({
+            workspaceEcosystem: 'typescript',
+            projects: [],
+          });
+        }
+        if (filePath.includes('apply_recipe.md')) {
+          return 'Apply the recipe {{ recipe_id }} to workspace...';
+        }
+        return '';
+      });
+
+      await expect(
+        performRecipesApply({
+          recipe: '/path/to/test-recipe',
+        })
+      ).rejects.toThrow();
     });
   });
 });

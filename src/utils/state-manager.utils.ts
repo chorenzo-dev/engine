@@ -4,6 +4,7 @@ import * as writeFileAtomic from 'write-file-atomic';
 
 import { WorkspaceState } from '~/types/state';
 
+import { Logger } from './logger.utils';
 import { validatePathWithinWorkspace } from './path.utils';
 import { workspaceConfig } from './workspace-config.utils';
 
@@ -44,8 +45,19 @@ export class WorkspaceStateManager {
         workspaceConfig.getWorkspaceRoot()
       );
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Path validation failed';
+      Logger.error(
+        {
+          event: 'SECURITY_PATH_TRAVERSAL_BLOCKED',
+          projectPath: path.relative(process.cwd(), projectPath),
+          key,
+          error: errorMessage,
+        },
+        'Blocked potential path traversal attempt in state manager'
+      );
       throw new StateManagerError(
-        `Invalid project path: ${error instanceof Error ? error.message : 'Path validation failed'}`,
+        `Invalid project path: ${errorMessage}`,
         'INVALID_PROJECT_PATH'
       );
     }
@@ -69,7 +81,28 @@ export class WorkspaceStateManager {
     try {
       if (fs.existsSync(this.statePath)) {
         const rawContent = fs.readFileSync(this.statePath, 'utf-8');
-        const rawState = JSON.parse(rawContent);
+        let rawState: unknown;
+
+        try {
+          rawState = JSON.parse(rawContent);
+        } catch (jsonError) {
+          Logger.error(
+            {
+              event: 'SECURITY_JSON_VALIDATION_FAILED',
+              statePath: path.relative(process.cwd(), this.statePath),
+              error:
+                jsonError instanceof Error
+                  ? jsonError.message
+                  : 'JSON parse failed',
+            },
+            'JSON parsing failed for state file - potential corruption or tampering'
+          );
+          throw new StateManagerError(
+            `Invalid JSON in state file: ${jsonError instanceof Error ? jsonError.message : 'Parse failed'}`,
+            'INVALID_JSON'
+          );
+        }
+
         return this.validateStateStructure(rawState);
       } else {
         return { workspace: {}, projects: {} };
@@ -78,12 +111,14 @@ export class WorkspaceStateManager {
       if (error instanceof StateManagerError) {
         throw error;
       }
-      if (error instanceof SyntaxError) {
-        throw new StateManagerError(
-          `Invalid JSON in state file: ${error.message}`,
-          'INVALID_JSON'
-        );
-      }
+      Logger.error(
+        {
+          event: 'SECURITY_STATE_LOAD_FAILED',
+          statePath: path.relative(process.cwd(), this.statePath),
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+        'Unexpected error loading state file'
+      );
       return { workspace: {}, projects: {} };
     }
   }
@@ -95,8 +130,18 @@ export class WorkspaceStateManager {
       const content = JSON.stringify(sortedState, null, 2);
       writeFileAtomic.sync(this.statePath, content, { mode: 0o600 });
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      Logger.error(
+        {
+          event: 'SECURITY_ATOMIC_WRITE_FAILED',
+          statePath: path.relative(process.cwd(), this.statePath),
+          error: errorMessage,
+        },
+        'Atomic write operation failed - potential security implications'
+      );
       throw new StateManagerError(
-        `Failed to save state: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to save state: ${errorMessage}`,
         'SAVE_FAILED'
       );
     }
@@ -119,6 +164,15 @@ export class WorkspaceStateManager {
 
   private validateStateStructure(data: unknown): WorkspaceState {
     if (!this.isValidStateObject(data)) {
+      Logger.error(
+        {
+          event: 'SECURITY_STATE_STRUCTURE_VALIDATION_FAILED',
+          reason: 'invalid_root_object',
+          dataType: typeof data,
+          isArray: Array.isArray(data),
+        },
+        'State structure validation failed - invalid root object structure'
+      );
       throw new StateManagerError(
         'Invalid state structure: expected object with workspace and projects properties',
         'INVALID_STATE_STRUCTURE'
@@ -128,6 +182,14 @@ export class WorkspaceStateManager {
     const state = data as Record<string, unknown>;
 
     if (state.workspace !== undefined && typeof state.workspace !== 'object') {
+      Logger.error(
+        {
+          event: 'SECURITY_STATE_STRUCTURE_VALIDATION_FAILED',
+          reason: 'invalid_workspace_type',
+          workspaceType: typeof state.workspace,
+        },
+        'State structure validation failed - workspace property is not an object'
+      );
       throw new StateManagerError(
         'Invalid state structure: workspace must be an object',
         'INVALID_WORKSPACE_STRUCTURE'
@@ -135,6 +197,14 @@ export class WorkspaceStateManager {
     }
 
     if (state.projects !== undefined && typeof state.projects !== 'object') {
+      Logger.error(
+        {
+          event: 'SECURITY_STATE_STRUCTURE_VALIDATION_FAILED',
+          reason: 'invalid_projects_type',
+          projectsType: typeof state.projects,
+        },
+        'State structure validation failed - projects property is not an object'
+      );
       throw new StateManagerError(
         'Invalid state structure: projects must be an object',
         'INVALID_PROJECTS_STRUCTURE'
@@ -208,8 +278,20 @@ export class WorkspaceStateManager {
           workspaceConfig.getWorkspaceRoot()
         );
       } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Path validation failed';
+        Logger.error(
+          {
+            event: 'SECURITY_PATH_TRAVERSAL_BLOCKED',
+            projectPath: path.relative(process.cwd(), projectPath),
+            recipeName,
+            operation: 'recipe_check',
+            error: errorMessage,
+          },
+          'Blocked potential path traversal attempt in recipe applied check'
+        );
         throw new StateManagerError(
-          `Invalid project path: ${error instanceof Error ? error.message : 'Path validation failed'}`,
+          `Invalid project path: ${errorMessage}`,
           'INVALID_PROJECT_PATH'
         );
       }

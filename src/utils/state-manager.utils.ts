@@ -119,7 +119,7 @@ export class WorkspaceStateManager {
         },
         'Unexpected error loading state file'
       );
-      return { workspace: {}, projects: {} };
+      throw error;
     }
   }
 

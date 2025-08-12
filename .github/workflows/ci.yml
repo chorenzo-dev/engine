@@ -19,6 +19,8 @@ on:
       - 'jest.config.*'
       - 'jest.d.ts'
       - 'jest.resolver.*'
+      - 'src/prompts/**/*.hbs'
+      - 'src/prompts/**/*.md'
   pull_request:
     branches: [main]
     paths:
@@ -37,6 +39,8 @@ on:
       - 'jest.config.*'
       - 'jest.d.ts'
       - 'jest.resolver.*'
+      - 'src/prompts/**/*.hbs'
+      - 'src/prompts/**/*.md'
 
 jobs:
   ci:

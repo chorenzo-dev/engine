@@ -5,6 +5,7 @@ import { AnalyzeContainer } from '~/containers/AnalyzeContainer';
 import { InitContainer } from '~/containers/InitContainer';
 import { RecipesApplyContainer } from '~/containers/RecipesApplyContainer';
 import { RecipesGenerateContainer } from '~/containers/RecipesGenerateContainer';
+import { RecipesShowContainer } from '~/containers/RecipesShowContainer';
 import { RecipesValidateContainer } from '~/containers/RecipesValidateContainer';
 
 import { ErrorExitComponent } from './components/ErrorExitComponent';
@@ -147,6 +148,33 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           ecosystemAgnostic: options.ecosystemAgnostic,
           magicGenerate: options.magicGenerate,
           additionalInstructions: options.additionalInstructions,
+        }}
+        onError={(error) => {
+          setError(error);
+        }}
+      />
+    );
+  }
+
+  if (command === 'recipes-show') {
+    if (error) {
+      return <ErrorExitComponent error={error} />;
+    }
+
+    if (!options.recipeName) {
+      return (
+        <ErrorExitComponent
+          error={new Error('Recipe name parameter is required')}
+        />
+      );
+    }
+
+    return (
+      <RecipesShowContainer
+        options={{
+          recipeName: options.recipeName,
+          progress: options.progress,
+          debug: options.debug,
         }}
         onError={(error) => {
           setError(error);

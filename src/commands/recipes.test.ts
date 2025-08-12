@@ -5552,5 +5552,140 @@ requires: []
         )
       ).toBe(false);
     });
+
+    it('should handle malicious project paths and prevent path traversal attacks', async () => {
+      const recipesModule = await import('./recipes');
+      const performRecipesApply = recipesModule.performRecipesApply;
+
+      mockExistsSync.mockImplementation((path) => {
+        if (path === '/path/to/test-recipe') {
+          return true;
+        }
+        if (path === '/path/to/test-recipe/metadata.yaml') {
+          return true;
+        }
+        if (path === '/path/to/test-recipe/prompt.md') {
+          return true;
+        }
+        if (path === '/path/to/test-recipe/fix.md') {
+          return true;
+        }
+        if (path.includes('analysis.json')) {
+          return true;
+        }
+        if (path.includes('.chorenzo')) {
+          return true;
+        }
+        return false;
+      });
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('metadata.yaml')) {
+          return yamlStringify({
+            id: 'test-recipe',
+            category: 'test',
+            summary: 'Test recipe',
+            level: 'project-only',
+            ecosystems: [],
+            provides: [],
+            requires: [],
+          });
+        }
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest goal\n## Investigation\nTest investigation\n## Expected Output\nTest output';
+        }
+        if (filePath.includes('fix.md')) {
+          return 'Test fix content';
+        }
+        if (filePath.includes('analysis.json')) {
+          return JSON.stringify({
+            workspaceEcosystem: 'typescript',
+            projects: [
+              { path: '../../../etc/passwd', ecosystem: 'typescript' },
+            ],
+          });
+        }
+        if (filePath.includes('.chorenzo/state.json')) {
+          return JSON.stringify({ workspace: {}, projects: {} });
+        }
+        if (filePath.includes('apply_recipe.md')) {
+          return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        return '';
+      });
+
+      await expect(
+        performRecipesApply({
+          recipe: '/path/to/test-recipe',
+          project: '../../../etc/passwd',
+        })
+      ).rejects.toThrow(/Path traversal detected|Invalid project path/);
+    });
+
+    it('should handle corrupted state file JSON gracefully', async () => {
+      const recipesModule = await import('./recipes');
+      const performRecipesApply = recipesModule.performRecipesApply;
+
+      mockExistsSync.mockImplementation((path) => {
+        if (path === '/path/to/test-recipe') {
+          return true;
+        }
+        if (path === '/path/to/test-recipe/metadata.yaml') {
+          return true;
+        }
+        if (path === '/path/to/test-recipe/prompt.md') {
+          return true;
+        }
+        if (path === '/path/to/test-recipe/fix.md') {
+          return true;
+        }
+        if (path.includes('analysis.json')) {
+          return true;
+        }
+        if (path.includes('.chorenzo')) {
+          return true;
+        }
+        return false;
+      });
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('.chorenzo/state.json')) {
+          return '{"workspace": invalid json}';
+        }
+        if (filePath.includes('metadata.yaml')) {
+          return yamlStringify({
+            id: 'test-recipe',
+            category: 'test',
+            summary: 'Test recipe',
+            level: 'workspace-only',
+            ecosystems: [],
+            provides: [],
+            requires: [],
+          });
+        }
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest goal\n## Investigation\nTest investigation\n## Expected Output\nTest output';
+        }
+        if (filePath.includes('fix.md')) {
+          return 'Test fix content';
+        }
+        if (filePath.includes('analysis.json')) {
+          return JSON.stringify({
+            workspaceEcosystem: 'typescript',
+            projects: [],
+          });
+        }
+        if (filePath.includes('apply_recipe.md')) {
+          return 'Apply the recipe {{ recipe_id }} to workspace...';
+        }
+        return '';
+      });
+
+      await expect(
+        performRecipesApply({
+          recipe: '/path/to/test-recipe',
+        })
+      ).rejects.toThrow();
+    });
   });
 });

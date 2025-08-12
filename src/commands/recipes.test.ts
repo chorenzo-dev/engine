@@ -1023,7 +1023,7 @@ describe('Recipes Command Integration Tests', () => {
 
       expect(result).toBeDefined();
       expect(result.summary.successfulProjects).toBe(1);
-      expect(result.executionResults[0].output).toBe(
+      expect(result.executionResults[0]?.output).toBe(
         'Execution completed successfully'
       );
       expect(mockQuery).toHaveBeenCalledTimes(1);
@@ -1424,7 +1424,7 @@ describe('Recipes Command Integration Tests', () => {
       });
 
       expect(result.summary.failedProjects).toBe(1);
-      expect(result.executionResults[0].success).toBe(false);
+      expect(result.executionResults[0]?.success).toBe(false);
       expect(result.executionResults[0]).not.toHaveProperty('output');
     });
 
@@ -2301,8 +2301,8 @@ describe('Recipes Command Integration Tests', () => {
       expect(result.summary.totalProjects).toBe(1);
       expect(result.summary.successfulProjects).toBe(0);
       expect(result.summary.failedProjects).toBe(1);
-      expect(result.executionResults[0].success).toBe(false);
-      expect(result.executionResults[0].error).toContain(
+      expect(result.executionResults[0]?.success).toBe(false);
+      expect(result.executionResults[0]?.error).toContain(
         'Unknown error occurred'
       );
     });
@@ -2408,8 +2408,8 @@ describe('Recipes Command Integration Tests', () => {
       expect(result.summary.totalProjects).toBe(1);
       expect(result.summary.successfulProjects).toBe(0);
       expect(result.summary.failedProjects).toBe(1);
-      expect(result.executionResults[0].success).toBe(false);
-      expect(result.executionResults[0].error).toContain(
+      expect(result.executionResults[0]?.success).toBe(false);
+      expect(result.executionResults[0]?.error).toContain(
         'not found for ecosystem'
       );
     });
@@ -2625,7 +2625,7 @@ describe('Recipes Command Integration Tests', () => {
       expect(result.summary.totalProjects).toBe(1);
       expect(result.summary.successfulProjects).toBe(1);
       expect(result.summary.failedProjects).toBe(0);
-      expect(result.executionResults[0].success).toBe(true);
+      expect(result.executionResults[0]?.success).toBe(true);
     });
 
     it('should verify chorenzo context initialization progress', async () => {
@@ -2932,7 +2932,7 @@ describe('Recipes Command Integration Tests', () => {
       expect(result).toBeDefined();
       expect(result.summary.successfulProjects).toBe(1);
       expect(result.summary.totalProjects).toBe(1);
-      expect(result.executionResults[0].projectPath).toBe('workspace');
+      expect(result.executionResults[0]?.projectPath).toBe('workspace');
     });
 
     it('should handle workspace recipe with unsupported ecosystem', async () => {
@@ -3147,7 +3147,7 @@ describe('Recipes Command Integration Tests', () => {
       expect(result).toBeDefined();
       expect(result.summary.successfulProjects).toBe(1);
       expect(result.summary.totalProjects).toBe(1);
-      expect(result.executionResults[0].projectPath).toBe('workspace');
+      expect(result.executionResults[0]?.projectPath).toBe('workspace');
     });
 
     describe('Re-application Prevention Tests', () => {
@@ -3428,8 +3428,8 @@ describe('Recipes Command Integration Tests', () => {
         });
 
         expect(result.executionResults).toHaveLength(1);
-        expect(result.executionResults[0].success).toBe(true);
-        expect(result.executionResults[0].projectPath).toBe('workspace');
+        expect(result.executionResults[0]?.success).toBe(true);
+        expect(result.executionResults[0]?.projectPath).toBe('workspace');
       });
 
       it('should apply workspace-preferred recipe at project level when workspace ecosystem not supported', async () => {
@@ -3479,8 +3479,8 @@ describe('Recipes Command Integration Tests', () => {
         });
 
         expect(result.executionResults).toHaveLength(1);
-        expect(result.executionResults[0].success).toBe(true);
-        expect(result.executionResults[0].projectPath).toContain(
+        expect(result.executionResults[0]?.success).toBe(true);
+        expect(result.executionResults[0]?.projectPath).toContain(
           'python-service'
         );
       });
@@ -3644,8 +3644,8 @@ describe('Recipes Command Integration Tests', () => {
         });
 
         expect(result.executionResults).toHaveLength(1);
-        expect(result.executionResults[0].success).toBe(true);
-        expect(result.executionResults[0].projectPath).toContain('app');
+        expect(result.executionResults[0]?.success).toBe(true);
+        expect(result.executionResults[0]?.projectPath).toContain('app');
       });
 
       it('should handle workspace-only recipe correctly', async () => {
@@ -3687,8 +3687,8 @@ describe('Recipes Command Integration Tests', () => {
         });
 
         expect(result.executionResults).toHaveLength(1);
-        expect(result.executionResults[0].success).toBe(true);
-        expect(result.executionResults[0].projectPath).toBe('workspace');
+        expect(result.executionResults[0]?.success).toBe(true);
+        expect(result.executionResults[0]?.projectPath).toBe('workspace');
 
         expect(mockWriteFileAtomicSync).toHaveBeenCalled();
         const writeCall = mockWriteFileAtomicSync.mock.calls.find((call) =>
@@ -3787,7 +3787,7 @@ describe('Recipes Command Integration Tests', () => {
         });
 
         expect(result.executionResults).toHaveLength(1);
-        expect(result.executionResults[0].projectPath).toContain('python-app');
+        expect(result.executionResults[0]?.projectPath).toContain('python-app');
       });
 
       it('should apply recipe with project.type requirement', async () => {
@@ -3874,7 +3874,7 @@ describe('Recipes Command Integration Tests', () => {
         });
 
         expect(result.executionResults).toHaveLength(1);
-        expect(result.executionResults[0].projectPath).toContain('api');
+        expect(result.executionResults[0]?.projectPath).toContain('api');
       });
 
       it('should apply recipe with workspace.is_monorepo requirement', async () => {

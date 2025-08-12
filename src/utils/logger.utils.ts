@@ -28,8 +28,8 @@ class Logger {
     }
 
     const isTest =
-      process.env.NODE_ENV === 'test' ||
-      process.env.JEST_WORKER_ID !== undefined;
+      process.env['NODE_ENV'] === 'test' ||
+      process.env['JEST_WORKER_ID'] !== undefined;
 
     if (isTest) {
       this.instance = pino({ level: 'silent' });
@@ -54,7 +54,7 @@ class Logger {
 
       this.instance = pino(
         {
-          level: process.env.DEBUG ? 'debug' : 'info',
+          level: process.env['DEBUG'] ? 'debug' : 'info',
         },
         logStream
       );

@@ -44,7 +44,7 @@ export class LibraryManager {
     const parts = relativePath.split(path.sep);
 
     if (parts.length > 0) {
-      return parts[0];
+      return parts[0] ?? null;
     }
 
     return null;
@@ -238,11 +238,6 @@ export class LibraryManager {
 
   private getLibraryPath(libraryName: string): string {
     return chorenzoConfig.getLibraryPath(libraryName);
-  }
-
-  private async getAllLibraryNames(): Promise<string[]> {
-    const config = await this.getConfig();
-    return Object.keys(config.libraries);
   }
 
   validateLocationStructure(locationPath: string): {

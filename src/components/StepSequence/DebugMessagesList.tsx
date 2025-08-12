@@ -16,17 +16,15 @@ export const DebugMessagesList: React.FC<DebugMessagesListProps> = ({
       {messages.map((msg, i) => (
         <Text key={i}>
           <Text color={colors.muted}>[{msg.timestamp}]</Text>{' '}
-          <Text
-            color={
-              msg.type === 'complete'
-                ? undefined
-                : msg.type === 'processing'
-                  ? colors.info
-                  : colors.progress
-            }
-          >
-            {msg.message}
-          </Text>
+          {msg.type === 'complete' ? (
+            <Text>{msg.message}</Text>
+          ) : (
+            <Text
+              color={msg.type === 'processing' ? colors.info : colors.progress}
+            >
+              {msg.message}
+            </Text>
+          )}
         </Text>
       ))}
     </>

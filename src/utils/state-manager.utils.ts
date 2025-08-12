@@ -181,12 +181,15 @@ export class WorkspaceStateManager {
 
     const state = data as Record<string, unknown>;
 
-    if (state.workspace !== undefined && typeof state.workspace !== 'object') {
+    if (
+      state['workspace'] !== undefined &&
+      typeof state['workspace'] !== 'object'
+    ) {
       Logger.error(
         {
           event: 'SECURITY_STATE_STRUCTURE_VALIDATION_FAILED',
           reason: 'invalid_workspace_type',
-          workspaceType: typeof state.workspace,
+          workspaceType: typeof state['workspace'],
         },
         'State structure validation failed - workspace property is not an object'
       );
@@ -196,12 +199,15 @@ export class WorkspaceStateManager {
       );
     }
 
-    if (state.projects !== undefined && typeof state.projects !== 'object') {
+    if (
+      state['projects'] !== undefined &&
+      typeof state['projects'] !== 'object'
+    ) {
       Logger.error(
         {
           event: 'SECURITY_STATE_STRUCTURE_VALIDATION_FAILED',
           reason: 'invalid_projects_type',
-          projectsType: typeof state.projects,
+          projectsType: typeof state['projects'],
         },
         'State structure validation failed - projects property is not an object'
       );
@@ -212,9 +218,9 @@ export class WorkspaceStateManager {
     }
 
     return {
-      workspace: (state.workspace as Record<string, unknown>) || {},
+      workspace: (state['workspace'] as Record<string, unknown>) || {},
       projects:
-        (state.projects as Record<string, Record<string, unknown>>) || {},
+        (state['projects'] as Record<string, Record<string, unknown>>) || {},
     };
   }
 
@@ -226,19 +232,19 @@ export class WorkspaceStateManager {
     const state = obj as Record<string, unknown>;
 
     if (
-      state.workspace !== undefined &&
-      (typeof state.workspace !== 'object' ||
-        Array.isArray(state.workspace) ||
-        state.workspace === null)
+      state['workspace'] !== undefined &&
+      (typeof state['workspace'] !== 'object' ||
+        Array.isArray(state['workspace']) ||
+        state['workspace'] === null)
     ) {
       return false;
     }
 
     if (
-      state.projects !== undefined &&
-      (typeof state.projects !== 'object' ||
-        Array.isArray(state.projects) ||
-        state.projects === null)
+      state['projects'] !== undefined &&
+      (typeof state['projects'] !== 'object' ||
+        Array.isArray(state['projects']) ||
+        state['projects'] === null)
     ) {
       return false;
     }

@@ -78,16 +78,16 @@ describe('Auth Command Integration Tests', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    delete process.env.ANTHROPIC_API_KEY;
-    delete process.env.ANTHROPIC_AUTH_TOKEN;
-    delete process.env.AWS_BEARER_TOKEN_BEDROCK;
-    delete process.env.CLAUDE_CODE_USE_BEDROCK;
-    delete process.env.CLAUDE_CODE_USE_VERTEX;
+    delete process.env['ANTHROPIC_API_KEY'];
+    delete process.env['ANTHROPIC_AUTH_TOKEN'];
+    delete process.env['AWS_BEARER_TOKEN_BEDROCK'];
+    delete process.env['CLAUDE_CODE_USE_BEDROCK'];
+    delete process.env['CLAUDE_CODE_USE_VERTEX'];
   });
 
   describe('Environment Variable Authentication', () => {
     it('should succeed when ANTHROPIC_API_KEY is set', async () => {
-      process.env.ANTHROPIC_API_KEY = 'sk-ant-test-key';
+      process.env['ANTHROPIC_API_KEY'] = 'sk-ant-test-key';
 
       const result = await performAuthCheck();
 
@@ -95,7 +95,7 @@ describe('Auth Command Integration Tests', () => {
     });
 
     it('should succeed when ANTHROPIC_AUTH_TOKEN is set', async () => {
-      process.env.ANTHROPIC_AUTH_TOKEN = 'test-auth-token';
+      process.env['ANTHROPIC_AUTH_TOKEN'] = 'test-auth-token';
 
       const result = await performAuthCheck();
 
@@ -103,7 +103,7 @@ describe('Auth Command Integration Tests', () => {
     });
 
     it('should succeed when AWS_BEARER_TOKEN_BEDROCK is set', async () => {
-      process.env.AWS_BEARER_TOKEN_BEDROCK = 'test-bedrock-token';
+      process.env['AWS_BEARER_TOKEN_BEDROCK'] = 'test-bedrock-token';
 
       const result = await performAuthCheck();
 
@@ -111,7 +111,7 @@ describe('Auth Command Integration Tests', () => {
     });
 
     it('should succeed when CLAUDE_CODE_USE_BEDROCK is enabled', async () => {
-      process.env.CLAUDE_CODE_USE_BEDROCK = '1';
+      process.env['CLAUDE_CODE_USE_BEDROCK'] = '1';
 
       const result = await performAuthCheck();
 
@@ -119,7 +119,7 @@ describe('Auth Command Integration Tests', () => {
     });
 
     it('should succeed when CLAUDE_CODE_USE_VERTEX is enabled', async () => {
-      process.env.CLAUDE_CODE_USE_VERTEX = '1';
+      process.env['CLAUDE_CODE_USE_VERTEX'] = '1';
 
       const result = await performAuthCheck();
 

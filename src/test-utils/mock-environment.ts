@@ -5,7 +5,7 @@ export function mockEnvironment(
   homeDir: string = '/home/testuser'
 ) {
   const originalCwd = process.cwd;
-  const originalEnv = process.env.NODE_ENV;
+  const originalEnv = process.env['NODE_ENV'];
 
   Object.defineProperty(process, 'cwd', {
     value: jest.fn().mockReturnValue(workspacePath),
@@ -17,7 +17,7 @@ export function mockEnvironment(
     homedir: jest.fn().mockReturnValue(homeDir),
   }));
 
-  process.env.NODE_ENV = 'test';
+  process.env['NODE_ENV'] = 'test';
 
   return () => {
     Object.defineProperty(process, 'cwd', {
@@ -25,7 +25,7 @@ export function mockEnvironment(
       writable: true,
       configurable: true,
     });
-    process.env.NODE_ENV = originalEnv;
+    process.env['NODE_ENV'] = originalEnv;
     jest.dontMock('os');
   };
 }

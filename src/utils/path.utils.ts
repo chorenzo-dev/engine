@@ -27,7 +27,7 @@ export function isPathWithinWorkspace(
   targetPath: string,
   workspaceRoot: string
 ): boolean {
-  if (process.env.NODE_ENV === 'test') {
+  if (process.env['NODE_ENV'] === 'test') {
     if (
       targetPath === '.' ||
       targetPath.startsWith('./') ||

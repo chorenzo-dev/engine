@@ -43,11 +43,13 @@ export const AnalysisPrompt: React.FC<AnalysisPromptProps> = ({
             {isSelected ? '❯' : ' '}
           </Text>
         )}
-        itemComponent={({ isSelected, label }) => (
-          <Text color={isSelected ? colors.progress : colors.default}>
-            {label}
-          </Text>
-        )}
+        itemComponent={({ isSelected, label }) =>
+          isSelected ? (
+            <Text color={colors.progress}>{label}</Text>
+          ) : (
+            <Text>{label}</Text>
+          )
+        }
       />
     </Box>
   );

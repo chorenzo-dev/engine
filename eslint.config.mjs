@@ -20,7 +20,7 @@ export default [
     },
   },
   {
-    files: ['**/*.ts', '**/*.tsx'],
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
     plugins: {
       '@typescript-eslint': tseslint,
     },
@@ -28,6 +28,9 @@ export default [
       parser: tsparser,
       ecmaVersion: 'latest',
       sourceType: 'module',
+      parserOptions: {
+        project: './tsconfig.json',
+      },
       globals: {
         ...globals.node,
         ...globals.es2022,
@@ -46,6 +49,7 @@ export default [
       curly: ['error', 'all'],
       'object-shorthand': ['error', 'always'],
       '@typescript-eslint/no-non-null-assertion': 'error',
+      '@typescript-eslint/prefer-optional-chain': 'error',
     },
   },
 ];

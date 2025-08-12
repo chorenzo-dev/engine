@@ -7,3 +7,6 @@
 ## Code Writing Guidelines
 
 - Never add code comments unless specifically asked
+
+- never include the ticket ID in the PR description
+- use an appropriate semantic versioning prefix in PR titles, never use them in commits

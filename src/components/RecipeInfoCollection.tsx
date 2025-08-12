@@ -235,7 +235,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
           <Text>Recipe name: </Text>
           <TextInput
             value={formState.name}
-            onChange={(value) =>
+            onChange={(value: string) =>
               setFormState((prev) => ({ ...prev, name: value }))
             }
             onSubmit={() => {
@@ -256,7 +256,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
           <Text>Enter location: </Text>
           <TextInput
             value={formState.customLocation}
-            onChange={(value) =>
+            onChange={(value: string) =>
               setFormState((prev) => ({ ...prev, customLocation: value }))
             }
             onSubmit={handleCustomLocationSubmit}
@@ -281,7 +281,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
             <Text>Category name: </Text>
             <TextInput
               value={formState.customCategory}
-              onChange={(value) =>
+              onChange={(value: string) =>
                 setFormState((prev) => ({ ...prev, customCategory: value }))
               }
               onSubmit={handleCustomCategorySubmit}
@@ -306,7 +306,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
           <Text>Recipe summary: </Text>
           <TextInput
             value={formState.summary}
-            onChange={(value) =>
+            onChange={(value: string) =>
               setFormState((prev) => ({ ...prev, summary: value }))
             }
             onSubmit={() => {
@@ -365,7 +365,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
         <Text>Choose generation method:</Text>
         <SelectInput
           items={choiceOptions}
-          onSelect={(item) => {
+          onSelect={(item: { label: string; value: string }) => {
             const useMagicGeneration = item.value === 'magic';
             setFormState((prev) => ({ ...prev, useMagic: useMagicGeneration }));
             if (useMagicGeneration) {
@@ -387,7 +387,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
         </Text>
         <TextInput
           value={formState.instructions}
-          onChange={(value) =>
+          onChange={(value: string) =>
             setFormState((prev) => ({ ...prev, instructions: value }))
           }
           onSubmit={() => {

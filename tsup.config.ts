@@ -9,7 +9,13 @@ export default defineConfig({
   outDir: 'dist',
   clean: true,
   sourcemap: true,
-  external: ['commander', '@anthropic-ai/claude-code', 'ink', 'react'],
+  external: [
+    'commander',
+    '@anthropic-ai/claude-code',
+    'ink',
+    'react',
+    'write-file-atomic',
+  ],
   esbuildOptions(options) {
     options.alias = {
       '~': path.resolve('./src'),

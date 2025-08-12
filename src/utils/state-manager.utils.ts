@@ -227,14 +227,18 @@ export class WorkspaceStateManager {
 
     if (
       state.workspace !== undefined &&
-      (typeof state.workspace !== 'object' || Array.isArray(state.workspace))
+      (typeof state.workspace !== 'object' ||
+        Array.isArray(state.workspace) ||
+        state.workspace === null)
     ) {
       return false;
     }
 
     if (
       state.projects !== undefined &&
-      (typeof state.projects !== 'object' || Array.isArray(state.projects))
+      (typeof state.projects !== 'object' ||
+        Array.isArray(state.projects) ||
+        state.projects === null)
     ) {
       return false;
     }

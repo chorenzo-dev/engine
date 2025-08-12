@@ -191,35 +191,39 @@ function validateMetadata(metadata: unknown, metadataPath: string): void {
     }
   }
 
-  if (!Array.isArray(metadataObj.ecosystems)) {
+  if (!Array.isArray(metadataObj['ecosystems'])) {
     throw new Error('ecosystems must be an array');
   }
 
-  if (!Array.isArray(metadataObj.provides)) {
+  if (!Array.isArray(metadataObj['provides'])) {
     throw new Error('provides must be an array');
   }
 
-  if (!Array.isArray(metadataObj.requires)) {
+  if (!Array.isArray(metadataObj['requires'])) {
     throw new Error('requires must be an array');
   }
 
   const validLevels = ['workspace-only', 'project-only', 'workspace-preferred'];
-  if (!validLevels.includes(metadataObj.level as string)) {
+  if (!validLevels.includes(metadataObj['level'] as string)) {
     throw new Error(`level must be one of: ${validLevels.join(', ')}`);
   }
 
-  for (const ecosystem of metadataObj.ecosystems as Array<
+  for (const ecosystem of metadataObj['ecosystems'] as Array<
     Record<string, unknown>
   >) {
-    if (!ecosystem.id || !ecosystem.default_variant || !ecosystem.variants) {
+    if (
+      !ecosystem['id'] ||
+      !ecosystem['default_variant'] ||
+      !ecosystem['variants']
+    ) {
       throw new Error(`Invalid ecosystem structure`);
     }
 
-    if (!Array.isArray(ecosystem.variants)) {
+    if (!Array.isArray(ecosystem['variants'])) {
       throw new Error('ecosystem.variants must be an array');
     }
 
-    for (const variant of ecosystem.variants) {
+    for (const variant of ecosystem['variants']) {
       if (!variant.id || !variant.fix_prompt) {
         throw new Error(`Invalid variant structure`);
       }
@@ -228,9 +232,9 @@ function validateMetadata(metadata: unknown, metadataPath: string): void {
 
   const recipeDir = path.dirname(metadataPath);
   const recipeName = path.basename(recipeDir);
-  if (metadataObj.id !== recipeName) {
+  if (metadataObj['id'] !== recipeName) {
     throw new Error(
-      `Recipe ID '${metadataObj.id}' must match directory name '${recipeName}'`
+      `Recipe ID '${metadataObj['id']}' must match directory name '${recipeName}'`
     );
   }
 }
@@ -313,7 +317,7 @@ export function validateRecipe(recipe: Recipe): RecipeValidationResult {
 
   if (recipe.metadata.ecosystems.length > 0) {
     for (const ecosystem of recipe.metadata.ecosystems) {
-      for (const variant of ecosystem.variants) {
+      for (const variant of ecosystem['variants']) {
         const hasEcosystemVariant = recipe.fixFiles.has(
           `variants/${ecosystem.id}_${variant.id}.md`
         );

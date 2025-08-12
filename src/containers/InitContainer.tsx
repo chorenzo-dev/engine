@@ -125,7 +125,7 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
         };
 
         useEffect(() => {
-          if (context.options.yes) {
+          if (context.options['yes']) {
             runAnalysis();
           } else {
             setPromptShown(true);
@@ -133,7 +133,7 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
           }
         }, []);
 
-        if (context.options.yes || !promptShown) {
+        if (context.options['yes'] || !promptShown) {
           return null;
         }
 
@@ -162,7 +162,7 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
             return (
               <AnalysisResultDisplay
                 result={analysisResult}
-                showCost={context.options.cost as boolean}
+                showCost={context.options['cost'] as boolean}
               />
             );
           }

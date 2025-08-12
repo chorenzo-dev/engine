@@ -1,5 +1,9 @@
 {
-  "projects": {},
+  "projects": {
+    "": {
+      "strict-typescript-config.configured": true
+    }
+  },
   "workspace": {
     "ci-pipeline.applied": true,
     "ci-pipeline.has_build_pipeline": true,

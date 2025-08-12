@@ -103,7 +103,7 @@ export async function executeCodeChangesOperation(
           event: 'claude_message_received',
           messageType: message.type,
           messageSubtype:
-            (message as Record<string, unknown>).subtype || 'none',
+            (message as Record<string, unknown>)['subtype'] || 'none',
           hasContent: 'content' in message,
           hasMessage: 'message' in message,
         },
@@ -126,7 +126,7 @@ export async function executeCodeChangesOperation(
         } else if (message.subtype && message.subtype.startsWith('error')) {
           errorMessage =
             'error' in message
-              ? String((message as Record<string, unknown>).error)
+              ? String((message as Record<string, unknown>)['error'])
               : 'Unknown error occurred';
           success = false;
         }
@@ -140,18 +140,18 @@ export async function executeCodeChangesOperation(
                 Logger.info(
                   {
                     event: 'claude_tool_use',
-                    toolName: content.name,
-                    hasInput: !!content.input,
+                    toolName: content['name'],
+                    hasInput: !!content['input'],
                   },
-                  `Claude tool use: ${content.name}`
+                  `Claude tool use: ${content['name']}`
                 );
 
                 if (
-                  content.name === 'Bash' &&
-                  content.input &&
-                  typeof content.input === 'object'
+                  content['name'] === 'Bash' &&
+                  content['input'] &&
+                  typeof content['input'] === 'object'
                 ) {
-                  const bashInput = content.input as BashToolInput;
+                  const bashInput = content['input'] as BashToolInput;
                   if (bashInput.command) {
                     Logger.info(
                       {
@@ -164,8 +164,8 @@ export async function executeCodeChangesOperation(
                 }
 
                 const toolMessage = formatToolMessage(
-                  String(content.name),
-                  content.input as ToolInput,
+                  String(content['name']),
+                  content['input'] as ToolInput,
                   handlers.showChorenzoOperations
                 );
                 if (toolMessage) {
@@ -193,8 +193,8 @@ export async function executeCodeChangesOperation(
                     event: 'claude_tool_result',
                     toolUseId: content.tool_use_id || 'unknown',
                     isError: content.is_error || false,
-                    contentLength: content.content
-                      ? String(content.content).length
+                    contentLength: content['content']
+                      ? String(content['content']).length
                       : 0,
                   },
                   `Tool result: ${content.is_error ? 'error' : 'success'}`

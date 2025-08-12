@@ -89,7 +89,7 @@ describe('Analyze Command Integration Tests', () => {
     progress?: (message: string | null) => void
   ) => Promise<{
     analysis: WorkspaceAnalysis | null;
-    metadata?: Partial<OperationMetadata>;
+    metadata?: OperationMetadata;
     unrecognizedFrameworks?: string[];
   }>;
   let mockProgress: jest.MockedFunction<(message: string | null) => void>;

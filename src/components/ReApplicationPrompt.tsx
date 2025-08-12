@@ -71,11 +71,13 @@ export const ReApplicationPrompt: React.FC<ReApplicationPromptProps> = ({
             {isSelected ? '❯' : ' '}
           </Text>
         )}
-        itemComponent={({ isSelected, label }: ItemProps) => (
-          <Text color={isSelected ? colors.progress : colors.default}>
-            {label}
-          </Text>
-        )}
+        itemComponent={({ isSelected, label }: ItemProps) =>
+          isSelected ? (
+            <Text color={colors.progress}>{label}</Text>
+          ) : (
+            <Text>{label}</Text>
+          )
+        }
       />
     </Box>
   );

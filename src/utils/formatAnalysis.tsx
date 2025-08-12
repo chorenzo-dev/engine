@@ -52,13 +52,24 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({
     );
   } else {
     const project = projects[0];
+    if (!project) {
+      return (
+        <Box flexDirection="column">
+          <Text color={colors.info} bold>
+            Project Analysis
+          </Text>
+          <Text>No projects found</Text>
+        </Box>
+      );
+    }
+
     return (
       <Box flexDirection="column">
         <Text color={colors.info} bold>
           Project Analysis
         </Text>
         <Text>Type: {formatProjectType(project.type)}</Text>
-        <Text>Language: {capitalize(project.language)}</Text>
+        <Text>Language: {capitalize(project.language || 'Unknown')}</Text>
         <Text>
           Framework:{' '}
           {project.framework ? capitalize(project.framework) : 'None'}

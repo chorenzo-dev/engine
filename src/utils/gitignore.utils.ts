@@ -88,7 +88,7 @@ export class GitignoreManager {
 
     let endLineIndex = startLineIndex + 1;
     while (endLineIndex < lines.length) {
-      const line = lines[endLineIndex].trim();
+      const line = lines[endLineIndex]?.trim();
       if (
         !line ||
         (!line.startsWith('/.chorenzo') && !line.startsWith('!/.chorenzo'))

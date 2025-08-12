@@ -181,7 +181,7 @@ function parseFixContentValidationResponse(
     let jsonString: string;
 
     const codeBlockMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
-    if (codeBlockMatch) {
+    if (codeBlockMatch && codeBlockMatch[1]) {
       jsonString = codeBlockMatch[1];
     } else {
       const objectMatch = response.match(/\{[\s\S]*\}/);
@@ -217,19 +217,19 @@ function isValidFixContentValidationResponse(
     return false;
   }
 
-  if (typeof obj.valid !== 'boolean') {
+  if (typeof obj['valid'] !== 'boolean') {
     return false;
   }
 
-  if (!Array.isArray(obj.violations)) {
+  if (!Array.isArray(obj['violations'])) {
     return false;
   }
 
-  if (!isObject(obj.summary)) {
+  if (!isObject(obj['summary'])) {
     return false;
   }
 
-  const summary = obj.summary;
+  const summary = obj['summary'];
   const requiredSummaryFields = [
     'totalFiles',
     'filesWithViolations',
@@ -247,7 +247,7 @@ function isValidFixContentValidationResponse(
     'overly_simplistic',
   ]);
 
-  for (const violation of obj.violations) {
+  for (const violation of obj['violations']) {
     if (!isObject(violation)) {
       return false;
     }
@@ -265,8 +265,8 @@ function isValidFixContentValidationResponse(
     }
 
     if (
-      typeof violation.type !== 'string' ||
-      !validTypes.has(violation.type as CodeSampleViolationType)
+      typeof violation['type'] !== 'string' ||
+      !validTypes.has(violation['type'] as CodeSampleViolationType)
     ) {
       return false;
     }
@@ -499,8 +499,16 @@ async function validateRecipeByName(
     );
   }
 
+  const recipePath = foundPaths[0];
+  if (!recipePath) {
+    throw new RecipesError(
+      `Recipe path not found for '${recipeName}'`,
+      'RECIPE_PATH_NOT_FOUND'
+    );
+  }
+
   return validateRecipeFolder(
-    foundPaths[0],
+    recipePath,
     options,
     context,
     onProgress,
@@ -510,7 +518,7 @@ async function validateRecipeByName(
 
 async function validateRecipeFolder(
   recipePath: string,
-  options: RecipesOptions,
+  _options: RecipesOptions,
   context: Omit<ValidationContext, 'recipesValidated'>,
   onProgress?: ProgressCallback,
   onValidation?: ValidationCallback
@@ -599,7 +607,7 @@ async function validateRecipeFolder(
 
 async function validateLibrary(
   libraryPath: string,
-  options: RecipesOptions,
+  _options: RecipesOptions,
   context: Omit<ValidationContext, 'recipesValidated'>,
   onProgress?: ProgressCallback,
   onValidation?: ValidationCallback
@@ -1054,6 +1062,12 @@ async function loadRecipe(recipeName: string): Promise<Recipe> {
       }
 
       const recipePath = foundPaths[0];
+      if (!recipePath) {
+        throw new RecipesApplyError(
+          `Recipe path not found for '${recipeName}'`,
+          'RECIPE_PATH_NOT_FOUND'
+        );
+      }
       const libraryName = libraryManager.isRemoteLibrary(recipePath);
       if (libraryName) {
         Logger.info(
@@ -1952,7 +1966,7 @@ export async function performRecipesGenerate(
         onThinkingStateChange: (isThinking) => {
           onProgress?.(null, isThinking);
         },
-        onComplete: (result, metadata) => {
+        onComplete: (_result, metadata) => {
           totalCostUsd = metadata?.costUsd || 0;
         },
         showChorenzoOperations: true,

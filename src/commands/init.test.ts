@@ -92,11 +92,9 @@ describe('Init Command Integration Tests', () => {
       yield { type: 'result', is_error: false };
     });
     mockSpawnSync.mockImplementation(() => ({
-      error: undefined,
       status: 0,
       stdout: 'Claude CLI is working',
       stderr: '',
-      signal: undefined,
     }));
   };
 
@@ -292,7 +290,7 @@ describe('Init Command Integration Tests', () => {
     );
     expect(gitignoreCalls).toHaveLength(1);
 
-    const gitignoreContent = gitignoreCalls[0][1] as string;
+    const gitignoreContent = gitignoreCalls[0]?.[1] as string;
     expect(gitignoreContent).toContain('# Chorenzo');
     expect(gitignoreContent).toContain('/.chorenzo/*');
     expect(gitignoreContent).toContain('!/.chorenzo/state.json');
@@ -327,7 +325,7 @@ node_modules/
     );
     expect(gitignoreCalls).toHaveLength(1);
 
-    const gitignoreContent = gitignoreCalls[0][1] as string;
+    const gitignoreContent = gitignoreCalls[0]?.[1] as string;
     expect(gitignoreContent).toContain('# Some existing content');
     expect(gitignoreContent).toContain('# Chorenzo');
     expect(gitignoreContent).toContain('/.chorenzo/*');

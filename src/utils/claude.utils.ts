@@ -16,7 +16,7 @@ export class AuthError extends Error {
 
 export async function checkClaudeCodeAuth(): Promise<boolean> {
   try {
-    if (process.env.ANTHROPIC_API_KEY) {
+    if (process.env['ANTHROPIC_API_KEY']) {
       Logger.info(
         { event: 'auth_check_method', method: 'ANTHROPIC_API_KEY' },
         'Using ANTHROPIC_API_KEY for authentication'
@@ -24,7 +24,7 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       return true;
     }
 
-    if (process.env.ANTHROPIC_AUTH_TOKEN) {
+    if (process.env['ANTHROPIC_AUTH_TOKEN']) {
       Logger.info(
         { event: 'auth_check_method', method: 'ANTHROPIC_AUTH_TOKEN' },
         'Using ANTHROPIC_AUTH_TOKEN for authentication'
@@ -32,7 +32,7 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       return true;
     }
 
-    if (process.env.AWS_BEARER_TOKEN_BEDROCK) {
+    if (process.env['AWS_BEARER_TOKEN_BEDROCK']) {
       Logger.info(
         { event: 'auth_check_method', method: 'AWS_BEARER_TOKEN_BEDROCK' },
         'Using AWS_BEARER_TOKEN_BEDROCK for authentication'
@@ -40,7 +40,7 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       return true;
     }
 
-    if (process.env.CLAUDE_CODE_USE_BEDROCK === '1') {
+    if (process.env['CLAUDE_CODE_USE_BEDROCK'] === '1') {
       Logger.info(
         { event: 'auth_check_method', method: 'CLAUDE_CODE_USE_BEDROCK' },
         'Using Bedrock for authentication'
@@ -48,7 +48,7 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       return true;
     }
 
-    if (process.env.CLAUDE_CODE_USE_VERTEX === '1') {
+    if (process.env['CLAUDE_CODE_USE_VERTEX'] === '1') {
       Logger.info(
         { event: 'auth_check_method', method: 'CLAUDE_CODE_USE_VERTEX' },
         'Using Vertex AI for authentication'
@@ -170,7 +170,7 @@ export async function saveAuthConfig(authConfig: AuthConfig): Promise<void> {
 
 async function setupEnvironmentForAuth(authConfig: AuthConfig): Promise<void> {
   if (authConfig.anthropic_api_key) {
-    process.env.ANTHROPIC_API_KEY = authConfig.anthropic_api_key;
+    process.env['ANTHROPIC_API_KEY'] = authConfig.anthropic_api_key;
   }
 }
 

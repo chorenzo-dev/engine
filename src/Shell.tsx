@@ -15,7 +15,8 @@ interface ShellProps {
     | 'init'
     | 'recipes-validate'
     | 'recipes-apply'
-    | 'recipes-generate';
+    | 'recipes-generate'
+    | 'recipes-show';
   options: {
     progress?: boolean;
     reset?: boolean;
@@ -34,6 +35,7 @@ interface ShellProps {
     ecosystemAgnostic?: boolean;
     magicGenerate?: boolean;
     additionalInstructions?: string;
+    recipeName?: string;
   };
 }
 

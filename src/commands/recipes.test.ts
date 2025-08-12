@@ -2504,12 +2504,11 @@ describe('Recipes Command Integration Tests', () => {
         };
       });
 
-      const result = await performRecipesApply({
-        recipe: 'test-recipe',
-      });
-
-      expect(result).toBeDefined();
-      expect(result.summary.totalProjects).toBe(1);
+      await expect(
+        performRecipesApply({
+          recipe: 'test-recipe',
+        })
+      ).rejects.toThrow(/Failed to read state file: Permission denied/);
     });
 
     it('should handle empty recipe application result', async () => {

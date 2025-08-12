@@ -1,5 +1,8 @@
 import { Box, Text } from 'ink';
-import SelectInput from 'ink-select-input';
+import SelectInput, {
+  type IndicatorProps,
+  type ItemProps,
+} from 'ink-select-input';
 import React from 'react';
 
 import { colors } from '~/styles/colors';
@@ -63,12 +66,12 @@ export const ReApplicationPrompt: React.FC<ReApplicationPromptProps> = ({
       <SelectInput
         items={items}
         onSelect={handleSelect}
-        indicatorComponent={({ isSelected }) => (
+        indicatorComponent={({ isSelected }: IndicatorProps) => (
           <Text color={isSelected ? colors.progress : colors.muted}>
             {isSelected ? '❯' : ' '}
           </Text>
         )}
-        itemComponent={({ isSelected, label }) => (
+        itemComponent={({ isSelected, label }: ItemProps) => (
           <Text color={isSelected ? colors.progress : colors.default}>
             {label}
           </Text>

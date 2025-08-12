@@ -23,6 +23,7 @@ const mockMkdirSync = jest.fn();
 const mockWriteFileSync = jest.fn();
 const mockAppendFileSync = jest.fn();
 const mockCreateWriteStream = jest.fn();
+const mockWriteFileAtomicSync = jest.fn();
 
 jest.unstable_mockModule('os', () => ({
   homedir: mockHomedir,
@@ -47,6 +48,10 @@ jest.unstable_mockModule('@anthropic-ai/claude-code', () => ({
 
 jest.unstable_mockModule('./analyze', () => ({
   performAnalysis: mockPerformAnalysis,
+}));
+
+jest.unstable_mockModule('write-file-atomic', () => ({
+  sync: mockWriteFileAtomicSync,
 }));
 
 jest.unstable_mockModule('simple-git', () => ({
@@ -146,6 +151,7 @@ describe('Recipes Command Integration Tests', () => {
   const setupDefaultMocks = () => {
     mockHomedir.mockImplementation(() => '/test/home');
     mockTmpdir.mockImplementation(() => '/tmp');
+    mockWriteFileAtomicSync.mockImplementation(() => {});
     mockExistsSync.mockImplementation(() => {
       return true;
     });
@@ -3683,6 +3689,18 @@ describe('Recipes Command Integration Tests', () => {
         expect(result.executionResults).toHaveLength(1);
         expect(result.executionResults[0].success).toBe(true);
         expect(result.executionResults[0].projectPath).toBe('workspace');
+
+        expect(mockWriteFileAtomicSync).toHaveBeenCalled();
+        const writeCall = mockWriteFileAtomicSync.mock.calls.find((call) =>
+          (call[0] as string).includes('state.json')
+        );
+        expect(writeCall).toBeDefined();
+        if (writeCall) {
+          const stateContent = JSON.parse(writeCall[1] as string);
+          expect(stateContent.workspace['workspace-only-recipe.applied']).toBe(
+            true
+          );
+        }
       });
 
       it('should apply recipe with project.ecosystem requirement', async () => {

@@ -43,7 +43,7 @@ export function parseGitConfig(gitRoot: string): string | null {
     if (stat.isFile()) {
       const gitFileContent = fs.readFileSync(gitPath, 'utf-8');
       const gitDirMatch = gitFileContent.match(/gitdir:\s*(.+)/);
-      if (gitDirMatch && gitDirMatch[1]) {
+      if (gitDirMatch?.[1]) {
         const gitDir = gitDirMatch[1].trim();
         gitConfigPath = path.join(gitDir, 'config');
       } else {
@@ -107,7 +107,7 @@ export function normalizeRepoIdentifier(gitUrl: string): string {
   }
 
   const match = normalized.match(/([^/]+)\/([^/]+\/[^/]+)$/);
-  if (match && match[2]) {
+  if (match?.[2]) {
     return match[2];
   }
 

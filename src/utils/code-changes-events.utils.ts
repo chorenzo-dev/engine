@@ -123,7 +123,7 @@ export async function executeCodeChangesOperation(
             },
             `Claude execution completed successfully. Result preview: ${String(message.result || '').substring(0, 200)}...`
           );
-        } else if (message.subtype && message.subtype.startsWith('error')) {
+        } else if (message.subtype?.startsWith('error')) {
           errorMessage =
             'error' in message
               ? String((message as Record<string, unknown>)['error'])
@@ -370,7 +370,7 @@ function formatToolMessage(
       }
       if (command.includes('mkdir')) {
         const pathMatch = command.match(/mkdir\s+(-p\s+)?["']?([^"'\s]+)["']?/);
-        if (pathMatch && pathMatch[2]) {
+        if (pathMatch?.[2]) {
           const relativePath = getRelativePath(pathMatch[2]);
           return `Creating directory: ${relativePath}`;
         }
@@ -379,7 +379,7 @@ function formatToolMessage(
         const pathMatch = command.match(
           /(?:rm|rmdir)\s+(-[rf]+\s+)?["']?([^"'\s]+)["']?/
         );
-        if (pathMatch && pathMatch[2]) {
+        if (pathMatch?.[2]) {
           const relativePath = getRelativePath(pathMatch[2]);
           return `Removing: ${relativePath}`;
         }

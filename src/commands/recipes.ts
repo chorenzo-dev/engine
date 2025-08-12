@@ -181,7 +181,7 @@ function parseFixContentValidationResponse(
     let jsonString: string;
 
     const codeBlockMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
-    if (codeBlockMatch && codeBlockMatch[1]) {
+    if (codeBlockMatch?.[1]) {
       jsonString = codeBlockMatch[1];
     } else {
       const objectMatch = response.match(/\{[\s\S]*\}/);

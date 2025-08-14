@@ -11,8 +11,10 @@ import {
   checkGitAvailable,
   cloneRepository,
 } from './git-operations.utils';
+import { GitignoreManager } from './gitignore.utils';
 import { Logger } from './logger.utils';
 import { retry } from './retry.utils';
+import { workspaceConfig } from './workspace-config.utils';
 
 export enum LocationType {
   Empty = 'empty',
@@ -161,6 +163,93 @@ export class LibraryManager {
     };
 
     await searchDirectory(chorenzoConfig.recipesDir);
+
+    if (foundPaths.length === 0) {
+      Logger.info(
+        { recipeName },
+        'No recipes found in libraries, searching local project folders'
+      );
+      const localPaths = await this.searchLocalProjectFolders(recipeName);
+      foundPaths.push(...localPaths);
+    }
+
+    return foundPaths;
+  }
+
+  private async searchLocalProjectFolders(
+    recipeName: string
+  ): Promise<string[]> {
+    const foundPaths: string[] = [];
+    const workspaceRoot = workspaceConfig.getWorkspaceRoot();
+    const ignorePatterns =
+      GitignoreManager.loadGitIgnorePatternsForDir(workspaceRoot);
+
+    let searchedFolders = 0;
+    const maxFolders = 50;
+    const maxDepth = 2;
+
+    const searchDirectoryWithLimits = async (
+      dir: string,
+      currentDepth: number
+    ): Promise<void> => {
+      if (currentDepth > maxDepth || searchedFolders >= maxFolders) {
+        return;
+      }
+
+      if (!fs.existsSync(dir)) {
+        return;
+      }
+
+      searchedFolders++;
+
+      try {
+        const entries = fs.readdirSync(dir);
+
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry);
+
+          if (!fs.statSync(fullPath).isDirectory()) {
+            continue;
+          }
+
+          if (
+            GitignoreManager.isIgnored(fullPath, workspaceRoot, ignorePatterns)
+          ) {
+            continue;
+          }
+
+          if (entry === recipeName && this.isRecipeFolder(fullPath)) {
+            foundPaths.push(fullPath);
+            Logger.info(
+              { recipeName, path: fullPath },
+              'Found local recipe in project folder'
+            );
+          } else if (currentDepth < maxDepth && searchedFolders < maxFolders) {
+            await searchDirectoryWithLimits(fullPath, currentDepth + 1);
+          }
+        }
+      } catch (error) {
+        Logger.warn(
+          {
+            directory: dir,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          'Failed to search local directory for recipes'
+        );
+      }
+    };
+
+    await searchDirectoryWithLimits(workspaceRoot, 0);
+
+    Logger.info(
+      {
+        recipeName,
+        searchedFolders,
+        foundCount: foundPaths.length,
+      },
+      'Completed local project folder search'
+    );
+
     return foundPaths;
   }
 

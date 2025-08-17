@@ -77,11 +77,7 @@ export const ProcessDisplay: React.FC<ProcessDisplayProps> = ({
         </Box>
       )}
 
-      {status === 'error' && error && (
-        <Box marginTop={1}>
-          <Text color={colors.error}>{error}</Text>
-        </Box>
-      )}
+      {status === 'error' && error && <Text color={colors.error}>{error}</Text>}
 
       {children && <Box>{children}</Box>}
     </Box>

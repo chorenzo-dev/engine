@@ -432,7 +432,7 @@ export async function performRecipesValidate(
       throw error;
     }
     throw new RecipesError(
-      `Validation failed: ${error instanceof Error ? error.message : String(error)}`,
+      error instanceof Error ? error.message : String(error),
       'VALIDATION_FAILED'
     );
   }
@@ -617,7 +617,7 @@ async function validateRecipeFolder(
     };
   } catch (error) {
     throw new RecipesError(
-      `Failed to validate recipe folder: ${error instanceof Error ? error.message : String(error)}`,
+      error instanceof Error ? error.message : String(error),
       'RECIPE_VALIDATION_FAILED'
     );
   }
@@ -723,7 +723,7 @@ async function validateLibrary(
     };
   } catch (error) {
     throw new RecipesError(
-      `Failed to validate library: ${error instanceof Error ? error.message : String(error)}`,
+      error instanceof Error ? error.message : String(error),
       'LIBRARY_VALIDATION_FAILED'
     );
   }

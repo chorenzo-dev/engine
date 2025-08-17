@@ -76,6 +76,24 @@ npx chorenzo recipes validate code-formatting --no-progress
 npx chorenzo recipes validate code-formatting --debug
 ```
 
+#### Show Recipe Details
+
+Show detailed information about a specific recipe:
+
+```bash
+# Show details for a recipe by name
+npx chorenzo recipes show code-formatting
+
+# Show details for any available recipe
+npx chorenzo recipes show testing-setup
+
+# Disable progress UI for simple text output
+npx chorenzo recipes show linting --no-progress
+
+# Show detailed debug output
+npx chorenzo recipes show ci-cd --debug
+```
+
 #### Apply Recipes
 
 Apply automation recipes to your workspace:
@@ -234,6 +252,7 @@ npx chorenzo recipes --help
 
 # Show help for recipe subcommands
 npx chorenzo recipes validate --help
+npx chorenzo recipes show --help
 npx chorenzo recipes apply --help
 npx chorenzo recipes generate --help
 ```

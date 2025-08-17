@@ -20,9 +20,6 @@
     "code-linting.variant": "eslint",
     "pre-commit-checks.checks_found": true,
     "pre-commit-checks.hooks_configured": true,
-    "update-readme.cli-documented": true,
-    "update-readme.commands-extracted": true,
-    "update-readme.configured": true,
-    "update-readme.readme-exists": true
+    "update-readme.applied": true
   }
 }

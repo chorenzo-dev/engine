@@ -81,6 +81,7 @@ const recipesCommand = program
     'after',
     `
 Examples:
+  $ chorenzo recipes show code-formatting                  # Show recipe details
   $ chorenzo recipes validate code-formatting              # Validate by recipe name
   $ chorenzo recipes validate ./my-recipe                  # Validate local recipe folder
   $ chorenzo recipes validate ~/.chorenzo/recipes/core     # Validate entire library
@@ -167,6 +168,42 @@ Examples:
           progress: options.progress,
           debug: options.debug,
           cost: options.cost,
+        },
+      })
+    );
+
+    try {
+      await waitUntilExit();
+    } catch (error) {
+      Logger.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+  });
+
+recipesCommand
+  .command('show <recipe-name>')
+  .description('Show detailed information about a recipe')
+  .option('--no-progress', 'Disable progress UI')
+  .option('--debug', 'Show all progress messages in list format')
+  .addHelpText(
+    'after',
+    `
+Arguments:
+  recipe-name    Name of the recipe to display information for
+
+Examples:
+  $ chorenzo recipes show code-formatting               # Show details for code-formatting recipe
+  $ chorenzo recipes show testing-setup                # Show details for testing-setup recipe
+`
+  )
+  .action(async (recipeName, options) => {
+    const { waitUntilExit } = render(
+      React.createElement(Shell, {
+        command: 'recipes-show',
+        options: {
+          recipeName,
+          progress: options.progress,
+          debug: options.debug,
         },
       })
     );

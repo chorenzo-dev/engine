@@ -669,6 +669,226 @@ describe('Recipes Command Integration Tests', () => {
       );
     });
 
+    it('should find local recipes when library search returns nothing', async () => {
+      const options = { target: 'local-recipe' };
+
+      mockExistsSync.mockImplementation((filePath: string) => {
+        if (filePath === '/test/home/.chorenzo/recipes') {
+          return false;
+        }
+        if (filePath === process.cwd()) {
+          return true;
+        }
+        if (filePath === `${process.cwd()}/recipes`) {
+          return true;
+        }
+        if (filePath === `${process.cwd()}/recipes/local-recipe`) {
+          return true;
+        }
+        if (
+          filePath === `${process.cwd()}/recipes/local-recipe/metadata.yaml`
+        ) {
+          return true;
+        }
+        if (filePath === `${process.cwd()}/recipes/local-recipe/prompt.md`) {
+          return true;
+        }
+        if (filePath === `${process.cwd()}/recipes/local-recipe/fix.md`) {
+          return true;
+        }
+        if (
+          filePath === `${process.cwd()}/recipes/local-recipe/apply_recipe.md`
+        ) {
+          return true;
+        }
+        if (filePath === `${process.cwd()}/recipes/local-recipe/variants`) {
+          return true;
+        }
+        if (
+          filePath === `${process.cwd()}/recipes/local-recipe/variants/basic.md`
+        ) {
+          return true;
+        }
+        if (filePath === `${process.cwd()}/.gitignore`) {
+          return false;
+        }
+        return false;
+      });
+
+      mockStatSync.mockImplementation(
+        (filePath: string) =>
+          ({
+            isDirectory: () => !filePath.includes('.'),
+            isFile: () => filePath.includes('.'),
+          }) as fs.Stats
+      );
+
+      mockReaddirSync.mockImplementation((dirPath: string) => {
+        if (dirPath === process.cwd()) {
+          return ['recipes', 'src', 'package.json', 'README.md'];
+        }
+        if (dirPath === `${process.cwd()}/recipes`) {
+          return ['local-recipe', 'another-recipe'];
+        }
+        if (dirPath === `${process.cwd()}/recipes/local-recipe`) {
+          return [
+            'metadata.yaml',
+            'prompt.md',
+            'fix.md',
+            'apply_recipe.md',
+            'variants',
+          ];
+        }
+        if (dirPath === `${process.cwd()}/recipes/local-recipe/variants`) {
+          return ['basic.md'];
+        }
+        return [];
+      });
+
+      const mockYamlData = createMockYamlData({
+        recipeId: 'local-recipe',
+        category: 'local',
+        provides: ['local-feature'],
+      });
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('local-recipe/metadata.yaml')) {
+          return yamlStringify(mockYamlData.metadata);
+        }
+        if (filePath.includes('local-recipe/prompt.md')) {
+          return '## Goal\nLocal recipe goal\n\n## Investigation\nLocal investigation\n\n## Expected Output\nLocal output';
+        }
+        if (filePath.includes('local-recipe/fix.md')) {
+          return 'Local fix content';
+        }
+        if (filePath.includes('local-recipe/apply_recipe.md')) {
+          return 'Apply local recipe';
+        }
+        if (filePath.includes('local-recipe/variants/basic.md')) {
+          return 'Basic variant content';
+        }
+        return '';
+      });
+
+      const result = await performRecipesValidate(options);
+
+      expect(result.context.recipesValidated).toEqual(['local-recipe']);
+      expect(result.context.resolvedPath).toBe('local-recipe');
+      expect(result.context.inputType).toBe('recipe-name');
+      expect(result.messages.some((msg) => msg.type === 'success')).toBe(true);
+    });
+
+    it('should respect depth limit when searching for local recipes', async () => {
+      const options = { target: 'deep-recipe' };
+      const cwd = process.cwd();
+
+      mockExistsSync.mockImplementation((filePath: string) => {
+        if (filePath === '/test/home/.chorenzo/recipes') {
+          return false;
+        }
+        if (
+          filePath === cwd ||
+          filePath.startsWith(`${cwd}/level1`) ||
+          filePath === `${cwd}/level1/level2`
+        ) {
+          return true;
+        }
+        if (filePath === `${cwd}/.gitignore`) {
+          return false;
+        }
+        return false;
+      });
+
+      mockStatSync.mockImplementation(
+        (filePath: string) =>
+          ({
+            isDirectory: () => !filePath.includes('.'),
+            isFile: () => filePath.includes('.'),
+          }) as fs.Stats
+      );
+
+      let searchedPaths: string[] = [];
+      mockReaddirSync.mockImplementation((dirPath: string) => {
+        searchedPaths.push(dirPath);
+
+        if (dirPath === cwd) {
+          return ['level1', 'src', 'package.json'];
+        }
+        if (dirPath === `${cwd}/level1`) {
+          return ['level2', 'file.js'];
+        }
+        if (dirPath === `${cwd}/level1/level2`) {
+          return ['level3'];
+        }
+        if (dirPath === `${cwd}/level1/level2/level3`) {
+          return ['deep-recipe', 'too-deep-recipe'];
+        }
+        return [];
+      });
+
+      mockReadFileSync.mockImplementation(() => {
+        return '';
+      });
+
+      await expect(performRecipesValidate(options)).rejects.toThrow(
+        "Recipe 'deep-recipe' not found"
+      );
+
+      expect(searchedPaths).toContain(cwd);
+      expect(searchedPaths).toContain(`${cwd}/level1`);
+      expect(searchedPaths).toContain(`${cwd}/level1/level2`);
+      expect(searchedPaths).not.toContain(`${cwd}/level1/level2/level3`);
+    });
+
+    it('should respect folder limit when searching for local recipes', async () => {
+      const options = { target: 'recipe-in-many-folders' };
+      const cwd = process.cwd();
+
+      mockExistsSync.mockImplementation((filePath: string) => {
+        if (filePath === '/test/home/.chorenzo/recipes') {
+          return false;
+        }
+        if (filePath === cwd || filePath.startsWith(`${cwd}/folder`)) {
+          return true;
+        }
+        if (filePath === `${cwd}/.gitignore`) {
+          return false;
+        }
+        return false;
+      });
+
+      mockStatSync.mockImplementation(
+        (filePath: string) =>
+          ({
+            isDirectory: () => !filePath.includes('.'),
+            isFile: () => filePath.includes('.'),
+          }) as fs.Stats
+      );
+
+      let searchedFolderCount = 0;
+      mockReaddirSync.mockImplementation((dirPath: string) => {
+        searchedFolderCount++;
+
+        if (dirPath === cwd) {
+          const folders = [];
+          for (let i = 1; i <= 60; i++) {
+            folders.push(`folder${i}`);
+          }
+          return folders;
+        }
+        if (dirPath.includes('/folder')) {
+          return ['subfolder1', 'subfolder2', 'file.js'];
+        }
+        return [];
+      });
+
+      await expect(performRecipesValidate(options)).rejects.toThrow(
+        "Recipe 'recipe-in-many-folders' not found"
+      );
+
+      expect(searchedFolderCount).toBeLessThanOrEqual(50);
+    });
+
     it('should handle YAML parsing errors', async () => {
       const options = { target: '/path/to/broken-recipe' };
 

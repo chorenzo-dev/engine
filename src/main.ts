@@ -81,6 +81,7 @@ const recipesCommand = program
     'after',
     `
 Examples:
+  $ chorenzo recipes list                                  # Browse recipes by category
   $ chorenzo recipes show code-formatting                  # Show recipe details
   $ chorenzo recipes validate code-formatting              # Validate by recipe name
   $ chorenzo recipes validate ./my-recipe                  # Validate local recipe folder
@@ -202,6 +203,37 @@ Examples:
         command: 'recipes-show',
         options: {
           recipeName,
+          progress: options.progress,
+          debug: options.debug,
+        },
+      })
+    );
+
+    try {
+      await waitUntilExit();
+    } catch (error) {
+      Logger.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+  });
+
+recipesCommand
+  .command('list')
+  .description('Browse recipes by category')
+  .option('--no-progress', 'Disable progress UI')
+  .option('--debug', 'Show all progress messages in list format')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ chorenzo recipes list                          # Browse all recipes by category
+`
+  )
+  .action(async (options) => {
+    const { waitUntilExit } = render(
+      React.createElement(Shell, {
+        command: 'recipes-list',
+        options: {
           progress: options.progress,
           debug: options.debug,
         },

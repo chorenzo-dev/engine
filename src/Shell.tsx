@@ -5,6 +5,7 @@ import { AnalyzeContainer } from '~/containers/AnalyzeContainer';
 import { InitContainer } from '~/containers/InitContainer';
 import { RecipesApplyContainer } from '~/containers/RecipesApplyContainer';
 import { RecipesGenerateContainer } from '~/containers/RecipesGenerateContainer';
+import { RecipesListContainer } from '~/containers/RecipesListContainer';
 import { RecipesShowContainer } from '~/containers/RecipesShowContainer';
 import { RecipesValidateContainer } from '~/containers/RecipesValidateContainer';
 
@@ -17,6 +18,7 @@ interface ShellProps {
     | 'recipes-validate'
     | 'recipes-apply'
     | 'recipes-generate'
+    | 'recipes-list'
     | 'recipes-show';
   options: {
     progress?: boolean;
@@ -176,6 +178,20 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           progress: options.progress,
           debug: options.debug,
         }}
+        onError={(error) => {
+          setError(error);
+        }}
+      />
+    );
+  }
+
+  if (command === 'recipes-list') {
+    if (error) {
+      return <ErrorExitComponent error={error} />;
+    }
+
+    return (
+      <RecipesListContainer
         onError={(error) => {
           setError(error);
         }}

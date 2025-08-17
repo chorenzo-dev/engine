@@ -4,16 +4,15 @@ import React, { useEffect, useState } from 'react';
 import { loadRecipeForShow } from '~/commands/recipes';
 import { RecipeActionsMenu } from '~/components/RecipeActionsMenu';
 import { RecipeDisplayComponent } from '~/components/RecipeDisplayComponent';
-import { BaseContainerOptions } from '~/types/common';
+import { colors } from '~/styles/colors';
 import { Recipe } from '~/types/recipe';
-import { RecipeLocationInfo } from '~/types/recipes-show';
-
-interface RecipesShowContainerOptions extends BaseContainerOptions {
-  recipeName: string;
-}
+import {
+  RecipeLocationInfo,
+  RecipeShowContainerOptions,
+} from '~/types/recipes-show';
 
 interface RecipesShowContainerProps {
-  options: RecipesShowContainerOptions;
+  options: RecipeShowContainerOptions;
   onError: (error: Error) => void;
 }
 
@@ -26,6 +25,7 @@ export const RecipesShowContainer: React.FC<RecipesShowContainerProps> = ({
   const [location, setLocation] = useState<RecipeLocationInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
+  const [showApplyMessage, setShowApplyMessage] = useState(false);
 
   useEffect(() => {
     const loadRecipe = async () => {
@@ -54,26 +54,16 @@ export const RecipesShowContainer: React.FC<RecipesShowContainerProps> = ({
     }
 
     setShowMenu(false);
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        exit(
-          new Error(
-            `To apply this recipe, run:\n\nchorenzo recipes apply ${options.recipeName}`
-          )
-        );
-        resolve();
-      }, 1500);
-    });
+    setShowApplyMessage(true);
+
+    setTimeout(() => {
+      exit();
+    }, 3000);
   };
 
   const handleExit = async () => {
     setShowMenu(false);
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        exit();
-        resolve();
-      }, 500);
-    });
+    exit();
   };
 
   if (loading) {
@@ -82,6 +72,19 @@ export const RecipesShowContainer: React.FC<RecipesShowContainerProps> = ({
 
   if (!recipe || !location) {
     return <Text>Failed to load recipe information.</Text>;
+  }
+
+  if (showApplyMessage) {
+    return (
+      <Box flexDirection="column">
+        <Text color={colors.info}>To apply this recipe, run:</Text>
+        <Box marginTop={1} marginBottom={1}>
+          <Text
+            color={colors.success}
+          >{`chorenzo recipes apply ${options.recipeName}`}</Text>
+        </Box>
+      </Box>
+    );
   }
 
   return (

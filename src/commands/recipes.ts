@@ -2242,9 +2242,7 @@ async function getApplicableProjectsForWorkspacePreferred(
   return applicableProjects;
 }
 
-export async function loadRecipeForShow(
-  recipeName: string
-): Promise<{
+export async function loadRecipeForShow(recipeName: string): Promise<{
   recipe: Recipe;
   localPath: string;
   isRemote: boolean;

@@ -432,7 +432,7 @@ export async function performRecipesValidate(
       throw error;
     }
     throw new RecipesError(
-      `Validation failed: ${error instanceof Error ? error.message : String(error)}`,
+      error instanceof Error ? error.message : String(error),
       'VALIDATION_FAILED'
     );
   }
@@ -530,6 +530,8 @@ async function validateRecipeFolder(
     const result = recipe.validate();
 
     const messages: ValidationMessage[] = [];
+    let totalErrors = 0;
+    let totalWarnings = 0;
 
     let codeSampleValidation;
     try {
@@ -538,9 +540,14 @@ async function validateRecipeFolder(
       const warningMsg = `Code sample validation failed: ${error instanceof Error ? error.message : String(error)}`;
       messages.push({ type: 'warning', text: warningMsg });
       onValidation?.('warning', warningMsg);
+      totalWarnings++;
     }
 
-    if (result.valid) {
+    const hasCodeSampleViolations =
+      codeSampleValidation && codeSampleValidation.violations.length > 0;
+    const isOverallValid = result.valid && !hasCodeSampleViolations;
+
+    if (isOverallValid) {
       const msg = `Recipe '${recipe.getId()}' is valid`;
       messages.push({ type: 'success', text: msg });
       onValidation?.('success', msg);
@@ -553,6 +560,7 @@ async function validateRecipeFolder(
         const errorMsg = `  - ${error.message}${error.file ? ` (${error.file})` : ''}`;
         messages.push({ type: 'error', text: errorMsg });
         onValidation?.('error', errorMsg);
+        totalErrors++;
       }
     }
 
@@ -565,10 +573,11 @@ async function validateRecipeFolder(
         const warningMsg = `  - ${warning.message}${warning.file ? ` (${warning.file})` : ''}`;
         messages.push({ type: 'warning', text: warningMsg });
         onValidation?.('warning', warningMsg);
+        totalWarnings++;
       }
     }
 
-    if (codeSampleValidation && codeSampleValidation.violations.length > 0) {
+    if (hasCodeSampleViolations && codeSampleValidation) {
       const codeSampleHeader = 'Code Sample Issues:';
       messages.push({ type: 'warning', text: codeSampleHeader });
       onValidation?.('warning', codeSampleHeader);
@@ -577,6 +586,7 @@ async function validateRecipeFolder(
         const violationMsg = `  - ${violation.file}:${violation.line} (${violation.type}): ${violation.description}`;
         messages.push({ type: 'warning', text: violationMsg });
         onValidation?.('warning', violationMsg);
+        totalWarnings++;
 
         if (violation.suggestion) {
           const suggestionMsg = `    Suggestion: ${violation.suggestion}`;
@@ -590,8 +600,16 @@ async function validateRecipeFolder(
       onValidation?.('info', summaryMsg);
     }
 
+    const summary: ValidationSummary = {
+      total: 1,
+      valid: isOverallValid ? 1 : 0,
+      totalErrors,
+      totalWarnings,
+    };
+
     return {
       messages,
+      summary,
       context: {
         ...context,
         recipesValidated: [recipe.getId()],
@@ -599,7 +617,7 @@ async function validateRecipeFolder(
     };
   } catch (error) {
     throw new RecipesError(
-      `Failed to validate recipe folder: ${error instanceof Error ? error.message : String(error)}`,
+      error instanceof Error ? error.message : String(error),
       'RECIPE_VALIDATION_FAILED'
     );
   }
@@ -637,7 +655,12 @@ async function validateLibrary(
           totalWarnings++;
         }
       }
-      if (result.valid) {
+
+      const hasCodeSampleViolations =
+        codeSampleValidation && codeSampleValidation.violations.length > 0;
+      const isOverallValid = result.valid && !hasCodeSampleViolations;
+
+      if (isOverallValid) {
         validCount++;
         messages.push({ type: 'success', text: recipeId });
         onValidation?.('success', recipeId);
@@ -667,7 +690,7 @@ async function validateLibrary(
         }
       }
 
-      if (codeSampleValidation && codeSampleValidation.violations.length > 0) {
+      if (hasCodeSampleViolations && codeSampleValidation) {
         const codeSampleHeader = `${recipeId} code sample issues:`;
         messages.push({ type: 'warning', text: codeSampleHeader });
         onValidation?.('warning', codeSampleHeader);
@@ -700,7 +723,7 @@ async function validateLibrary(
     };
   } catch (error) {
     throw new RecipesError(
-      `Failed to validate library: ${error instanceof Error ? error.message : String(error)}`,
+      error instanceof Error ? error.message : String(error),
       'LIBRARY_VALIDATION_FAILED'
     );
   }

@@ -42,11 +42,7 @@ export const RecipesApplyContainer: React.FC<RecipesApplyContainerProps> = ({
 
   if (userCancelled) {
     return (
-      <ProcessDisplay
-        title="Recipe application cancelled"
-        status="error"
-        error="User cancelled re-application of recipe"
-      />
+      <ProcessDisplay title="Recipe application cancelled" status="completed" />
     );
   }
 
@@ -106,7 +102,14 @@ export const RecipesApplyContainer: React.FC<RecipesApplyContainerProps> = ({
               recipeId={reApplicationData.recipeId}
               targets={reApplicationData.reApplicationCheck.targets}
               onYes={async () => {
-                context.setResult(reApplicationData);
+                const updatedData = {
+                  ...reApplicationData,
+                  reApplicationCheck: {
+                    ...reApplicationData.reApplicationCheck,
+                    userConfirmedProceed: true,
+                  },
+                };
+                context.setResult(updatedData);
                 context.complete();
                 setShowPrompt(false);
               }}
@@ -130,8 +133,18 @@ export const RecipesApplyContainer: React.FC<RecipesApplyContainerProps> = ({
             let lastActivity = '';
 
             try {
+              const checkResult = context.getResult<{
+                recipeId: string;
+                reApplicationCheck: ReApplicationCheckResult;
+              }>('reapplication-check');
+
+              const applyOptions = checkResult?.reApplicationCheck
+                .userConfirmedProceed
+                ? { ...options, yes: true }
+                : options;
+
               const result = await performRecipesApply(
-                options,
+                applyOptions,
                 (step, isThinking) => {
                   if (step) {
                     lastActivity = step;

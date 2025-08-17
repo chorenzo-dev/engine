@@ -380,25 +380,52 @@ export class LibraryManager {
   }
 
   async getAllCategories(searchPath?: string): Promise<string[]> {
-    const recipesDir = searchPath || chorenzoConfig.recipesDir;
-    const analysis = this.validateLocationStructure(recipesDir);
+    if (searchPath) {
+      const analysis = this.validateLocationStructure(searchPath);
 
-    if (analysis.type === LocationType.Empty) {
+      if (analysis.type === LocationType.Empty) {
+        return [];
+      }
+
+      if (analysis.type === LocationType.CategoryFolder) {
+        if (!analysis.categoryName) {
+          throw new Error('CategoryFolder type must have categoryName');
+        }
+        return [analysis.categoryName];
+      }
+
+      if (analysis.type === LocationType.LibraryRoot && analysis.categories) {
+        return analysis.categories.sort();
+      }
+
       return [];
     }
 
-    if (analysis.type === LocationType.CategoryFolder) {
-      if (!analysis.categoryName) {
-        throw new Error('CategoryFolder type must have categoryName');
+    const allCategories = new Set<string>();
+    const config = await this.getConfig();
+
+    for (const libraryName of Object.keys(config.libraries)) {
+      const libraryPath = this.getLibraryPath(libraryName);
+
+      if (!fs.existsSync(libraryPath)) {
+        continue;
       }
-      return [analysis.categoryName];
+
+      try {
+        const libraryCategories = await this.getAllCategories(libraryPath);
+        libraryCategories.forEach((category) => allCategories.add(category));
+      } catch (error) {
+        Logger.warn(
+          {
+            library: libraryName,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          `Failed to get categories from library`
+        );
+      }
     }
 
-    if (analysis.type === LocationType.LibraryRoot && analysis.categories) {
-      return analysis.categories.sort();
-    }
-
-    return [];
+    return Array.from(allCategories).sort();
   }
 
   private async searchProjectFoldersWithMatcher(

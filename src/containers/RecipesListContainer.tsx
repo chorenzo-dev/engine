@@ -22,11 +22,13 @@ interface RecipesListContainerProps {
 type ViewMode = 'categories' | 'recipes' | 'details';
 
 interface CategoryItem {
+  key?: string;
   label: string;
   value: string;
 }
 
 interface RecipeItem {
+  key?: string;
   label: string;
   value: Recipe | 'back';
 }
@@ -129,6 +131,7 @@ export const RecipesListContainer: React.FC<RecipesListContainerProps> = ({
   // Categories view
   if (viewMode === 'categories') {
     const categoryItems: CategoryItem[] = categories.map((category) => ({
+      key: category,
       label: category,
       value: category,
     }));
@@ -174,11 +177,13 @@ export const RecipesListContainer: React.FC<RecipesListContainerProps> = ({
     }
 
     const recipeItems: RecipeItem[] = recipes.map((recipe) => ({
+      key: recipe.getId(),
       label: `${recipe.getId()} - ${recipe.getSummary()}`,
       value: recipe,
     }));
 
     const backItem: RecipeItem = {
+      key: 'back',
       label: '← Back to categories',
       value: 'back',
     };

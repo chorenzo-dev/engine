@@ -1260,8 +1260,6 @@ describe('Recipes Command Integration Tests', () => {
   });
 
   describe('Apply Command Integration', () => {
-    const setupApplyMocks = () => {};
-
     const setupStandardFileSystemMocks = () => {
       mockExistsSync.mockImplementation((path) => {
         if (path.includes('analysis.json')) {
@@ -1374,10 +1372,6 @@ describe('Recipes Command Integration Tests', () => {
         return '';
       });
     };
-
-    beforeEach(() => {
-      setupApplyMocks();
-    });
 
     it('should apply recipe successfully', async () => {
       setupStandardApplyScenario();

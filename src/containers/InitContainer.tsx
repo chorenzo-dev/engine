@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from 'react';
 
-import { AnalysisResult, performAnalysis } from '~/commands/analyze';
 import { performAuthCheck } from '~/commands/auth';
 import { InitOptions, performInit } from '~/commands/init';
 import { AnalysisPrompt } from '~/components/AnalysisPrompt';
-import { AnalysisResultDisplay } from '~/components/AnalysisResultDisplay';
 import { AuthenticationStep } from '~/components/AuthenticationStep';
 import { Step, StepContext, StepSequence } from '~/components/StepSequence';
 import { BaseContainerOptions } from '~/types/common';
 import { extractErrorMessage } from '~/utils/error.utils';
-import { Logger } from '~/utils/logger.utils';
 
 interface InitContainerOptions extends InitOptions, BaseContainerOptions {
   noAnalyze?: boolean;
@@ -18,9 +15,13 @@ interface InitContainerOptions extends InitOptions, BaseContainerOptions {
 
 interface InitContainerProps {
   options: InitContainerOptions;
+  onComplete?: (shouldRunAnalysis?: boolean) => void;
 }
 
-export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
+export const InitContainer: React.FC<InitContainerProps> = ({
+  options,
+  onComplete,
+}) => {
   const steps: Step[] = [
     {
       id: 'auth',
@@ -91,37 +92,19 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
       component: (context: StepContext) => {
         const [promptShown, setPromptShown] = useState(false);
 
-        const runAnalysis = async () => {
-          setPromptShown(false);
-          context.setTitleVisible(true);
-          context.setProcessing(true);
-          let lastActivity = '';
-          try {
-            const result = await performAnalysis((step, isThinking) => {
-              Logger.info(
-                { event: 'analysis_progress', step, isThinking },
-                `Analysis progress: ${step} (isThinking: ${isThinking})`
-              );
-              if (step) {
-                lastActivity = step;
-                context.setActivity(step, isThinking);
-              } else if (isThinking !== undefined && lastActivity) {
-                context.setActivity(lastActivity, isThinking);
-              }
-            });
+        const handleAnalysisYes = async () => {
+          context.complete();
+          onComplete?.(true);
+        };
 
-            if (result) {
-              context.setResult(result);
-            }
-            context.complete();
-          } catch (error) {
-            context.setError(extractErrorMessage(error));
-          }
+        const handleAnalysisNo = async () => {
+          context.complete();
+          onComplete?.(false);
         };
 
         useEffect(() => {
           if (context.options['yes']) {
-            runAnalysis();
+            handleAnalysisYes();
           } else {
             setPromptShown(true);
             context.setTitleVisible(false);
@@ -133,10 +116,7 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
         }
 
         return (
-          <AnalysisPrompt
-            onYes={runAnalysis}
-            onNo={async () => context.complete()}
-          />
+          <AnalysisPrompt onYes={handleAnalysisYes} onNo={handleAnalysisNo} />
         );
       },
     },
@@ -150,23 +130,13 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
     <StepSequence
       steps={filteredSteps}
       completionTitle="Initialization complete!"
-      completionComponent={(context: StepContext) => {
-        if (!options.noAnalyze) {
-          const analysisResult = context.getResult<AnalysisResult>('analysis');
-          if (analysisResult) {
-            return (
-              <AnalysisResultDisplay
-                result={analysisResult}
-                showCost={context.options['cost'] as boolean}
-              />
-            );
-          }
-        }
+      completionComponent={() => {
         return null;
       }}
       errorTitle="Initialization failed!"
       options={options}
       debugMode={options.debug}
+      onComplete={onComplete}
     />
   );
 };

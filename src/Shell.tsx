@@ -5,6 +5,7 @@ import { AnalyzeContainer } from '~/containers/AnalyzeContainer';
 import { InitContainer } from '~/containers/InitContainer';
 import { RecipesApplyContainer } from '~/containers/RecipesApplyContainer';
 import { RecipesGenerateContainer } from '~/containers/RecipesGenerateContainer';
+import { RecipesListContainer } from '~/containers/RecipesListContainer';
 import { RecipesShowContainer } from '~/containers/RecipesShowContainer';
 import { RecipesValidateContainer } from '~/containers/RecipesValidateContainer';
 
@@ -17,6 +18,7 @@ interface ShellProps {
     | 'recipes-validate'
     | 'recipes-apply'
     | 'recipes-generate'
+    | 'recipes-list'
     | 'recipes-show';
   options: {
     reset?: boolean;
@@ -39,8 +41,13 @@ interface ShellProps {
   };
 }
 
-export const Shell: React.FC<ShellProps> = ({ command, options }) => {
+export const Shell: React.FC<ShellProps> = ({
+  command: initialCommand,
+  options: initialOptions,
+}) => {
   const [error, setError] = useState<Error | null>(null);
+  const [command, setCommand] = useState(initialCommand);
+  const [options, setOptions] = useState(initialOptions);
   if (command === 'analyze') {
     if (error) {
       return <ErrorExitComponent error={error} />;
@@ -68,6 +75,16 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           yes: options.yes,
           debug: options.debug,
           cost: options.cost,
+        }}
+        onComplete={(shouldRunAnalysis) => {
+          if (shouldRunAnalysis) {
+            setCommand('analyze');
+            setOptions({
+              debug: options.debug,
+              cost: options.cost,
+            });
+            setError(null);
+          }
         }}
       />
     );
@@ -171,6 +188,25 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
         }}
         onError={(error) => {
           setError(error);
+        }}
+      />
+    );
+  }
+
+  if (command === 'recipes-list') {
+    if (error) {
+      return <ErrorExitComponent error={error} />;
+    }
+
+    return (
+      <RecipesListContainer
+        onError={(error) => {
+          setError(error);
+        }}
+        onApply={(recipe) => {
+          setCommand('recipes-apply');
+          setOptions({ ...options, recipe });
+          setError(null);
         }}
       />
     );

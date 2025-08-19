@@ -4,6 +4,7 @@ import * as path from 'path';
 import { simpleGit } from 'simple-git';
 
 import type { Config, ConfigLibrary } from '~/types/config';
+import type { Recipe } from '~/types/recipe';
 
 import { chorenzoConfig } from './config.utils';
 import { extractErrorMessage, formatErrorMessage } from './error.utils';
@@ -14,6 +15,10 @@ import {
 } from './git-operations.utils';
 import { GitignoreManager } from './gitignore.utils';
 import { Logger } from './logger.utils';
+import {
+  parseRecipeFromDirectory,
+  parseRecipeLibraryFromDirectory,
+} from './recipe.utils';
 import { retry } from './retry.utils';
 import { workspaceConfig } from './workspace-config.utils';
 
@@ -143,11 +148,8 @@ export class LibraryManager {
             continue;
           }
 
-          if (entry === recipeName) {
-            const metadataPath = path.join(fullPath, 'metadata.yaml');
-            if (fs.existsSync(metadataPath)) {
-              foundPaths.push(fullPath);
-            }
+          if (entry === recipeName && this.isRecipeFolder(fullPath)) {
+            foundPaths.push(fullPath);
           } else {
             await searchDirectory(fullPath);
           }
@@ -180,72 +182,15 @@ export class LibraryManager {
   private async searchLocalProjectFolders(
     recipeName: string
   ): Promise<string[]> {
-    const foundPaths: string[] = [];
-    const workspaceRoot = workspaceConfig.getWorkspaceRoot();
-    const ignorePatterns =
-      GitignoreManager.loadGitIgnorePatternsForDir(workspaceRoot);
-
-    let searchedFolders = 0;
-    const maxFolders = 50;
-    const maxDepth = 2;
-
-    const searchDirectoryWithLimits = async (
-      dir: string,
-      currentDepth: number
-    ): Promise<void> => {
-      if (currentDepth > maxDepth || searchedFolders >= maxFolders) {
-        return;
+    const foundPaths = await this.searchProjectFoldersWithMatcher(
+      (entry, fullPath) => {
+        return entry === recipeName && this.isRecipeFolder(fullPath);
       }
-
-      if (!fs.existsSync(dir)) {
-        return;
-      }
-
-      searchedFolders++;
-
-      try {
-        const entries = fs.readdirSync(dir);
-
-        for (const entry of entries) {
-          const fullPath = path.join(dir, entry);
-
-          if (!fs.statSync(fullPath).isDirectory()) {
-            continue;
-          }
-
-          if (
-            GitignoreManager.isIgnored(fullPath, workspaceRoot, ignorePatterns)
-          ) {
-            continue;
-          }
-
-          if (entry === recipeName && this.isRecipeFolder(fullPath)) {
-            foundPaths.push(fullPath);
-            Logger.info(
-              { recipeName, path: fullPath },
-              'Found local recipe in project folder'
-            );
-          } else if (currentDepth < maxDepth && searchedFolders < maxFolders) {
-            await searchDirectoryWithLimits(fullPath, currentDepth + 1);
-          }
-        }
-      } catch (error) {
-        Logger.warn(
-          {
-            directory: dir,
-            error: extractErrorMessage(error),
-          },
-          'Failed to search local directory for recipes'
-        );
-      }
-    };
-
-    await searchDirectoryWithLimits(workspaceRoot, 0);
+    );
 
     Logger.info(
       {
         recipeName,
-        searchedFolders,
         foundCount: foundPaths.length,
       },
       'Completed local project folder search'
@@ -436,25 +381,181 @@ export class LibraryManager {
   }
 
   async getAllCategories(searchPath?: string): Promise<string[]> {
-    const recipesDir = searchPath || chorenzoConfig.recipesDir;
-    const analysis = this.validateLocationStructure(recipesDir);
+    if (searchPath) {
+      const analysis = this.validateLocationStructure(searchPath);
 
-    if (analysis.type === LocationType.Empty) {
+      if (analysis.type === LocationType.Empty) {
+        return [];
+      }
+
+      if (analysis.type === LocationType.CategoryFolder) {
+        if (!analysis.categoryName) {
+          throw new Error('CategoryFolder type must have categoryName');
+        }
+        return [analysis.categoryName];
+      }
+
+      if (analysis.type === LocationType.LibraryRoot && analysis.categories) {
+        return analysis.categories.sort();
+      }
+
       return [];
     }
 
-    if (analysis.type === LocationType.CategoryFolder) {
-      if (!analysis.categoryName) {
-        throw new Error('CategoryFolder type must have categoryName');
+    const allCategories = new Set<string>();
+    const config = await this.getConfig();
+
+    for (const libraryName of Object.keys(config.libraries)) {
+      const libraryPath = this.getLibraryPath(libraryName);
+
+      if (!fs.existsSync(libraryPath)) {
+        continue;
       }
-      return [analysis.categoryName];
+
+      try {
+        const libraryCategories = await this.getAllCategories(libraryPath);
+        libraryCategories.forEach((category) => allCategories.add(category));
+      } catch (error) {
+        Logger.warn(
+          {
+            library: libraryName,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          `Failed to get categories from library`
+        );
+      }
     }
 
-    if (analysis.type === LocationType.LibraryRoot && analysis.categories) {
-      return analysis.categories.sort();
+    return Array.from(allCategories).sort();
+  }
+
+  private async searchProjectFoldersWithMatcher(
+    matcher: (entry: string, fullPath: string) => boolean
+  ): Promise<string[]> {
+    const foundPaths: string[] = [];
+    const workspaceRoot = workspaceConfig.getWorkspaceRoot();
+    const ignorePatterns =
+      GitignoreManager.loadGitIgnorePatternsForDir(workspaceRoot);
+
+    let searchedFolders = 0;
+    const maxFolders = 50;
+    const maxDepth = 2;
+
+    const searchDirectoryWithLimits = async (
+      dir: string,
+      currentDepth: number
+    ): Promise<void> => {
+      if (currentDepth > maxDepth || searchedFolders >= maxFolders) {
+        return;
+      }
+
+      if (!fs.existsSync(dir)) {
+        return;
+      }
+
+      searchedFolders++;
+
+      try {
+        const entries = fs.readdirSync(dir);
+
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry);
+
+          if (!fs.statSync(fullPath).isDirectory()) {
+            continue;
+          }
+
+          if (
+            GitignoreManager.isIgnored(fullPath, workspaceRoot, ignorePatterns)
+          ) {
+            continue;
+          }
+
+          if (matcher(entry, fullPath)) {
+            foundPaths.push(fullPath);
+            if (this.isRecipeFolder(fullPath)) {
+              Logger.info(
+                { entry, path: fullPath },
+                'Found local recipe in project folder'
+              );
+            }
+          } else if (currentDepth < maxDepth && searchedFolders < maxFolders) {
+            await searchDirectoryWithLimits(fullPath, currentDepth + 1);
+          }
+        }
+      } catch (error) {
+        Logger.warn(
+          {
+            directory: dir,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          'Failed to search directory for recipes'
+        );
+      }
+    };
+
+    await searchDirectoryWithLimits(workspaceRoot, 0);
+    return foundPaths;
+  }
+
+  async getAllLocalRecipes(): Promise<string[]> {
+    return this.searchProjectFoldersWithMatcher((_entry, fullPath) => {
+      return this.isRecipeFolder(fullPath);
+    });
+  }
+
+  async getRecipesByCategory(category: string): Promise<Recipe[]> {
+    const config = await this.getConfig();
+    const recipes: Recipe[] = [];
+
+    for (const libraryName of Object.keys(config.libraries)) {
+      const libraryPath = this.getLibraryPath(libraryName);
+
+      if (!fs.existsSync(libraryPath)) {
+        continue;
+      }
+
+      try {
+        const library = await parseRecipeLibraryFromDirectory(libraryPath);
+
+        for (const recipe of library.recipes) {
+          if (recipe.getCategory() === category) {
+            recipes.push(recipe);
+          }
+        }
+      } catch (error) {
+        Logger.warn(
+          {
+            library: libraryName,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          `Failed to load library for recipe listing`
+        );
+      }
     }
 
-    return [];
+    try {
+      const localRecipePaths = await this.getAllLocalRecipes();
+
+      for (const recipePath of localRecipePaths) {
+        try {
+          const recipe = await parseRecipeFromDirectory(recipePath);
+          if (recipe.getCategory() === category) {
+            recipes.push(recipe);
+          }
+        } catch {
+          continue;
+        }
+      }
+    } catch (error) {
+      Logger.warn(
+        { error: error instanceof Error ? error.message : String(error) },
+        'Failed to search local project folders for recipes'
+      );
+    }
+
+    recipes.sort((a, b) => a.getId().localeCompare(b.getId()));
+    return recipes;
   }
 
   getCategoriesForGeneration(locationPath: string): string[] {

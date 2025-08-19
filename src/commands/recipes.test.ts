@@ -9,6 +9,9 @@ import {
 import * as fs from 'fs';
 import { stringify as yamlStringify } from 'yaml';
 
+import type { ConfigLibrary } from '~/types/config';
+import type { RecipeDependency, RecipeLevel } from '~/types/recipe';
+
 const mockHomedir = jest.fn<() => string>(() => '/test/home');
 const mockTmpdir = jest.fn<() => string>(() => '/tmp');
 const mockExistsSync = jest.fn<(path: string) => boolean>();
@@ -93,8 +96,13 @@ describe('Recipes Command Integration Tests', () => {
     mockStatSync.mockImplementation(
       (filePath: string) =>
         ({
-          isDirectory: () => !filePath.includes('.'),
-          isFile: () => filePath.includes('.'),
+          isDirectory: () => {
+            if (filePath.endsWith('.yaml') || filePath.endsWith('.md')) {
+              return false;
+            }
+            return fileStructure[filePath] || false;
+          },
+          isFile: () => filePath.endsWith('.yaml') || filePath.endsWith('.md'),
         }) as fs.Stats
     );
 
@@ -125,10 +133,7 @@ describe('Recipes Command Integration Tests', () => {
     return {
       config: {
         libraries: {
-          'test-recipe': {
-            repo: 'https://github.com/test/test-recipe.git',
-            ref: 'main',
-          },
+          'test-recipe': createLibraryConfig('test-recipe'),
         },
       },
       metadata: {
@@ -147,6 +152,154 @@ describe('Recipes Command Integration Tests', () => {
         requires,
       },
     };
+  };
+
+  interface TestRecipeConfig {
+    recipeId: string;
+    category: string;
+    level?: RecipeLevel;
+    provides?: string[];
+    requires?: RecipeDependency[];
+  }
+
+  interface TestLibraryStructure {
+    [libraryName: string]: {
+      [categoryName: string]: {
+        [recipeName: string]: TestRecipeConfig;
+      };
+    };
+  }
+
+  const createLibraryConfig = (
+    libraryName: string,
+    repoUrl?: string
+  ): ConfigLibrary => {
+    return {
+      repo:
+        repoUrl || `https://github.com/chorenzo-dev/recipes-${libraryName}.git`,
+      ref: 'main',
+    };
+  };
+
+  const setupRecipeFiles = (
+    recipePath: string,
+    fileStructure: Record<string, boolean>
+  ): void => {
+    fileStructure[recipePath] = true;
+    fileStructure[`${recipePath}/metadata.yaml`] = true;
+    fileStructure[`${recipePath}/prompt.md`] = true;
+    fileStructure[`${recipePath}/fix.md`] = true;
+  };
+
+  const setupRecipeExistenceChecks = (
+    recipePath: string,
+    recipePathChecks: Array<[string, boolean]>
+  ): void => {
+    recipePathChecks.push([recipePath, true]);
+    recipePathChecks.push([`${recipePath}/metadata.yaml`, true]);
+    recipePathChecks.push([`${recipePath}/prompt.md`, true]);
+    recipePathChecks.push([`${recipePath}/fix.md`, true]);
+  };
+
+  const setupCategoryStructure = (
+    libraryPath: string,
+    categoryName: string,
+    recipes: Record<string, TestRecipeConfig>,
+    fileStructure: Record<string, boolean>,
+    directoryStructure: Record<string, string[]>
+  ): void => {
+    const categoryPath = `${libraryPath}/${categoryName}`;
+    fileStructure[categoryPath] = true;
+    directoryStructure[categoryPath] = Object.keys(recipes);
+
+    for (const [recipeName] of Object.entries(recipes)) {
+      const recipePath = `${categoryPath}/${recipeName}`;
+      setupRecipeFiles(recipePath, fileStructure);
+    }
+  };
+
+  const setupLibraryStructure = (
+    libraryName: string,
+    categories: Record<string, Record<string, TestRecipeConfig>>,
+    fileStructure: Record<string, boolean>,
+    directoryStructure: Record<string, string[]>
+  ): void => {
+    const libraryPath = `/test/home/.chorenzo/recipes/${libraryName}`;
+    fileStructure[libraryPath] = true;
+    directoryStructure[libraryPath] = Object.keys(categories);
+
+    for (const [categoryName, recipes] of Object.entries(categories)) {
+      setupCategoryStructure(
+        libraryPath,
+        categoryName,
+        recipes,
+        fileStructure,
+        directoryStructure
+      );
+    }
+  };
+
+  const setupRecipeContent = (
+    libraries: TestLibraryStructure,
+    mockReadFileSync: jest.MockedFunction<
+      (path: string, encoding?: string) => string
+    >,
+    libraryConfigs: Record<string, ConfigLibrary>
+  ): void => {
+    mockReadFileSync.mockImplementation((filePath: string) => {
+      if (filePath.includes('config.yaml')) {
+        return yamlStringify({ libraries: libraryConfigs });
+      }
+
+      for (const [libraryName, categories] of Object.entries(libraries)) {
+        for (const [categoryName, recipes] of Object.entries(categories)) {
+          for (const [recipeName, recipeConfig] of Object.entries(recipes)) {
+            if (
+              filePath.includes(
+                `/${libraryName}/${categoryName}/${recipeName}/metadata.yaml`
+              )
+            ) {
+              const mockData = createMockYamlData(recipeConfig);
+              return yamlStringify(mockData.metadata);
+            }
+          }
+        }
+      }
+
+      if (filePath.includes('prompt.md')) {
+        return '## Goal\nTest prompt\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+      }
+      if (filePath.includes('fix.md')) {
+        return 'Test fix content';
+      }
+      return '';
+    });
+  };
+
+  const setupMultiLibraryRecipes = (libraries: TestLibraryStructure): void => {
+    const fileStructure: Record<string, boolean> = {
+      '/test/home/.chorenzo/config.yaml': true,
+      '/test/home/.chorenzo/recipes': true,
+    };
+
+    const directoryStructure: Record<string, string[]> = {
+      '/test/home/.chorenzo/recipes': Object.keys(libraries),
+    };
+
+    const libraryConfigs: Record<string, ConfigLibrary> = {};
+
+    for (const [libraryName, categories] of Object.entries(libraries)) {
+      libraryConfigs[libraryName] = createLibraryConfig(libraryName);
+      setupLibraryStructure(
+        libraryName,
+        categories,
+        fileStructure,
+        directoryStructure
+      );
+    }
+
+    setupLocationMocks(fileStructure, directoryStructure);
+    setupRecipeContent(libraries, mockReadFileSync, libraryConfigs);
   };
 
   const setupDefaultMocks = () => {
@@ -298,50 +451,20 @@ describe('Recipes Command Integration Tests', () => {
   it('should detect library input type', async () => {
     const options = { target: '/path/to/library' };
 
+    const recipePathChecks: Array<[string, boolean]> = [
+      ['/path/to/library', true],
+      ['/path/to/library/metadata.yaml', false],
+      ['/path/to/library/recipe1/variants', true],
+      ['/path/to/library/recipe2/variants', true],
+      ['/path/to/library/recipe1/variants/basic.md', true],
+      ['/path/to/library/recipe2/variants/basic.md', true],
+    ];
+    setupRecipeExistenceChecks('/path/to/library/recipe1', recipePathChecks);
+    setupRecipeExistenceChecks('/path/to/library/recipe2', recipePathChecks);
+
     mockExistsSync.mockImplementation((filePath: string) => {
-      if (filePath === '/path/to/library') {
-        return true;
-      }
-      if (filePath === '/path/to/library/metadata.yaml') {
-        return false;
-      }
-      if (filePath === '/path/to/library/recipe1') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe2') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe1/metadata.yaml') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe2/metadata.yaml') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe1/prompt.md') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe2/prompt.md') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe1/fix.md') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe2/fix.md') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe1/variants') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe2/variants') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe1/variants/basic.md') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe2/variants/basic.md') {
-        return true;
-      }
-      return false;
+      const result = recipePathChecks.find(([path]) => path === filePath);
+      return result ? result[1] : false;
     });
 
     mockStatSync.mockImplementation(
@@ -422,52 +545,24 @@ describe('Recipes Command Integration Tests', () => {
   it('should handle recipe search in nested directories', async () => {
     const options = { target: 'nested-recipe' };
 
+    const recipePathChecks: Array<[string, boolean]> = [
+      ['/test/home/.chorenzo/recipes', true],
+      ['/test/home/.chorenzo/recipes/lib1', true],
+      ['/test/home/.chorenzo/recipes/lib2', true],
+      ['/test/home/.chorenzo/recipes/lib1/nested-recipe/variants', true],
+      [
+        '/test/home/.chorenzo/recipes/lib1/nested-recipe/variants/basic.md',
+        true,
+      ],
+    ];
+    setupRecipeExistenceChecks(
+      '/test/home/.chorenzo/recipes/lib1/nested-recipe',
+      recipePathChecks
+    );
+
     mockExistsSync.mockImplementation((filePath: string) => {
-      if (filePath === '/test/home/.chorenzo/recipes') {
-        return true;
-      }
-      if (filePath === '/test/home/.chorenzo/recipes/lib1') {
-        return true;
-      }
-      if (filePath === '/test/home/.chorenzo/recipes/lib2') {
-        return true;
-      }
-      if (filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe') {
-        return true;
-      }
-      if (
-        filePath ===
-        '/test/home/.chorenzo/recipes/lib1/nested-recipe/metadata.yaml'
-      ) {
-        return true;
-      }
-      if (
-        filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/prompt.md'
-      ) {
-        return true;
-      }
-      if (
-        filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/variants'
-      ) {
-        return true;
-      }
-      if (
-        filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/fix.md'
-      ) {
-        return true;
-      }
-      if (
-        filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/variants'
-      ) {
-        return true;
-      }
-      if (
-        filePath ===
-        '/test/home/.chorenzo/recipes/lib1/nested-recipe/variants/basic.md'
-      ) {
-        return true;
-      }
-      return false;
+      const result = recipePathChecks.find(([path]) => path === filePath);
+      return result ? result[1] : false;
     });
 
     mockStatSync.mockImplementation(
@@ -672,47 +767,23 @@ describe('Recipes Command Integration Tests', () => {
     it('should find local recipes when library search returns nothing', async () => {
       const options = { target: 'local-recipe' };
 
+      const recipePathChecks: Array<[string, boolean]> = [
+        ['/test/home/.chorenzo/recipes', false],
+        [process.cwd(), true],
+        [`${process.cwd()}/recipes`, true],
+        [`${process.cwd()}/recipes/local-recipe/apply_recipe.md`, true],
+        [`${process.cwd()}/recipes/local-recipe/variants`, true],
+        [`${process.cwd()}/recipes/local-recipe/variants/basic.md`, true],
+        [`${process.cwd()}/.gitignore`, false],
+      ];
+      setupRecipeExistenceChecks(
+        `${process.cwd()}/recipes/local-recipe`,
+        recipePathChecks
+      );
+
       mockExistsSync.mockImplementation((filePath: string) => {
-        if (filePath === '/test/home/.chorenzo/recipes') {
-          return false;
-        }
-        if (filePath === process.cwd()) {
-          return true;
-        }
-        if (filePath === `${process.cwd()}/recipes`) {
-          return true;
-        }
-        if (filePath === `${process.cwd()}/recipes/local-recipe`) {
-          return true;
-        }
-        if (
-          filePath === `${process.cwd()}/recipes/local-recipe/metadata.yaml`
-        ) {
-          return true;
-        }
-        if (filePath === `${process.cwd()}/recipes/local-recipe/prompt.md`) {
-          return true;
-        }
-        if (filePath === `${process.cwd()}/recipes/local-recipe/fix.md`) {
-          return true;
-        }
-        if (
-          filePath === `${process.cwd()}/recipes/local-recipe/apply_recipe.md`
-        ) {
-          return true;
-        }
-        if (filePath === `${process.cwd()}/recipes/local-recipe/variants`) {
-          return true;
-        }
-        if (
-          filePath === `${process.cwd()}/recipes/local-recipe/variants/basic.md`
-        ) {
-          return true;
-        }
-        if (filePath === `${process.cwd()}/.gitignore`) {
-          return false;
-        }
-        return false;
+        const result = recipePathChecks.find(([path]) => path === filePath);
+        return result ? result[1] : false;
       });
 
       mockStatSync.mockImplementation(
@@ -1117,8 +1188,6 @@ describe('Recipes Command Integration Tests', () => {
   });
 
   describe('Apply Command Integration', () => {
-    const setupApplyMocks = () => {};
-
     const setupStandardFileSystemMocks = () => {
       mockExistsSync.mockImplementation((path) => {
         if (path.includes('analysis.json')) {
@@ -1232,10 +1301,6 @@ describe('Recipes Command Integration Tests', () => {
       });
     };
 
-    beforeEach(() => {
-      setupApplyMocks();
-    });
-
     it('should apply recipe successfully', async () => {
       setupStandardApplyScenario();
 
@@ -1252,51 +1317,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should verify progress events and thinking state during recipe application', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],
@@ -1723,51 +1744,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should apply recipe with project filtering', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],
@@ -1823,14 +1800,7 @@ describe('Recipes Command Integration Tests', () => {
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
-        yield {
-          type: 'result',
-          subtype: 'success',
-          result: 'Execution completed successfully',
-          total_cost_usd: 0.05,
-        };
-      });
+      setupSuccessfulQueryMock();
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
@@ -1843,51 +1813,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should handle multiple projects with mixed success', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],
@@ -2108,51 +2034,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should handle no applicable projects', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],
@@ -2208,51 +2090,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should handle corrupted analysis file', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],
@@ -2304,14 +2142,7 @@ describe('Recipes Command Integration Tests', () => {
         },
       });
 
-      mockQuery.mockImplementation(async function* () {
-        yield {
-          type: 'result',
-          subtype: 'success',
-          result: 'Execution completed successfully',
-          total_cost_usd: 0.05,
-        };
-      });
+      setupSuccessfulQueryMock();
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
@@ -2417,51 +2248,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should handle recipe application failure', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],
@@ -2509,12 +2296,7 @@ describe('Recipes Command Integration Tests', () => {
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
-        yield {
-          type: 'result',
-          subtype: 'error',
-        };
-      });
+      setupErrorQueryMock();
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
@@ -2530,51 +2312,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should handle variant not found', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],
@@ -2723,14 +2461,7 @@ describe('Recipes Command Integration Tests', () => {
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
-        yield {
-          type: 'result',
-          subtype: 'success',
-          result: 'Execution completed successfully',
-          total_cost_usd: 0.05,
-        };
-      });
+      setupSuccessfulQueryMock();
 
       await expect(
         performRecipesApply({
@@ -2740,51 +2471,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should handle empty recipe application result', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],
@@ -2851,51 +2538,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should verify chorenzo context initialization progress', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],
@@ -3097,10 +2740,7 @@ describe('Recipes Command Integration Tests', () => {
       });
       (mockYamlData.config.libraries as Record<string, unknown>)[
         'workspace-recipe'
-      ] = {
-        repo: 'https://github.com/test/workspace-recipe.git',
-        ref: 'main',
-      };
+      ] = createLibraryConfig('workspace-recipe');
 
       mockReadFileSync.mockImplementation((filePath: string) => {
         if (filePath.includes('analysis.json')) {
@@ -3138,14 +2778,7 @@ describe('Recipes Command Integration Tests', () => {
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
-        yield {
-          type: 'result',
-          subtype: 'success',
-          result: 'Execution completed successfully',
-          total_cost_usd: 0.05,
-        };
-      });
+      setupSuccessfulQueryMock();
 
       const result = await performRecipesApply({
         recipe: 'workspace-recipe',
@@ -3211,10 +2844,7 @@ describe('Recipes Command Integration Tests', () => {
       });
       (mockYamlData.config.libraries as Record<string, unknown>)[
         'workspace-recipe'
-      ] = {
-        repo: 'https://github.com/test/workspace-recipe.git',
-        ref: 'main',
-      };
+      ] = createLibraryConfig('workspace-recipe');
 
       mockReadFileSync.mockImplementation((filePath: string) => {
         if (filePath.includes('analysis.json')) {
@@ -3303,10 +2933,9 @@ describe('Recipes Command Integration Tests', () => {
       const mockYamlData = {
         config: {
           libraries: {
-            'agnostic-workspace-recipe': {
-              repo: 'https://github.com/test/agnostic-workspace-recipe.git',
-              ref: 'main',
-            },
+            'agnostic-workspace-recipe': createLibraryConfig(
+              'agnostic-workspace-recipe'
+            ),
           },
         },
         metadata: {
@@ -3353,14 +2982,7 @@ describe('Recipes Command Integration Tests', () => {
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
-        yield {
-          type: 'result',
-          subtype: 'success',
-          result: 'Execution completed successfully',
-          total_cost_usd: 0.05,
-        };
-      });
+      setupSuccessfulQueryMock();
 
       const result = await performRecipesApply({
         recipe: 'agnostic-workspace-recipe',
@@ -3622,10 +3244,7 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'workspace-preferred-recipe'
-        ] = {
-          repo: 'https://github.com/test/workspace-preferred-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig('workspace-preferred-recipe');
 
         const analysisData = {
           isMonorepo: false,
@@ -3665,10 +3284,7 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'workspace-preferred-recipe'
-        ] = {
-          repo: 'https://github.com/test/workspace-preferred-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig('workspace-preferred-recipe');
 
         mockYamlData.metadata.ecosystems = [
           {
@@ -3718,10 +3334,7 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'multi-ecosystem-recipe'
-        ] = {
-          repo: 'https://github.com/test/multi-ecosystem-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig('multi-ecosystem-recipe');
 
         mockYamlData.metadata.ecosystems = [
           {
@@ -3789,10 +3402,7 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'unsupported-recipe'
-        ] = {
-          repo: 'https://github.com/test/unsupported-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig('unsupported-recipe');
 
         mockYamlData.metadata.ecosystems = [
           {
@@ -3838,10 +3448,7 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'project-only-recipe'
-        ] = {
-          repo: 'https://github.com/test/project-only-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig('project-only-recipe');
 
         const analysisData = {
           isMonorepo: false,
@@ -3881,10 +3488,7 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'workspace-only-recipe'
-        ] = {
-          repo: 'https://github.com/test/workspace-only-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig('workspace-only-recipe');
 
         const analysisData = {
           isMonorepo: false,
@@ -3945,10 +3549,7 @@ describe('Recipes Command Integration Tests', () => {
         ];
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'project-ecosystem-recipe'
-        ] = {
-          repo: 'https://github.com/test/project-ecosystem-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig('project-ecosystem-recipe');
 
         mockReadFileSync.mockImplementation((filePath: string) => {
           if (filePath.includes('analysis.json')) {
@@ -4032,10 +3633,7 @@ describe('Recipes Command Integration Tests', () => {
         ];
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'project-type-recipe'
-        ] = {
-          repo: 'https://github.com/test/project-type-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig('project-type-recipe');
 
         mockReadFileSync.mockImplementation((filePath: string) => {
           if (filePath.includes('analysis.json')) {
@@ -4119,10 +3717,7 @@ describe('Recipes Command Integration Tests', () => {
         ];
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'workspace-monorepo-recipe'
-        ] = {
-          repo: 'https://github.com/test/workspace-monorepo-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig('workspace-monorepo-recipe');
 
         mockReadFileSync.mockImplementation((filePath: string) => {
           if (filePath.includes('analysis.json')) {
@@ -4208,10 +3803,7 @@ describe('Recipes Command Integration Tests', () => {
         ];
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'project-framework-recipe'
-        ] = {
-          repo: 'https://github.com/test/project-framework-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig('project-framework-recipe');
 
         mockReadFileSync.mockImplementation((filePath: string) => {
           if (filePath.includes('analysis.json')) {
@@ -6079,107 +5671,22 @@ requires: []
     };
 
     it('should load recipe by name from library', async () => {
-      setupDefaultMocks();
-
-      const recipeBasePath =
-        '/test/home/.chorenzo/recipes/test-library/test-recipe';
-
-      mockExistsSync.mockImplementation((path) => {
-        if (path === recipeBasePath) {
-          return true;
-        }
-        if (path === `${recipeBasePath}/metadata.yaml`) {
-          return true;
-        }
-        if (path === `${recipeBasePath}/prompt.md`) {
-          return true;
-        }
-        if (path === `${recipeBasePath}/fix.md`) {
-          return true;
-        }
-        if (path.includes('/.chorenzo/config.yaml')) {
-          return true;
-        }
-        if (path.includes('/.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('recipes/test-library')) {
-          return true;
-        }
-        return false;
+      setupShowMocks({
+        recipeName: 'test-recipe',
+        isRemote: true,
+        libraryName: 'test-library',
+        repoUrl: 'https://github.com/test/test-recipes.git',
+        ref: 'main',
       });
-
-      mockReadFileSync.mockImplementation((filePath: string) => {
-        if (filePath.includes('config.yaml')) {
-          return yamlStringify({
-            libraries: {
-              'test-library': {
-                repo: 'https://github.com/test/test-recipes.git',
-                ref: 'main',
-              },
-            },
-          });
-        }
-        if (filePath.includes('metadata.yaml')) {
-          return yamlStringify({
-            id: 'test-recipe',
-            category: 'test',
-            summary: 'Test recipe test-recipe',
-            level: 'project-only',
-            ecosystems: [],
-            provides: ['test-functionality'],
-            requires: [],
-          });
-        }
-        if (filePath.includes('prompt.md')) {
-          return '## Goal\nTest goal for test-recipe\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
-        }
-        if (filePath.includes('fix.md')) {
-          return 'Fix content for test-recipe';
-        }
-        return '';
-      });
-
-      mockReaddirSync.mockImplementation((path) => {
-        if (path === '/test/home/.chorenzo/recipes') {
-          return ['test-library'];
-        }
-        if (
-          path.includes('recipes/test-library') &&
-          !path.includes('test-recipe')
-        ) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
-
-      mockStatSync.mockImplementation(
-        (path) =>
-          ({
-            isDirectory: () => {
-              if (path === '/test/home/.chorenzo/recipes') {
-                return true;
-              }
-              if (path === '/test/home/.chorenzo/recipes/test-library') {
-                return true;
-              }
-              if (
-                path === '/test/home/.chorenzo/recipes/test-library/test-recipe'
-              ) {
-                return true;
-              }
-              return false;
-            },
-            isFile: () => path.includes('.yaml') || path.includes('.md'),
-          }) as fs.Stats
-      );
 
       const result = await loadRecipeForShow('test-recipe');
 
       expect(result.recipe.getId()).toBe('test-recipe');
       expect(result.recipe.getCategory()).toBe('test');
       expect(result.recipe.getSummary()).toBe('Test recipe test-recipe');
-      expect(result.localPath).toBe(recipeBasePath);
+      expect(result.localPath).toBe(
+        '/test/home/.chorenzo/recipes/test-library/test-recipe'
+      );
       expect(result.isRemote).toBe(true);
       expect(result.webUrl).toBe(
         'https://github.com/test/test-recipes/tree/main/test-recipe'
@@ -6187,57 +5694,10 @@ requires: []
     });
 
     it('should load recipe by local folder path', async () => {
-      setupDefaultMocks();
-
-      const recipeBasePath = '/local/recipes/local-recipe';
-
-      mockExistsSync.mockImplementation((path) => {
-        if (path === recipeBasePath) {
-          return true;
-        }
-        if (path === `${recipeBasePath}/metadata.yaml`) {
-          return true;
-        }
-        if (path === `${recipeBasePath}/prompt.md`) {
-          return true;
-        }
-        if (path === `${recipeBasePath}/fix.md`) {
-          return true;
-        }
-        if (path.includes('/.chorenzo/config.yaml')) {
-          return true;
-        }
-        if (path.includes('/.chorenzo/recipes')) {
-          return true;
-        }
-        return false;
+      setupShowMocks({
+        recipeName: 'local-recipe',
+        isLocal: true,
       });
-
-      mockReadFileSync.mockImplementation((filePath: string) => {
-        if (filePath.includes('config.yaml')) {
-          return JSON.stringify({ libraries: {} });
-        }
-        if (filePath.includes('metadata.yaml')) {
-          return yamlStringify({
-            id: 'local-recipe',
-            category: 'test',
-            summary: 'Test recipe local-recipe',
-            level: 'project-only',
-            ecosystems: [],
-            provides: ['test-functionality'],
-            requires: [],
-          });
-        }
-        if (filePath.includes('prompt.md')) {
-          return '## Goal\nTest goal for local-recipe\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
-        }
-        if (filePath.includes('fix.md')) {
-          return 'Fix content for local-recipe';
-        }
-        return '';
-      });
-
-      mockReaddirSync.mockImplementation(() => []);
 
       const result = await loadRecipeForShow('/local/recipes/local-recipe');
 
@@ -6471,6 +5931,123 @@ requires: []
       expect(result.recipe.getId()).toBe('no-repo-recipe');
       expect(result.isRemote).toBe(true);
       expect(result.webUrl).toBeUndefined();
+    });
+  });
+
+  describe('Recipes List Command Integration', () => {
+    let getRecipeCategories: typeof import('./recipes').getRecipeCategories;
+    let getRecipesByCategory: typeof import('./recipes').getRecipesByCategory;
+
+    beforeEach(async () => {
+      const recipesModule = await import('./recipes');
+      getRecipeCategories = recipesModule.getRecipeCategories;
+      getRecipesByCategory = recipesModule.getRecipesByCategory;
+    });
+
+    it('should discover categories from multiple libraries with recipes', async () => {
+      setupDefaultMocks();
+
+      setupMultiLibraryRecipes({
+        core: {
+          automation: {
+            'ci-pipeline': { recipeId: 'ci-pipeline', category: 'automation' },
+          },
+          testing: {
+            'jest-runner': { recipeId: 'jest-runner', category: 'testing' },
+          },
+        },
+        typescript: {
+          build: {
+            'webpack-config': { recipeId: 'webpack-config', category: 'build' },
+          },
+          linting: {
+            'eslint-setup': { recipeId: 'eslint-setup', category: 'linting' },
+          },
+        },
+      });
+
+      const categories = await getRecipeCategories();
+      expect(categories).toEqual(['automation', 'build', 'linting', 'testing']);
+    });
+
+    it('should find recipes by category across multiple libraries', async () => {
+      setupDefaultMocks();
+
+      setupMultiLibraryRecipes({
+        core: {
+          automation: {
+            'ci-pipeline': { recipeId: 'ci-pipeline', category: 'automation' },
+          },
+        },
+        typescript: {
+          automation: {
+            'lint-setup': { recipeId: 'lint-setup', category: 'automation' },
+          },
+        },
+      });
+
+      const recipes = await getRecipesByCategory('automation');
+      expect(recipes).toHaveLength(2);
+      expect(recipes[0]?.getId()).toBe('ci-pipeline');
+      expect(recipes[1]?.getId()).toBe('lint-setup');
+      expect(recipes[0]?.getCategory()).toBe('automation');
+      expect(recipes[1]?.getCategory()).toBe('automation');
+    });
+
+    it('should aggregate categories from libraries with overlapping categories', async () => {
+      setupDefaultMocks();
+
+      setupMultiLibraryRecipes({
+        core: {
+          automation: {
+            'ci-runner': { recipeId: 'ci-runner', category: 'automation' },
+          },
+          testing: {
+            'jest-config': { recipeId: 'jest-config', category: 'testing' },
+          },
+        },
+        typescript: {
+          build: {
+            'vite-setup': { recipeId: 'vite-setup', category: 'build' },
+          },
+          testing: {
+            'vitest-config': { recipeId: 'vitest-config', category: 'testing' },
+          },
+        },
+      });
+
+      const categories = await getRecipeCategories();
+      expect(categories).toEqual(['automation', 'build', 'testing']);
+
+      const testingRecipes = await getRecipesByCategory('testing');
+      expect(testingRecipes).toHaveLength(2);
+      expect(testingRecipes[0]?.getId()).toBe('jest-config');
+      expect(testingRecipes[1]?.getId()).toBe('vitest-config');
+      expect(testingRecipes[0]?.getCategory()).toBe('testing');
+      expect(testingRecipes[1]?.getCategory()).toBe('testing');
+    });
+
+    it('should return empty array for non-existent category', async () => {
+      setupDefaultMocks();
+
+      setupMultiLibraryRecipes({
+        core: {
+          automation: {
+            'ci-deploy': { recipeId: 'ci-deploy', category: 'automation' },
+          },
+          testing: {
+            'unit-runner': { recipeId: 'unit-runner', category: 'testing' },
+          },
+        },
+        typescript: {
+          build: {
+            'rollup-config': { recipeId: 'rollup-config', category: 'build' },
+          },
+        },
+      });
+
+      const recipes = await getRecipesByCategory('non-existent-category');
+      expect(recipes).toEqual([]);
     });
   });
 });

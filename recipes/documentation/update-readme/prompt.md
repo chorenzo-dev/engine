@@ -30,6 +30,4 @@ Automatically update README.md with complete and accurate documentation of all C
 
 ## Expected Output
 
-- update-readme.readme-exists: Whether README.md file exists in the project root
-- update-readme.cli-documented: Whether CLI commands are currently documented in README
-- update-readme.commands-extracted: Whether CLI command definitions were successfully parsed from source code
+No output

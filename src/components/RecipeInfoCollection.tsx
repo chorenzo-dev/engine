@@ -32,10 +32,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
     initialOptions.magicGenerate !== undefined &&
     initialOptions.ecosystemAgnostic !== undefined;
 
-  const shouldUseInput =
-    initialOptions.progress !== false &&
-    isRawModeSupported === true &&
-    !hasAllRequiredParams;
+  const shouldUseInput = isRawModeSupported === true && !hasAllRequiredParams;
 
   const [formState, setFormState] = useState({
     name: initialOptions.name || '',

@@ -211,7 +211,6 @@ Examples:
 recipesCommand
   .command('list')
   .description('Browse recipes by category')
-  .option('--no-progress', 'Disable progress UI')
   .option('--debug', 'Show all progress messages in list format')
   .addHelpText(
     'after',

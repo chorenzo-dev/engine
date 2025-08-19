@@ -4,6 +4,7 @@ import * as os from 'os';
 import { BaseMetadata, OperationMetadata } from '~/types/common';
 import { workspaceConfig } from '~/utils/workspace-config.utils';
 
+import { formatErrorMessage } from './error.utils';
 import { Logger } from './logger.utils';
 
 export interface CodeChangesOperation {
@@ -245,14 +246,13 @@ export async function executeCodeChangesOperation(
       handlers.onError?.(error);
       return {
         success: false,
-        error: error.message,
+        error: formatErrorMessage('Claude operation failed', error),
         metadata,
       };
     }
   } catch (error) {
     const endTime = new Date();
     const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
-    const errorMessage = error instanceof Error ? error.message : String(error);
 
     const metadata = {
       costUsd: 0,
@@ -262,11 +262,11 @@ export async function executeCodeChangesOperation(
     };
 
     handlers.onError?.(
-      error instanceof Error ? error : new Error(errorMessage)
+      error instanceof Error ? error : new Error(String(error))
     );
     return {
       success: false,
-      error: errorMessage,
+      error: formatErrorMessage('Code changes operation failed', error),
       metadata,
     };
   }
@@ -307,7 +307,7 @@ export function createErrorHandler(
   return (error: Error) => {
     updateOperation(operationId, {
       status: 'error',
-      error: error.message,
+      error: formatErrorMessage('Operation failed', error),
       endTime: new Date(),
     });
     onError?.(error);

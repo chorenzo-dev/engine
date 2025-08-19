@@ -133,10 +133,7 @@ describe('Recipes Command Integration Tests', () => {
     return {
       config: {
         libraries: {
-          'test-recipe': createLibraryConfig(
-            'test-recipe',
-            'https://github.com/test/test-recipe.git'
-          ),
+          'test-recipe': createLibraryConfig('test-recipe'),
         },
       },
       metadata: {
@@ -3243,10 +3240,7 @@ describe('Recipes Command Integration Tests', () => {
       });
       (mockYamlData.config.libraries as Record<string, unknown>)[
         'workspace-recipe'
-      ] = createLibraryConfig(
-        'workspace-recipe',
-        'https://github.com/test/workspace-recipe.git'
-      );
+      ] = createLibraryConfig('workspace-recipe');
 
       mockReadFileSync.mockImplementation((filePath: string) => {
         if (filePath.includes('analysis.json')) {
@@ -3357,10 +3351,7 @@ describe('Recipes Command Integration Tests', () => {
       });
       (mockYamlData.config.libraries as Record<string, unknown>)[
         'workspace-recipe'
-      ] = createLibraryConfig(
-        'workspace-recipe',
-        'https://github.com/test/workspace-recipe.git'
-      );
+      ] = createLibraryConfig('workspace-recipe');
 
       mockReadFileSync.mockImplementation((filePath: string) => {
         if (filePath.includes('analysis.json')) {
@@ -3450,8 +3441,7 @@ describe('Recipes Command Integration Tests', () => {
         config: {
           libraries: {
             'agnostic-workspace-recipe': createLibraryConfig(
-              'agnostic-workspace-recipe',
-              'https://github.com/test/agnostic-workspace-recipe.git'
+              'agnostic-workspace-recipe'
             ),
           },
         },
@@ -3768,10 +3758,7 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'workspace-preferred-recipe'
-        ] = createLibraryConfig(
-          'workspace-preferred-recipe',
-          'https://github.com/test/workspace-preferred-recipe.git'
-        );
+        ] = createLibraryConfig('workspace-preferred-recipe');
 
         const analysisData = {
           isMonorepo: false,
@@ -3811,10 +3798,7 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'workspace-preferred-recipe'
-        ] = createLibraryConfig(
-          'workspace-preferred-recipe',
-          'https://github.com/test/workspace-preferred-recipe.git'
-        );
+        ] = createLibraryConfig('workspace-preferred-recipe');
 
         mockYamlData.metadata.ecosystems = [
           {
@@ -3864,10 +3848,7 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'multi-ecosystem-recipe'
-        ] = createLibraryConfig(
-          'multi-ecosystem-recipe',
-          'https://github.com/test/multi-ecosystem-recipe.git'
-        );
+        ] = createLibraryConfig('multi-ecosystem-recipe');
 
         mockYamlData.metadata.ecosystems = [
           {
@@ -3935,10 +3916,7 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'unsupported-recipe'
-        ] = createLibraryConfig(
-          'unsupported-recipe',
-          'https://github.com/test/unsupported-recipe.git'
-        );
+        ] = createLibraryConfig('unsupported-recipe');
 
         mockYamlData.metadata.ecosystems = [
           {
@@ -3984,10 +3962,7 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'project-only-recipe'
-        ] = createLibraryConfig(
-          'project-only-recipe',
-          'https://github.com/test/project-only-recipe.git'
-        );
+        ] = createLibraryConfig('project-only-recipe');
 
         const analysisData = {
           isMonorepo: false,
@@ -4027,10 +4002,7 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'workspace-only-recipe'
-        ] = createLibraryConfig(
-          'workspace-only-recipe',
-          'https://github.com/test/workspace-only-recipe.git'
-        );
+        ] = createLibraryConfig('workspace-only-recipe');
 
         const analysisData = {
           isMonorepo: false,
@@ -4091,10 +4063,7 @@ describe('Recipes Command Integration Tests', () => {
         ];
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'project-ecosystem-recipe'
-        ] = createLibraryConfig(
-          'project-ecosystem-recipe',
-          'https://github.com/test/project-ecosystem-recipe.git'
-        );
+        ] = createLibraryConfig('project-ecosystem-recipe');
 
         mockReadFileSync.mockImplementation((filePath: string) => {
           if (filePath.includes('analysis.json')) {
@@ -4178,10 +4147,7 @@ describe('Recipes Command Integration Tests', () => {
         ];
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'project-type-recipe'
-        ] = createLibraryConfig(
-          'project-type-recipe',
-          'https://github.com/test/project-type-recipe.git'
-        );
+        ] = createLibraryConfig('project-type-recipe');
 
         mockReadFileSync.mockImplementation((filePath: string) => {
           if (filePath.includes('analysis.json')) {
@@ -4265,10 +4231,7 @@ describe('Recipes Command Integration Tests', () => {
         ];
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'workspace-monorepo-recipe'
-        ] = createLibraryConfig(
-          'workspace-monorepo-recipe',
-          'https://github.com/test/workspace-monorepo-recipe.git'
-        );
+        ] = createLibraryConfig('workspace-monorepo-recipe');
 
         mockReadFileSync.mockImplementation((filePath: string) => {
           if (filePath.includes('analysis.json')) {
@@ -4354,10 +4317,7 @@ describe('Recipes Command Integration Tests', () => {
         ];
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'project-framework-recipe'
-        ] = createLibraryConfig(
-          'project-framework-recipe',
-          'https://github.com/test/project-framework-recipe.git'
-        );
+        ] = createLibraryConfig('project-framework-recipe');
 
         mockReadFileSync.mockImplementation((filePath: string) => {
           if (filePath.includes('analysis.json')) {

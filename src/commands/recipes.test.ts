@@ -1960,14 +1960,7 @@ describe('Recipes Command Integration Tests', () => {
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
-        yield {
-          type: 'result',
-          subtype: 'success',
-          result: 'Execution completed successfully',
-          total_cost_usd: 0.05,
-        };
-      });
+      setupSuccessfulQueryMock();
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
@@ -2441,14 +2434,7 @@ describe('Recipes Command Integration Tests', () => {
         },
       });
 
-      mockQuery.mockImplementation(async function* () {
-        yield {
-          type: 'result',
-          subtype: 'success',
-          result: 'Execution completed successfully',
-          total_cost_usd: 0.05,
-        };
-      });
+      setupSuccessfulQueryMock();
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',
@@ -2860,14 +2846,7 @@ describe('Recipes Command Integration Tests', () => {
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
-        yield {
-          type: 'result',
-          subtype: 'success',
-          result: 'Execution completed successfully',
-          total_cost_usd: 0.05,
-        };
-      });
+      setupSuccessfulQueryMock();
 
       await expect(
         performRecipesApply({
@@ -3272,14 +3251,7 @@ describe('Recipes Command Integration Tests', () => {
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
-        yield {
-          type: 'result',
-          subtype: 'success',
-          result: 'Execution completed successfully',
-          total_cost_usd: 0.05,
-        };
-      });
+      setupSuccessfulQueryMock();
 
       const result = await performRecipesApply({
         recipe: 'workspace-recipe',
@@ -3483,14 +3455,7 @@ describe('Recipes Command Integration Tests', () => {
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
-        yield {
-          type: 'result',
-          subtype: 'success',
-          result: 'Execution completed successfully',
-          total_cost_usd: 0.05,
-        };
-      });
+      setupSuccessfulQueryMock();
 
       const result = await performRecipesApply({
         recipe: 'agnostic-workspace-recipe',

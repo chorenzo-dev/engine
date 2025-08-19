@@ -1317,51 +1317,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should verify progress events and thinking state during recipe application', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],
@@ -1788,51 +1744,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should apply recipe with project filtering', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],
@@ -1901,51 +1813,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should handle multiple projects with mixed success', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],
@@ -2166,51 +2034,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should handle no applicable projects', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],
@@ -2266,51 +2090,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should handle corrupted analysis file', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],
@@ -2468,51 +2248,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should handle recipe application failure', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],
@@ -2576,51 +2312,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should handle variant not found', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],
@@ -2779,51 +2471,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should handle empty recipe application result', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],
@@ -2890,51 +2538,7 @@ describe('Recipes Command Integration Tests', () => {
     });
 
     it('should verify chorenzo context initialization progress', async () => {
-      mockExistsSync.mockImplementation((path) => {
-        if (path.includes('analysis.json')) {
-          return true;
-        }
-        if (path.includes('state.json')) {
-          return false;
-        }
-        if (path.includes('.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('test-recipe')) {
-          return true;
-        }
-        if (path.includes('metadata.yaml')) {
-          return true;
-        }
-        if (path.includes('prompt.md')) {
-          return true;
-        }
-        if (path.includes('apply_recipe.md')) {
-          return true;
-        }
-        if (path.includes('fix.md')) {
-          return true;
-        }
-        if (path.includes('variants')) {
-          return true;
-        }
-        return true;
-      });
-
-      mockStatSync.mockImplementation(
-        () =>
-          ({
-            isDirectory: () => true,
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath) => {
-        if (dirPath.includes('.chorenzo/recipes')) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
+      setupStandardFileSystemMocks();
 
       const mockYamlData = createMockYamlData({
         provides: ['test_feature.exists'],

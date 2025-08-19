@@ -76,6 +76,16 @@ export const Shell: React.FC<ShellProps> = ({
           debug: options.debug,
           cost: options.cost,
         }}
+        onComplete={(shouldRunAnalysis) => {
+          if (shouldRunAnalysis) {
+            setCommand('analyze');
+            setOptions({
+              debug: options.debug,
+              cost: options.cost,
+            });
+            setError(null);
+          }
+        }}
       />
     );
   }

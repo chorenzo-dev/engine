@@ -4,6 +4,7 @@ import { AnalysisResult, performAnalysis } from '~/commands/analyze';
 import { AnalysisResultDisplay } from '~/components/AnalysisResultDisplay';
 import { Step, StepContext, StepSequence } from '~/components/StepSequence';
 import { BaseContainerOptions } from '~/types/common';
+import { extractErrorMessage } from '~/utils/error.utils';
 
 type AnalyzeContainerOptions = BaseContainerOptions;
 
@@ -40,12 +41,9 @@ export const AnalyzeContainer: React.FC<AnalyzeContainerProps> = ({
               }
               context.complete();
             } catch (error) {
-              context.setError(
-                error instanceof Error ? error.message : String(error)
-              );
-              onError(
-                error instanceof Error ? error : new Error(String(error))
-              );
+              const errorMessage = extractErrorMessage(error);
+              context.setError(errorMessage);
+              onError(error instanceof Error ? error : new Error(errorMessage));
             }
           };
 

@@ -3,6 +3,8 @@ import Handlebars from 'handlebars';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
+import { formatErrorMessage } from './error.utils';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROMPTS_DIR = __dirname.endsWith('dist')
   ? join(__dirname, 'prompts')
@@ -20,7 +22,7 @@ export function loadPrompt(promptName: string): string {
     return readFileSync(promptPath, 'utf-8');
   } catch (error) {
     throw new Error(
-      `Failed to load prompt ${promptName}: ${error instanceof Error ? error.message : String(error)}`
+      formatErrorMessage(`Failed to load prompt ${promptName}`, error)
     );
   }
 }
@@ -45,7 +47,10 @@ export function loadTemplate(
     return readFileSync(templatePath, 'utf-8');
   } catch (error) {
     throw new Error(
-      `Failed to load template ${templateName}.${extension}.hbs: ${error instanceof Error ? error.message : String(error)}`
+      formatErrorMessage(
+        `Failed to load template ${templateName}.${extension}.hbs`,
+        error
+      )
     );
   }
 }

@@ -4961,8 +4961,10 @@ requires: []
       expect(
         result.messages.some(
           (msg) =>
-            msg.type === 'success' &&
-            msg.text.includes("Recipe 'recipe-with-violations' is valid")
+            msg.type === 'error' &&
+            msg.text.includes(
+              "Recipe 'recipe-with-violations' has validation errors:"
+            )
         )
       ).toBe(true);
 
@@ -5158,35 +5160,59 @@ requires: []
     });
 
     it('should validate code samples for library validation', async () => {
+      let callCount = 0;
       mockQuery.mockImplementation(async function* () {
-        yield {
-          type: 'result',
-          subtype: 'success',
-          result: JSON.stringify({
-            valid: false,
-            violations: [
-              {
-                file: 'fix.md',
-                line: 1,
-                type: 'overly_simplistic',
-                description: 'Code is too basic',
-                suggestion: 'Provide more detailed implementation',
-                codeSnippet: 'Fix content',
+        callCount++;
+        if (callCount === 1) {
+          yield {
+            type: 'result',
+            subtype: 'success',
+            result: JSON.stringify({
+              valid: true,
+              violations: [],
+              summary: {
+                totalFiles: 1,
+                filesWithViolations: 0,
+                totalViolations: 0,
+                violationTypes: {
+                  generic_placeholder: 0,
+                  incomplete_fragment: 0,
+                  abstract_pseudocode: 0,
+                  overly_simplistic: 0,
+                },
               },
-            ],
-            summary: {
-              totalFiles: 1,
-              filesWithViolations: 1,
-              totalViolations: 1,
-              violationTypes: {
-                generic_placeholder: 0,
-                incomplete_fragment: 0,
-                abstract_pseudocode: 0,
-                overly_simplistic: 1,
+            }),
+          };
+        } else {
+          yield {
+            type: 'result',
+            subtype: 'success',
+            result: JSON.stringify({
+              valid: false,
+              violations: [
+                {
+                  file: 'fix.md',
+                  line: 1,
+                  type: 'overly_simplistic',
+                  description: 'Code is too basic',
+                  suggestion: 'Provide more detailed implementation',
+                  codeSnippet: 'Fix content',
+                },
+              ],
+              summary: {
+                totalFiles: 1,
+                filesWithViolations: 1,
+                totalViolations: 1,
+                violationTypes: {
+                  generic_placeholder: 0,
+                  incomplete_fragment: 0,
+                  abstract_pseudocode: 0,
+                  overly_simplistic: 1,
+                },
               },
-            },
-          }),
-        };
+            }),
+          };
+        }
       });
 
       const recipesModule = await import('./recipes');
@@ -5281,6 +5307,7 @@ requires: []
       ]);
       expect(result.summary).toBeDefined();
       expect(result.summary?.total).toBe(2);
+      expect(result.summary?.valid).toBe(1);
 
       expect(
         result.messages.some(
@@ -5289,7 +5316,7 @@ requires: []
       ).toBe(true);
       expect(
         result.messages.some(
-          (msg) => msg.type === 'success' && msg.text === 'recipe-two'
+          (msg) => msg.type === 'error' && msg.text === 'recipe-two:'
         )
       ).toBe(true);
 

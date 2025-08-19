@@ -8,6 +8,7 @@ import { validateCategoryName } from '~/commands/recipes';
 import { colors } from '~/styles/colors';
 import { RecipesGenerateOptions } from '~/types/recipes-generate';
 import { chorenzoConfig } from '~/utils/config.utils';
+import { extractErrorMessage } from '~/utils/error.utils';
 import { libraryManager } from '~/utils/library-manager.utils';
 import { resolvePath } from '~/utils/path.utils';
 
@@ -31,10 +32,7 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
     initialOptions.magicGenerate !== undefined &&
     initialOptions.ecosystemAgnostic !== undefined;
 
-  const shouldUseInput =
-    initialOptions.progress !== false &&
-    isRawModeSupported === true &&
-    !hasAllRequiredParams;
+  const shouldUseInput = isRawModeSupported === true && !hasAllRequiredParams;
 
   const [formState, setFormState] = useState({
     name: initialOptions.name || '',
@@ -147,7 +145,11 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
             availableCategories: categories,
           }));
         } catch (error) {
-          onError(error instanceof Error ? error : new Error(String(error)));
+          onError(
+            error instanceof Error
+              ? error
+              : new Error(extractErrorMessage(error))
+          );
         }
       };
       loadCategories();
@@ -208,7 +210,9 @@ export const RecipeInfoCollection: React.FC<RecipeInfoCollectionProps> = ({
       setFormState(updatedState);
       setPhase(getNextPhase(updatedState));
     } catch (error) {
-      onError(error instanceof Error ? error : new Error(String(error)));
+      onError(
+        error instanceof Error ? error : new Error(extractErrorMessage(error))
+      );
     }
   };
 

@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { formatErrorMessage } from './error.utils';
 import { Logger } from './logger.utils';
 
 export class GitignoreManager {
@@ -38,7 +39,7 @@ export class GitignoreManager {
         {
           event: 'gitignore_update_failed',
           path: gitignorePath,
-          error: error instanceof Error ? error.message : String(error),
+          error: formatErrorMessage('gitignore update', error),
         },
         'Failed to update .gitignore for Chorenzo state files'
       );
@@ -150,7 +151,7 @@ export class GitignoreManager {
           {
             event: 'gitignore_read_failed',
             path: gitignorePath,
-            error: error instanceof Error ? error.message : String(error),
+            error: formatErrorMessage('gitignore read', error),
           },
           'Failed to read .gitignore file'
         );

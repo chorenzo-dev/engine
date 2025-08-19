@@ -6,6 +6,8 @@ import { Logger } from '~/utils/logger.utils';
 import { workspaceConfig } from '~/utils/workspace-config.utils';
 import { YamlError } from '~/utils/yaml.utils';
 
+import { formatErrorMessage } from '../utils/error.utils';
+
 export type { Config } from '~/types/config';
 
 export interface InitOptions {
@@ -68,7 +70,7 @@ export async function performInit(
       throw error;
     }
     throw new InitError(
-      `Init failed: ${error instanceof Error ? error.message : String(error)}`,
+      formatErrorMessage('Init failed', error),
       'INIT_FAILED'
     );
   }
@@ -111,12 +113,12 @@ async function validateConfig(): Promise<void> {
     }
     if (error instanceof YamlError) {
       throw new InitError(
-        `Failed to read config.yaml: ${error.message}`,
+        formatErrorMessage('Failed to read config.yaml', error),
         'CONFIG_READ_ERROR'
       );
     }
     throw new InitError(
-      `Failed to read config.yaml: ${error instanceof Error ? error.message : String(error)}`,
+      formatErrorMessage('Failed to read config.yaml', error),
       'CONFIG_READ_ERROR'
     );
   }

@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { render } from 'ink';
 import React from 'react';
 
+import { extractErrorMessage } from '~/utils/error.utils';
 import { Logger } from '~/utils/logger.utils';
 
 import packageJson from '../package.json' with { type: 'json' };
@@ -22,7 +23,6 @@ program
   .option('--no-analyze', 'Skip automatic workspace analysis')
   .option('-A', 'Alias for --no-analyze')
   .option('-y, --yes', 'Skip interactive confirmation')
-  .option('--no-progress', 'Disable progress UI')
   .option('--debug', 'Show all progress messages in list format')
   .option('--cost', 'Show LLM cost information')
   .action(async (options) => {
@@ -33,7 +33,6 @@ program
           reset: options.reset,
           noAnalyze: !options.analyze || options.A,
           yes: options.yes,
-          progress: options.progress,
           debug: options.debug,
           cost: options.cost,
         },
@@ -43,7 +42,7 @@ program
     try {
       await waitUntilExit();
     } catch (error) {
-      Logger.error(error instanceof Error ? error.message : String(error));
+      Logger.error(extractErrorMessage(error));
       process.exit(1);
     }
   });
@@ -51,7 +50,6 @@ program
 program
   .command('analyze')
   .description('Analyze your workspace structure and provide insights')
-  .option('--no-progress', 'Disable progress UI')
   .option('--debug', 'Show all progress messages in list format')
   .option('--cost', 'Show LLM cost information')
   .action(async (options) => {
@@ -59,7 +57,6 @@ program
       React.createElement(Shell, {
         command: 'analyze',
         options: {
-          progress: options.progress,
           debug: options.debug,
           cost: options.cost,
         },
@@ -69,7 +66,7 @@ program
     try {
       await waitUntilExit();
     } catch (error) {
-      Logger.error(error instanceof Error ? error.message : String(error));
+      Logger.error(extractErrorMessage(error));
       process.exit(1);
     }
   });
@@ -97,7 +94,6 @@ Examples:
 recipesCommand
   .command('validate <target>')
   .description('Validate recipes by name, path, library, or git repository')
-  .option('--no-progress', 'Disable progress UI')
   .option('--debug', 'Show all progress messages in list format')
   .addHelpText(
     'after',
@@ -118,7 +114,6 @@ Examples:
         command: 'recipes-validate',
         options: {
           target,
-          progress: options.progress,
           debug: options.debug,
         },
       })
@@ -127,7 +122,7 @@ Examples:
     try {
       await waitUntilExit();
     } catch (error) {
-      Logger.error(error instanceof Error ? error.message : String(error));
+      Logger.error(extractErrorMessage(error));
       process.exit(1);
     }
   });
@@ -139,7 +134,6 @@ recipesCommand
   .option('--project <path>', 'Apply to specific project only')
   .option('-y, --yes', 'Skip interactive confirmations')
   .option('--force', 'Bypass re-application warnings (alias for --yes)')
-  .option('--no-progress', 'Disable progress UI')
   .option('--debug', 'Show all progress messages in list format')
   .option('--cost', 'Show LLM cost information')
   .addHelpText(
@@ -166,7 +160,6 @@ Examples:
           variant: options.variant,
           project: options.project,
           yes: options.yes || options.force,
-          progress: options.progress,
           debug: options.debug,
           cost: options.cost,
         },
@@ -176,7 +169,7 @@ Examples:
     try {
       await waitUntilExit();
     } catch (error) {
-      Logger.error(error instanceof Error ? error.message : String(error));
+      Logger.error(extractErrorMessage(error));
       process.exit(1);
     }
   });
@@ -184,7 +177,6 @@ Examples:
 recipesCommand
   .command('show <recipe-name>')
   .description('Show detailed information about a recipe')
-  .option('--no-progress', 'Disable progress UI')
   .option('--debug', 'Show all progress messages in list format')
   .addHelpText(
     'after',
@@ -203,7 +195,6 @@ Examples:
         command: 'recipes-show',
         options: {
           recipeName,
-          progress: options.progress,
           debug: options.debug,
         },
       })
@@ -212,7 +203,7 @@ Examples:
     try {
       await waitUntilExit();
     } catch (error) {
-      Logger.error(error instanceof Error ? error.message : String(error));
+      Logger.error(extractErrorMessage(error));
       process.exit(1);
     }
   });
@@ -234,7 +225,6 @@ Examples:
       React.createElement(Shell, {
         command: 'recipes-list',
         options: {
-          progress: options.progress,
           debug: options.debug,
         },
       })
@@ -251,7 +241,6 @@ Examples:
 recipesCommand
   .command('generate [name]')
   .description('Generate a new recipe')
-  .option('--no-progress', 'Disable progress UI')
   .option('--debug', 'Show all progress messages in list format')
   .option('--cost', 'Show LLM cost information')
   .option(
@@ -308,7 +297,6 @@ Examples:
         command: 'recipes-generate',
         options: {
           name,
-          progress: options.progress,
           debug: options.debug,
           cost: options.cost,
           saveLocation: options.location,
@@ -324,7 +312,7 @@ Examples:
     try {
       await waitUntilExit();
     } catch (error) {
-      Logger.error(error instanceof Error ? error.message : String(error));
+      Logger.error(extractErrorMessage(error));
       process.exit(1);
     }
   });

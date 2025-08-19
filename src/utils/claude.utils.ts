@@ -1,6 +1,7 @@
 import { AuthConfig } from '~/types/config';
 
 import { chorenzoConfig } from './config.utils';
+import { formatErrorMessage } from './error.utils';
 import { Logger } from './logger.utils';
 import { spawnAsync } from './process.utils';
 
@@ -146,7 +147,10 @@ export async function checkClaudeCodeAuth(): Promise<boolean> {
       {
         event: 'auth_check_failed',
         reason: 'exception',
-        error: error instanceof Error ? error.message : String(error),
+        error: formatErrorMessage(
+          'Claude Code authentication check threw exception',
+          error
+        ),
       },
       'Claude Code authentication check threw exception'
     );
@@ -188,7 +192,10 @@ export async function loadAndSetupAuth(): Promise<void> {
     Logger.warn(
       {
         event: 'auth_setup_failed',
-        error: error instanceof Error ? error.message : String(error),
+        error: formatErrorMessage(
+          'Failed to load and setup authentication',
+          error
+        ),
       },
       'Failed to load and setup authentication'
     );

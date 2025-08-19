@@ -112,7 +112,6 @@ export const RecipesListContainer: React.FC<RecipesListContainerProps> = ({
   const handleApply = () => {
     if (selectedRecipe) {
       exit();
-      // The apply command will be shown to the user
     }
   };
 
@@ -128,7 +127,6 @@ export const RecipesListContainer: React.FC<RecipesListContainerProps> = ({
     return <Text>No recipe categories found.</Text>;
   }
 
-  // Categories view
   if (viewMode === 'categories') {
     const categoryItems: CategoryItem[] = categories.map((category) => ({
       key: category,
@@ -161,7 +159,6 @@ export const RecipesListContainer: React.FC<RecipesListContainerProps> = ({
     );
   }
 
-  // Recipes view
   if (viewMode === 'recipes') {
     if (loadingRecipes) {
       return <Text>Loading recipes...</Text>;
@@ -220,7 +217,6 @@ export const RecipesListContainer: React.FC<RecipesListContainerProps> = ({
     );
   }
 
-  // Recipe details view
   if (viewMode === 'details') {
     if (loadingRecipeDetails) {
       return <Text>Loading recipe details...</Text>;

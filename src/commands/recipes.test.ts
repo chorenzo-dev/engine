@@ -2632,12 +2632,7 @@ describe('Recipes Command Integration Tests', () => {
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
-        yield {
-          type: 'result',
-          subtype: 'error',
-        };
-      });
+      setupErrorQueryMock();
 
       const result = await performRecipesApply({
         recipe: 'test-recipe',

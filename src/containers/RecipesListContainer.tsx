@@ -178,7 +178,7 @@ export const RecipesListContainer: React.FC<RecipesListContainerProps> = ({
 
     const recipeItems: RecipeItem[] = recipes.map((recipe) => ({
       key: recipe.getId(),
-      label: `${recipe.getId()} - ${recipe.getSummary()}`,
+      label: recipe.getId(),
       value: recipe,
     }));
 

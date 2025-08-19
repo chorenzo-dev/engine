@@ -9,6 +9,9 @@ import {
 import * as fs from 'fs';
 import { stringify as yamlStringify } from 'yaml';
 
+import type { ConfigLibrary } from '~/types/config';
+import type { RecipeDependency, RecipeLevel } from '~/types/recipe';
+
 const mockHomedir = jest.fn<() => string>(() => '/test/home');
 const mockTmpdir = jest.fn<() => string>(() => '/tmp');
 const mockExistsSync = jest.fn<(path: string) => boolean>();
@@ -93,8 +96,13 @@ describe('Recipes Command Integration Tests', () => {
     mockStatSync.mockImplementation(
       (filePath: string) =>
         ({
-          isDirectory: () => !filePath.includes('.'),
-          isFile: () => filePath.includes('.'),
+          isDirectory: () => {
+            if (filePath.endsWith('.yaml') || filePath.endsWith('.md')) {
+              return false;
+            }
+            return fileStructure[filePath] || false;
+          },
+          isFile: () => filePath.endsWith('.yaml') || filePath.endsWith('.md'),
         }) as fs.Stats
     );
 
@@ -125,10 +133,10 @@ describe('Recipes Command Integration Tests', () => {
     return {
       config: {
         libraries: {
-          'test-recipe': {
-            repo: 'https://github.com/test/test-recipe.git',
-            ref: 'main',
-          },
+          'test-recipe': createLibraryConfig(
+            'test-recipe',
+            'https://github.com/test/test-recipe.git'
+          ),
         },
       },
       metadata: {
@@ -147,6 +155,144 @@ describe('Recipes Command Integration Tests', () => {
         requires,
       },
     };
+  };
+
+  interface TestRecipeConfig {
+    recipeId: string;
+    category: string;
+    level?: RecipeLevel;
+    provides?: string[];
+    requires?: RecipeDependency[];
+  }
+
+  interface TestLibraryStructure {
+    [libraryName: string]: {
+      [categoryName: string]: {
+        [recipeName: string]: TestRecipeConfig;
+      };
+    };
+  }
+
+  const createLibraryConfig = (
+    libraryName: string,
+    repoUrl?: string
+  ): ConfigLibrary => {
+    return {
+      repo:
+        repoUrl || `https://github.com/chorenzo-dev/recipes-${libraryName}.git`,
+      ref: 'main',
+    };
+  };
+
+  const setupRecipeFiles = (
+    recipePath: string,
+    fileStructure: Record<string, boolean>
+  ): void => {
+    fileStructure[recipePath] = true;
+    fileStructure[`${recipePath}/metadata.yaml`] = true;
+    fileStructure[`${recipePath}/prompt.md`] = true;
+    fileStructure[`${recipePath}/fix.md`] = true;
+  };
+
+  const setupCategoryStructure = (
+    libraryPath: string,
+    categoryName: string,
+    recipes: Record<string, TestRecipeConfig>,
+    fileStructure: Record<string, boolean>,
+    directoryStructure: Record<string, string[]>
+  ): void => {
+    const categoryPath = `${libraryPath}/${categoryName}`;
+    fileStructure[categoryPath] = true;
+    directoryStructure[categoryPath] = Object.keys(recipes);
+
+    for (const [recipeName] of Object.entries(recipes)) {
+      const recipePath = `${categoryPath}/${recipeName}`;
+      setupRecipeFiles(recipePath, fileStructure);
+    }
+  };
+
+  const setupLibraryStructure = (
+    libraryName: string,
+    categories: Record<string, Record<string, TestRecipeConfig>>,
+    fileStructure: Record<string, boolean>,
+    directoryStructure: Record<string, string[]>
+  ): void => {
+    const libraryPath = `/test/home/.chorenzo/recipes/${libraryName}`;
+    fileStructure[libraryPath] = true;
+    directoryStructure[libraryPath] = Object.keys(categories);
+
+    for (const [categoryName, recipes] of Object.entries(categories)) {
+      setupCategoryStructure(
+        libraryPath,
+        categoryName,
+        recipes,
+        fileStructure,
+        directoryStructure
+      );
+    }
+  };
+
+  const setupRecipeContent = (
+    libraries: TestLibraryStructure,
+    mockReadFileSync: jest.MockedFunction<
+      (path: string, encoding?: string) => string
+    >,
+    libraryConfigs: Record<string, ConfigLibrary>
+  ): void => {
+    mockReadFileSync.mockImplementation((filePath: string) => {
+      if (filePath.includes('config.yaml')) {
+        return yamlStringify({ libraries: libraryConfigs });
+      }
+
+      for (const [libraryName, categories] of Object.entries(libraries)) {
+        for (const [categoryName, recipes] of Object.entries(categories)) {
+          for (const [recipeName, recipeConfig] of Object.entries(recipes)) {
+            if (
+              filePath.includes(
+                `/${libraryName}/${categoryName}/${recipeName}/metadata.yaml`
+              )
+            ) {
+              const mockData = createMockYamlData(recipeConfig);
+              return yamlStringify(mockData.metadata);
+            }
+          }
+        }
+      }
+
+      if (filePath.includes('prompt.md')) {
+        return '## Goal\nTest prompt\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+      }
+      if (filePath.includes('fix.md')) {
+        return 'Test fix content';
+      }
+      return '';
+    });
+  };
+
+  const setupMultiLibraryRecipes = (libraries: TestLibraryStructure): void => {
+    const fileStructure: Record<string, boolean> = {
+      '/test/home/.chorenzo/config.yaml': true,
+      '/test/home/.chorenzo/recipes': true,
+    };
+
+    const directoryStructure: Record<string, string[]> = {
+      '/test/home/.chorenzo/recipes': Object.keys(libraries),
+    };
+
+    const libraryConfigs: Record<string, ConfigLibrary> = {};
+
+    for (const [libraryName, categories] of Object.entries(libraries)) {
+      libraryConfigs[libraryName] = createLibraryConfig(libraryName);
+      setupLibraryStructure(
+        libraryName,
+        categories,
+        fileStructure,
+        directoryStructure
+      );
+    }
+
+    setupLocationMocks(fileStructure, directoryStructure);
+    setupRecipeContent(libraries, mockReadFileSync, libraryConfigs);
   };
 
   const setupDefaultMocks = () => {
@@ -3097,10 +3243,10 @@ describe('Recipes Command Integration Tests', () => {
       });
       (mockYamlData.config.libraries as Record<string, unknown>)[
         'workspace-recipe'
-      ] = {
-        repo: 'https://github.com/test/workspace-recipe.git',
-        ref: 'main',
-      };
+      ] = createLibraryConfig(
+        'workspace-recipe',
+        'https://github.com/test/workspace-recipe.git'
+      );
 
       mockReadFileSync.mockImplementation((filePath: string) => {
         if (filePath.includes('analysis.json')) {
@@ -3211,10 +3357,10 @@ describe('Recipes Command Integration Tests', () => {
       });
       (mockYamlData.config.libraries as Record<string, unknown>)[
         'workspace-recipe'
-      ] = {
-        repo: 'https://github.com/test/workspace-recipe.git',
-        ref: 'main',
-      };
+      ] = createLibraryConfig(
+        'workspace-recipe',
+        'https://github.com/test/workspace-recipe.git'
+      );
 
       mockReadFileSync.mockImplementation((filePath: string) => {
         if (filePath.includes('analysis.json')) {
@@ -3303,10 +3449,10 @@ describe('Recipes Command Integration Tests', () => {
       const mockYamlData = {
         config: {
           libraries: {
-            'agnostic-workspace-recipe': {
-              repo: 'https://github.com/test/agnostic-workspace-recipe.git',
-              ref: 'main',
-            },
+            'agnostic-workspace-recipe': createLibraryConfig(
+              'agnostic-workspace-recipe',
+              'https://github.com/test/agnostic-workspace-recipe.git'
+            ),
           },
         },
         metadata: {
@@ -3622,10 +3768,10 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'workspace-preferred-recipe'
-        ] = {
-          repo: 'https://github.com/test/workspace-preferred-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig(
+          'workspace-preferred-recipe',
+          'https://github.com/test/workspace-preferred-recipe.git'
+        );
 
         const analysisData = {
           isMonorepo: false,
@@ -3665,10 +3811,10 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'workspace-preferred-recipe'
-        ] = {
-          repo: 'https://github.com/test/workspace-preferred-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig(
+          'workspace-preferred-recipe',
+          'https://github.com/test/workspace-preferred-recipe.git'
+        );
 
         mockYamlData.metadata.ecosystems = [
           {
@@ -3718,10 +3864,10 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'multi-ecosystem-recipe'
-        ] = {
-          repo: 'https://github.com/test/multi-ecosystem-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig(
+          'multi-ecosystem-recipe',
+          'https://github.com/test/multi-ecosystem-recipe.git'
+        );
 
         mockYamlData.metadata.ecosystems = [
           {
@@ -3789,10 +3935,10 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'unsupported-recipe'
-        ] = {
-          repo: 'https://github.com/test/unsupported-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig(
+          'unsupported-recipe',
+          'https://github.com/test/unsupported-recipe.git'
+        );
 
         mockYamlData.metadata.ecosystems = [
           {
@@ -3838,10 +3984,10 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'project-only-recipe'
-        ] = {
-          repo: 'https://github.com/test/project-only-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig(
+          'project-only-recipe',
+          'https://github.com/test/project-only-recipe.git'
+        );
 
         const analysisData = {
           isMonorepo: false,
@@ -3881,10 +4027,10 @@ describe('Recipes Command Integration Tests', () => {
         });
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'workspace-only-recipe'
-        ] = {
-          repo: 'https://github.com/test/workspace-only-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig(
+          'workspace-only-recipe',
+          'https://github.com/test/workspace-only-recipe.git'
+        );
 
         const analysisData = {
           isMonorepo: false,
@@ -3945,10 +4091,10 @@ describe('Recipes Command Integration Tests', () => {
         ];
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'project-ecosystem-recipe'
-        ] = {
-          repo: 'https://github.com/test/project-ecosystem-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig(
+          'project-ecosystem-recipe',
+          'https://github.com/test/project-ecosystem-recipe.git'
+        );
 
         mockReadFileSync.mockImplementation((filePath: string) => {
           if (filePath.includes('analysis.json')) {
@@ -4032,10 +4178,10 @@ describe('Recipes Command Integration Tests', () => {
         ];
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'project-type-recipe'
-        ] = {
-          repo: 'https://github.com/test/project-type-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig(
+          'project-type-recipe',
+          'https://github.com/test/project-type-recipe.git'
+        );
 
         mockReadFileSync.mockImplementation((filePath: string) => {
           if (filePath.includes('analysis.json')) {
@@ -4119,10 +4265,10 @@ describe('Recipes Command Integration Tests', () => {
         ];
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'workspace-monorepo-recipe'
-        ] = {
-          repo: 'https://github.com/test/workspace-monorepo-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig(
+          'workspace-monorepo-recipe',
+          'https://github.com/test/workspace-monorepo-recipe.git'
+        );
 
         mockReadFileSync.mockImplementation((filePath: string) => {
           if (filePath.includes('analysis.json')) {
@@ -4208,10 +4354,10 @@ describe('Recipes Command Integration Tests', () => {
         ];
         (mockYamlData.config.libraries as Record<string, unknown>)[
           'project-framework-recipe'
-        ] = {
-          repo: 'https://github.com/test/project-framework-recipe.git',
-          ref: 'main',
-        };
+        ] = createLibraryConfig(
+          'project-framework-recipe',
+          'https://github.com/test/project-framework-recipe.git'
+        );
 
         mockReadFileSync.mockImplementation((filePath: string) => {
           if (filePath.includes('analysis.json')) {
@@ -6086,10 +6232,10 @@ requires: []
         if (filePath.includes('config.yaml')) {
           return yamlStringify({
             libraries: {
-              'test-library': {
-                repo: 'https://github.com/test/test-recipes.git',
-                ref: 'main',
-              },
+              'test-library': createLibraryConfig(
+                'test-library',
+                'https://github.com/test/test-recipes.git'
+              ),
             },
           });
         }
@@ -6444,6 +6590,131 @@ requires: []
       expect(result.recipe.getId()).toBe('no-repo-recipe');
       expect(result.isRemote).toBe(true);
       expect(result.webUrl).toBeUndefined();
+    });
+  });
+
+  describe('Recipes List Command Integration', () => {
+    let getRecipeCategories: typeof import('./recipes').getRecipeCategories;
+    let getRecipesByCategory: typeof import('./recipes').getRecipesByCategory;
+
+    beforeEach(async () => {
+      const recipesModule = await import('./recipes');
+      getRecipeCategories = recipesModule.getRecipeCategories;
+      getRecipesByCategory = recipesModule.getRecipesByCategory;
+    });
+
+    it('should discover categories from multiple libraries with recipes', async () => {
+      mockHomedir.mockImplementation(() => '/test/home');
+      mockTmpdir.mockImplementation(() => '/tmp');
+      mockWriteFileAtomicSync.mockImplementation(() => {});
+
+      setupMultiLibraryRecipes({
+        core: {
+          automation: {
+            'ci-pipeline': { recipeId: 'ci-pipeline', category: 'automation' },
+          },
+          testing: {
+            'jest-runner': { recipeId: 'jest-runner', category: 'testing' },
+          },
+        },
+        typescript: {
+          build: {
+            'webpack-config': { recipeId: 'webpack-config', category: 'build' },
+          },
+          linting: {
+            'eslint-setup': { recipeId: 'eslint-setup', category: 'linting' },
+          },
+        },
+      });
+
+      const categories = await getRecipeCategories();
+      expect(categories).toEqual(['automation', 'build', 'linting', 'testing']);
+    });
+
+    it('should find recipes by category across multiple libraries', async () => {
+      mockHomedir.mockImplementation(() => '/test/home');
+      mockTmpdir.mockImplementation(() => '/tmp');
+      mockWriteFileAtomicSync.mockImplementation(() => {});
+
+      setupMultiLibraryRecipes({
+        core: {
+          automation: {
+            'ci-pipeline': { recipeId: 'ci-pipeline', category: 'automation' },
+          },
+        },
+        typescript: {
+          automation: {
+            'lint-setup': { recipeId: 'lint-setup', category: 'automation' },
+          },
+        },
+      });
+
+      const recipes = await getRecipesByCategory('automation');
+      expect(recipes).toHaveLength(2);
+      expect(recipes[0]?.getId()).toBe('ci-pipeline');
+      expect(recipes[1]?.getId()).toBe('lint-setup');
+      expect(recipes[0]?.getCategory()).toBe('automation');
+      expect(recipes[1]?.getCategory()).toBe('automation');
+    });
+
+    it('should aggregate categories from libraries with overlapping categories', async () => {
+      mockHomedir.mockImplementation(() => '/test/home');
+      mockTmpdir.mockImplementation(() => '/tmp');
+      mockWriteFileAtomicSync.mockImplementation(() => {});
+
+      setupMultiLibraryRecipes({
+        core: {
+          automation: {
+            'ci-runner': { recipeId: 'ci-runner', category: 'automation' },
+          },
+          testing: {
+            'jest-config': { recipeId: 'jest-config', category: 'testing' },
+          },
+        },
+        typescript: {
+          build: {
+            'vite-setup': { recipeId: 'vite-setup', category: 'build' },
+          },
+          testing: {
+            'vitest-config': { recipeId: 'vitest-config', category: 'testing' },
+          },
+        },
+      });
+
+      const categories = await getRecipeCategories();
+      expect(categories).toEqual(['automation', 'build', 'testing']);
+
+      const testingRecipes = await getRecipesByCategory('testing');
+      expect(testingRecipes).toHaveLength(2);
+      expect(testingRecipes[0]?.getId()).toBe('jest-config');
+      expect(testingRecipes[1]?.getId()).toBe('vitest-config');
+      expect(testingRecipes[0]?.getCategory()).toBe('testing');
+      expect(testingRecipes[1]?.getCategory()).toBe('testing');
+    });
+
+    it('should return empty array for non-existent category', async () => {
+      mockHomedir.mockImplementation(() => '/test/home');
+      mockTmpdir.mockImplementation(() => '/tmp');
+      mockWriteFileAtomicSync.mockImplementation(() => {});
+
+      setupMultiLibraryRecipes({
+        core: {
+          automation: {
+            'ci-deploy': { recipeId: 'ci-deploy', category: 'automation' },
+          },
+          testing: {
+            'unit-runner': { recipeId: 'unit-runner', category: 'testing' },
+          },
+        },
+        typescript: {
+          build: {
+            'rollup-config': { recipeId: 'rollup-config', category: 'build' },
+          },
+        },
+      });
+
+      const recipes = await getRecipesByCategory('non-existent-category');
+      expect(recipes).toEqual([]);
     });
   });
 });

@@ -41,8 +41,13 @@ interface ShellProps {
   };
 }
 
-export const Shell: React.FC<ShellProps> = ({ command, options }) => {
+export const Shell: React.FC<ShellProps> = ({
+  command: initialCommand,
+  options: initialOptions,
+}) => {
   const [error, setError] = useState<Error | null>(null);
+  const [command, setCommand] = useState(initialCommand);
+  const [options, setOptions] = useState(initialOptions);
   if (command === 'analyze') {
     if (error) {
       return <ErrorExitComponent error={error} />;
@@ -187,6 +192,11 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       <RecipesListContainer
         onError={(error) => {
           setError(error);
+        }}
+        onApply={(recipe) => {
+          setCommand('recipes-apply');
+          setOptions({ ...options, recipe });
+          setError(null);
         }}
       />
     );

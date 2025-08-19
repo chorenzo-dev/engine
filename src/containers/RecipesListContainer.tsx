@@ -17,6 +17,7 @@ import { RecipeLocationInfo } from '~/types/recipes-show';
 
 interface RecipesListContainerProps {
   onError: (error: Error) => void;
+  onApply: (recipe: string) => void;
 }
 
 type ViewMode = 'categories' | 'recipes' | 'details';
@@ -35,6 +36,7 @@ interface RecipeItem {
 
 export const RecipesListContainer: React.FC<RecipesListContainerProps> = ({
   onError,
+  onApply,
 }) => {
   const { exit } = useApp();
   const [viewMode, setViewMode] = useState<ViewMode>('categories');
@@ -111,7 +113,7 @@ export const RecipesListContainer: React.FC<RecipesListContainerProps> = ({
 
   const handleApply = () => {
     if (selectedRecipe) {
-      exit();
+      onApply(selectedRecipe.getId());
     }
   };
 
@@ -238,8 +240,10 @@ export const RecipesListContainer: React.FC<RecipesListContainerProps> = ({
           recipe={selectedRecipe}
           location={recipeLocation}
         />
-        <Box marginTop={1}>
-          <Text>What would you like to do?</Text>
+        <Box marginTop={1} flexDirection="column">
+          <Box marginBottom={1}>
+            <Text>What would you like to do?</Text>
+          </Box>
           <SelectInput
             items={detailActions}
             onSelect={(item) => {

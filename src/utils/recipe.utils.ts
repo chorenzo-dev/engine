@@ -10,6 +10,7 @@ import {
   RecipeValidationResult,
 } from '~/types/recipe';
 
+import { formatErrorMessage } from './error.utils';
 import { isReservedKeyword } from './project-characteristics.utils';
 import { readYaml } from './yaml.utils';
 
@@ -68,7 +69,7 @@ export async function parseRecipeFromDirectory(
       throw error;
     }
     throw new RecipeParsingError(
-      `Failed to parse recipe: ${error instanceof Error ? error.message : String(error)}`,
+      formatErrorMessage('Failed to parse recipe', error),
       recipePath
     );
   }
@@ -100,7 +101,7 @@ export async function parseRecipeLibraryFromDirectory(
       recipes.push(recipe);
     } catch (error) {
       errors.push(
-        `Failed to parse recipe at ${entry}: ${error instanceof Error ? error.message : String(error)}`
+        formatErrorMessage(`Failed to parse recipe at ${entry}`, error)
       );
     }
   }
@@ -122,7 +123,7 @@ async function parseMetadata(metadataPath: string): Promise<RecipeMetadata> {
     return metadata;
   } catch (error) {
     throw new RecipeParsingError(
-      `Failed to parse metadata.yaml: ${error instanceof Error ? error.message : String(error)}`,
+      formatErrorMessage('Failed to parse metadata.yaml', error),
       path.dirname(metadataPath)
     );
   }
@@ -134,7 +135,7 @@ async function parsePrompt(promptPath: string): Promise<RecipePrompt> {
     return parsePromptContent(content);
   } catch (error) {
     throw new RecipeParsingError(
-      `Failed to parse prompt.md: ${error instanceof Error ? error.message : String(error)}`,
+      formatErrorMessage('Failed to parse prompt.md', error),
       path.dirname(promptPath)
     );
   }

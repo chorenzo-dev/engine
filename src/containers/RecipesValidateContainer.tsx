@@ -47,7 +47,6 @@ export const RecipesValidateContainer: React.FC<
               const result = await performRecipesValidate(
                 {
                   target: options.target,
-                  progress: options.progress,
                 },
                 (step, isThinking) => {
                   if (step) {

@@ -6,7 +6,7 @@ import { simpleGit } from 'simple-git';
 import type { Config, ConfigLibrary } from '~/types/config';
 
 import { chorenzoConfig } from './config.utils';
-import { formatErrorMessage } from './error.utils';
+import { extractErrorMessage, formatErrorMessage } from './error.utils';
 import {
   GitError,
   checkGitAvailable,
@@ -117,7 +117,7 @@ export class LibraryManager {
         Logger.warn(
           {
             library: libraryName,
-            error: error instanceof Error ? error.message : String(error),
+            error: extractErrorMessage(error),
           },
           `Failed to refresh library '${libraryName}', continuing with others`
         );
@@ -156,7 +156,7 @@ export class LibraryManager {
         Logger.warn(
           {
             directory: dir,
-            error: error instanceof Error ? error.message : String(error),
+            error: extractErrorMessage(error),
           },
           'Failed to search directory for recipes'
         );
@@ -233,7 +233,7 @@ export class LibraryManager {
         Logger.warn(
           {
             directory: dir,
-            error: error instanceof Error ? error.message : String(error),
+            error: extractErrorMessage(error),
           },
           'Failed to search local directory for recipes'
         );
@@ -271,7 +271,7 @@ export class LibraryManager {
       }
       return {
         valid: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: extractErrorMessage(error),
       };
     }
   }

@@ -10,7 +10,7 @@ import {
   RecipeValidationResult,
 } from '~/types/recipe';
 
-import { formatErrorMessage } from './error.utils';
+import { extractErrorMessage, formatErrorMessage } from './error.utils';
 import { isReservedKeyword } from './project-characteristics.utils';
 import { readYaml } from './yaml.utils';
 
@@ -311,7 +311,7 @@ export function validateRecipe(recipe: Recipe): RecipeValidationResult {
   } catch (error) {
     errors.push({
       type: 'metadata',
-      message: error instanceof Error ? error.message : String(error),
+      message: extractErrorMessage(error),
       file: 'metadata.yaml',
     });
   }

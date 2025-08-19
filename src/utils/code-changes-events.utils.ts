@@ -4,7 +4,7 @@ import * as os from 'os';
 import { BaseMetadata, OperationMetadata } from '~/types/common';
 import { workspaceConfig } from '~/utils/workspace-config.utils';
 
-import { formatErrorMessage } from './error.utils';
+import { extractErrorMessage, formatErrorMessage } from './error.utils';
 import { Logger } from './logger.utils';
 
 export interface CodeChangesOperation {
@@ -262,7 +262,7 @@ export async function executeCodeChangesOperation(
     };
 
     handlers.onError?.(
-      error instanceof Error ? error : new Error(String(error))
+      error instanceof Error ? error : new Error(extractErrorMessage(error))
     );
     return {
       success: false,

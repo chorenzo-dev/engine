@@ -10,6 +10,7 @@ import {
   saveAuthConfig,
   validateApiKey,
 } from '~/utils/claude.utils';
+import { extractErrorMessage } from '~/utils/error.utils';
 
 interface AuthenticationStepProps {
   onAuthComplete: () => void;
@@ -92,7 +93,7 @@ export const AuthenticationStep: React.FC<AuthenticationStepProps> = ({
         onAuthError('Authentication failed. Please check your API key.');
       }
     } catch (error) {
-      onAuthError(error instanceof Error ? error.message : String(error));
+      onAuthError(extractErrorMessage(error));
     }
   };
 

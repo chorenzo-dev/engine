@@ -23,7 +23,6 @@ program
   .option('--no-analyze', 'Skip automatic workspace analysis')
   .option('-A', 'Alias for --no-analyze')
   .option('-y, --yes', 'Skip interactive confirmation')
-  .option('--no-progress', 'Disable progress UI')
   .option('--debug', 'Show all progress messages in list format')
   .option('--cost', 'Show LLM cost information')
   .action(async (options) => {
@@ -52,7 +51,6 @@ program
 program
   .command('analyze')
   .description('Analyze your workspace structure and provide insights')
-  .option('--no-progress', 'Disable progress UI')
   .option('--debug', 'Show all progress messages in list format')
   .option('--cost', 'Show LLM cost information')
   .action(async (options) => {
@@ -97,7 +95,6 @@ Examples:
 recipesCommand
   .command('validate <target>')
   .description('Validate recipes by name, path, library, or git repository')
-  .option('--no-progress', 'Disable progress UI')
   .option('--debug', 'Show all progress messages in list format')
   .addHelpText(
     'after',
@@ -139,7 +136,6 @@ recipesCommand
   .option('--project <path>', 'Apply to specific project only')
   .option('-y, --yes', 'Skip interactive confirmations')
   .option('--force', 'Bypass re-application warnings (alias for --yes)')
-  .option('--no-progress', 'Disable progress UI')
   .option('--debug', 'Show all progress messages in list format')
   .option('--cost', 'Show LLM cost information')
   .addHelpText(
@@ -184,7 +180,6 @@ Examples:
 recipesCommand
   .command('show <recipe-name>')
   .description('Show detailed information about a recipe')
-  .option('--no-progress', 'Disable progress UI')
   .option('--debug', 'Show all progress messages in list format')
   .addHelpText(
     'after',
@@ -220,7 +215,6 @@ Examples:
 recipesCommand
   .command('generate [name]')
   .description('Generate a new recipe')
-  .option('--no-progress', 'Disable progress UI')
   .option('--debug', 'Show all progress messages in list format')
   .option('--cost', 'Show LLM cost information')
   .option(

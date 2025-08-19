@@ -19,7 +19,6 @@ interface ShellProps {
     | 'recipes-generate'
     | 'recipes-show';
   options: {
-    progress?: boolean;
     reset?: boolean;
     noAnalyze?: boolean;
     yes?: boolean;

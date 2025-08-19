@@ -33,7 +33,6 @@ program
           reset: options.reset,
           noAnalyze: !options.analyze || options.A,
           yes: options.yes,
-          progress: options.progress,
           debug: options.debug,
           cost: options.cost,
         },
@@ -58,7 +57,6 @@ program
       React.createElement(Shell, {
         command: 'analyze',
         options: {
-          progress: options.progress,
           debug: options.debug,
           cost: options.cost,
         },
@@ -115,7 +113,6 @@ Examples:
         command: 'recipes-validate',
         options: {
           target,
-          progress: options.progress,
           debug: options.debug,
         },
       })
@@ -162,7 +159,6 @@ Examples:
           variant: options.variant,
           project: options.project,
           yes: options.yes || options.force,
-          progress: options.progress,
           debug: options.debug,
           cost: options.cost,
         },
@@ -198,7 +194,6 @@ Examples:
         command: 'recipes-show',
         options: {
           recipeName,
-          progress: options.progress,
           debug: options.debug,
         },
       })
@@ -271,7 +266,6 @@ Examples:
         command: 'recipes-generate',
         options: {
           name,
-          progress: options.progress,
           debug: options.debug,
           cost: options.cost,
           saveLocation: options.location,

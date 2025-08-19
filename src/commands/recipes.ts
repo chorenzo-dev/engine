@@ -292,15 +292,11 @@ export type ValidationCallback = (
   message: string
 ) => void;
 
-export interface RecipesOptions {
-  progress?: boolean;
-}
-
-export interface ValidateOptions extends RecipesOptions {
+export interface ValidateOptions extends Record<string, unknown> {
   target: string;
 }
 
-export interface RecipesGenerateOptions extends RecipesOptions {
+export interface RecipesGenerateOptions {
   name?: string;
   cost?: boolean;
   magicGenerate?: boolean;
@@ -473,7 +469,7 @@ async function findRecipeByName(recipeName: string): Promise<string[]> {
 
 async function validateRecipeByName(
   recipeName: string,
-  options: RecipesOptions,
+  options: Record<string, unknown>,
   context: Omit<ValidationContext, 'recipesValidated'>,
   onProgress?: ProgressCallback,
   onValidation?: ValidationCallback
@@ -516,7 +512,7 @@ async function validateRecipeByName(
 
 async function validateRecipeFolder(
   recipePath: string,
-  _options: RecipesOptions,
+  _options: Record<string, unknown>,
   context: Omit<ValidationContext, 'recipesValidated'>,
   onProgress?: ProgressCallback,
   onValidation?: ValidationCallback
@@ -626,7 +622,7 @@ async function validateRecipeFolder(
 
 async function validateLibrary(
   libraryPath: string,
-  _options: RecipesOptions,
+  _options: Record<string, unknown>,
   context: Omit<ValidationContext, 'recipesValidated'>,
   onProgress?: ProgressCallback,
   onValidation?: ValidationCallback
@@ -732,7 +728,7 @@ async function validateLibrary(
 
 async function validateGitRepository(
   gitUrl: string,
-  options: RecipesOptions,
+  options: Record<string, unknown>,
   context: Omit<ValidationContext, 'recipesValidated'>,
   onProgress?: ProgressCallback,
   onValidation?: ValidationCallback

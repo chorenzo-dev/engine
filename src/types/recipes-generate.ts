@@ -7,7 +7,6 @@ export interface RecipesGenerateOptions {
   location?: string;
   saveLocation?: string;
   additionalInstructions?: string;
-  progress?: boolean;
   ecosystemAgnostic?: boolean;
 }
 

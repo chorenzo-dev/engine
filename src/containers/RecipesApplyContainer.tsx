@@ -14,6 +14,7 @@ import {
   RecipesApplyOptions,
   RecipesApplyResult,
 } from '~/types/recipes-apply';
+import { extractErrorMessage } from '~/utils/error.utils';
 
 interface RecipesApplyContainerOptions
   extends RecipesApplyOptions,
@@ -84,11 +85,11 @@ export const RecipesApplyContainer: React.FC<RecipesApplyContainerProps> = ({
                 context.complete();
               }
             } catch (error) {
-              context.setError(
-                error instanceof Error ? error.message : String(error)
-              );
+              context.setError(extractErrorMessage(error));
               onError(
-                error instanceof Error ? error : new Error(String(error))
+                error instanceof Error
+                  ? error
+                  : new Error(extractErrorMessage(error))
               );
             }
           };
@@ -160,11 +161,11 @@ export const RecipesApplyContainer: React.FC<RecipesApplyContainerProps> = ({
               }
               context.complete();
             } catch (error) {
-              context.setError(
-                error instanceof Error ? error.message : String(error)
-              );
+              context.setError(extractErrorMessage(error));
               onError(
-                error instanceof Error ? error : new Error(String(error))
+                error instanceof Error
+                  ? error
+                  : new Error(extractErrorMessage(error))
               );
             }
           };

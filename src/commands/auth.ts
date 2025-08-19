@@ -1,6 +1,8 @@
 import { checkClaudeCodeAuth } from '~/utils/claude.utils';
 import { Logger } from '~/utils/logger.utils';
 
+import { extractErrorMessage, formatErrorMessage } from '../utils/error.utils';
+
 export class AuthError extends Error {
   constructor(
     message: string,
@@ -34,7 +36,7 @@ export async function performAuthCheck(): Promise<boolean> {
 
     return isAuthenticated;
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
+    const errorMsg = extractErrorMessage(error);
     Logger.error(
       {
         event: 'auth_check_failed',
@@ -45,7 +47,7 @@ export async function performAuthCheck(): Promise<boolean> {
     );
 
     throw new AuthError(
-      `Authentication check failed: ${errorMsg}`,
+      formatErrorMessage('Authentication check failed', error),
       'AUTH_CHECK_FAILED'
     );
   }

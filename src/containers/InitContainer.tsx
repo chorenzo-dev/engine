@@ -8,6 +8,7 @@ import { AnalysisResultDisplay } from '~/components/AnalysisResultDisplay';
 import { AuthenticationStep } from '~/components/AuthenticationStep';
 import { Step, StepContext, StepSequence } from '~/components/StepSequence';
 import { BaseContainerOptions } from '~/types/common';
+import { extractErrorMessage } from '~/utils/error.utils';
 import { Logger } from '~/utils/logger.utils';
 
 interface InitContainerOptions extends InitOptions, BaseContainerOptions {
@@ -39,9 +40,7 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
                 context.setProcessing(false);
               }
             } catch (error) {
-              context.setError(
-                error instanceof Error ? error.message : String(error)
-              );
+              context.setError(extractErrorMessage(error));
             }
           };
 
@@ -76,9 +75,7 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
               });
               context.complete();
             } catch (error) {
-              context.setError(
-                error instanceof Error ? error.message : String(error)
-              );
+              context.setError(extractErrorMessage(error));
             }
           };
 
@@ -118,9 +115,7 @@ export const InitContainer: React.FC<InitContainerProps> = ({ options }) => {
             }
             context.complete();
           } catch (error) {
-            context.setError(
-              error instanceof Error ? error.message : String(error)
-            );
+            context.setError(extractErrorMessage(error));
           }
         };
 

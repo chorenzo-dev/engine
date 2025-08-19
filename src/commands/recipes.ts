@@ -57,6 +57,7 @@ import {
 import { stateManager } from '~/utils/state-manager.utils';
 import { workspaceConfig } from '~/utils/workspace-config.utils';
 
+import { extractErrorMessage, formatErrorMessage } from '../utils/error.utils';
 import { performAnalysis } from './analyze';
 
 const RECIPE_FIX_FILE_TYPE = 'markdown';
@@ -108,7 +109,7 @@ async function performCodeSampleValidation(
     return validationResult;
   } catch (error) {
     throw new CodeSampleValidationError(
-      `Code sample validation failed: ${error instanceof Error ? error.message : String(error)}`,
+      `Code sample validation failed: ${extractErrorMessage(error)}`,
       'VALIDATION_FAILED'
     );
   }
@@ -135,7 +136,7 @@ async function validateRecipeFixContent(
       onComplete: () => {},
       onError: (error) => {
         throw new CodeSampleValidationError(
-          `AI validation failed: ${error.message}`,
+          `AI validation failed: ${extractErrorMessage(error)}`,
           'AI_VALIDATION_FAILED'
         );
       },
@@ -168,7 +169,7 @@ async function validateRecipeFixContent(
     return validationResult;
   } catch (error) {
     throw new CodeSampleValidationError(
-      `AI validation failed: ${error instanceof Error ? error.message : String(error)}`,
+      `AI validation failed: ${extractErrorMessage(error)}`,
       'AI_VALIDATION_FAILED'
     );
   }
@@ -201,7 +202,7 @@ function parseFixContentValidationResponse(
     return parsed;
   } catch (error) {
     throw new CodeSampleValidationError(
-      `Failed to parse AI validation response: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to parse AI validation response: ${extractErrorMessage(error)}`,
       'RESPONSE_PARSE_FAILED'
     );
   }
@@ -431,10 +432,7 @@ export async function performRecipesValidate(
     if (error instanceof RecipesError) {
       throw error;
     }
-    throw new RecipesError(
-      error instanceof Error ? error.message : String(error),
-      'VALIDATION_FAILED'
-    );
+    throw new RecipesError(extractErrorMessage(error), 'VALIDATION_FAILED');
   }
 }
 
@@ -537,7 +535,10 @@ async function validateRecipeFolder(
     try {
       codeSampleValidation = await performCodeSampleValidation(recipe);
     } catch (error) {
-      const warningMsg = `Code sample validation failed: ${error instanceof Error ? error.message : String(error)}`;
+      const warningMsg = formatErrorMessage(
+        'Code sample validation failed',
+        error
+      );
       messages.push({ type: 'warning', text: warningMsg });
       onValidation?.('warning', warningMsg);
       totalWarnings++;
@@ -617,7 +618,7 @@ async function validateRecipeFolder(
     };
   } catch (error) {
     throw new RecipesError(
-      error instanceof Error ? error.message : String(error),
+      extractErrorMessage(error),
       'RECIPE_VALIDATION_FAILED'
     );
   }
@@ -649,7 +650,7 @@ async function validateLibrary(
         try {
           codeSampleValidation = await performCodeSampleValidation(recipe);
         } catch (error) {
-          const warningMsg = `${recipeId} code sample validation failed: ${error instanceof Error ? error.message : String(error)}`;
+          const warningMsg = `${recipeId} code sample validation failed: ${extractErrorMessage(error)}`;
           messages.push({ type: 'warning', text: warningMsg });
           onValidation?.('warning', warningMsg);
           totalWarnings++;
@@ -723,7 +724,7 @@ async function validateLibrary(
     };
   } catch (error) {
     throw new RecipesError(
-      error instanceof Error ? error.message : String(error),
+      extractErrorMessage(error),
       'LIBRARY_VALIDATION_FAILED'
     );
   }
@@ -766,7 +767,7 @@ async function validateGitRepository(
       throw error;
     }
     throw new RecipesError(
-      `Failed to validate git repository: ${error instanceof Error ? error.message : String(error)}`,
+      formatErrorMessage('Failed to validate git repository', error),
       'GIT_VALIDATION_FAILED'
     );
   } finally {
@@ -1033,7 +1034,7 @@ export async function performRecipesApply(
     Logger.error(
       {
         event: 'apply_error',
-        error: error instanceof Error ? error.message : String(error),
+        error: extractErrorMessage(error),
         stack: error instanceof Error ? error.stack : undefined,
       },
       'Recipe application failed'
@@ -1043,7 +1044,7 @@ export async function performRecipesApply(
       throw error;
     }
     throw new RecipesApplyError(
-      `Apply operation failed: ${error instanceof Error ? error.message : String(error)}`,
+      formatErrorMessage('Apply operation failed', error),
       'APPLY_FAILED'
     );
   }
@@ -1141,7 +1142,7 @@ async function ensureAnalysisData(): Promise<WorkspaceAnalysis> {
       Logger.warn(
         {
           event: 'analysis_file_read_failed',
-          error: error instanceof Error ? error.message : String(error),
+          error: extractErrorMessage(error),
         },
         `Failed to read analysis file`
       );
@@ -1166,7 +1167,7 @@ async function readCurrentState(): Promise<RecipesApplyState> {
     return (workspaceState.workspace || {}) as RecipesApplyState;
   } catch (error) {
     throw new RecipesApplyError(
-      `Failed to read state file: ${error instanceof Error ? error.message : String(error)}`,
+      formatErrorMessage('Failed to read state file', error),
       'STATE_READ_FAILED'
     );
   }
@@ -1797,7 +1798,7 @@ async function executeRecipe(
     Logger.error(
       {
         event: `${logEventPrefix}_error`,
-        error: error instanceof Error ? error.message : String(error),
+        error: extractErrorMessage(error),
       },
       'Error during recipe application'
     );
@@ -1806,7 +1807,7 @@ async function executeRecipe(
       projectPath,
       recipeId: recipe.getId(),
       success: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: extractErrorMessage(error),
       costUsd: 0,
     };
   }
@@ -1876,7 +1877,7 @@ async function loadExistingRecipeOutputs(): Promise<string[]> {
     return [...new Set(outputs)].sort();
   } catch (error) {
     Logger.warn(
-      { error: error instanceof Error ? error.message : String(error) },
+      { error: extractErrorMessage(error) },
       'Failed to load existing recipe outputs'
     );
     return [];
@@ -1995,7 +1996,7 @@ export async function performRecipesGenerate(
         showChorenzoOperations: true,
         onError: (error) => {
           throw new RecipesError(
-            `Magic generation failed: ${error.message}`,
+            formatErrorMessage('Magic generation failed', error),
             'MAGIC_GENERATION_FAILED'
           );
         },
@@ -2063,7 +2064,7 @@ export async function performRecipesGenerate(
       throw error;
     }
     throw new RecipesError(
-      `Recipe generation failed: ${error instanceof Error ? error.message : String(error)}`,
+      formatErrorMessage('Recipe generation failed', error),
       'GENERATION_FAILED'
     );
   }

@@ -6,6 +6,7 @@ import { simpleGit } from 'simple-git';
 import type { Config, ConfigLibrary } from '~/types/config';
 
 import { chorenzoConfig } from './config.utils';
+import { extractErrorMessage, formatErrorMessage } from './error.utils';
 import {
   GitError,
   checkGitAvailable,
@@ -100,7 +101,7 @@ export class LibraryManager {
       Logger.info({ library: libraryName }, 'Successfully refreshed library');
     } catch (error) {
       throw new GitError(
-        `Failed to refresh library '${libraryName}': ${error instanceof Error ? error.message : String(error)}`,
+        formatErrorMessage('Failed to refresh library', error),
         'REFRESH_FAILED'
       );
     }
@@ -116,7 +117,7 @@ export class LibraryManager {
         Logger.warn(
           {
             library: libraryName,
-            error: error instanceof Error ? error.message : String(error),
+            error: extractErrorMessage(error),
           },
           `Failed to refresh library '${libraryName}', continuing with others`
         );
@@ -155,7 +156,7 @@ export class LibraryManager {
         Logger.warn(
           {
             directory: dir,
-            error: error instanceof Error ? error.message : String(error),
+            error: extractErrorMessage(error),
           },
           'Failed to search directory for recipes'
         );
@@ -232,7 +233,7 @@ export class LibraryManager {
         Logger.warn(
           {
             directory: dir,
-            error: error instanceof Error ? error.message : String(error),
+            error: extractErrorMessage(error),
           },
           'Failed to search local directory for recipes'
         );
@@ -270,7 +271,7 @@ export class LibraryManager {
       }
       return {
         valid: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: extractErrorMessage(error),
       };
     }
   }
@@ -319,7 +320,7 @@ export class LibraryManager {
       return await chorenzoConfig.readConfig();
     } catch (error) {
       throw new LibraryManagerError(
-        `Failed to read config: ${error instanceof Error ? error.message : String(error)}`,
+        formatErrorMessage('Failed to read config', error),
         'CONFIG_READ_ERROR'
       );
     }

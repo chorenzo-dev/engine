@@ -10,6 +10,7 @@ import {
   RecipesGenerateOptions,
   RecipesGenerateResult,
 } from '~/types/recipes-generate';
+import { extractErrorMessage } from '~/utils/error.utils';
 
 function buildRetryCliCommand(options: RecipesGenerateOptions): string {
   if (!options.name) {
@@ -102,8 +103,7 @@ export const RecipesGenerateContainer: React.FC<
             } catch (error) {
               const collectedOptions =
                 context.getResult<RecipesGenerateOptions>('collect');
-              let errorMessage =
-                error instanceof Error ? error.message : String(error);
+              let errorMessage = extractErrorMessage(error);
 
               const cliCommand = buildRetryCliCommand(collectedOptions || {});
               if (cliCommand) {

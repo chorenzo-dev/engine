@@ -9,6 +9,7 @@ import { ProcessDisplay } from '~/components/ProcessDisplay';
 import { emojis } from '~/components/ProcessDisplay';
 import { Step, StepContext, StepSequence } from '~/components/StepSequence';
 import { BaseContainerOptions } from '~/types/common';
+import { extractErrorMessage } from '~/utils/error.utils';
 
 interface RecipesValidateContainerOptions extends BaseContainerOptions {
   target: string;
@@ -63,12 +64,9 @@ export const RecipesValidateContainer: React.FC<
               }
               context.complete();
             } catch (error) {
-              context.setError(
-                error instanceof Error ? error.message : String(error)
-              );
-              onError(
-                error instanceof Error ? error : new Error(String(error))
-              );
+              const errorMessage = extractErrorMessage(error);
+              context.setError(errorMessage);
+              onError(error instanceof Error ? error : new Error(errorMessage));
             }
           };
 

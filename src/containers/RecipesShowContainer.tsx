@@ -10,6 +10,7 @@ import {
   RecipeLocationInfo,
   RecipeShowContainerOptions,
 } from '~/types/recipes-show';
+import { extractErrorMessage } from '~/utils/error.utils';
 
 interface RecipesShowContainerProps {
   options: RecipeShowContainerOptions;
@@ -39,7 +40,9 @@ export const RecipesShowContainer: React.FC<RecipesShowContainerProps> = ({
         });
         setShowMenu(true);
       } catch (error) {
-        onError(error instanceof Error ? error : new Error(String(error)));
+        onError(
+          error instanceof Error ? error : new Error(extractErrorMessage(error))
+        );
       } finally {
         setLoading(false);
       }

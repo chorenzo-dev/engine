@@ -1,3 +1,5 @@
+import { extractErrorMessage } from './error.utils';
+
 export interface RetryOptions {
   maxAttempts?: number;
   delayMs?: number;
@@ -16,7 +18,8 @@ export async function retry<T>(
     try {
       return await operation();
     } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
+      lastError =
+        error instanceof Error ? error : new Error(extractErrorMessage(error));
 
       if (attempt < maxAttempts) {
         onRetry?.(attempt, lastError);

@@ -15,6 +15,8 @@ import { readJson, writeJson } from '~/utils/json.utils';
 import { Logger } from '~/utils/logger.utils';
 import { loadPrompt, renderPrompt } from '~/utils/prompts.utils';
 
+import { extractErrorMessage, formatErrorMessage } from '../utils/error.utils';
+
 const ANALYSIS_PATH = path.join(process.cwd(), '.chorenzo', 'analysis.json');
 
 export interface AnalysisResult {
@@ -96,7 +98,10 @@ export async function performAnalysis(
           );
         }
       } catch (error) {
-        errorMessage = `Failed to read analysis file: ${error instanceof Error ? error.message : String(error)}`;
+        errorMessage = formatErrorMessage(
+          'Failed to read analysis file',
+          error
+        );
         analysis = null;
         Logger.error(
           {
@@ -109,7 +114,7 @@ export async function performAnalysis(
       }
     },
     onError: (error) => {
-      errorMessage = error.message;
+      errorMessage = extractErrorMessage(error);
       Logger.error(
         {
           event: 'analysis_claude_execution_error',
@@ -210,7 +215,7 @@ export async function performAnalysis(
         Logger.warn(
           {
             event: 'analysis_framework_validation_error',
-            error: error instanceof Error ? error.message : String(error),
+            error: extractErrorMessage(error),
           },
           validationError
         );

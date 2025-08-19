@@ -1,5 +1,7 @@
 import * as fs from 'fs';
 
+import { formatErrorMessage } from './error.utils';
+
 export class JsonError extends Error {
   constructor(
     message: string,
@@ -26,7 +28,7 @@ export async function readJson<T>(filePath: string): Promise<T> {
       );
     }
     throw new JsonError(
-      `Failed to read JSON file: ${error instanceof Error ? error.message : String(error)}`,
+      formatErrorMessage('Failed to read JSON file', error),
       'READ_ERROR'
     );
   }
@@ -44,7 +46,7 @@ export async function writeJson<T>(
     fs.writeFileSync(filePath, jsonContent, 'utf8');
   } catch (error) {
     throw new JsonError(
-      `Failed to write JSON file: ${error instanceof Error ? error.message : String(error)}`,
+      formatErrorMessage('Failed to write JSON file', error),
       'WRITE_ERROR'
     );
   }

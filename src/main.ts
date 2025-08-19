@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { render } from 'ink';
 import React from 'react';
 
+import { extractErrorMessage } from '~/utils/error.utils';
 import { Logger } from '~/utils/logger.utils';
 
 import packageJson from '../package.json' with { type: 'json' };
@@ -43,7 +44,7 @@ program
     try {
       await waitUntilExit();
     } catch (error) {
-      Logger.error(error instanceof Error ? error.message : String(error));
+      Logger.error(extractErrorMessage(error));
       process.exit(1);
     }
   });
@@ -69,7 +70,7 @@ program
     try {
       await waitUntilExit();
     } catch (error) {
-      Logger.error(error instanceof Error ? error.message : String(error));
+      Logger.error(extractErrorMessage(error));
       process.exit(1);
     }
   });
@@ -126,7 +127,7 @@ Examples:
     try {
       await waitUntilExit();
     } catch (error) {
-      Logger.error(error instanceof Error ? error.message : String(error));
+      Logger.error(extractErrorMessage(error));
       process.exit(1);
     }
   });
@@ -175,7 +176,7 @@ Examples:
     try {
       await waitUntilExit();
     } catch (error) {
-      Logger.error(error instanceof Error ? error.message : String(error));
+      Logger.error(extractErrorMessage(error));
       process.exit(1);
     }
   });
@@ -211,7 +212,7 @@ Examples:
     try {
       await waitUntilExit();
     } catch (error) {
-      Logger.error(error instanceof Error ? error.message : String(error));
+      Logger.error(extractErrorMessage(error));
       process.exit(1);
     }
   });
@@ -292,7 +293,7 @@ Examples:
     try {
       await waitUntilExit();
     } catch (error) {
-      Logger.error(error instanceof Error ? error.message : String(error));
+      Logger.error(extractErrorMessage(error));
       process.exit(1);
     }
   });

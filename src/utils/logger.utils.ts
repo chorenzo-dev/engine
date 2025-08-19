@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import pino from 'pino';
 
+import { formatErrorMessage } from './error.utils';
 import { workspaceConfig } from './workspace-config.utils';
 
 class Logger {
@@ -59,9 +60,7 @@ class Logger {
         logStream
       );
     } catch (error) {
-      throw new Error(
-        `Failed to initialize Logger: ${error instanceof Error ? error.message : String(error)}`
-      );
+      throw new Error(formatErrorMessage('Failed to initialize Logger', error));
     }
   }
 

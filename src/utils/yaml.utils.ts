@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 import { parse as yamlParse, stringify as yamlStringify } from 'yaml';
 
+import { formatErrorMessage } from './error.utils';
+
 export class YamlError extends Error {
   constructor(
     message: string,
@@ -21,7 +23,7 @@ export async function readYaml<T>(filePath: string): Promise<T> {
       throw new YamlError(`File not found: ${filePath}`, 'FILE_NOT_FOUND');
     }
     throw new YamlError(
-      `Failed to read YAML file: ${error instanceof Error ? error.message : String(error)}`,
+      formatErrorMessage('Failed to read YAML file', error),
       'READ_ERROR'
     );
   }
@@ -33,7 +35,7 @@ export async function writeYaml<T>(filePath: string, data: T): Promise<void> {
     fs.writeFileSync(filePath, yamlContent, 'utf8');
   } catch (error) {
     throw new YamlError(
-      `Failed to write YAML file: ${error instanceof Error ? error.message : String(error)}`,
+      formatErrorMessage('Failed to write YAML file', error),
       'WRITE_ERROR'
     );
   }
@@ -44,7 +46,7 @@ export function parseYaml<T = unknown>(yamlContent: string): T {
     return yamlParse(yamlContent) as T;
   } catch (error) {
     throw new YamlError(
-      `Failed to parse YAML: ${error instanceof Error ? error.message : String(error)}`,
+      formatErrorMessage('Failed to parse YAML', error),
       'PARSE_ERROR'
     );
   }

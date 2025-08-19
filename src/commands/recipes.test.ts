@@ -6564,9 +6564,7 @@ requires: []
     });
 
     it('should discover categories from multiple libraries with recipes', async () => {
-      mockHomedir.mockImplementation(() => '/test/home');
-      mockTmpdir.mockImplementation(() => '/tmp');
-      mockWriteFileAtomicSync.mockImplementation(() => {});
+      setupDefaultMocks();
 
       setupMultiLibraryRecipes({
         core: {
@@ -6592,9 +6590,7 @@ requires: []
     });
 
     it('should find recipes by category across multiple libraries', async () => {
-      mockHomedir.mockImplementation(() => '/test/home');
-      mockTmpdir.mockImplementation(() => '/tmp');
-      mockWriteFileAtomicSync.mockImplementation(() => {});
+      setupDefaultMocks();
 
       setupMultiLibraryRecipes({
         core: {
@@ -6618,9 +6614,7 @@ requires: []
     });
 
     it('should aggregate categories from libraries with overlapping categories', async () => {
-      mockHomedir.mockImplementation(() => '/test/home');
-      mockTmpdir.mockImplementation(() => '/tmp');
-      mockWriteFileAtomicSync.mockImplementation(() => {});
+      setupDefaultMocks();
 
       setupMultiLibraryRecipes({
         core: {
@@ -6653,9 +6647,7 @@ requires: []
     });
 
     it('should return empty array for non-existent category', async () => {
-      mockHomedir.mockImplementation(() => '/test/home');
-      mockTmpdir.mockImplementation(() => '/tmp');
-      mockWriteFileAtomicSync.mockImplementation(() => {});
+      setupDefaultMocks();
 
       setupMultiLibraryRecipes({
         core: {

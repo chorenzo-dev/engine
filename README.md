@@ -70,6 +70,18 @@ npx chorenzo recipes validate https://github.com/chorenzo-dev/recipes-core.git
 npx chorenzo recipes validate code-formatting --debug
 ```
 
+#### List Available Recipes
+
+Browse all available recipes organized by category:
+
+```bash
+# Browse all recipes by category (interactive)
+npx chorenzo recipes list
+
+# Show detailed debug output
+npx chorenzo recipes list --debug
+```
+
 #### Show Recipe Details
 
 Show detailed information about a specific recipe:
@@ -104,6 +116,9 @@ npx chorenzo recipes apply testing --project frontend
 
 # Skip interactive confirmations
 npx chorenzo recipes apply eslint-config -y
+
+# Force re-application (bypass warnings)
+npx chorenzo recipes apply linting --force
 
 # Show detailed debug output
 npx chorenzo recipes apply linting --debug

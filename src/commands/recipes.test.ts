@@ -191,6 +191,16 @@ describe('Recipes Command Integration Tests', () => {
     fileStructure[`${recipePath}/fix.md`] = true;
   };
 
+  const setupRecipeExistenceChecks = (
+    recipePath: string,
+    recipePathChecks: Array<[string, boolean]>
+  ): void => {
+    recipePathChecks.push([recipePath, true]);
+    recipePathChecks.push([`${recipePath}/metadata.yaml`, true]);
+    recipePathChecks.push([`${recipePath}/prompt.md`, true]);
+    recipePathChecks.push([`${recipePath}/fix.md`, true]);
+  };
+
   const setupCategoryStructure = (
     libraryPath: string,
     categoryName: string,
@@ -441,50 +451,20 @@ describe('Recipes Command Integration Tests', () => {
   it('should detect library input type', async () => {
     const options = { target: '/path/to/library' };
 
+    const recipePathChecks: Array<[string, boolean]> = [
+      ['/path/to/library', true],
+      ['/path/to/library/metadata.yaml', false],
+      ['/path/to/library/recipe1/variants', true],
+      ['/path/to/library/recipe2/variants', true],
+      ['/path/to/library/recipe1/variants/basic.md', true],
+      ['/path/to/library/recipe2/variants/basic.md', true],
+    ];
+    setupRecipeExistenceChecks('/path/to/library/recipe1', recipePathChecks);
+    setupRecipeExistenceChecks('/path/to/library/recipe2', recipePathChecks);
+
     mockExistsSync.mockImplementation((filePath: string) => {
-      if (filePath === '/path/to/library') {
-        return true;
-      }
-      if (filePath === '/path/to/library/metadata.yaml') {
-        return false;
-      }
-      if (filePath === '/path/to/library/recipe1') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe2') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe1/metadata.yaml') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe2/metadata.yaml') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe1/prompt.md') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe2/prompt.md') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe1/fix.md') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe2/fix.md') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe1/variants') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe2/variants') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe1/variants/basic.md') {
-        return true;
-      }
-      if (filePath === '/path/to/library/recipe2/variants/basic.md') {
-        return true;
-      }
-      return false;
+      const result = recipePathChecks.find(([path]) => path === filePath);
+      return result ? result[1] : false;
     });
 
     mockStatSync.mockImplementation(
@@ -565,52 +545,24 @@ describe('Recipes Command Integration Tests', () => {
   it('should handle recipe search in nested directories', async () => {
     const options = { target: 'nested-recipe' };
 
+    const recipePathChecks: Array<[string, boolean]> = [
+      ['/test/home/.chorenzo/recipes', true],
+      ['/test/home/.chorenzo/recipes/lib1', true],
+      ['/test/home/.chorenzo/recipes/lib2', true],
+      ['/test/home/.chorenzo/recipes/lib1/nested-recipe/variants', true],
+      [
+        '/test/home/.chorenzo/recipes/lib1/nested-recipe/variants/basic.md',
+        true,
+      ],
+    ];
+    setupRecipeExistenceChecks(
+      '/test/home/.chorenzo/recipes/lib1/nested-recipe',
+      recipePathChecks
+    );
+
     mockExistsSync.mockImplementation((filePath: string) => {
-      if (filePath === '/test/home/.chorenzo/recipes') {
-        return true;
-      }
-      if (filePath === '/test/home/.chorenzo/recipes/lib1') {
-        return true;
-      }
-      if (filePath === '/test/home/.chorenzo/recipes/lib2') {
-        return true;
-      }
-      if (filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe') {
-        return true;
-      }
-      if (
-        filePath ===
-        '/test/home/.chorenzo/recipes/lib1/nested-recipe/metadata.yaml'
-      ) {
-        return true;
-      }
-      if (
-        filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/prompt.md'
-      ) {
-        return true;
-      }
-      if (
-        filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/variants'
-      ) {
-        return true;
-      }
-      if (
-        filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/fix.md'
-      ) {
-        return true;
-      }
-      if (
-        filePath === '/test/home/.chorenzo/recipes/lib1/nested-recipe/variants'
-      ) {
-        return true;
-      }
-      if (
-        filePath ===
-        '/test/home/.chorenzo/recipes/lib1/nested-recipe/variants/basic.md'
-      ) {
-        return true;
-      }
-      return false;
+      const result = recipePathChecks.find(([path]) => path === filePath);
+      return result ? result[1] : false;
     });
 
     mockStatSync.mockImplementation(
@@ -815,47 +767,23 @@ describe('Recipes Command Integration Tests', () => {
     it('should find local recipes when library search returns nothing', async () => {
       const options = { target: 'local-recipe' };
 
+      const recipePathChecks: Array<[string, boolean]> = [
+        ['/test/home/.chorenzo/recipes', false],
+        [process.cwd(), true],
+        [`${process.cwd()}/recipes`, true],
+        [`${process.cwd()}/recipes/local-recipe/apply_recipe.md`, true],
+        [`${process.cwd()}/recipes/local-recipe/variants`, true],
+        [`${process.cwd()}/recipes/local-recipe/variants/basic.md`, true],
+        [`${process.cwd()}/.gitignore`, false],
+      ];
+      setupRecipeExistenceChecks(
+        `${process.cwd()}/recipes/local-recipe`,
+        recipePathChecks
+      );
+
       mockExistsSync.mockImplementation((filePath: string) => {
-        if (filePath === '/test/home/.chorenzo/recipes') {
-          return false;
-        }
-        if (filePath === process.cwd()) {
-          return true;
-        }
-        if (filePath === `${process.cwd()}/recipes`) {
-          return true;
-        }
-        if (filePath === `${process.cwd()}/recipes/local-recipe`) {
-          return true;
-        }
-        if (
-          filePath === `${process.cwd()}/recipes/local-recipe/metadata.yaml`
-        ) {
-          return true;
-        }
-        if (filePath === `${process.cwd()}/recipes/local-recipe/prompt.md`) {
-          return true;
-        }
-        if (filePath === `${process.cwd()}/recipes/local-recipe/fix.md`) {
-          return true;
-        }
-        if (
-          filePath === `${process.cwd()}/recipes/local-recipe/apply_recipe.md`
-        ) {
-          return true;
-        }
-        if (filePath === `${process.cwd()}/recipes/local-recipe/variants`) {
-          return true;
-        }
-        if (
-          filePath === `${process.cwd()}/recipes/local-recipe/variants/basic.md`
-        ) {
-          return true;
-        }
-        if (filePath === `${process.cwd()}/.gitignore`) {
-          return false;
-        }
-        return false;
+        const result = recipePathChecks.find(([path]) => path === filePath);
+        return result ? result[1] : false;
       });
 
       mockStatSync.mockImplementation(

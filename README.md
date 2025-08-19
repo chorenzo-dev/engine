@@ -37,11 +37,8 @@ npx chorenzo init --cost
 Analyze your workspace and get detailed insights about project structure, dependencies, and ecosystems:
 
 ```bash
-# With progress UI (default)
+# Analyze workspace
 npx chorenzo analyze
-
-# Disable progress UI for simple text output
-npx chorenzo analyze --no-progress
 
 # Show detailed debug output
 npx chorenzo analyze --debug
@@ -69,9 +66,6 @@ npx chorenzo recipes validate ~/.chorenzo/recipes/core
 # Validate recipes from a git repository
 npx chorenzo recipes validate https://github.com/chorenzo-dev/recipes-core.git
 
-# Disable progress UI for simple text output
-npx chorenzo recipes validate code-formatting --no-progress
-
 # Show detailed debug output
 npx chorenzo recipes validate code-formatting --debug
 ```
@@ -86,9 +80,6 @@ npx chorenzo recipes show code-formatting
 
 # Show details for any available recipe
 npx chorenzo recipes show testing-setup
-
-# Disable progress UI for simple text output
-npx chorenzo recipes show linting --no-progress
 
 # Show detailed debug output
 npx chorenzo recipes show ci-cd --debug
@@ -113,9 +104,6 @@ npx chorenzo recipes apply testing --project frontend
 
 # Skip interactive confirmations
 npx chorenzo recipes apply eslint-config -y
-
-# Disable progress UI for simple text output
-npx chorenzo recipes apply ci-cd --no-progress
 
 # Show detailed debug output
 npx chorenzo recipes apply linting --debug
@@ -149,9 +137,6 @@ npx chorenzo recipes generate testing \
   --category development \
   --summary "Configure Jest testing framework with coverage reporting and TypeScript integration"
 
-# Disable progress UI for simple text output
-npx chorenzo recipes generate my-recipe --no-progress
-
 # Show detailed debug output
 npx chorenzo recipes generate my-recipe --debug
 
@@ -182,7 +167,6 @@ npx chorenzo recipes generate api-endpoints --magic-generate \
 
 **Options:**
 
-- `--no-progress`: Disable progress UI for simple text output
 - `--debug`: Show detailed debug output with all progress messages
 - `--cost`: Show LLM cost information (for AI-generated recipes)
 - `--location <path>`: Custom save location (supports ~ for home directory)
@@ -235,7 +219,6 @@ See our [recipes documentation](docs/recipes.md) for detailed information about 
 
 Most commands support these common flags:
 
-- `--no-progress`: Disable progress UI for simple text output
 - `--debug`: Show detailed debug output with all progress messages
 - `--cost`: Show LLM cost information (for commands that use AI)
 

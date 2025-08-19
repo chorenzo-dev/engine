@@ -19,7 +19,6 @@ interface ShellProps {
     | 'recipes-generate'
     | 'recipes-show';
   options: {
-    progress?: boolean;
     reset?: boolean;
     noAnalyze?: boolean;
     yes?: boolean;
@@ -50,7 +49,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
     return (
       <AnalyzeContainer
         options={{
-          progress: options.progress,
           debug: options.debug,
           cost: options.cost,
         }}
@@ -68,7 +66,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           reset: options.reset,
           noAnalyze: options.noAnalyze,
           yes: options.yes,
-          progress: options.progress,
           debug: options.debug,
           cost: options.cost,
         }}
@@ -91,7 +88,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       <RecipesValidateContainer
         options={{
           target: options.target,
-          progress: options.progress,
           debug: options.debug,
         }}
         onError={(error) => {
@@ -119,7 +115,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
           variant: options.variant,
           project: options.project,
           yes: options.yes,
-          progress: options.progress,
           debug: options.debug,
           cost: options.cost,
         }}
@@ -139,7 +134,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       <RecipesGenerateContainer
         options={{
           name: options.name,
-          progress: options.progress,
           debug: options.debug,
           cost: options.cost,
           saveLocation: options.saveLocation,
@@ -173,7 +167,6 @@ export const Shell: React.FC<ShellProps> = ({ command, options }) => {
       <RecipesShowContainer
         options={{
           recipeName: options.recipeName,
-          progress: options.progress,
           debug: options.debug,
         }}
         onError={(error) => {

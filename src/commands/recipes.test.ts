@@ -5644,107 +5644,22 @@ requires: []
     };
 
     it('should load recipe by name from library', async () => {
-      setupDefaultMocks();
-
-      const recipeBasePath =
-        '/test/home/.chorenzo/recipes/test-library/test-recipe';
-
-      mockExistsSync.mockImplementation((path) => {
-        if (path === recipeBasePath) {
-          return true;
-        }
-        if (path === `${recipeBasePath}/metadata.yaml`) {
-          return true;
-        }
-        if (path === `${recipeBasePath}/prompt.md`) {
-          return true;
-        }
-        if (path === `${recipeBasePath}/fix.md`) {
-          return true;
-        }
-        if (path.includes('/.chorenzo/config.yaml')) {
-          return true;
-        }
-        if (path.includes('/.chorenzo/recipes')) {
-          return true;
-        }
-        if (path.includes('recipes/test-library')) {
-          return true;
-        }
-        return false;
+      setupShowMocks({
+        recipeName: 'test-recipe',
+        isRemote: true,
+        libraryName: 'test-library',
+        repoUrl: 'https://github.com/test/test-recipes.git',
+        ref: 'main',
       });
-
-      mockReadFileSync.mockImplementation((filePath: string) => {
-        if (filePath.includes('config.yaml')) {
-          return yamlStringify({
-            libraries: {
-              'test-library': createLibraryConfig(
-                'test-library',
-                'https://github.com/test/test-recipes.git'
-              ),
-            },
-          });
-        }
-        if (filePath.includes('metadata.yaml')) {
-          return yamlStringify({
-            id: 'test-recipe',
-            category: 'test',
-            summary: 'Test recipe test-recipe',
-            level: 'project-only',
-            ecosystems: [],
-            provides: ['test-functionality'],
-            requires: [],
-          });
-        }
-        if (filePath.includes('prompt.md')) {
-          return '## Goal\nTest goal for test-recipe\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
-        }
-        if (filePath.includes('fix.md')) {
-          return 'Fix content for test-recipe';
-        }
-        return '';
-      });
-
-      mockReaddirSync.mockImplementation((path) => {
-        if (path === '/test/home/.chorenzo/recipes') {
-          return ['test-library'];
-        }
-        if (
-          path.includes('recipes/test-library') &&
-          !path.includes('test-recipe')
-        ) {
-          return ['test-recipe'];
-        }
-        return [];
-      });
-
-      mockStatSync.mockImplementation(
-        (path) =>
-          ({
-            isDirectory: () => {
-              if (path === '/test/home/.chorenzo/recipes') {
-                return true;
-              }
-              if (path === '/test/home/.chorenzo/recipes/test-library') {
-                return true;
-              }
-              if (
-                path === '/test/home/.chorenzo/recipes/test-library/test-recipe'
-              ) {
-                return true;
-              }
-              return false;
-            },
-            isFile: () => path.includes('.yaml') || path.includes('.md'),
-          }) as fs.Stats
-      );
 
       const result = await loadRecipeForShow('test-recipe');
 
       expect(result.recipe.getId()).toBe('test-recipe');
       expect(result.recipe.getCategory()).toBe('test');
       expect(result.recipe.getSummary()).toBe('Test recipe test-recipe');
-      expect(result.localPath).toBe(recipeBasePath);
+      expect(result.localPath).toBe(
+        '/test/home/.chorenzo/recipes/test-library/test-recipe'
+      );
       expect(result.isRemote).toBe(true);
       expect(result.webUrl).toBe(
         'https://github.com/test/test-recipes/tree/main/test-recipe'
@@ -5752,57 +5667,10 @@ requires: []
     });
 
     it('should load recipe by local folder path', async () => {
-      setupDefaultMocks();
-
-      const recipeBasePath = '/local/recipes/local-recipe';
-
-      mockExistsSync.mockImplementation((path) => {
-        if (path === recipeBasePath) {
-          return true;
-        }
-        if (path === `${recipeBasePath}/metadata.yaml`) {
-          return true;
-        }
-        if (path === `${recipeBasePath}/prompt.md`) {
-          return true;
-        }
-        if (path === `${recipeBasePath}/fix.md`) {
-          return true;
-        }
-        if (path.includes('/.chorenzo/config.yaml')) {
-          return true;
-        }
-        if (path.includes('/.chorenzo/recipes')) {
-          return true;
-        }
-        return false;
+      setupShowMocks({
+        recipeName: 'local-recipe',
+        isLocal: true,
       });
-
-      mockReadFileSync.mockImplementation((filePath: string) => {
-        if (filePath.includes('config.yaml')) {
-          return JSON.stringify({ libraries: {} });
-        }
-        if (filePath.includes('metadata.yaml')) {
-          return yamlStringify({
-            id: 'local-recipe',
-            category: 'test',
-            summary: 'Test recipe local-recipe',
-            level: 'project-only',
-            ecosystems: [],
-            provides: ['test-functionality'],
-            requires: [],
-          });
-        }
-        if (filePath.includes('prompt.md')) {
-          return '## Goal\nTest goal for local-recipe\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
-        }
-        if (filePath.includes('fix.md')) {
-          return 'Fix content for local-recipe';
-        }
-        return '';
-      });
-
-      mockReaddirSync.mockImplementation(() => []);
 
       const result = await loadRecipeForShow('/local/recipes/local-recipe');
 

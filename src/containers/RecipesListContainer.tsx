@@ -5,11 +5,11 @@ import SelectInput, {
 } from 'ink-select-input';
 import React, { useEffect, useState } from 'react';
 
+import { loadRecipeForShow } from '~/commands/recipes';
 import {
   getRecipeCategories,
   getRecipesByCategory,
-  loadRecipeForShow,
-} from '~/commands/recipes';
+} from '~/commands/recipes.list';
 import { RecipeDisplayComponent } from '~/components/RecipeDisplayComponent';
 import { colors } from '~/styles/colors';
 import { Recipe } from '~/types/recipe';

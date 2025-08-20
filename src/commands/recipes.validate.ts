@@ -25,7 +25,12 @@ import {
 } from '~/utils/recipe.utils';
 
 import { extractErrorMessage, formatErrorMessage } from '../utils/error.utils';
-import { ProgressCallback, RecipesError } from './recipes.shared';
+import {
+  InputType,
+  ProgressCallback,
+  RecipesError,
+  detectInputType,
+} from './recipes.shared';
 
 const RECIPE_FIX_FILE_TYPE = 'markdown';
 const DEFAULT_AI_MODEL = 'sonnet';
@@ -243,13 +248,6 @@ function isValidFixContentValidationResponse(
   return true;
 }
 
-export enum InputType {
-  RecipeName = 'recipe-name',
-  RecipeFolder = 'recipe-folder',
-  Library = 'library',
-  GitUrl = 'git-url',
-}
-
 export type ValidationCallback = (
   type: 'info' | 'success' | 'error' | 'warning',
   message: string
@@ -360,37 +358,6 @@ export async function performRecipesValidate(
     }
     throw new RecipesError(extractErrorMessage(error), 'VALIDATION_FAILED');
   }
-}
-
-function detectInputType(target: string): InputType {
-  if (
-    target.startsWith('http://') ||
-    target.startsWith('https://') ||
-    target.includes('.git')
-  ) {
-    return InputType.GitUrl;
-  }
-
-  if (
-    target.startsWith('./') ||
-    target.startsWith('../') ||
-    target.startsWith('/') ||
-    target.startsWith('~/')
-  ) {
-    const resolvedTarget = resolvePath(target);
-    if (fs.existsSync(resolvedTarget)) {
-      const stat = fs.statSync(resolvedTarget);
-      if (stat.isDirectory()) {
-        const metadataPath = path.join(resolvedTarget, 'metadata.yaml');
-        if (fs.existsSync(metadataPath)) {
-          return InputType.RecipeFolder;
-        }
-        return InputType.Library;
-      }
-    }
-  }
-
-  return InputType.RecipeName;
 }
 
 async function findRecipeByName(recipeName: string): Promise<string[]> {

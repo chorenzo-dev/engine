@@ -1,15 +1,7 @@
 import { Recipe } from '~/types/recipe';
 import { libraryManager } from '~/utils/library-manager.utils';
 
-export class RecipesError extends Error {
-  constructor(
-    message: string,
-    public readonly code: string
-  ) {
-    super(message);
-    this.name = 'RecipesError';
-  }
-}
+import { RecipesError } from './recipes.shared';
 
 export async function getRecipeCategories(): Promise<string[]> {
   try {

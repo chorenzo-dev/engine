@@ -25,6 +25,7 @@ import {
 } from '~/utils/recipe.utils';
 
 import { extractErrorMessage, formatErrorMessage } from '../utils/error.utils';
+import { ProgressCallback, RecipesError } from './recipes.shared';
 
 const RECIPE_FIX_FILE_TYPE = 'markdown';
 const DEFAULT_AI_MODEL = 'sonnet';
@@ -249,10 +250,6 @@ export enum InputType {
   GitUrl = 'git-url',
 }
 
-export type ProgressCallback = (
-  step: string | null,
-  isThinking?: boolean
-) => void;
 export type ValidationCallback = (
   type: 'info' | 'success' | 'error' | 'warning',
   message: string
@@ -285,16 +282,6 @@ export interface ValidationResult {
   messages: ValidationMessage[];
   summary?: ValidationSummary;
   context: ValidationContext;
-}
-
-export class RecipesError extends Error {
-  constructor(
-    message: string,
-    public readonly code: string
-  ) {
-    super(message);
-    this.name = 'RecipesError';
-  }
 }
 
 export async function performRecipesValidate(

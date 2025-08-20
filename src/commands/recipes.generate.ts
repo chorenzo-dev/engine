@@ -15,38 +15,12 @@ import { loadDoc, loadTemplate, renderPrompt } from '~/utils/prompts.utils';
 import { parseRecipeLibraryFromDirectory } from '~/utils/recipe.utils';
 
 import {
+  ProgressCallback,
   RecipesError,
-  validateCategoryName,
-  validateRecipeId,
-} from './recipes.validate';
-
-export interface RecipesGenerateOptions {
-  name?: string;
-  cost?: boolean;
-  magicGenerate?: boolean;
-  category?: string;
-  summary?: string;
-  location?: string;
-  saveLocation?: string;
-  additionalInstructions?: string;
-  ecosystemAgnostic?: boolean;
-}
-
-export interface RecipesGenerateResult {
-  recipePath: string;
-  recipeName: string;
-  success: boolean;
-  error?: string;
-  metadata?: {
-    costUsd: number;
-    durationSeconds: number;
-  };
-}
-
-export type ProgressCallback = (
-  step: string | null,
-  isThinking?: boolean
-) => void;
+  RecipesGenerateOptions,
+  RecipesGenerateResult,
+} from './recipes.shared';
+import { validateCategoryName, validateRecipeId } from './recipes.validate';
 
 async function loadExistingRecipeOutputs(): Promise<string[]> {
   try {

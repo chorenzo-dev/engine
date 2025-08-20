@@ -22,14 +22,14 @@ import {
   setupDefaultMocks,
 } from './recipes.test-utils';
 
-describe('Recipes Command Integration Tests', () => {
-  let performRecipesApply: typeof import('./recipes').performRecipesApply;
+describe('Recipe Application', () => {
+  let performRecipesApply: typeof import('./recipes.apply').performRecipesApply;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     setupDefaultMocks();
 
-    const recipesModule = await import('./recipes');
+    const recipesModule = await import('./recipes.apply');
     performRecipesApply = recipesModule.performRecipesApply;
   });
 

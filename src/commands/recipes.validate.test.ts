@@ -1488,7 +1488,7 @@ requires: []
     });
 
     it('should handle malicious project paths and prevent path traversal attacks', async () => {
-      const recipesModule = await import('./recipes');
+      const recipesModule = await import('./recipes.apply');
       const performRecipesApply = recipesModule.performRecipesApply;
 
       mockExistsSync.mockImplementation((path) => {
@@ -1557,7 +1557,7 @@ requires: []
     });
 
     it('should handle corrupted state file JSON gracefully', async () => {
-      const recipesModule = await import('./recipes');
+      const recipesModule = await import('./recipes.apply');
       const performRecipesApply = recipesModule.performRecipesApply;
 
       mockExistsSync.mockImplementation((path) => {

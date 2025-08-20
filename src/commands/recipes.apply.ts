@@ -20,6 +20,7 @@ import {
   CodeChangesEventHandlers,
   executeCodeChangesOperation,
 } from '~/utils/code-changes-events.utils';
+import { chorenzoConfig } from '~/utils/config.utils';
 import { GitignoreManager } from '~/utils/gitignore.utils';
 import { readJson } from '~/utils/json.utils';
 import { libraryManager } from '~/utils/library-manager.utils';
@@ -34,13 +35,59 @@ import {
   isWorkspaceKeyword,
   loadWorkspaceAnalysis,
 } from '~/utils/project-characteristics.utils';
-import { loadPrompt, renderPrompt } from '~/utils/prompts.utils';
-import { parseRecipeFromDirectory } from '~/utils/recipe.utils';
+import {
+  loadDoc,
+  loadPrompt,
+  loadTemplate,
+  renderPrompt,
+} from '~/utils/prompts.utils';
+import {
+  parseRecipeFromDirectory,
+  parseRecipeLibraryFromDirectory,
+} from '~/utils/recipe.utils';
 import { stateManager } from '~/utils/state-manager.utils';
 import { workspaceConfig } from '~/utils/workspace-config.utils';
 
 import { extractErrorMessage, formatErrorMessage } from '../utils/error.utils';
 import { performAnalysis } from './analyze';
+
+export type ProgressCallback = (
+  step: string | null,
+  isThinking?: boolean
+) => void;
+
+export interface RecipesGenerateOptions {
+  name?: string;
+  cost?: boolean;
+  magicGenerate?: boolean;
+  category?: string;
+  summary?: string;
+  location?: string;
+  saveLocation?: string;
+  additionalInstructions?: string;
+  ecosystemAgnostic?: boolean;
+}
+
+export interface RecipesGenerateResult {
+  recipePath: string;
+  recipeName: string;
+  success: boolean;
+  error?: string;
+  metadata?: {
+    costUsd: number;
+    durationSeconds: number;
+  };
+}
+
+export class RecipesError extends Error {
+  constructor(
+    message: string,
+    public readonly code: string
+  ) {
+    super(message);
+    this.name = 'RecipesError';
+  }
+}
 
 export enum InputType {
   RecipeName = 'recipe-name',
@@ -80,10 +127,87 @@ function detectInputType(target: string): InputType {
   return InputType.RecipeName;
 }
 
-export type ProgressCallback = (
-  step: string | null,
-  isThinking?: boolean
-) => void;
+export async function loadRecipe(recipeName: string): Promise<Recipe> {
+  const inputType = detectInputType(recipeName);
+  const resolvedTarget =
+    inputType === InputType.RecipeName || inputType === InputType.GitUrl
+      ? recipeName
+      : resolvePath(recipeName);
+
+  switch (inputType) {
+    case InputType.RecipeName: {
+      let foundPaths = await libraryManager.findRecipeByName(resolvedTarget);
+
+      if (foundPaths.length === 0) {
+        Logger.info(
+          { recipe: recipeName },
+          'Recipe not found locally, refreshing all libraries'
+        );
+        await libraryManager.refreshAllLibraries();
+
+        foundPaths = await libraryManager.findRecipeByName(resolvedTarget);
+        if (foundPaths.length === 0) {
+          throw new RecipesApplyError(
+            `Recipe '${recipeName}' not found in recipe libraries even after refreshing`,
+            'RECIPE_NOT_FOUND'
+          );
+        }
+      }
+
+      if (foundPaths.length > 1) {
+        const pathsList = foundPaths.map((p) => `  - ${p}`).join('\n');
+        throw new RecipesApplyError(
+          `Multiple recipes named '${recipeName}' found:\n${pathsList}\nPlease specify the full path.`,
+          'MULTIPLE_RECIPES_FOUND'
+        );
+      }
+
+      const recipePath = foundPaths[0];
+      if (!recipePath) {
+        throw new RecipesApplyError(
+          `Recipe path not found for '${recipeName}'`,
+          'RECIPE_PATH_NOT_FOUND'
+        );
+      }
+      const libraryName = libraryManager.isRemoteLibrary(recipePath);
+      if (libraryName) {
+        Logger.info(
+          { recipe: recipeName, library: libraryName },
+          'Recipe is from remote library, refreshing'
+        );
+        await libraryManager.refreshLibrary(libraryName);
+      }
+
+      return await parseRecipeFromDirectory(recipePath);
+    }
+
+    case InputType.RecipeFolder: {
+      if (!fs.existsSync(resolvedTarget)) {
+        throw new RecipesApplyError(
+          `Recipe folder does not exist: ${resolvedTarget}`,
+          'RECIPE_NOT_FOUND'
+        );
+      }
+
+      const libraryName = libraryManager.isRemoteLibrary(resolvedTarget);
+      if (libraryName) {
+        Logger.info(
+          { recipe: recipeName, library: libraryName },
+          'Recipe is from remote library, refreshing'
+        );
+        await libraryManager.refreshLibrary(libraryName);
+      }
+
+      return await parseRecipeFromDirectory(resolvedTarget);
+    }
+
+    default:
+      throw new RecipesApplyError(
+        `Invalid recipe target: ${recipeName}`,
+        'INVALID_RECIPE_TARGET'
+      );
+  }
+}
 
 export async function checkRecipeReApplication(
   options: RecipesApplyOptions,
@@ -351,88 +475,6 @@ export async function performRecipesApply(
       formatErrorMessage('Apply operation failed', error),
       'APPLY_FAILED'
     );
-  }
-}
-
-async function loadRecipe(recipeName: string): Promise<Recipe> {
-  const inputType = detectInputType(recipeName);
-  const resolvedTarget =
-    inputType === InputType.RecipeName || inputType === InputType.GitUrl
-      ? recipeName
-      : resolvePath(recipeName);
-
-  switch (inputType) {
-    case InputType.RecipeName: {
-      let foundPaths = await libraryManager.findRecipeByName(resolvedTarget);
-
-      if (foundPaths.length === 0) {
-        Logger.info(
-          { recipe: recipeName },
-          'Recipe not found locally, refreshing all libraries'
-        );
-        await libraryManager.refreshAllLibraries();
-
-        foundPaths = await libraryManager.findRecipeByName(resolvedTarget);
-        if (foundPaths.length === 0) {
-          throw new RecipesApplyError(
-            `Recipe '${recipeName}' not found in recipe libraries even after refreshing`,
-            'RECIPE_NOT_FOUND'
-          );
-        }
-      }
-
-      if (foundPaths.length > 1) {
-        const pathsList = foundPaths.map((p) => `  - ${p}`).join('\n');
-        throw new RecipesApplyError(
-          `Multiple recipes named '${recipeName}' found:\n${pathsList}\nPlease specify the full path.`,
-          'MULTIPLE_RECIPES_FOUND'
-        );
-      }
-
-      const recipePath = foundPaths[0];
-      if (!recipePath) {
-        throw new RecipesApplyError(
-          `Recipe path not found for '${recipeName}'`,
-          'RECIPE_PATH_NOT_FOUND'
-        );
-      }
-      const libraryName = libraryManager.isRemoteLibrary(recipePath);
-      if (libraryName) {
-        Logger.info(
-          { recipe: recipeName, library: libraryName },
-          'Recipe is from remote library, refreshing'
-        );
-        await libraryManager.refreshLibrary(libraryName);
-      }
-
-      return await parseRecipeFromDirectory(recipePath);
-    }
-
-    case InputType.RecipeFolder: {
-      if (!fs.existsSync(resolvedTarget)) {
-        throw new RecipesApplyError(
-          `Recipe folder does not exist: ${resolvedTarget}`,
-          'RECIPE_NOT_FOUND'
-        );
-      }
-
-      const libraryName = libraryManager.isRemoteLibrary(resolvedTarget);
-      if (libraryName) {
-        Logger.info(
-          { recipe: recipeName, library: libraryName },
-          'Recipe is from remote library, refreshing'
-        );
-        await libraryManager.refreshLibrary(libraryName);
-      }
-
-      return await parseRecipeFromDirectory(resolvedTarget);
-    }
-
-    default:
-      throw new RecipesApplyError(
-        `Invalid recipe target: ${recipeName}`,
-        'INVALID_RECIPE_TARGET'
-      );
   }
 }
 
@@ -1117,6 +1159,263 @@ async function executeRecipe(
   }
 }
 
+function validateAndNormalizeName(
+  name: string,
+  type: 'recipe' | 'category'
+): string {
+  const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+  const errorCode =
+    type === 'recipe' ? 'INVALID_RECIPE_NAME' : 'INVALID_CATEGORY_NAME';
+
+  if (!name || name.trim().length === 0) {
+    throw new RecipesError(
+      `${capitalizedType} name cannot be empty`,
+      errorCode
+    );
+  }
+
+  const trimmed = name.trim();
+  const normalized = trimmed.replace(/\s+/g, '-').toLowerCase();
+  const invalidChars = normalized.match(/[^a-zA-Z0-9-]/g);
+
+  if (invalidChars) {
+    const uniqueInvalidChars = [...new Set(invalidChars)].join(', ');
+    throw new RecipesError(
+      `${capitalizedType} name contains invalid characters: ${uniqueInvalidChars}. Only letters, numbers, and dashes are allowed.`,
+      errorCode
+    );
+  }
+
+  return normalized;
+}
+
+function validateRecipeId(recipeName: string): string {
+  return validateAndNormalizeName(recipeName, 'recipe');
+}
+
+export function validateCategoryName(categoryName: string): string {
+  return validateAndNormalizeName(categoryName, 'category');
+}
+
+async function loadExistingRecipeOutputs(): Promise<string[]> {
+  try {
+    const outputs: string[] = [];
+    const config = await chorenzoConfig.readConfig();
+
+    for (const libraryName of Object.keys(config.libraries)) {
+      const libraryPath = chorenzoConfig.getLibraryPath(libraryName);
+
+      if (!fs.existsSync(libraryPath)) {
+        continue;
+      }
+
+      try {
+        const library = await parseRecipeLibraryFromDirectory(libraryPath);
+
+        for (const recipe of library.recipes) {
+          outputs.push(...recipe.getProvides());
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    return [...new Set(outputs)].sort();
+  } catch (error) {
+    Logger.warn(
+      { error: extractErrorMessage(error) },
+      'Failed to load existing recipe outputs'
+    );
+    return [];
+  }
+}
+
+export async function performRecipesGenerate(
+  options: RecipesGenerateOptions,
+  onProgress?: ProgressCallback
+): Promise<RecipesGenerateResult> {
+  const startTime = new Date();
+  let totalCostUsd = 0;
+
+  try {
+    onProgress?.('Starting recipe generation');
+
+    if (!options.name) {
+      throw new RecipesError(
+        'Recipe name is required. Use: chorenzo recipes generate <name>',
+        'MISSING_RECIPE_NAME'
+      );
+    }
+
+    const recipeName = options.name;
+    const recipeId = validateRecipeId(options.name);
+
+    if (!options.category) {
+      throw new RecipesError(
+        'Category is required. Use --category or provide via interactive prompt',
+        'MISSING_CATEGORY'
+      );
+    }
+    const category = validateCategoryName(options.category);
+
+    const summary = options.summary?.trim();
+    if (!summary) {
+      throw new RecipesError(
+        'Summary is required. Use --summary or provide via interactive prompt',
+        'MISSING_SUMMARY'
+      );
+    }
+
+    const baseLocation = options.saveLocation
+      ? resolvePath(options.saveLocation)
+      : process.cwd();
+
+    const recipePath = libraryManager.determineRecipePath(
+      baseLocation,
+      category,
+      recipeId
+    );
+
+    if (fs.existsSync(recipePath)) {
+      throw new RecipesError(
+        `Recipe "${recipeId}" already exists at ${recipePath}`,
+        'RECIPE_ALREADY_EXISTS'
+      );
+    }
+
+    onProgress?.(`Creating recipe directory: ${recipePath}`);
+
+    fs.mkdirSync(recipePath, { recursive: true });
+    fs.mkdirSync(path.join(recipePath, 'variants'), { recursive: true });
+
+    onProgress?.('Creating recipe files');
+
+    const templateVars = {
+      recipe_id: recipeId,
+      recipe_name: recipeName,
+      category,
+      summary,
+      ...(options.magicGenerate
+        ? {}
+        : { level: 'workspace-preferred' as const }),
+    };
+
+    if (options.magicGenerate) {
+      onProgress?.('Generating recipe content with AI');
+
+      const recipeGuidelines = loadDoc('recipes');
+      const availableOutputs = await loadExistingRecipeOutputs();
+
+      const templateName = options.ecosystemAgnostic
+        ? 'recipe_magic_generate_agnostic'
+        : 'recipe_magic_generate';
+      const magicPromptTemplate = loadTemplate(templateName);
+      const additionalInstructionsText = options.additionalInstructions
+        ? `\nAdditional Instructions: ${options.additionalInstructions}`
+        : '';
+
+      const magicPrompt = renderPrompt(magicPromptTemplate, {
+        recipe_name: recipeName,
+        summary,
+        category,
+        recipe_id: recipeId,
+        recipe_path: recipePath,
+        recipe_guidelines: recipeGuidelines,
+        additional_instructions: additionalInstructionsText,
+        available_outputs:
+          availableOutputs.length > 0
+            ? availableOutputs.map((output) => `- ${output}`).join('\n')
+            : '- (No existing recipes found)',
+      });
+
+      const operationStartTime = new Date();
+      const handlers: CodeChangesEventHandlers = {
+        onProgress: (step) => {
+          onProgress?.(step, false);
+        },
+        onThinkingStateChange: (isThinking) => {
+          onProgress?.(null, isThinking);
+        },
+        onComplete: (_result, metadata) => {
+          totalCostUsd = metadata?.costUsd || 0;
+        },
+        showChorenzoOperations: true,
+        onError: (error) => {
+          throw new RecipesError(
+            formatErrorMessage('Magic generation failed', error),
+            'MAGIC_GENERATION_FAILED'
+          );
+        },
+      };
+
+      const operationResult = await executeCodeChangesOperation(
+        query({
+          prompt: magicPrompt,
+          options: {
+            model: 'sonnet',
+            allowedTools: ['Write'],
+            permissionMode: 'bypassPermissions',
+          },
+        }),
+        handlers,
+        operationStartTime
+      );
+
+      if (!operationResult.success) {
+        throw new RecipesError(
+          operationResult.error || 'Magic generation failed',
+          'MAGIC_GENERATION_FAILED'
+        );
+      }
+
+      totalCostUsd = operationResult.metadata.costUsd;
+    } else {
+      const metadataTemplate = loadTemplate('recipe_metadata', 'yaml');
+      const metadataContent = renderPrompt(metadataTemplate, templateVars);
+      fs.writeFileSync(path.join(recipePath, 'metadata.yaml'), metadataContent);
+
+      const promptTemplate = loadTemplate('recipe_prompt');
+      const promptContent = renderPrompt(promptTemplate, templateVars);
+      fs.writeFileSync(path.join(recipePath, 'prompt.md'), promptContent);
+
+      const fixTemplate = loadTemplate('recipe_fix');
+      const fixContent = renderPrompt(fixTemplate, templateVars);
+      fs.writeFileSync(path.join(recipePath, 'fix.md'), fixContent);
+
+      if (!options.ecosystemAgnostic) {
+        const variantContent = renderPrompt(fixTemplate, templateVars);
+        fs.writeFileSync(
+          path.join(recipePath, 'variants', 'javascript_default.md'),
+          variantContent
+        );
+      }
+    }
+
+    const endTime = new Date();
+    const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
+
+    onProgress?.('Recipe generation complete!');
+
+    return {
+      recipePath,
+      recipeName: recipeId,
+      success: true,
+      metadata: {
+        costUsd: totalCostUsd,
+        durationSeconds,
+      },
+    };
+  } catch (error) {
+    if (error instanceof RecipesError) {
+      throw error;
+    }
+    throw new RecipesError(
+      formatErrorMessage('Recipe generation failed', error),
+      'GENERATION_FAILED'
+    );
+  }
+}
+
 interface WorkspacePreferredResult {
   workspaceResult: RecipesApplyExecutionResult | null;
   projectResults: RecipesApplyExecutionResult[];
@@ -1311,4 +1610,67 @@ async function getApplicableProjectsForWorkspacePreferred(
   }
 
   return applicableProjects;
+}
+
+export async function loadRecipeForShow(recipeName: string): Promise<{
+  recipe: Recipe;
+  localPath: string;
+  isRemote: boolean;
+  webUrl?: string;
+}> {
+  const recipe = await loadRecipe(recipeName);
+
+  const localPath = recipe.path;
+  const libraryName = libraryManager.isRemoteLibrary(localPath);
+  const isRemote = libraryName !== null;
+
+  let webUrl: string | undefined;
+  if (isRemote && libraryName) {
+    const config = await chorenzoConfig.readConfig();
+    const libraryConfig = config.libraries[libraryName];
+    if (libraryConfig?.repo) {
+      const repoUrl = libraryConfig.repo;
+      if (repoUrl.includes('github.com')) {
+        const repoPath = repoUrl
+          .replace(/\.git$/, '')
+          .replace('https://github.com/', '');
+        const recipePath = path.relative(
+          chorenzoConfig.getLibraryPath(libraryName),
+          localPath
+        );
+        webUrl = `https://github.com/${repoPath}/tree/${libraryConfig.ref}/${recipePath}`;
+      }
+    }
+  }
+
+  return {
+    recipe,
+    localPath,
+    isRemote,
+    webUrl,
+  };
+}
+
+export async function getRecipeCategories(): Promise<string[]> {
+  try {
+    return await libraryManager.getAllCategories();
+  } catch (error) {
+    throw new RecipesError(
+      `Failed to get recipe categories: ${error instanceof Error ? error.message : String(error)}`,
+      'CATEGORIES_FAILED'
+    );
+  }
+}
+
+export async function getRecipesByCategory(
+  category: string
+): Promise<Recipe[]> {
+  try {
+    return await libraryManager.getRecipesByCategory(category);
+  } catch (error) {
+    throw new RecipesError(
+      `Failed to get recipes for category '${category}': ${error instanceof Error ? error.message : String(error)}`,
+      'RECIPES_BY_CATEGORY_FAILED'
+    );
+  }
 }

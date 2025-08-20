@@ -14,10 +14,12 @@ import { findGitRoot } from '~/utils/git.utils';
 import { readJson, writeJson } from '~/utils/json.utils';
 import { Logger } from '~/utils/logger.utils';
 import { loadPrompt, renderPrompt } from '~/utils/prompts.utils';
+import { workspaceConfig } from '~/utils/workspace-config.utils';
 
+import { CiCdSystem, Ecosystem, ProjectType } from '../types/analysis';
 import { extractErrorMessage, formatErrorMessage } from '../utils/error.utils';
 
-const ANALYSIS_PATH = path.join(process.cwd(), '.chorenzo', 'analysis.json');
+const ANALYSIS_PATH = workspaceConfig.getAnalysisPath();
 
 export interface AnalysisResult {
   analysis: WorkspaceAnalysis | null;
@@ -70,6 +72,15 @@ export async function performAnalysis(
   const prompt = renderPrompt(promptTemplate, {
     workspace_root: workspaceRoot,
     files_structure_summary: filesStructureSummary,
+    project_types: Object.values(ProjectType)
+      .map((v) => `"${v}"`)
+      .join(' | '),
+    ecosystems: Object.values(Ecosystem)
+      .map((v) => `"${v}"`)
+      .join(' | '),
+    cicd_systems: Object.values(CiCdSystem)
+      .map((v) => `"${v}"`)
+      .join(' | '),
   });
 
   onProgress?.('Analyzing workspace with Claude');
@@ -140,6 +151,7 @@ export async function performAnalysis(
           'Bash(ls:*)',
           'Bash(find:*)',
           'Bash(grep:*)',
+          'Bash(npx chorenzo analysis validate*)',
         ],
         permissionMode: 'bypassPermissions',
       },

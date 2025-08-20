@@ -3,6 +3,7 @@ import path from 'path';
 
 import { WorkspaceAnalysisSchema } from '../schemas/analysis.schema';
 import { JsonError, readJson } from './json.utils';
+import { workspaceConfig } from './workspace-config.utils';
 
 export interface ValidationResult {
   valid: boolean;
@@ -185,5 +186,5 @@ export function formatValidationErrors(errors: ValidationError[]): string {
 }
 
 export function getDefaultAnalysisPath(): string {
-  return path.join(process.cwd(), '.chorenzo', 'analysis.json');
+  return workspaceConfig.getAnalysisPath();
 }

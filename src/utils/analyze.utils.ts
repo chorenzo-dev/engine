@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { ZodIssue } from 'zod';
 
 import { WorkspaceAnalysisSchema } from '../schemas/analysis.schema';
 import { JsonError, readJson } from './json.utils';
@@ -94,26 +95,28 @@ export function validateAnalysisData(data: unknown): ValidationResult {
       };
     }
 
-    const errors: ValidationError[] = result.error.issues.map((issue) => {
-      let message = issue.message;
+    const errors: ValidationError[] = result.error.issues.map(
+      (issue: ZodIssue) => {
+        let message = issue.message;
 
-      // Improve error messages
-      if (
-        issue.code === 'invalid_type' &&
-        issue.message.includes('received undefined')
-      ) {
-        message = 'is missing';
-      } else if (issue.code === 'unrecognized_keys') {
-        const keys = (issue as { keys?: string[] }).keys || [];
-        message = `unexpected field${keys.length > 1 ? 's' : ''}: ${keys.join(', ')}`;
+        // Improve error messages
+        if (
+          issue.code === 'invalid_type' &&
+          issue.message.includes('received undefined')
+        ) {
+          message = 'is missing';
+        } else if (issue.code === 'unrecognized_keys') {
+          const keys = (issue as { keys?: string[] }).keys || [];
+          message = `unexpected field${keys.length > 1 ? 's' : ''}: ${keys.join(', ')}`;
+        }
+
+        return {
+          path: issue.path.join('.') || 'root',
+          message,
+          code: issue.code,
+        };
       }
-
-      return {
-        path: issue.path.join('.') || 'root',
-        message,
-        code: issue.code,
-      };
-    });
+    );
 
     return {
       valid: false,

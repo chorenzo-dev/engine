@@ -9,6 +9,8 @@ import {
 import * as fs from 'fs';
 import { stringify as yamlStringify } from 'yaml';
 
+import { Ecosystem, ProjectType } from '~/types/analysis';
+
 import {
   createLibraryConfig,
   createMockYamlData,
@@ -120,13 +122,13 @@ describe('Recipe Application', () => {
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            workspaceEcosystem: 'javascript',
+            workspaceEcosystem: Ecosystem.Javascript,
             projects: [
               {
                 path: '.',
                 language: 'javascript',
-                ecosystem: 'javascript',
-                type: 'web_app',
+                ecosystem: Ecosystem.Javascript,
+                type: ProjectType.WebApp,
                 dependencies: [],
                 hasPackageManager: true,
               },
@@ -179,13 +181,13 @@ describe('Recipe Application', () => {
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            workspaceEcosystem: 'javascript',
+            workspaceEcosystem: Ecosystem.Javascript,
             projects: [
               {
                 path: '.',
                 language: 'javascript',
-                ecosystem: 'javascript',
-                type: 'web_app',
+                ecosystem: Ecosystem.Javascript,
+                type: ProjectType.WebApp,
                 dependencies: [],
                 hasPackageManager: true,
               },
@@ -342,13 +344,13 @@ describe('Recipe Application', () => {
         analysis: {
           isMonorepo: false,
           hasWorkspacePackageManager: false,
-          workspaceEcosystem: 'javascript',
+          workspaceEcosystem: Ecosystem.Javascript,
           projects: [
             {
               path: '.',
               language: 'javascript',
-              ecosystem: 'javascript',
-              type: 'web_app',
+              ecosystem: Ecosystem.Javascript,
+              type: ProjectType.WebApp,
               dependencies: [],
               hasPackageManager: true,
             },
@@ -420,13 +422,13 @@ describe('Recipe Application', () => {
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            workspaceEcosystem: 'javascript',
+            workspaceEcosystem: Ecosystem.Javascript,
             projects: [
               {
                 path: '.',
                 language: 'javascript',
-                ecosystem: 'javascript',
-                type: 'web_app',
+                ecosystem: Ecosystem.Javascript,
+                type: ProjectType.WebApp,
                 dependencies: [],
                 hasPackageManager: true,
               },
@@ -476,13 +478,13 @@ describe('Recipe Application', () => {
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            workspaceEcosystem: 'javascript',
+            workspaceEcosystem: Ecosystem.Javascript,
             projects: [
               {
                 path: '.',
                 language: 'javascript',
-                ecosystem: 'javascript',
-                type: 'web_app',
+                ecosystem: Ecosystem.Javascript,
+                type: ProjectType.WebApp,
                 dependencies: [],
                 hasPackageManager: true,
               },
@@ -539,13 +541,13 @@ describe('Recipe Application', () => {
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            workspaceEcosystem: 'javascript',
+            workspaceEcosystem: Ecosystem.Javascript,
             projects: [
               {
                 path: '.',
                 language: 'javascript',
-                ecosystem: 'javascript',
-                type: 'web_app',
+                ecosystem: Ecosystem.Javascript,
+                type: ProjectType.WebApp,
                 dependencies: [],
                 hasPackageManager: true,
               },
@@ -606,20 +608,20 @@ describe('Recipe Application', () => {
           return JSON.stringify({
             isMonorepo: true,
             hasWorkspacePackageManager: true,
-            workspaceEcosystem: 'javascript',
+            workspaceEcosystem: Ecosystem.Javascript,
             projects: [
               {
                 path: 'frontend',
                 language: 'javascript',
-                ecosystem: 'javascript',
-                type: 'web_app',
+                ecosystem: Ecosystem.Javascript,
+                type: ProjectType.WebApp,
                 dependencies: [],
                 hasPackageManager: true,
               },
               {
                 path: 'backend',
                 language: 'javascript',
-                ecosystem: 'javascript',
+                ecosystem: Ecosystem.Javascript,
                 type: 'api_server',
                 dependencies: [],
                 hasPackageManager: true,
@@ -675,20 +677,20 @@ describe('Recipe Application', () => {
           return JSON.stringify({
             isMonorepo: true,
             hasWorkspacePackageManager: true,
-            workspaceEcosystem: 'javascript',
+            workspaceEcosystem: Ecosystem.Javascript,
             projects: [
               {
                 path: 'project1',
                 language: 'javascript',
-                ecosystem: 'javascript',
-                type: 'web_app',
+                ecosystem: Ecosystem.Javascript,
+                type: ProjectType.WebApp,
                 dependencies: [],
                 hasPackageManager: true,
               },
               {
                 path: 'project2',
                 language: 'javascript',
-                ecosystem: 'javascript',
+                ecosystem: Ecosystem.Javascript,
                 type: 'api_server',
                 dependencies: [],
                 hasPackageManager: true,
@@ -805,13 +807,13 @@ describe('Recipe Application', () => {
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            workspaceEcosystem: 'javascript',
+            workspaceEcosystem: Ecosystem.Javascript,
             projects: [
               {
                 path: '.',
                 language: 'javascript',
-                ecosystem: 'javascript',
-                type: 'web_app',
+                ecosystem: Ecosystem.Javascript,
+                type: ProjectType.WebApp,
                 dependencies: [],
                 hasPackageManager: true,
               },
@@ -979,13 +981,13 @@ describe('Recipe Application', () => {
         analysis: {
           isMonorepo: false,
           hasWorkspacePackageManager: false,
-          workspaceEcosystem: 'javascript',
+          workspaceEcosystem: Ecosystem.Javascript,
           projects: [
             {
               path: '.',
               language: 'javascript',
-              ecosystem: 'javascript',
-              type: 'web_app',
+              ecosystem: Ecosystem.Javascript,
+              type: ProjectType.WebApp,
               dependencies: [],
               hasPackageManager: true,
             },
@@ -1110,13 +1112,13 @@ describe('Recipe Application', () => {
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            workspaceEcosystem: 'javascript',
+            workspaceEcosystem: Ecosystem.Javascript,
             projects: [
               {
                 path: '.',
                 language: 'javascript',
-                ecosystem: 'javascript',
-                type: 'web_app',
+                ecosystem: Ecosystem.Javascript,
+                type: ProjectType.WebApp,
                 dependencies: [],
                 hasPackageManager: true,
               },
@@ -1174,13 +1176,13 @@ describe('Recipe Application', () => {
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            workspaceEcosystem: 'javascript',
+            workspaceEcosystem: Ecosystem.Javascript,
             projects: [
               {
                 path: '.',
                 language: 'javascript',
-                ecosystem: 'javascript',
-                type: 'web_app',
+                ecosystem: Ecosystem.Javascript,
+                type: ProjectType.WebApp,
                 dependencies: [],
                 hasPackageManager: true,
               },
@@ -1281,13 +1283,13 @@ describe('Recipe Application', () => {
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            workspaceEcosystem: 'javascript',
+            workspaceEcosystem: Ecosystem.Javascript,
             projects: [
               {
                 path: '.',
                 language: 'javascript',
-                ecosystem: 'javascript',
-                type: 'web_app',
+                ecosystem: Ecosystem.Javascript,
+                type: ProjectType.WebApp,
                 dependencies: [],
                 hasPackageManager: true,
               },
@@ -1333,13 +1335,13 @@ describe('Recipe Application', () => {
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            workspaceEcosystem: 'javascript',
+            workspaceEcosystem: Ecosystem.Javascript,
             projects: [
               {
                 path: '.',
                 language: 'javascript',
-                ecosystem: 'javascript',
-                type: 'web_app',
+                ecosystem: Ecosystem.Javascript,
+                type: ProjectType.WebApp,
                 dependencies: [],
                 hasPackageManager: true,
               },
@@ -1400,13 +1402,13 @@ describe('Recipe Application', () => {
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            workspaceEcosystem: 'javascript',
+            workspaceEcosystem: Ecosystem.Javascript,
             projects: [
               {
                 path: '.',
                 language: 'javascript',
-                ecosystem: 'javascript',
-                type: 'web_app',
+                ecosystem: Ecosystem.Javascript,
+                type: ProjectType.WebApp,
                 dependencies: [],
                 hasPackageManager: true,
               },
@@ -1598,13 +1600,13 @@ describe('Recipe Application', () => {
           return JSON.stringify({
             isMonorepo: false,
             hasWorkspacePackageManager: false,
-            workspaceEcosystem: 'javascript',
+            workspaceEcosystem: Ecosystem.Javascript,
             projects: [
               {
                 path: '.',
                 language: 'javascript',
-                ecosystem: 'javascript',
-                type: 'web_app',
+                ecosystem: Ecosystem.Javascript,
+                type: ProjectType.WebApp,
                 dependencies: [],
                 hasPackageManager: true,
               },
@@ -1891,13 +1893,13 @@ describe('Recipe Application', () => {
             return JSON.stringify({
               isMonorepo: false,
               hasWorkspacePackageManager: false,
-              workspaceEcosystem: 'javascript',
+              workspaceEcosystem: Ecosystem.Javascript,
               projects: [
                 {
                   path: '.',
                   language: 'javascript',
-                  ecosystem: 'javascript',
-                  type: 'web_app',
+                  ecosystem: Ecosystem.Javascript,
+                  type: ProjectType.WebApp,
                   dependencies: [],
                   hasPackageManager: true,
                 },
@@ -2100,12 +2102,12 @@ describe('Recipe Application', () => {
         const analysisData = {
           isMonorepo: false,
           hasWorkspacePackageManager: true,
-          workspaceEcosystem: 'javascript',
+          workspaceEcosystem: Ecosystem.Javascript,
           projects: [
             {
               path: '/workspace/app',
               language: 'javascript',
-              ecosystem: 'javascript',
+              ecosystem: Ecosystem.Javascript,
               type: 'application',
               dependencies: [],
               hasPackageManager: true,
@@ -2148,7 +2150,7 @@ describe('Recipe Application', () => {
         const analysisData = {
           isMonorepo: true,
           hasWorkspacePackageManager: true,
-          workspaceEcosystem: 'javascript',
+          workspaceEcosystem: Ecosystem.Javascript,
           projects: [
             {
               path: '/workspace/python-service',
@@ -2203,12 +2205,12 @@ describe('Recipe Application', () => {
         const analysisData = {
           isMonorepo: true,
           hasWorkspacePackageManager: true,
-          workspaceEcosystem: 'javascript',
+          workspaceEcosystem: Ecosystem.Javascript,
           projects: [
             {
               path: '/workspace/frontend',
               language: 'javascript',
-              ecosystem: 'javascript',
+              ecosystem: Ecosystem.Javascript,
               type: 'application',
               dependencies: [],
               hasPackageManager: true,
@@ -2266,12 +2268,12 @@ describe('Recipe Application', () => {
         const analysisData = {
           isMonorepo: false,
           hasWorkspacePackageManager: true,
-          workspaceEcosystem: 'javascript',
+          workspaceEcosystem: Ecosystem.Javascript,
           projects: [
             {
               path: '/workspace/app',
               language: 'javascript',
-              ecosystem: 'javascript',
+              ecosystem: Ecosystem.Javascript,
               type: 'application',
               dependencies: [],
               hasPackageManager: true,
@@ -2304,12 +2306,12 @@ describe('Recipe Application', () => {
         const analysisData = {
           isMonorepo: false,
           hasWorkspacePackageManager: true,
-          workspaceEcosystem: 'javascript',
+          workspaceEcosystem: Ecosystem.Javascript,
           projects: [
             {
               path: '/workspace/app',
               language: 'javascript',
-              ecosystem: 'javascript',
+              ecosystem: Ecosystem.Javascript,
               type: 'application',
               dependencies: [],
               hasPackageManager: true,
@@ -2344,12 +2346,12 @@ describe('Recipe Application', () => {
         const analysisData = {
           isMonorepo: false,
           hasWorkspacePackageManager: true,
-          workspaceEcosystem: 'javascript',
+          workspaceEcosystem: Ecosystem.Javascript,
           projects: [
             {
               path: '/workspace/app',
               language: 'javascript',
-              ecosystem: 'javascript',
+              ecosystem: Ecosystem.Javascript,
               type: 'application',
               dependencies: [],
               hasPackageManager: true,
@@ -2407,21 +2409,21 @@ describe('Recipe Application', () => {
             return JSON.stringify({
               isMonorepo: true,
               hasWorkspacePackageManager: true,
-              workspaceEcosystem: 'javascript',
+              workspaceEcosystem: Ecosystem.Javascript,
               projects: [
                 {
                   path: '/workspace/python-app',
                   language: 'python',
                   ecosystem: 'python',
-                  type: 'web_app',
+                  type: ProjectType.WebApp,
                   dependencies: [],
                   hasPackageManager: true,
                 },
                 {
                   path: '/workspace/js-app',
                   language: 'javascript',
-                  ecosystem: 'javascript',
-                  type: 'web_app',
+                  ecosystem: Ecosystem.Javascript,
+                  type: ProjectType.WebApp,
                   dependencies: [],
                   hasPackageManager: true,
                 },
@@ -2491,12 +2493,12 @@ describe('Recipe Application', () => {
             return JSON.stringify({
               isMonorepo: true,
               hasWorkspacePackageManager: true,
-              workspaceEcosystem: 'javascript',
+              workspaceEcosystem: Ecosystem.Javascript,
               projects: [
                 {
                   path: '/workspace/api',
                   language: 'javascript',
-                  ecosystem: 'javascript',
+                  ecosystem: Ecosystem.Javascript,
                   type: 'api_server',
                   dependencies: [],
                   hasPackageManager: true,
@@ -2504,8 +2506,8 @@ describe('Recipe Application', () => {
                 {
                   path: '/workspace/frontend',
                   language: 'javascript',
-                  ecosystem: 'javascript',
-                  type: 'web_app',
+                  ecosystem: Ecosystem.Javascript,
+                  type: ProjectType.WebApp,
                   dependencies: [],
                   hasPackageManager: true,
                 },
@@ -2575,21 +2577,21 @@ describe('Recipe Application', () => {
             return JSON.stringify({
               isMonorepo: true,
               hasWorkspacePackageManager: true,
-              workspaceEcosystem: 'javascript',
+              workspaceEcosystem: Ecosystem.Javascript,
               projects: [
                 {
                   path: '/workspace/app1',
                   language: 'javascript',
-                  ecosystem: 'javascript',
-                  type: 'web_app',
+                  ecosystem: Ecosystem.Javascript,
+                  type: ProjectType.WebApp,
                   dependencies: [],
                   hasPackageManager: true,
                 },
                 {
                   path: '/workspace/app2',
                   language: 'javascript',
-                  ecosystem: 'javascript',
-                  type: 'web_app',
+                  ecosystem: Ecosystem.Javascript,
+                  type: ProjectType.WebApp,
                   dependencies: [],
                   hasPackageManager: true,
                 },
@@ -2661,13 +2663,13 @@ describe('Recipe Application', () => {
             return JSON.stringify({
               isMonorepo: false,
               hasWorkspacePackageManager: true,
-              workspaceEcosystem: 'javascript',
+              workspaceEcosystem: Ecosystem.Javascript,
               projects: [
                 {
                   path: '/workspace/vue-app',
                   language: 'javascript',
-                  ecosystem: 'javascript',
-                  type: 'web_app',
+                  ecosystem: Ecosystem.Javascript,
+                  type: ProjectType.WebApp,
                   framework: 'vue',
                   dependencies: [],
                   hasPackageManager: true,

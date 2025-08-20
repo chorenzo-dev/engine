@@ -5,13 +5,13 @@ import {
 } from '../utils/analyze.utils';
 import { Logger } from '../utils/logger.utils';
 
-export interface AnalyzeValidateOptions {
+export interface AnalysisValidateOptions {
   file?: string;
   debug?: boolean;
 }
 
-export async function analyzeValidate(
-  options: AnalyzeValidateOptions,
+export async function analysisValidate(
+  options: AnalysisValidateOptions,
   onProgress?: (message: string) => void
 ): Promise<void> {
   const filePath = options.file || getDefaultAnalysisPath();

@@ -82,7 +82,7 @@ analysisCommand
   .action(async (file: string, options: { debug?: boolean }) => {
     const { waitUntilExit } = render(
       React.createElement(Shell, {
-        command: 'analysis-validate',
+        command: 'analysis.validate',
         options: {
           file,
           debug: options.debug,

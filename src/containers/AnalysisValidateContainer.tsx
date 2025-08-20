@@ -1,19 +1,19 @@
 import React, { useEffect } from 'react';
 
 import {
-  AnalyzeValidateOptions,
-  analyzeValidate,
-} from '~/commands/analysis-validate';
+  AnalysisValidateOptions,
+  analysisValidate,
+} from '~/commands/analysis.validate';
 import { Step, StepContext, StepSequence } from '~/components/StepSequence';
 import { extractErrorMessage } from '~/utils/error.utils';
 
-interface AnalyzeValidateContainerProps {
-  options: AnalyzeValidateOptions;
+interface AnalysisValidateContainerProps {
+  options: AnalysisValidateOptions;
   onError: (error: Error) => void;
 }
 
-export const AnalyzeValidateContainer: React.FC<
-  AnalyzeValidateContainerProps
+export const AnalysisValidateContainer: React.FC<
+  AnalysisValidateContainerProps
 > = ({ options, onError }) => {
   const steps: Step[] = [
     {
@@ -24,7 +24,7 @@ export const AnalyzeValidateContainer: React.FC<
           const runValidation = async () => {
             context.setProcessing(true);
             try {
-              await analyzeValidate(options, (message) => {
+              await analysisValidate(options, (message) => {
                 context.setActivity(message);
               });
               context.complete();

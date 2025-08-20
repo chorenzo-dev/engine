@@ -38,8 +38,21 @@ export const AnalyzeContainer: React.FC<AnalyzeContainerProps> = ({
 
               if (result) {
                 context.setResult(result);
+
+                if (result.metadata?.subtype === 'error') {
+                  const errorMessage =
+                    result.metadata.error ||
+                    'Analysis failed to produce valid data';
+                  context.setError(errorMessage);
+                  onError(new Error(errorMessage));
+                } else {
+                  context.complete();
+                }
+              } else {
+                const errorMessage = 'Analysis failed to return any result';
+                context.setError(errorMessage);
+                onError(new Error(errorMessage));
               }
-              context.complete();
             } catch (error) {
               const errorMessage = extractErrorMessage(error);
               context.setError(errorMessage);

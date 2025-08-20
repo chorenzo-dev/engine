@@ -14,36 +14,19 @@ import { findGitRoot } from '~/utils/git.utils';
 import { readJson, writeJson } from '~/utils/json.utils';
 import { Logger } from '~/utils/logger.utils';
 import { loadPrompt, renderPrompt } from '~/utils/prompts.utils';
+import { workspaceConfig } from '~/utils/workspace-config.utils';
 
+import { CiCdSystem, Ecosystem, ProjectType } from '../types/analysis';
 import { extractErrorMessage, formatErrorMessage } from '../utils/error.utils';
 import { ProgressCallback } from './recipes.shared';
 
-const ANALYSIS_PATH = path.join(process.cwd(), '.chorenzo', 'analysis.json');
+const ANALYSIS_PATH = workspaceConfig.getAnalysisPath();
 
 export interface AnalysisResult {
   analysis: WorkspaceAnalysis | null;
   metadata?: OperationMetadata;
   unrecognizedFrameworks?: string[];
 }
-
-function snakeToCamelCase<T>(obj: unknown): T {
-  if (Array.isArray(obj)) {
-    return obj.map(snakeToCamelCase) as T;
-  } else if (obj !== null && typeof obj === 'object') {
-    return Object.keys(obj).reduce((result, key) => {
-      const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
-        letter.toUpperCase()
-      );
-      (result as Record<string, unknown>)[camelKey] = snakeToCamelCase(
-        (obj as Record<string, unknown>)[key]
-      );
-      return result;
-    }, {} as T);
-  }
-  return obj as T;
-}
-
-export type { ProgressCallback };
 
 export async function performAnalysis(
   onProgress?: ProgressCallback
@@ -68,6 +51,15 @@ export async function performAnalysis(
   const prompt = renderPrompt(promptTemplate, {
     workspace_root: workspaceRoot,
     files_structure_summary: filesStructureSummary,
+    project_types: Object.values(ProjectType)
+      .map((v) => `"${v}"`)
+      .join(' | '),
+    ecosystems: Object.values(Ecosystem)
+      .map((v) => `"${v}"`)
+      .join(' | '),
+    cicd_systems: Object.values(CiCdSystem)
+      .map((v) => `"${v}"`)
+      .join(' | '),
   });
 
   onProgress?.('Analyzing workspace with Claude');
@@ -138,6 +130,7 @@ export async function performAnalysis(
           'Bash(ls:*)',
           'Bash(find:*)',
           'Bash(grep:*)',
+          'Bash(npx chorenzo analysis validate*)',
         ],
         permissionMode: 'bypassPermissions',
       },
@@ -146,9 +139,7 @@ export async function performAnalysis(
     startTime
   );
 
-  let finalAnalysis = analysis
-    ? snakeToCamelCase<WorkspaceAnalysis>(analysis)
-    : null;
+  let finalAnalysis = analysis as WorkspaceAnalysis | null;
   let totalCost = operationResult.metadata.costUsd;
   let totalTurns = operationResult.metadata.turns;
   let subtype = operationResult.success ? 'success' : 'error';

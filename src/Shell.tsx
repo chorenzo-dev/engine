@@ -1,6 +1,7 @@
 import { Text } from 'ink';
 import React, { useState } from 'react';
 
+import { AnalysisValidateContainer } from '~/containers/AnalysisValidateContainer';
 import { AnalyzeContainer } from '~/containers/AnalyzeContainer';
 import { InitContainer } from '~/containers/InitContainer';
 import { RecipesApplyContainer } from '~/containers/RecipesApplyContainer';
@@ -14,6 +15,7 @@ import { ErrorExitComponent } from './components/ErrorExitComponent';
 interface ShellProps {
   command:
     | 'analyze'
+    | 'analysis.validate'
     | 'init'
     | 'recipes-validate'
     | 'recipes-apply'
@@ -38,6 +40,7 @@ interface ShellProps {
     magicGenerate?: boolean;
     additionalInstructions?: string;
     recipeName?: string;
+    file?: string;
   };
 }
 
@@ -58,6 +61,24 @@ export const Shell: React.FC<ShellProps> = ({
         options={{
           debug: options.debug,
           cost: options.cost,
+        }}
+        onError={(error) => {
+          setError(error);
+        }}
+      />
+    );
+  }
+
+  if (command === 'analysis.validate') {
+    if (error) {
+      return <ErrorExitComponent error={error} />;
+    }
+
+    return (
+      <AnalysisValidateContainer
+        options={{
+          file: options.file,
+          debug: options.debug,
         }}
         onError={(error) => {
           setError(error);

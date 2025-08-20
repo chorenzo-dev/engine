@@ -1,9 +1,10 @@
 import * as fs from 'fs';
-import * as path from 'path';
 
 import { ProjectAnalysis, WorkspaceAnalysis } from '~/types/analysis';
 
-const ANALYSIS_PATH = path.join(process.cwd(), '.chorenzo', 'analysis.json');
+import { workspaceConfig } from './workspace-config.utils';
+
+const ANALYSIS_PATH = workspaceConfig.getAnalysisPath();
 
 export function isReservedKeyword(key: string): boolean {
   return (

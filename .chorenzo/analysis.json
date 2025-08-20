@@ -1,7 +1,7 @@
 {
   "isMonorepo": false,
   "hasWorkspacePackageManager": true,
-  "workspaceEcosystem": "javascript",
+  "workspaceEcosystem": "typescript",
   "workspaceDependencies": [
     "@anthropic-ai/claude-code",
     "commander",
@@ -15,27 +15,9 @@
     "pino-pretty",
     "react",
     "simple-git",
+    "write-file-atomic",
     "yaml",
-    "@eslint/js",
-    "@jest/globals",
-    "@trivago/prettier-plugin-sort-imports",
-    "@types/jest",
-    "@types/node",
-    "@types/react",
-    "@typescript-eslint/eslint-plugin",
-    "@typescript-eslint/parser",
-    "esbuild-plugin-copy",
-    "eslint",
-    "globals",
-    "husky",
-    "jest",
-    "lint-staged",
-    "memfs",
-    "prettier",
-    "ts-jest",
-    "tsup",
-    "tsx",
-    "typescript"
+    "zod"
   ],
   "ciCd": "github_actions",
   "projects": [
@@ -58,30 +40,12 @@
         "pino-pretty",
         "react",
         "simple-git",
+        "write-file-atomic",
         "yaml",
-        "@eslint/js",
-        "@jest/globals",
-        "@trivago/prettier-plugin-sort-imports",
-        "@types/jest",
-        "@types/node",
-        "@types/react",
-        "@typescript-eslint/eslint-plugin",
-        "@typescript-eslint/parser",
-        "esbuild-plugin-copy",
-        "eslint",
-        "globals",
-        "husky",
-        "jest",
-        "lint-staged",
-        "memfs",
-        "prettier",
-        "ts-jest",
-        "tsup",
-        "tsx",
-        "typescript"
+        "zod"
       ],
       "hasPackageManager": true,
-      "ecosystem": "javascript"
+      "ecosystem": "typescript"
     }
   ]
 }

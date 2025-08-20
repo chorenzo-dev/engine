@@ -1,6 +1,6 @@
 {
   "name": "chorenzo",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Open-source CLI engine that automates your engineering workflow with AI-powered workspace analysis and recipe application",
   "main": "dist/main.js",
   "type": "module",
@@ -118,6 +118,7 @@
     "react": "^19.1.0",
     "simple-git": "^3.28.0",
     "write-file-atomic": "^6.0.0",
-    "yaml": "^2.8.0"
+    "yaml": "^2.8.0",
+    "zod": "^4.0.17"
   }
 }

@@ -94,7 +94,7 @@ For each project, check if a Dockerfile exists. Set dockerized to true if presen
 
 ## CI/CD Detection:
 
-For each project, detect which CI/CD system is being used. Set to "none" if no CI/CD configuration found.
+For the workspace, detect which CI/CD system is being used. Look for CI/CD configuration files in the workspace root (such as .github/workflows/, .gitlab-ci.yml, etc.). Set to "none" if no CI/CD configuration found.
 
 CRITICAL: After your analysis, write the results to `.chorenzo/analysis.json` using the Write tool. The file content must be ONLY this JSON structure with no other text:
 {
@@ -102,6 +102,7 @@ CRITICAL: After your analysis, write the results to `.chorenzo/analysis.json` us
 "has_workspace_package_manager": boolean,
 "workspace_ecosystem": "javascript" | "python" | "rust" | "go" | "ruby" | "java" | "mixed" | null,
 "workspace_dependencies": string[],
+"ci_cd": "github_actions" | "gitlab_ci" | "circleci" | "jenkins" | "travis_ci" | "azure_devops" | "bitbucket_pipelines" | "teamcity" | "bamboo" | "codeship" | "drone" | "buildkite" | "semaphore" | "appveyor" | "none",
 "projects": [
 {
 "path": string,
@@ -109,7 +110,6 @@ CRITICAL: After your analysis, write the results to `.chorenzo/analysis.json` us
 "type": "cli_tool" | "web_app" | "api_server" | "backend_service" | "library" | "script" | "infrastructure" | "desktop_app" | "mobile_app" | "unknown",
 "framework": string | null,
 "dockerized": boolean,
-"ci_cd": "github_actions" | "gitlab_ci" | "circleci" | "jenkins" | "travis_ci" | "azure_devops" | "bitbucket_pipelines" | "teamcity" | "bamboo" | "codeship" | "drone" | "buildkite" | "semaphore" | "appveyor" | "none",
 "dependencies": string[],
 "has_package_manager": boolean,
 "ecosystem": string | null

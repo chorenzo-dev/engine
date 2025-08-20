@@ -1,8 +1,8 @@
 {
-  "isMonorepo": false,
-  "hasWorkspacePackageManager": true,
-  "workspaceEcosystem": "javascript",
-  "workspaceDependencies": [
+  "is_monorepo": false,
+  "has_workspace_package_manager": true,
+  "workspace_ecosystem": "javascript",
+  "workspace_dependencies": [
     "@anthropic-ai/claude-code",
     "commander",
     "fastest-levenshtein",
@@ -15,29 +15,10 @@
     "pino-pretty",
     "react",
     "simple-git",
-    "yaml",
-    "@eslint/js",
-    "@jest/globals",
-    "@trivago/prettier-plugin-sort-imports",
-    "@types/jest",
-    "@types/node",
-    "@types/react",
-    "@typescript-eslint/eslint-plugin",
-    "@typescript-eslint/parser",
-    "esbuild-plugin-copy",
-    "eslint",
-    "globals",
-    "husky",
-    "jest",
-    "lint-staged",
-    "memfs",
-    "prettier",
-    "ts-jest",
-    "tsup",
-    "tsx",
-    "typescript"
+    "write-file-atomic",
+    "yaml"
   ],
-  "ciCd": "github_actions",
+  "ci_cd": "github_actions",
   "projects": [
     {
       "path": ".",
@@ -58,29 +39,10 @@
         "pino-pretty",
         "react",
         "simple-git",
-        "yaml",
-        "@eslint/js",
-        "@jest/globals",
-        "@trivago/prettier-plugin-sort-imports",
-        "@types/jest",
-        "@types/node",
-        "@types/react",
-        "@typescript-eslint/eslint-plugin",
-        "@typescript-eslint/parser",
-        "esbuild-plugin-copy",
-        "eslint",
-        "globals",
-        "husky",
-        "jest",
-        "lint-staged",
-        "memfs",
-        "prettier",
-        "ts-jest",
-        "tsup",
-        "tsx",
-        "typescript"
+        "write-file-atomic",
+        "yaml"
       ],
-      "hasPackageManager": true,
+      "has_package_manager": true,
       "ecosystem": "javascript"
     }
   ]

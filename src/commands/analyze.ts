@@ -214,11 +214,23 @@ export async function performAnalysis(
 
   const durationSeconds = operationResult.metadata.durationSeconds;
 
+  if (!finalAnalysis && !errorMessage) {
+    errorMessage = 'Analysis completed but produced no valid data';
+    subtype = 'error';
+  }
+
+  const isActualSuccess = !errorMessage && finalAnalysis !== null;
+  const finalSubtype = errorMessage
+    ? 'error'
+    : finalAnalysis
+      ? subtype
+      : 'error';
+
   const result: AnalysisResult = {
     analysis: finalAnalysis,
     metadata: {
       type: 'result',
-      subtype: errorMessage ? 'error' : subtype,
+      subtype: finalSubtype,
       costUsd: totalCost,
       turns: totalTurns,
       durationSeconds,
@@ -228,7 +240,7 @@ export async function performAnalysis(
       unrecognizedFrameworks.length > 0 ? unrecognizedFrameworks : undefined,
   };
 
-  if (result.analysis) {
+  if (isActualSuccess && result.analysis) {
     fs.mkdirSync(path.dirname(ANALYSIS_PATH), { recursive: true });
     await writeJson(ANALYSIS_PATH, result.analysis);
     Logger.info(
@@ -246,9 +258,11 @@ export async function performAnalysis(
         event: 'analysis_failed',
         metadata: result.metadata,
         hasError: !!errorMessage,
-        errorMessage,
+        errorMessage: errorMessage || 'Analysis produced no valid data',
+        hasAnalysis: !!result.analysis,
+        operationSuccess: operationResult.success,
       },
-      'Analysis failed - no analysis data'
+      `Analysis failed - ${errorMessage || 'no valid analysis data produced'}`
     );
   }
 

@@ -1160,7 +1160,7 @@ describe('Recipe Application', () => {
       expect(result.summary.failedProjects).toBe(1);
       expect(result.executionResults[0]?.success).toBe(false);
       expect(result.executionResults[0]?.error).toContain(
-        'Unknown error occurred'
+        'Claude execution failed with error'
       );
     });
 

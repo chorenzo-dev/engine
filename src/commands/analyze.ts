@@ -120,7 +120,7 @@ export async function performAnalysis(
       prompt,
       options: {
         model: 'sonnet',
-        maxTurns: 15,
+        maxTurns: 50,
         allowedTools: [
           'Read',
           'LS',

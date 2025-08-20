@@ -1,8 +1,8 @@
 {
-  "is_monorepo": false,
-  "has_workspace_package_manager": true,
-  "workspace_ecosystem": "javascript",
-  "workspace_dependencies": [
+  "isMonorepo": false,
+  "hasWorkspacePackageManager": true,
+  "workspaceEcosystem": "typescript",
+  "workspaceDependencies": [
     "@anthropic-ai/claude-code",
     "commander",
     "fastest-levenshtein",
@@ -16,9 +16,10 @@
     "react",
     "simple-git",
     "write-file-atomic",
-    "yaml"
+    "yaml",
+    "zod"
   ],
-  "ci_cd": "github_actions",
+  "ciCd": "github_actions",
   "projects": [
     {
       "path": ".",
@@ -40,10 +41,11 @@
         "react",
         "simple-git",
         "write-file-atomic",
-        "yaml"
+        "yaml",
+        "zod"
       ],
-      "has_package_manager": true,
-      "ecosystem": "javascript"
+      "hasPackageManager": true,
+      "ecosystem": "typescript"
     }
   ]
 }

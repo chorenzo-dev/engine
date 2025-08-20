@@ -125,10 +125,39 @@ export async function executeCodeChangesOperation(
             `Claude execution completed successfully. Result preview: ${String(message.result || '').substring(0, 200)}...`
           );
         } else if (message.subtype?.startsWith('error')) {
-          errorMessage =
-            'error' in message
-              ? String((message as Record<string, unknown>)['error'])
-              : 'Unknown error occurred';
+          const messageObj = message as Record<string, unknown>;
+
+          if ('error' in messageObj) {
+            errorMessage = String(messageObj['error']);
+          } else if ('message' in messageObj) {
+            errorMessage = String(messageObj['message']);
+          } else if ('reason' in messageObj) {
+            errorMessage = String(messageObj['reason']);
+          } else {
+            if ('content' in messageObj && messageObj['content']) {
+              const content = messageObj['content'] as string;
+              errorMessage =
+                content.length > 500
+                  ? content.substring(0, 500) + '...'
+                  : content;
+            } else {
+              errorMessage = `Claude execution failed with ${message.subtype}`;
+            }
+          }
+
+          Logger.error(
+            {
+              event: 'claude_execution_error_detailed',
+              subtype: message.subtype,
+              errorMessage,
+              fullMessage: JSON.stringify(messageObj, null, 2).substring(
+                0,
+                1000
+              ),
+            },
+            `Claude execution error: ${errorMessage}`
+          );
+
           success = false;
         }
         break;
@@ -242,7 +271,22 @@ export async function executeCodeChangesOperation(
         metadata,
       };
     } else {
-      const error = new Error(errorMessage || 'Claude operation failed');
+      const finalErrorMessage =
+        errorMessage ||
+        'Claude operation failed without specific error details';
+      Logger.error(
+        {
+          event: 'claude_operation_failed',
+          hasErrorMessage: !!errorMessage,
+          errorMessage: finalErrorMessage,
+          totalCost,
+          totalTurns,
+          durationSeconds,
+        },
+        `Claude operation failed: ${finalErrorMessage}`
+      );
+
+      const error = new Error(finalErrorMessage);
       handlers.onError?.(error);
       return {
         success: false,
@@ -253,6 +297,19 @@ export async function executeCodeChangesOperation(
   } catch (error) {
     const endTime = new Date();
     const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
+    const errorMessage = extractErrorMessage(error);
+
+    Logger.error(
+      {
+        event: 'code_changes_operation_exception',
+        errorType:
+          error instanceof Error ? error.constructor.name : typeof error,
+        errorMessage,
+        stack: error instanceof Error ? error.stack : undefined,
+        durationSeconds,
+      },
+      `Code changes operation threw exception: ${errorMessage}`
+    );
 
     const metadata = {
       costUsd: 0,
@@ -261,9 +318,8 @@ export async function executeCodeChangesOperation(
       subtype: 'error',
     };
 
-    handlers.onError?.(
-      error instanceof Error ? error : new Error(extractErrorMessage(error))
-    );
+    const finalError = error instanceof Error ? error : new Error(errorMessage);
+    handlers.onError?.(finalError);
     return {
       success: false,
       error: formatErrorMessage('Code changes operation failed', error),

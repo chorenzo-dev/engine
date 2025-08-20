@@ -16,6 +16,7 @@ import { Logger } from '~/utils/logger.utils';
 import { loadPrompt, renderPrompt } from '~/utils/prompts.utils';
 
 import { extractErrorMessage, formatErrorMessage } from '../utils/error.utils';
+import { ProgressCallback } from './recipes.shared';
 
 const ANALYSIS_PATH = path.join(process.cwd(), '.chorenzo', 'analysis.json');
 
@@ -42,10 +43,7 @@ function snakeToCamelCase<T>(obj: unknown): T {
   return obj as T;
 }
 
-export type ProgressCallback = (
-  step: string | null,
-  isThinking?: boolean
-) => void;
+export type { ProgressCallback };
 
 export async function performAnalysis(
   onProgress?: ProgressCallback

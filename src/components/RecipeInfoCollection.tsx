@@ -4,7 +4,7 @@ import TextInput from 'ink-text-input';
 import path from 'path';
 import React, { useCallback, useEffect, useState } from 'react';
 
-import { validateCategoryName } from '~/commands/recipes';
+import { validateCategoryName } from '~/commands/recipes.validate';
 import { colors } from '~/styles/colors';
 import { RecipesGenerateOptions } from '~/types/recipes-generate';
 import { chorenzoConfig } from '~/utils/config.utils';

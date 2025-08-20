@@ -11,7 +11,14 @@ import {
 export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({
   analysis,
 }) => {
-  const { isMonorepo, workspaceEcosystem, projects, ciCd } = analysis;
+  const {
+    isMonorepo,
+    workspaceEcosystem,
+    hasWorkspacePackageManager,
+    workspaceDependencies,
+    projects,
+    ciCd,
+  } = analysis;
 
   if (isMonorepo) {
     return (
@@ -21,9 +28,18 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({
         </Text>
         <Text>├─ Type: Monorepo</Text>
         {workspaceEcosystem ? (
-          <Text>└─ Ecosystem: {capitalize(workspaceEcosystem)}</Text>
+          <Text>├─ Ecosystem: {capitalize(workspaceEcosystem)}</Text>
         ) : (
-          <Text>└─ Ecosystem: Unknown</Text>
+          <Text>├─ Ecosystem: Unknown</Text>
+        )}
+        <Text>
+          ├─ Package Manager: {hasWorkspacePackageManager ? 'Yes' : 'No'}
+        </Text>
+        <Text>├─ CI/CD: {formatCiCd(ciCd)}</Text>
+        {workspaceDependencies && workspaceDependencies.length > 0 ? (
+          <Text>└─ Dependencies: {workspaceDependencies.length}</Text>
+        ) : (
+          <Text>└─ Dependencies: None</Text>
         )}
 
         <Box marginTop={1}>
@@ -43,8 +59,10 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({
                 ├─ Framework:{' '}
                 {project.framework ? capitalize(project.framework) : 'None'}
               </Text>
-              <Text>├─ Docker: {project.dockerized ? 'Yes' : 'No'}</Text>
-              <Text>└─ CI/CD: {formatCiCd(ciCd)}</Text>
+              <Text>
+                ├─ Package Manager: {project.hasPackageManager ? 'Yes' : 'No'}
+              </Text>
+              <Text>└─ Docker: {project.dockerized ? 'Yes' : 'No'}</Text>
             </Box>
           </Box>
         ))}
@@ -74,9 +92,9 @@ export const FormatAnalysis: React.FC<{ analysis: WorkspaceAnalysis }> = ({
           Framework:{' '}
           {project.framework ? capitalize(project.framework) : 'None'}
         </Text>
+        <Text>Package Manager: {project.hasPackageManager ? 'Yes' : 'No'}</Text>
         <Text>Docker: {project.dockerized ? 'Yes' : 'No'}</Text>
         <Text>CI/CD: {formatCiCd(ciCd)}</Text>
-        <Text>Package Manager: {getPackageManager(project)}</Text>
         <Box marginTop={1} />
       </Box>
     );
@@ -101,16 +119,6 @@ function formatProjectType(type: ProjectAnalysis['type']): string {
     unknown: 'Unknown',
   };
   return typeMap[type];
-}
-
-function getPackageManager(project: ProjectAnalysis): string {
-  if (!project.hasPackageManager) {
-    return 'None';
-  }
-  if (project.ecosystem === 'javascript') {
-    return 'npm/yarn/pnpm';
-  }
-  return project.ecosystem || 'Unknown';
 }
 
 function formatCiCd(ciCd?: CiCdSystem): string {

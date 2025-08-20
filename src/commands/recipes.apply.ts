@@ -40,14 +40,7 @@ import { extractErrorMessage, formatErrorMessage } from '../utils/error.utils';
 import { performAnalysis } from './analyze';
 import { loadRecipe } from './recipes.shared';
 
-export async function checkRecipeReApplication(
-  options: RecipesApplyOptions,
-  onProgress?: RecipesApplyProgressCallback
-): Promise<{ recipeId: string; reApplicationCheck: ReApplicationCheckResult }> {
-  onProgress?.('Loading recipe');
-  const recipe = await loadRecipe(options.recipe);
-
-  onProgress?.('Validating recipe structure');
+async function validateRecipeStructure(recipe: Recipe): Promise<void> {
   const validationResult = recipe.validate();
   if (!validationResult.valid) {
     const errors = validationResult.errors.map((e) => e.message).join(', ');
@@ -56,6 +49,24 @@ export async function checkRecipeReApplication(
       'RECIPE_INVALID'
     );
   }
+}
+
+interface RecipeSetupResult {
+  recipe: Recipe;
+  analysis: WorkspaceAnalysis;
+  currentState: RecipesApplyState;
+  dependencyCheck: RecipesApplyDependencyValidationResult;
+}
+
+async function setupRecipeApplication(
+  options: RecipesApplyOptions,
+  onProgress?: RecipesApplyProgressCallback
+): Promise<RecipeSetupResult> {
+  onProgress?.('Loading recipe');
+  const recipe = await loadRecipe(options.recipe);
+
+  onProgress?.('Validating recipe structure');
+  await validateRecipeStructure(recipe);
 
   onProgress?.('Ensuring analysis data');
   const analysis = await ensureAnalysisData();
@@ -75,6 +86,18 @@ export async function checkRecipeReApplication(
     );
     throw new RecipesApplyError(errorMsg, 'DEPENDENCIES_NOT_SATISFIED');
   }
+
+  return { recipe, analysis, currentState, dependencyCheck };
+}
+
+export async function checkRecipeReApplication(
+  options: RecipesApplyOptions,
+  onProgress?: RecipesApplyProgressCallback
+): Promise<{ recipeId: string; reApplicationCheck: ReApplicationCheckResult }> {
+  const { recipe, analysis } = await setupRecipeApplication(
+    options,
+    onProgress
+  );
 
   onProgress?.('Checking for previous recipe applications');
   const reApplicationCheck = await checkReApplication(
@@ -98,37 +121,10 @@ export async function performRecipesApply(
   let totalCostUsd = 0;
 
   try {
-    onProgress?.('Loading recipe');
-    const recipe = await loadRecipe(options.recipe);
-
-    onProgress?.('Validating recipe structure');
-    const validationResult = recipe.validate();
-    if (!validationResult.valid) {
-      const errors = validationResult.errors.map((e) => e.message).join(', ');
-      throw new RecipesApplyError(
-        `Recipe validation failed: ${errors}`,
-        'RECIPE_INVALID'
-      );
-    }
-
-    onProgress?.('Ensuring analysis data');
-    const analysis = await ensureAnalysisData();
-
-    onProgress?.('Checking recipe dependencies');
-    const currentState = await readCurrentState();
-    const dependencyCheck = await validateWorkspaceDependencies(
-      recipe,
-      currentState
+    const { recipe, analysis, dependencyCheck } = await setupRecipeApplication(
+      options,
+      onProgress
     );
-
-    if (!dependencyCheck.satisfied) {
-      const errorMsg = formatDependencyError(
-        recipe.getId(),
-        dependencyCheck,
-        currentState
-      );
-      throw new RecipesApplyError(errorMsg, 'DEPENDENCIES_NOT_SATISFIED');
-    }
 
     onProgress?.('Checking for previous recipe applications');
     const reApplicationCheck = await checkReApplication(
@@ -350,58 +346,6 @@ async function readCurrentState(): Promise<RecipesApplyState> {
   }
 }
 
-async function validateWorkspaceDependencies(
-  recipe: Recipe,
-  currentState: RecipesApplyState
-): Promise<RecipesApplyDependencyValidationResult> {
-  const missing: RecipeDependency[] = [];
-  const conflicting: Array<{ key: string; required: string; current: string }> =
-    [];
-
-  let analysis: WorkspaceAnalysis | null = null;
-
-  for (const dependency of recipe.getRequires()) {
-    let currentValue: string | undefined;
-
-    if (isReservedKeyword(dependency.key)) {
-      if (isProjectKeyword(dependency.key)) {
-        continue;
-      }
-
-      if (!analysis) {
-        analysis = await loadWorkspaceAnalysis();
-        if (!analysis) {
-          missing.push(dependency);
-          continue;
-        }
-      }
-
-      if (isWorkspaceKeyword(dependency.key)) {
-        currentValue = getWorkspaceCharacteristic(analysis, dependency.key);
-      }
-    } else {
-      const stateValue = currentState[dependency.key];
-      currentValue = stateValue ? String(stateValue) : undefined;
-    }
-
-    if (currentValue === undefined) {
-      missing.push(dependency);
-    } else if (currentValue !== String(dependency.equals)) {
-      conflicting.push({
-        key: dependency.key,
-        required: String(dependency.equals),
-        current: currentValue,
-      });
-    }
-  }
-
-  return {
-    satisfied: missing.length === 0 && conflicting.length === 0,
-    missing,
-    conflicting,
-  };
-}
-
 async function validateDependencies(
   recipe: Recipe,
   currentState: RecipesApplyState,
@@ -418,6 +362,10 @@ async function validateDependencies(
     let currentValue: string | undefined;
 
     if (isReservedKeyword(dependency.key)) {
+      if (isProjectKeyword(dependency.key) && !projectPath) {
+        continue;
+      }
+
       if (!analysis) {
         analysis = await loadWorkspaceAnalysis();
         if (!analysis) {
@@ -465,6 +413,13 @@ async function validateDependencies(
     missing,
     conflicting,
   };
+}
+
+async function validateWorkspaceDependencies(
+  recipe: Recipe,
+  currentState: RecipesApplyState
+): Promise<RecipesApplyDependencyValidationResult> {
+  return validateDependencies(recipe, currentState);
 }
 
 function formatDependencyError(
@@ -558,27 +513,50 @@ async function checkReApplication(
   };
 }
 
+function filterProjectsByName(
+  projects: ProjectAnalysis[],
+  projectFilter?: string
+): ProjectAnalysis[] {
+  if (!projectFilter) {
+    return projects;
+  }
+
+  return projects.filter(
+    (p) => p.path === projectFilter || p.path.includes(projectFilter)
+  );
+}
+
+function shouldIncludeProject(
+  project: ProjectAnalysis,
+  recipe: Recipe,
+  projectFilter?: string
+): boolean {
+  if (projectFilter && !project.path.includes(projectFilter)) {
+    return false;
+  }
+
+  if (!project.ecosystem) {
+    return false;
+  }
+
+  if (!recipe.hasEcosystem(project.ecosystem)) {
+    return false;
+  }
+
+  return true;
+}
+
 async function filterApplicableProjects(
   analysis: WorkspaceAnalysis,
   recipe: Recipe,
   projectFilter?: string
 ): Promise<ProjectAnalysis[]> {
-  let projects = analysis.projects;
-
-  if (projectFilter) {
-    projects = projects.filter(
-      (p) => p.path === projectFilter || p.path.includes(projectFilter)
-    );
-  }
-
+  const projects = filterProjectsByName(analysis.projects, projectFilter);
   const applicableProjects: ProjectAnalysis[] = [];
   const workspaceState = stateManager.getWorkspaceState();
 
   for (const project of projects) {
-    if (!project.ecosystem) {
-      continue;
-    }
-    if (!recipe.hasEcosystem(project.ecosystem)) {
+    if (!shouldIncludeProject(project, recipe, projectFilter)) {
       continue;
     }
 
@@ -1111,15 +1089,7 @@ async function getApplicableProjectsForWorkspacePreferred(
   const applicableProjects: ProjectAnalysis[] = [];
 
   for (const project of analysis.projects) {
-    if (projectFilter && !project.path.includes(projectFilter)) {
-      continue;
-    }
-
-    if (!project.ecosystem) {
-      continue;
-    }
-
-    if (!recipe.hasEcosystem(project.ecosystem)) {
+    if (!shouldIncludeProject(project, recipe, projectFilter)) {
       continue;
     }
 

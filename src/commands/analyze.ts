@@ -27,23 +27,6 @@ export interface AnalysisResult {
   unrecognizedFrameworks?: string[];
 }
 
-function snakeToCamelCase<T>(obj: unknown): T {
-  if (Array.isArray(obj)) {
-    return obj.map(snakeToCamelCase) as T;
-  } else if (obj !== null && typeof obj === 'object') {
-    return Object.keys(obj).reduce((result, key) => {
-      const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
-        letter.toUpperCase()
-      );
-      (result as Record<string, unknown>)[camelKey] = snakeToCamelCase(
-        (obj as Record<string, unknown>)[key]
-      );
-      return result;
-    }, {} as T);
-  }
-  return obj as T;
-}
-
 export type ProgressCallback = (
   step: string | null,
   isThinking?: boolean
@@ -160,9 +143,7 @@ export async function performAnalysis(
     startTime
   );
 
-  let finalAnalysis = analysis
-    ? snakeToCamelCase<WorkspaceAnalysis>(analysis)
-    : null;
+  let finalAnalysis = analysis as WorkspaceAnalysis | null;
   let totalCost = operationResult.metadata.costUsd;
   let totalTurns = operationResult.metadata.turns;
   let subtype = operationResult.success ? 'success' : 'error';

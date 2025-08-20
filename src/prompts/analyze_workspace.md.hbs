@@ -102,11 +102,11 @@ After writing the analysis file, you MUST run `npx chorenzo analysis validate` t
 
 Expected JSON structure:
 {
-"is_monorepo": boolean,
-"has_workspace_package_manager": boolean,
-"workspace_ecosystem": {{{ecosystems}}} | null,
-"workspace_dependencies": string[],
-"ci_cd": {{{cicd_systems}}},
+"isMonorepo": boolean,
+"hasWorkspacePackageManager": boolean,
+"workspaceEcosystem": {{{ecosystems}}} | null,
+"workspaceDependencies": string[],
+"ciCd": {{{cicd_systems}}},
 "projects": [
 {
 "path": string,
@@ -115,7 +115,7 @@ Expected JSON structure:
 "framework": string | null,
 "dockerized": boolean,
 "dependencies": string[],
-"has_package_manager": boolean,
+"hasPackageManager": boolean,
 "ecosystem": {{{ecosystems}}} | null
 }
 ]

@@ -18,6 +18,7 @@ import { workspaceConfig } from '~/utils/workspace-config.utils';
 
 import { CiCdSystem, Ecosystem, ProjectType } from '../types/analysis';
 import { extractErrorMessage, formatErrorMessage } from '../utils/error.utils';
+import { ProgressCallback } from './recipes.shared';
 
 const ANALYSIS_PATH = workspaceConfig.getAnalysisPath();
 
@@ -26,11 +27,6 @@ export interface AnalysisResult {
   metadata?: OperationMetadata;
   unrecognizedFrameworks?: string[];
 }
-
-export type ProgressCallback = (
-  step: string | null,
-  isThinking?: boolean
-) => void;
 
 export async function performAnalysis(
   onProgress?: ProgressCallback

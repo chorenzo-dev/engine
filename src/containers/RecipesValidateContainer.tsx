@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import {
   type ValidationResult,
   performRecipesValidate,
-} from '~/commands/recipes';
+} from '~/commands/recipes.validate';
 import { ProcessDisplay } from '~/components/ProcessDisplay';
 import { emojis } from '~/components/ProcessDisplay';
 import { Step, StepContext, StepSequence } from '~/components/StepSequence';

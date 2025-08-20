@@ -1,7 +1,7 @@
 import { Box, Text, useApp } from 'ink';
 import React, { useEffect, useState } from 'react';
 
-import { loadRecipeForShow } from '~/commands/recipes';
+import { loadRecipeForShow } from '~/commands/recipes.show';
 import { RecipeActionsMenu } from '~/components/RecipeActionsMenu';
 import { RecipeDisplayComponent } from '~/components/RecipeDisplayComponent';
 import { colors } from '~/styles/colors';

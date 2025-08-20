@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import {
   checkRecipeReApplication,
   performRecipesApply,
-} from '~/commands/recipes';
+} from '~/commands/recipes.apply';
 import { ProcessDisplay } from '~/components/ProcessDisplay';
 import { ReApplicationPrompt } from '~/components/ReApplicationPrompt';
 import { RecipesApplyResultDisplay } from '~/components/RecipesApplyResultDisplay';

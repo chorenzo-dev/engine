@@ -1,7 +1,7 @@
 import { Text } from 'ink';
 import React, { useEffect, useState } from 'react';
 
-import { performRecipesGenerate } from '~/commands/recipes';
+import { performRecipesGenerate } from '~/commands/recipes.generate';
 import { MetadataDisplay } from '~/components/MetadataDisplay';
 import { RecipeInfoCollection } from '~/components/RecipeInfoCollection';
 import { Step, StepContext, StepSequence } from '~/components/StepSequence';

@@ -8,8 +8,8 @@ import React, { useEffect, useState } from 'react';
 import {
   getRecipeCategories,
   getRecipesByCategory,
-  loadRecipeForShow,
-} from '~/commands/recipes';
+} from '~/commands/recipes.list';
+import { loadRecipeForShow } from '~/commands/recipes.show';
 import { RecipeDisplayComponent } from '~/components/RecipeDisplayComponent';
 import { colors } from '~/styles/colors';
 import { Recipe } from '~/types/recipe';

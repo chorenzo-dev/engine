@@ -1,52 +1,55 @@
-export type ProjectType =
-  | 'cli_tool'
-  | 'web_app'
-  | 'api_server'
-  | 'backend_service'
-  | 'library'
-  | 'script'
-  | 'infrastructure'
-  | 'desktop_app'
-  | 'mobile_app'
-  | 'unknown';
+export enum ProjectType {
+  CliTool = 'cli_tool',
+  WebApp = 'web_app',
+  ApiServer = 'api_server',
+  BackendService = 'backend_service',
+  Library = 'library',
+  Script = 'script',
+  Infrastructure = 'infrastructure',
+  DesktopApp = 'desktop_app',
+  MobileApp = 'mobile_app',
+  Unknown = 'unknown',
+}
 
-export type CiCdSystem =
-  | 'github_actions'
-  | 'gitlab_ci'
-  | 'circleci'
-  | 'jenkins'
-  | 'travis_ci'
-  | 'azure_devops'
-  | 'bitbucket_pipelines'
-  | 'teamcity'
-  | 'bamboo'
-  | 'codeship'
-  | 'drone'
-  | 'buildkite'
-  | 'semaphore'
-  | 'appveyor'
-  | 'none';
+export enum CiCdSystem {
+  GithubActions = 'github_actions',
+  GitlabCi = 'gitlab_ci',
+  Circleci = 'circleci',
+  Jenkins = 'jenkins',
+  TravisCi = 'travis_ci',
+  AzureDevops = 'azure_devops',
+  BitbucketPipelines = 'bitbucket_pipelines',
+  Teamcity = 'teamcity',
+  Bamboo = 'bamboo',
+  Codeship = 'codeship',
+  Drone = 'drone',
+  Buildkite = 'buildkite',
+  Semaphore = 'semaphore',
+  Appveyor = 'appveyor',
+  None = 'none',
+}
 
-export type Ecosystem =
-  | 'javascript'
-  | 'typescript'
-  | 'python'
-  | 'java'
-  | 'csharp'
-  | 'go'
-  | 'rust'
-  | 'ruby'
-  | 'php'
-  | 'swift'
-  | 'kotlin'
-  | 'dart'
-  | 'elixir'
-  | 'scala'
-  | 'clojure'
-  | 'haskell'
-  | 'c'
-  | 'cpp'
-  | 'unknown';
+export enum Ecosystem {
+  Javascript = 'javascript',
+  Typescript = 'typescript',
+  Python = 'python',
+  Java = 'java',
+  Csharp = 'csharp',
+  Go = 'go',
+  Rust = 'rust',
+  Ruby = 'ruby',
+  Php = 'php',
+  Swift = 'swift',
+  Kotlin = 'kotlin',
+  Dart = 'dart',
+  Elixir = 'elixir',
+  Scala = 'scala',
+  Clojure = 'clojure',
+  Haskell = 'haskell',
+  C = 'c',
+  Cpp = 'cpp',
+  Unknown = 'unknown',
+}
 
 export interface ProjectAnalysis {
   path: string;

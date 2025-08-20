@@ -360,10 +360,6 @@ export async function performRecipesValidate(
   }
 }
 
-async function findRecipeByName(recipeName: string): Promise<string[]> {
-  return await libraryManager.findRecipeByName(recipeName);
-}
-
 async function validateRecipeByName(
   recipeName: string,
   options: Record<string, unknown>,
@@ -373,7 +369,7 @@ async function validateRecipeByName(
 ): Promise<ValidationResult> {
   onProgress?.(`Searching for recipe: ${recipeName}`);
 
-  const foundPaths = await findRecipeByName(recipeName);
+  const foundPaths = await libraryManager.findRecipeByName(recipeName);
 
   if (foundPaths.length === 0) {
     throw new RecipesError(

@@ -71,6 +71,33 @@ program
     }
   });
 
+const analysisCommand = program
+  .command('analysis', { hidden: true })
+  .description('Internal analysis utilities');
+
+analysisCommand
+  .command('validate [file]')
+  .description('Validate analysis.json file structure and data')
+  .option('--debug', 'Show all progress messages in list format')
+  .action(async (file: string, options: { debug?: boolean }) => {
+    const { waitUntilExit } = render(
+      React.createElement(Shell, {
+        command: 'analysis.validate',
+        options: {
+          file,
+          debug: options.debug,
+        },
+      })
+    );
+
+    try {
+      await waitUntilExit();
+    } catch (error) {
+      Logger.error(extractErrorMessage(error));
+      process.exit(1);
+    }
+  });
+
 const recipesCommand = program
   .command('recipes')
   .description('Manage and validate Chorenzo recipes')

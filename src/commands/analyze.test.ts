@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { setupFixture } from '~/test-utils/fixture-loader';
+import { CiCdSystem, Ecosystem, ProjectType } from '~/types/analysis';
 import type { WorkspaceAnalysis } from '~/types/analysis';
 import type { OperationMetadata } from '~/types/common';
 
@@ -142,9 +143,9 @@ describe('Analyze Command Integration Tests', () => {
       }
       if (filePath.includes('analysis.json')) {
         return JSON.stringify({
-          is_monorepo: false,
-          has_workspace_package_manager: false,
-          workspace_ecosystem: 'javascript',
+          isMonorepo: false,
+          hasWorkspacePackageManager: false,
+          workspaceEcosystem: 'javascript',
           projects: [],
         });
       }
@@ -207,34 +208,34 @@ describe('Analyze Command Integration Tests', () => {
     const expectedAnalysis: WorkspaceAnalysis = {
       isMonorepo: false,
       hasWorkspacePackageManager: false,
-      workspaceEcosystem: 'javascript',
+      workspaceEcosystem: Ecosystem.Javascript,
       projects: [
         {
           path: '.',
           language: 'javascript',
-          type: 'api_server',
+          type: ProjectType.ApiServer,
           framework: 'express',
           dependencies: ['express', 'dotenv'],
           hasPackageManager: true,
-          ecosystem: 'javascript',
+          ecosystem: Ecosystem.Javascript,
           dockerized: false,
         },
       ],
     };
 
     const analysisJson = {
-      is_monorepo: false,
-      has_workspace_package_manager: false,
-      workspace_ecosystem: 'javascript',
+      isMonorepo: false,
+      hasWorkspacePackageManager: false,
+      workspaceEcosystem: 'javascript',
       projects: [
         {
           path: '.',
           language: 'javascript',
-          type: 'api_server',
+          type: ProjectType.ApiServer,
           framework: 'express',
           dependencies: ['express', 'dotenv'],
-          has_package_manager: true,
-          ecosystem: 'javascript',
+          hasPackageManager: true,
+          ecosystem: Ecosystem.Javascript,
           dockerized: false,
         },
       ],
@@ -283,18 +284,18 @@ describe('Analyze Command Integration Tests', () => {
     setupFixture('simple-express', { addGitRepo: true });
 
     const analysisJson = {
-      is_monorepo: false,
-      has_workspace_package_manager: false,
-      workspace_ecosystem: 'javascript',
+      isMonorepo: false,
+      hasWorkspacePackageManager: false,
+      workspaceEcosystem: 'javascript',
       projects: [
         {
           path: '.',
           language: 'javascript',
-          type: 'web_app',
+          type: ProjectType.WebApp,
           framework: 'unknown-framework',
           dependencies: ['unknown-framework'],
-          has_package_manager: true,
-          ecosystem: 'javascript',
+          hasPackageManager: true,
+          ecosystem: Ecosystem.Javascript,
           dockerized: false,
         },
       ],
@@ -342,16 +343,16 @@ describe('Analyze Command Integration Tests', () => {
     setupFixture('simple-express');
 
     const analysisJson = {
-      is_monorepo: false,
-      has_workspace_package_manager: false,
-      workspace_ecosystem: 'javascript',
+      isMonorepo: false,
+      hasWorkspacePackageManager: false,
+      workspaceEcosystem: 'javascript',
       projects: [
         {
           path: '.',
           language: 'javascript',
-          type: 'library',
+          type: ProjectType.Library,
           dependencies: [],
-          has_package_manager: false,
+          hasPackageManager: false,
         },
       ],
     };
@@ -394,18 +395,18 @@ describe('Analyze Command Integration Tests', () => {
     setupFixture('simple-express', { addGitRepo: true });
 
     const analysisJson = {
-      is_monorepo: false,
-      has_workspace_package_manager: false,
-      workspace_ecosystem: 'javascript',
+      isMonorepo: false,
+      hasWorkspacePackageManager: false,
+      workspaceEcosystem: 'javascript',
       projects: [
         {
           path: '.',
           language: 'javascript',
-          type: 'api_server',
+          type: ProjectType.ApiServer,
           framework: 'express',
           dependencies: ['express', 'dotenv'],
-          has_package_manager: true,
-          ecosystem: 'javascript',
+          hasPackageManager: true,
+          ecosystem: Ecosystem.Javascript,
           dockerized: false,
         },
       ],
@@ -476,74 +477,74 @@ describe('Analyze Command Integration Tests', () => {
     const expectedAnalysis: WorkspaceAnalysis = {
       isMonorepo: true,
       hasWorkspacePackageManager: true,
-      workspaceEcosystem: 'javascript',
-      ciCd: 'github_actions',
+      workspaceEcosystem: Ecosystem.Javascript,
+      ciCd: CiCdSystem.GithubActions,
       projects: [
         {
           path: 'apps/web-app',
           language: 'typescript',
-          type: 'web_app',
+          type: ProjectType.WebApp,
           framework: 'nextjs',
           dependencies: ['next', 'react', 'react-dom', '@monorepo/shared-lib'],
           hasPackageManager: true,
-          ecosystem: 'javascript',
+          ecosystem: Ecosystem.Javascript,
           dockerized: false,
         },
         {
           path: 'apps/api-service',
           language: 'python',
-          type: 'api_server',
+          type: ProjectType.ApiServer,
           framework: 'fastapi',
           dependencies: ['fastapi', 'uvicorn', 'pydantic'],
           hasPackageManager: true,
-          ecosystem: 'python',
+          ecosystem: Ecosystem.Python,
           dockerized: false,
         },
         {
           path: 'apps/shared-lib',
           language: 'typescript',
-          type: 'library',
+          type: ProjectType.Library,
           dependencies: ['react'],
           hasPackageManager: true,
-          ecosystem: 'javascript',
+          ecosystem: Ecosystem.Javascript,
           dockerized: false,
         },
       ],
     };
 
     const analysisJson = {
-      is_monorepo: true,
-      has_workspace_package_manager: true,
-      workspace_ecosystem: 'javascript',
-      ci_cd: 'github_actions',
+      isMonorepo: true,
+      hasWorkspacePackageManager: true,
+      workspaceEcosystem: 'javascript',
+      ciCd: 'github_actions',
       projects: [
         {
           path: 'apps/web-app',
           language: 'typescript',
-          type: 'web_app',
+          type: ProjectType.WebApp,
           framework: 'nextjs',
           dependencies: ['next', 'react', 'react-dom', '@monorepo/shared-lib'],
-          has_package_manager: true,
-          ecosystem: 'javascript',
+          hasPackageManager: true,
+          ecosystem: Ecosystem.Javascript,
           dockerized: false,
         },
         {
           path: 'apps/api-service',
           language: 'python',
-          type: 'api_server',
+          type: ProjectType.ApiServer,
           framework: 'fastapi',
           dependencies: ['fastapi', 'uvicorn', 'pydantic'],
-          has_package_manager: true,
-          ecosystem: 'python',
+          hasPackageManager: true,
+          ecosystem: Ecosystem.Python,
           dockerized: false,
         },
         {
           path: 'apps/shared-lib',
           language: 'typescript',
-          type: 'library',
+          type: ProjectType.Library,
           dependencies: ['react'],
-          has_package_manager: true,
-          ecosystem: 'javascript',
+          hasPackageManager: true,
+          ecosystem: Ecosystem.Javascript,
           dockerized: false,
         },
       ],
@@ -587,24 +588,24 @@ describe('Analyze Command Integration Tests', () => {
       'utf8'
     );
   });
-  it('should convert snake_case to camelCase in analysis results', async () => {
+  it('should handle analysis with all optional fields', async () => {
     setupFixture('simple-express', { addGitRepo: true });
 
     const analysisJson = {
-      is_monorepo: false,
-      has_workspace_package_manager: true,
-      workspace_ecosystem: 'typescript',
-      workspace_dependencies: ['typescript', 'next'],
-      ci_cd: 'github_actions',
+      isMonorepo: false,
+      hasWorkspacePackageManager: true,
+      workspaceEcosystem: 'typescript',
+      workspaceDependencies: ['typescript', 'next'],
+      ciCd: 'github_actions',
       projects: [
         {
           path: '.',
           language: 'typescript',
-          type: 'web_app',
+          type: ProjectType.WebApp,
           framework: 'nextjs',
           dependencies: ['next', 'react'],
-          has_package_manager: true,
-          ecosystem: 'javascript',
+          hasPackageManager: true,
+          ecosystem: Ecosystem.Javascript,
           dockerized: true,
         },
       ],
@@ -634,11 +635,11 @@ describe('Analyze Command Integration Tests', () => {
         {
           path: '.',
           language: 'typescript',
-          type: 'web_app',
+          type: ProjectType.WebApp,
           framework: 'nextjs',
           dependencies: ['next', 'react'],
           hasPackageManager: true,
-          ecosystem: 'javascript',
+          ecosystem: Ecosystem.Javascript,
           dockerized: true,
         },
       ],
@@ -682,18 +683,18 @@ describe('Analyze Command Integration Tests', () => {
     setupFixture('simple-express', { addGitRepo: true });
 
     const analysisJson = {
-      is_monorepo: false,
-      has_workspace_package_manager: false,
-      workspace_ecosystem: 'javascript',
+      isMonorepo: false,
+      hasWorkspacePackageManager: false,
+      workspaceEcosystem: 'javascript',
       projects: [
         {
           path: '.',
           language: 'javascript',
-          type: 'api_server',
+          type: ProjectType.ApiServer,
           framework: 'express',
           dependencies: ['express'],
-          has_package_manager: true,
-          ecosystem: 'javascript',
+          hasPackageManager: true,
+          ecosystem: Ecosystem.Javascript,
           dockerized: false,
         },
       ],
@@ -786,8 +787,8 @@ describe('Analyze Command Integration Tests', () => {
     setupFixture('simple-express', { addGitRepo: true });
 
     const analysisJson = {
-      is_monorepo: false,
-      has_workspace_package_manager: false,
+      isMonorepo: false,
+      hasWorkspacePackageManager: false,
       projects: [],
     };
 
@@ -815,18 +816,18 @@ describe('Analyze Command Integration Tests', () => {
     setupFixture('simple-express', { addGitRepo: true });
 
     const analysisJson = {
-      is_monorepo: false,
-      has_workspace_package_manager: false,
-      workspace_ecosystem: 'javascript',
+      isMonorepo: false,
+      hasWorkspacePackageManager: false,
+      workspaceEcosystem: 'javascript',
       projects: [
         {
           path: '.',
           language: 'javascript',
-          type: 'api_server',
+          type: ProjectType.ApiServer,
           framework: 'express',
           dependencies: ['express'],
-          has_package_manager: true,
-          ecosystem: 'javascript',
+          hasPackageManager: true,
+          ecosystem: Ecosystem.Javascript,
           dockerized: false,
         },
       ],

@@ -1,7 +1,7 @@
 {
   "isMonorepo": false,
   "hasWorkspacePackageManager": true,
-  "workspaceEcosystem": "typescript",
+  "workspaceEcosystem": "javascript",
   "workspaceDependencies": [
     "@anthropic-ai/claude-code",
     "commander",
@@ -45,7 +45,7 @@
         "zod"
       ],
       "hasPackageManager": true,
-      "ecosystem": "typescript"
+      "ecosystem": "javascript"
     }
   ]
 }

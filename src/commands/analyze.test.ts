@@ -594,7 +594,7 @@ describe('Analyze Command Integration Tests', () => {
     const analysisJson = {
       isMonorepo: false,
       hasWorkspacePackageManager: true,
-      workspaceEcosystem: 'typescript',
+      workspaceEcosystem: 'javascript',
       workspaceDependencies: ['typescript', 'next'],
       ciCd: 'github_actions',
       projects: [
@@ -628,7 +628,7 @@ describe('Analyze Command Integration Tests', () => {
     expect(result.analysis).toEqual({
       isMonorepo: false,
       hasWorkspacePackageManager: true,
-      workspaceEcosystem: 'typescript',
+      workspaceEcosystem: 'javascript',
       workspaceDependencies: ['typescript', 'next'],
       ciCd: 'github_actions',
       projects: [

@@ -2287,7 +2287,7 @@ describe('Recipe Application', () => {
           performRecipesApply({
             recipe: 'unsupported-recipe',
           })
-        ).rejects.toThrow('could not be applied at workspace or project level');
+        ).rejects.toThrow('cannot be applied: workspace ecosystem mismatch');
       });
 
       it('should handle project-only recipe correctly', async () => {

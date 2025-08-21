@@ -182,13 +182,18 @@ export async function performRecipesApply(
         );
       }
     } else if (recipe.isWorkspacePreferred()) {
-      const { workspaceResult, projectResults } =
-        await applyWorkspacePreferredRecipe(
-          recipe,
-          analysis,
-          options,
-          onProgress
-        );
+      const {
+        workspaceResult,
+        projectResults,
+        canApplyAtWorkspace,
+        applicableProjectsCount,
+        workspaceFailureReason,
+      } = await applyWorkspacePreferredRecipe(
+        recipe,
+        analysis,
+        options,
+        onProgress
+      );
 
       if (workspaceResult) {
         totalCostUsd += workspaceResult.costUsd;
@@ -201,10 +206,32 @@ export async function performRecipesApply(
       }
 
       if (executionResults.length === 0) {
-        throw new RecipesApplyError(
-          `Recipe '${recipe.getId()}' could not be applied at workspace or project level`,
-          'NO_APPLICABLE_SCOPE'
+        const workspaceError =
+          workspaceResult?.error ||
+          (canApplyAtWorkspace ? 'execution failed' : workspaceFailureReason);
+        const projectFailureReasons =
+          projectResults.length > 0
+            ? projectResults.map((p) => p.error).filter(Boolean)
+            : ['no applicable projects found'];
+
+        Logger.error(
+          {
+            recipeId: recipe.getId(),
+            workspaceCanApply: canApplyAtWorkspace,
+            workspaceFailureReason: workspaceError,
+            projectResultsCount: projectResults.length,
+            projectFailureReasons,
+            applicableProjectsCount,
+          },
+          'Recipe application failed at all levels'
         );
+
+        const detailedError =
+          applicableProjectsCount === 0
+            ? `Recipe '${recipe.getId()}' cannot be applied: workspace ${workspaceError}, no applicable projects found`
+            : `Recipe '${recipe.getId()}' failed: workspace ${workspaceError}, projects failed: ${projectFailureReasons.join(', ')}`;
+
+        throw new RecipesApplyError(detailedError, 'NO_APPLICABLE_SCOPE');
       }
     } else {
       onProgress?.('Filtering applicable projects');
@@ -971,6 +998,9 @@ async function executeRecipe(
 interface WorkspacePreferredResult {
   workspaceResult: RecipesApplyExecutionResult | null;
   projectResults: RecipesApplyExecutionResult[];
+  canApplyAtWorkspace: boolean;
+  applicableProjectsCount: number;
+  workspaceFailureReason: string;
 }
 
 async function applyWorkspacePreferredRecipe(
@@ -984,11 +1014,12 @@ async function applyWorkspacePreferredRecipe(
   const workspaceRecipesApplyState = (workspaceState.workspace ||
     {}) as RecipesApplyState;
 
-  const canApplyAtWorkspace = await canApplyRecipeAtWorkspace(
+  const workspaceApplicability = await getWorkspaceApplicabilityResult(
     recipe,
     analysis,
     workspaceRecipesApplyState
   );
+  const canApplyAtWorkspace = workspaceApplicability.canApply;
 
   const applicableProjects = await getApplicableProjectsForWorkspacePreferred(
     recipe,
@@ -996,6 +1027,18 @@ async function applyWorkspacePreferredRecipe(
     workspaceEcosystem,
     workspaceState,
     options.project
+  );
+
+  Logger.info(
+    {
+      recipeId: recipe.getId(),
+      canApplyAtWorkspace,
+      workspaceEcosystem,
+      applicableProjectsCount: applicableProjects.length,
+      totalProjectsCount: analysis.projects.length,
+      projectFilter: options.project,
+    },
+    'Recipe application scope analysis'
   );
 
   let workspaceResult: RecipesApplyExecutionResult | null = null;
@@ -1059,7 +1102,18 @@ async function applyWorkspacePreferredRecipe(
     }
   }
 
-  return { workspaceResult, projectResults };
+  return {
+    workspaceResult,
+    projectResults,
+    canApplyAtWorkspace,
+    applicableProjectsCount: applicableProjects.length,
+    workspaceFailureReason: workspaceApplicability.reason,
+  };
+}
+
+interface WorkspaceApplicabilityResult {
+  canApply: boolean;
+  reason: string;
 }
 
 async function canApplyRecipeAtWorkspace(
@@ -1067,14 +1121,65 @@ async function canApplyRecipeAtWorkspace(
   analysis: WorkspaceAnalysis,
   currentState: RecipesApplyState
 ): Promise<boolean> {
+  const result = await getWorkspaceApplicabilityResult(
+    recipe,
+    analysis,
+    currentState
+  );
+  return result.canApply;
+}
+
+async function getWorkspaceApplicabilityResult(
+  recipe: Recipe,
+  analysis: WorkspaceAnalysis,
+  currentState: RecipesApplyState
+): Promise<WorkspaceApplicabilityResult> {
   const workspaceEcosystem = analysis.workspaceEcosystem || 'unknown';
 
   if (!recipe.hasEcosystem(workspaceEcosystem)) {
-    return false;
+    const supportedEcosystems = recipe.getEcosystems().map((e) => e.id);
+    const reason =
+      supportedEcosystems.length > 0
+        ? `ecosystem mismatch (workspace: ${workspaceEcosystem}, recipe supports: ${supportedEcosystems.join(', ')})`
+        : `ecosystem mismatch (workspace: ${workspaceEcosystem}, recipe is ecosystem-agnostic but failed)`;
+
+    Logger.info(
+      {
+        recipeId: recipe.getId(),
+        workspaceEcosystem,
+        recipeEcosystems: supportedEcosystems,
+        reason: 'ECOSYSTEM_NOT_SUPPORTED',
+      },
+      'Recipe cannot apply at workspace level: ecosystem mismatch'
+    );
+    return { canApply: false, reason };
   }
 
   const dependencyCheck = await validateDependencies(recipe, currentState);
-  return dependencyCheck.satisfied;
+  if (!dependencyCheck.satisfied) {
+    const unsatisfiedDeps = dependencyCheck.missing.map((d) => d.key);
+    const reason = `dependencies not satisfied: ${unsatisfiedDeps.join(', ')}`;
+
+    Logger.info(
+      {
+        recipeId: recipe.getId(),
+        workspaceEcosystem,
+        dependencyCheck,
+        reason: 'DEPENDENCIES_NOT_SATISFIED',
+      },
+      'Recipe cannot apply at workspace level: dependencies not satisfied'
+    );
+    return { canApply: false, reason };
+  }
+
+  Logger.info(
+    {
+      recipeId: recipe.getId(),
+      workspaceEcosystem,
+    },
+    'Recipe can apply at workspace level'
+  );
+  return { canApply: true, reason: 'applicable' };
 }
 
 async function getApplicableProjectsForWorkspacePreferred(

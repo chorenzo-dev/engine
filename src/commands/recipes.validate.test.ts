@@ -1533,9 +1533,9 @@ requires: []
         }
         if (filePath.includes('analysis.json')) {
           return JSON.stringify({
-            workspaceEcosystem: 'typescript',
+            workspaceEcosystem: 'javascript',
             projects: [
-              { path: '../../../etc/passwd', ecosystem: 'typescript' },
+              { path: '../../../etc/passwd', ecosystem: 'javascript' },
             ],
           });
         }
@@ -1605,7 +1605,7 @@ requires: []
         }
         if (filePath.includes('analysis.json')) {
           return JSON.stringify({
-            workspaceEcosystem: 'typescript',
+            workspaceEcosystem: 'javascript',
             projects: [],
           });
         }

@@ -31,7 +31,6 @@ export enum CiCdSystem {
 
 export enum Ecosystem {
   Javascript = 'javascript',
-  Typescript = 'typescript',
   Python = 'python',
   Java = 'java',
   Csharp = 'csharp',
@@ -40,14 +39,13 @@ export enum Ecosystem {
   Ruby = 'ruby',
   Php = 'php',
   Swift = 'swift',
-  Kotlin = 'kotlin',
   Dart = 'dart',
   Elixir = 'elixir',
-  Scala = 'scala',
-  Clojure = 'clojure',
   Haskell = 'haskell',
-  C = 'c',
-  Cpp = 'cpp',
+  Perl = 'perl',
+  R = 'r',
+  Julia = 'julia',
+  Lua = 'lua',
   Unknown = 'unknown',
 }
 

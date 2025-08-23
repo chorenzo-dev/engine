@@ -1207,6 +1207,14 @@ requires: []
         return '';
       });
 
+      mockQuery.mockImplementation(async function* () {
+        yield {
+          type: 'result',
+          subtype: 'error_api_response',
+          error: 'Code sample validation failed',
+        };
+      });
+
       const result = await performRecipesValidate({
         target: '/path/to/recipe-validation-error',
       });

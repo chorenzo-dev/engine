@@ -361,7 +361,27 @@ export const setupDefaultMocks = () => {
   }));
   mockRmSync.mockImplementation(() => {});
   mockQuery.mockImplementation(async function* () {
-    yield { type: 'result', is_error: false };
+    const validationResult = {
+      valid: true,
+      violations: [],
+      summary: {
+        totalFiles: 1,
+        filesWithViolations: 0,
+        totalViolations: 0,
+        violationTypes: {
+          generic_placeholder: 0,
+          incomplete_fragment: 0,
+          abstract_pseudocode: 0,
+          overly_simplistic: 0,
+        },
+      },
+    };
+    yield {
+      type: 'result',
+      subtype: 'success',
+      is_error: false,
+      result: JSON.stringify(validationResult),
+    };
   });
 };
 

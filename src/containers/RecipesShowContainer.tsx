@@ -1,11 +1,16 @@
 import { Box, Text, useApp } from 'ink';
 import React, { useEffect, useState } from 'react';
 
+import {
+  readCurrentState,
+  validateWorkspaceDependencies,
+} from '~/commands/recipes.apply';
 import { loadRecipeForShow } from '~/commands/recipes.show';
 import { RecipeActionsMenu } from '~/components/RecipeActionsMenu';
 import { RecipeDisplayComponent } from '~/components/RecipeDisplayComponent';
 import { colors } from '~/styles/colors';
 import { Recipe } from '~/types/recipe';
+import { RecipesApplyDependencyValidationResult } from '~/types/recipes-apply';
 import {
   RecipeLocationInfo,
   RecipeShowContainerOptions,
@@ -27,6 +32,10 @@ export const RecipesShowContainer: React.FC<RecipesShowContainerProps> = ({
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
   const [showApplyMessage, setShowApplyMessage] = useState(false);
+  const [validationResult, setValidationResult] = useState<
+    RecipesApplyDependencyValidationResult | undefined
+  >(undefined);
+  const [validationLoading, setValidationLoading] = useState(false);
 
   useEffect(() => {
     const loadRecipe = async () => {
@@ -38,6 +47,25 @@ export const RecipesShowContainer: React.FC<RecipesShowContainerProps> = ({
           isRemote: result.isRemote,
           webUrl: result.webUrl,
         });
+
+        setValidationLoading(true);
+        try {
+          const currentState = readCurrentState();
+          const validation = validateWorkspaceDependencies(
+            result.recipe,
+            currentState
+          );
+          setValidationResult(validation);
+        } catch {
+          setValidationResult({
+            satisfied: false,
+            missing: [],
+            conflicting: [],
+          });
+        } finally {
+          setValidationLoading(false);
+        }
+
         setShowMenu(true);
       } catch (error) {
         onError(
@@ -51,7 +79,7 @@ export const RecipesShowContainer: React.FC<RecipesShowContainerProps> = ({
     loadRecipe();
   }, [options.recipeName, onError]);
 
-  const handleApply = async () => {
+  const handleApply = () => {
     if (!recipe) {
       return;
     }
@@ -64,13 +92,17 @@ export const RecipesShowContainer: React.FC<RecipesShowContainerProps> = ({
     }, 3000);
   };
 
-  const handleExit = async () => {
+  const handleExit = () => {
     setShowMenu(false);
     exit();
   };
 
   if (loading) {
     return <Text>Loading recipe information...</Text>;
+  }
+
+  if (validationLoading) {
+    return <Text>Validating recipe requirements...</Text>;
   }
 
   if (!recipe || !location) {
@@ -92,10 +124,18 @@ export const RecipesShowContainer: React.FC<RecipesShowContainerProps> = ({
 
   return (
     <Box flexDirection="column">
-      <RecipeDisplayComponent recipe={recipe} location={location} />
+      <RecipeDisplayComponent
+        recipe={recipe}
+        location={location}
+        validationResult={validationResult}
+      />
       {showMenu && (
         <Box marginTop={1}>
-          <RecipeActionsMenu onApply={handleApply} onExit={handleExit} />
+          <RecipeActionsMenu
+            onApply={handleApply}
+            onExit={handleExit}
+            validationResult={validationResult}
+          />
         </Box>
       )}
     </Box>

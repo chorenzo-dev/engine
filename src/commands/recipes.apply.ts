@@ -40,7 +40,7 @@ import { extractErrorMessage, formatErrorMessage } from '../utils/error.utils';
 import { performAnalysis } from './analyze';
 import { loadRecipe } from './recipes.shared';
 
-async function validateRecipeStructure(recipe: Recipe): Promise<void> {
+function validateRecipeStructure(recipe: Recipe): void {
   const validationResult = recipe.validate();
   if (!validationResult.valid) {
     const errors = validationResult.errors.map((e) => e.message).join(', ');
@@ -66,17 +66,14 @@ async function setupRecipeApplication(
   const recipe = await loadRecipe(options.recipe);
 
   onProgress?.('Validating recipe structure');
-  await validateRecipeStructure(recipe);
+  validateRecipeStructure(recipe);
 
   onProgress?.('Ensuring analysis data');
   const analysis = await ensureAnalysisData();
 
   onProgress?.('Checking recipe dependencies');
-  const currentState = await readCurrentState();
-  const dependencyCheck = await validateWorkspaceDependencies(
-    recipe,
-    currentState
-  );
+  const currentState = readCurrentState();
+  const dependencyCheck = validateWorkspaceDependencies(recipe, currentState);
 
   if (!dependencyCheck.satisfied) {
     const errorMsg = formatDependencyError(recipe.getId(), dependencyCheck);
@@ -96,11 +93,7 @@ export async function checkRecipeReApplication(
   );
 
   onProgress?.('Checking for previous recipe applications');
-  const reApplicationCheck = await checkReApplication(
-    recipe,
-    analysis,
-    options
-  );
+  const reApplicationCheck = checkReApplication(recipe, analysis, options);
 
   return {
     recipeId: recipe.getId(),
@@ -123,11 +116,7 @@ export async function performRecipesApply(
     );
 
     onProgress?.('Checking for previous recipe applications');
-    const reApplicationCheck = await checkReApplication(
-      recipe,
-      analysis,
-      options
-    );
+    const reApplicationCheck = checkReApplication(recipe, analysis, options);
 
     if (
       reApplicationCheck.hasAlreadyApplied &&
@@ -231,7 +220,7 @@ export async function performRecipesApply(
       }
     } else {
       onProgress?.('Filtering applicable projects');
-      const applicableProjects = await filterApplicableProjects(
+      const applicableProjects = filterApplicableProjects(
         analysis,
         recipe,
         options.project
@@ -357,7 +346,7 @@ async function ensureAnalysisData(): Promise<WorkspaceAnalysis> {
   return analysisResult.analysis;
 }
 
-async function readCurrentState(): Promise<RecipesApplyState> {
+export function readCurrentState(): RecipesApplyState {
   try {
     const workspaceState = stateManager.getWorkspaceState();
     return (workspaceState.workspace || {}) as RecipesApplyState;
@@ -369,11 +358,11 @@ async function readCurrentState(): Promise<RecipesApplyState> {
   }
 }
 
-async function validateDependencies(
+function validateDependencies(
   recipe: Recipe,
   currentState: RecipesApplyState,
   projectPath?: string
-): Promise<RecipesApplyDependencyValidationResult> {
+): RecipesApplyDependencyValidationResult {
   const missing: RecipeDependency[] = [];
   const conflicting: Array<{ key: string; required: string; current: string }> =
     [];
@@ -390,7 +379,7 @@ async function validateDependencies(
       }
 
       if (!analysis) {
-        analysis = await loadWorkspaceAnalysis();
+        analysis = loadWorkspaceAnalysis();
         if (!analysis) {
           missing.push(dependency);
           continue;
@@ -438,10 +427,10 @@ async function validateDependencies(
   };
 }
 
-async function validateWorkspaceDependencies(
+export function validateWorkspaceDependencies(
   recipe: Recipe,
   currentState: RecipesApplyState
-): Promise<RecipesApplyDependencyValidationResult> {
+): RecipesApplyDependencyValidationResult {
   return validateDependencies(recipe, currentState);
 }
 
@@ -567,11 +556,11 @@ function formatConflictSuggestion(conflict: {
   return `Update ${conflict.key} to '${conflict.required}' or use a different recipe variant`;
 }
 
-async function checkReApplication(
+function checkReApplication(
   recipe: Recipe,
   analysis: WorkspaceAnalysis,
   options: RecipesApplyOptions
-): Promise<ReApplicationCheckResult> {
+): ReApplicationCheckResult {
   const targets: ReApplicationTarget[] = [];
   const recipeId = recipe.getId();
 
@@ -585,7 +574,7 @@ async function checkReApplication(
     const workspaceRecipesApplyState = (workspaceState.workspace ||
       {}) as RecipesApplyState;
 
-    const canApplyAtWorkspace = await canApplyRecipeAtWorkspace(
+    const canApplyAtWorkspace = canApplyRecipeAtWorkspace(
       recipe,
       analysis,
       workspaceRecipesApplyState
@@ -598,7 +587,7 @@ async function checkReApplication(
       targets.push({ level: 'workspace' });
     }
 
-    const applicableProjects = await getApplicableProjectsForWorkspacePreferred(
+    const applicableProjects = getApplicableProjectsForWorkspacePreferred(
       recipe,
       analysis,
       workspaceEcosystem,
@@ -612,7 +601,7 @@ async function checkReApplication(
       }
     }
   } else {
-    const applicableProjects = await filterApplicableProjects(
+    const applicableProjects = filterApplicableProjects(
       analysis,
       recipe,
       options.project
@@ -667,11 +656,11 @@ function shouldIncludeProject(
   return true;
 }
 
-async function filterApplicableProjects(
+function filterApplicableProjects(
   analysis: WorkspaceAnalysis,
   recipe: Recipe,
   projectFilter?: string
-): Promise<ProjectAnalysis[]> {
+): ProjectAnalysis[] {
   const projects = filterProjectsByName(analysis.projects, projectFilter);
   const applicableProjects: ProjectAnalysis[] = [];
   const workspaceState = stateManager.getWorkspaceState();
@@ -688,7 +677,7 @@ async function filterApplicableProjects(
     const projectState = (workspaceState.projects?.[relativePath] ||
       {}) as RecipesApplyState;
 
-    const dependencyCheck = await validateDependencies(
+    const dependencyCheck = validateDependencies(
       recipe,
       projectState,
       project.path
@@ -1108,14 +1097,14 @@ async function applyWorkspacePreferredRecipe(
   const workspaceRecipesApplyState = (workspaceState.workspace ||
     {}) as RecipesApplyState;
 
-  const workspaceApplicability = await getWorkspaceApplicabilityResult(
+  const workspaceApplicability = getWorkspaceApplicabilityResult(
     recipe,
     analysis,
     workspaceRecipesApplyState
   );
   const canApplyAtWorkspace = workspaceApplicability.canApply;
 
-  const applicableProjects = await getApplicableProjectsForWorkspacePreferred(
+  const applicableProjects = getApplicableProjectsForWorkspacePreferred(
     recipe,
     analysis,
     workspaceEcosystem,
@@ -1210,12 +1199,12 @@ interface WorkspaceApplicabilityResult {
   reason: string;
 }
 
-async function canApplyRecipeAtWorkspace(
+function canApplyRecipeAtWorkspace(
   recipe: Recipe,
   analysis: WorkspaceAnalysis,
   currentState: RecipesApplyState
-): Promise<boolean> {
-  const result = await getWorkspaceApplicabilityResult(
+): boolean {
+  const result = getWorkspaceApplicabilityResult(
     recipe,
     analysis,
     currentState
@@ -1223,11 +1212,11 @@ async function canApplyRecipeAtWorkspace(
   return result.canApply;
 }
 
-async function getWorkspaceApplicabilityResult(
+function getWorkspaceApplicabilityResult(
   recipe: Recipe,
   analysis: WorkspaceAnalysis,
   currentState: RecipesApplyState
-): Promise<WorkspaceApplicabilityResult> {
+): WorkspaceApplicabilityResult {
   const workspaceEcosystem = analysis.workspaceEcosystem || 'unknown';
 
   if (!recipe.hasEcosystem(workspaceEcosystem)) {
@@ -1249,7 +1238,7 @@ async function getWorkspaceApplicabilityResult(
     return { canApply: false, reason };
   }
 
-  const dependencyCheck = await validateDependencies(recipe, currentState);
+  const dependencyCheck = validateDependencies(recipe, currentState);
   if (!dependencyCheck.satisfied) {
     const unsatisfiedDeps = dependencyCheck.missing.map((d) => d.key);
     const reason = `dependencies not satisfied: ${unsatisfiedDeps.join(', ')}`;
@@ -1276,13 +1265,13 @@ async function getWorkspaceApplicabilityResult(
   return { canApply: true, reason: 'applicable' };
 }
 
-async function getApplicableProjectsForWorkspacePreferred(
+function getApplicableProjectsForWorkspacePreferred(
   recipe: Recipe,
   analysis: WorkspaceAnalysis,
   workspaceEcosystem: string,
   workspaceState: WorkspaceState,
   projectFilter?: string
-): Promise<ProjectAnalysis[]> {
+): ProjectAnalysis[] {
   const workspaceRecipesApplyState = (workspaceState.workspace ||
     {}) as RecipesApplyState;
   const applicableProjects: ProjectAnalysis[] = [];
@@ -1300,7 +1289,7 @@ async function getApplicableProjectsForWorkspacePreferred(
       const projectState = (workspaceState.projects?.[relativePath] ||
         {}) as RecipesApplyState;
 
-      const dependencyCheck = await validateDependencies(
+      const dependencyCheck = validateDependencies(
         recipe,
         projectState,
         project.path
@@ -1324,7 +1313,7 @@ async function getApplicableProjectsForWorkspacePreferred(
 
     for (const requirement of requires) {
       if (isReservedKeyword(requirement.key)) {
-        const dependencyCheck = await validateDependencies(
+        const dependencyCheck = validateDependencies(
           recipe,
           projectState,
           project.path

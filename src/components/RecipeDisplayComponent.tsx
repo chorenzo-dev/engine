@@ -3,11 +3,13 @@ import React from 'react';
 
 import { colors } from '~/styles/colors';
 import { Recipe, RecipeDependency, RecipeLevel } from '~/types/recipe';
+import { RecipesApplyDependencyValidationResult } from '~/types/recipes-apply';
 import { RecipeLocationInfo } from '~/types/recipes-show';
 
 interface RecipeDisplayComponentProps {
   recipe: Recipe;
   location: RecipeLocationInfo;
+  validationResult?: RecipesApplyDependencyValidationResult;
 }
 
 export const RecipeDisplayComponent: React.FC<RecipeDisplayComponentProps> = ({

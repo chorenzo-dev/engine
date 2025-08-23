@@ -6,10 +6,12 @@ import SelectInput, {
 import React from 'react';
 
 import { colors } from '~/styles/colors';
+import { RecipesApplyDependencyValidationResult } from '~/types/recipes-apply';
 
 interface RecipeActionsMenuProps {
-  onApply: () => Promise<void>;
-  onExit: () => Promise<void>;
+  onApply: () => void;
+  onExit: () => void;
+  validationResult?: RecipesApplyDependencyValidationResult;
 }
 
 interface ActionItem {

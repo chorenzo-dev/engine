@@ -50,6 +50,7 @@ export default [
       'object-shorthand': ['error', 'always'],
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/prefer-optional-chain': 'error',
+      '@typescript-eslint/require-await': 'error',
     },
   },
 ];

@@ -360,7 +360,7 @@ export const setupDefaultMocks = () => {
     emit: jest.fn(),
   }));
   mockRmSync.mockImplementation(() => {});
-  mockQuery.mockImplementation(async function* () {
+  mockQuery.mockImplementation(function* () {
     yield { type: 'result', is_error: false };
   });
 };

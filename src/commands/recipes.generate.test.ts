@@ -844,7 +844,7 @@ describe('Recipe Generation', () => {
       expect(result.recipeName).toBe('basic-recipe');
     });
 
-    it('should handle magicGenerate parameter when passed to CLI', async () => {
+    it('should handle magicGenerate parameter when passed to CLI', () => {
       const options = {
         name: 'test-recipe',
         category: 'development',
@@ -857,7 +857,7 @@ describe('Recipe Generation', () => {
       expect(options.additionalInstructions).toBe('Use TypeScript');
     });
 
-    it('should handle ecosystem-agnostic parameter with magic generation', async () => {
+    it('should handle ecosystem-agnostic parameter with magic generation', () => {
       const options = {
         name: 'agnostic-recipe',
         category: 'general',

@@ -11,8 +11,8 @@ import { ReApplicationTarget } from '~/types/recipes-apply';
 interface ReApplicationPromptProps {
   recipeId: string;
   targets: ReApplicationTarget[];
-  onYes: () => Promise<void>;
-  onNo: () => Promise<void>;
+  onYes: () => void;
+  onNo: () => void;
 }
 
 export const ReApplicationPrompt: React.FC<ReApplicationPromptProps> = ({

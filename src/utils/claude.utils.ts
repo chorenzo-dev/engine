@@ -172,7 +172,7 @@ export async function saveAuthConfig(authConfig: AuthConfig): Promise<void> {
   );
 }
 
-async function setupEnvironmentForAuth(authConfig: AuthConfig): Promise<void> {
+function setupEnvironmentForAuth(authConfig: AuthConfig): void {
   if (authConfig.anthropic_api_key) {
     process.env['ANTHROPIC_API_KEY'] = authConfig.anthropic_api_key;
   }
@@ -186,7 +186,7 @@ export async function loadAndSetupAuth(): Promise<void> {
 
     const config = await chorenzoConfig.readConfig();
     if (config.auth) {
-      await setupEnvironmentForAuth(config.auth);
+      setupEnvironmentForAuth(config.auth);
     }
   } catch (error) {
     Logger.warn(

@@ -24,9 +24,7 @@ export class RecipeParsingError extends Error {
   }
 }
 
-export async function parseRecipeFromDirectory(
-  recipePath: string
-): Promise<Recipe> {
+export function parseRecipeFromDirectory(recipePath: string): Recipe {
   if (!fs.existsSync(recipePath)) {
     throw new RecipeParsingError(
       `Recipe directory does not exist: ${recipePath}`,
@@ -59,9 +57,9 @@ export async function parseRecipeFromDirectory(
   }
 
   try {
-    const metadata = await parseMetadata(metadataPath);
-    const prompt = await parsePrompt(promptPath);
-    const fixFiles = await parseFixFiles(recipePath);
+    const metadata = parseMetadata(metadataPath);
+    const prompt = parsePrompt(promptPath);
+    const fixFiles = parseFixFiles(recipePath);
 
     return new Recipe(recipePath, metadata, prompt, fixFiles);
   } catch (error) {
@@ -97,7 +95,7 @@ export async function parseRecipeLibraryFromDirectory(
 
   for (const entry of await findRecipeDirectories(libraryPath)) {
     try {
-      const recipe = await parseRecipeFromDirectory(entry);
+      const recipe = parseRecipeFromDirectory(entry);
       recipes.push(recipe);
     } catch (error) {
       errors.push(
@@ -116,9 +114,9 @@ export async function parseRecipeLibraryFromDirectory(
   return new RecipeLibrary(libraryPath, recipes);
 }
 
-async function parseMetadata(metadataPath: string): Promise<RecipeMetadata> {
+function parseMetadata(metadataPath: string): RecipeMetadata {
   try {
-    const metadata = await readYaml<RecipeMetadata>(metadataPath);
+    const metadata = readYaml<RecipeMetadata>(metadataPath);
     validateMetadata(metadata, metadataPath);
     return metadata;
   } catch (error) {
@@ -129,7 +127,7 @@ async function parseMetadata(metadataPath: string): Promise<RecipeMetadata> {
   }
 }
 
-async function parsePrompt(promptPath: string): Promise<RecipePrompt> {
+function parsePrompt(promptPath: string): RecipePrompt {
   try {
     const content = fs.readFileSync(promptPath, 'utf-8');
     return parsePromptContent(content);
@@ -141,7 +139,7 @@ async function parsePrompt(promptPath: string): Promise<RecipePrompt> {
   }
 }
 
-async function parseFixFiles(recipePath: string): Promise<Map<string, string>> {
+function parseFixFiles(recipePath: string): Map<string, string> {
   const fixFiles = new Map<string, string>();
 
   const baseFixPath = path.join(recipePath, 'fix.md');

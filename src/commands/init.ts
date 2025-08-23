@@ -42,17 +42,17 @@ export async function performInit(
   try {
     if (options.reset) {
       onProgress?.('Resetting workspace');
-      await resetWorkspace();
+      resetWorkspace();
     }
 
     onProgress?.('Creating directory structure');
-    await createDirectoryStructure();
+    createDirectoryStructure();
 
     onProgress?.('Setting up configuration files');
     await setupConfigFiles();
 
     onProgress?.('Setting up git ignore patterns');
-    await setupGitIgnore();
+    setupGitIgnore();
 
     onProgress?.('Validating configuration');
     await validateConfig();
@@ -76,12 +76,12 @@ export async function performInit(
   }
 }
 
-async function resetWorkspace(): Promise<void> {
+function resetWorkspace(): void {
   chorenzoConfig.removeRecipesDir();
   chorenzoConfig.removeConfigFile();
 }
 
-async function createDirectoryStructure(): Promise<void> {
+function createDirectoryStructure(): void {
   chorenzoConfig.createRecipesDir();
   workspaceConfig.ensureChorenzoDir();
 }
@@ -92,7 +92,7 @@ async function setupConfigFiles(): Promise<void> {
   }
 }
 
-async function setupGitIgnore(): Promise<void> {
+function setupGitIgnore(): void {
   const workspaceRoot = workspaceConfig.getWorkspaceRoot();
   GitignoreManager.ensureChorenzoIgnorePatterns(workspaceRoot);
 }

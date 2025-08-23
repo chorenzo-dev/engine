@@ -90,7 +90,7 @@ describe('Recipe Application', () => {
     };
 
     const setupSuccessfulQueryMock = () => {
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         yield {
           type: 'result',
           subtype: 'success',
@@ -101,7 +101,7 @@ describe('Recipe Application', () => {
     };
 
     const setupErrorQueryMock = () => {
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         yield {
           type: 'result',
           subtype: 'error',
@@ -212,7 +212,7 @@ describe('Recipe Application', () => {
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         yield {
           type: 'assistant',
           message: {
@@ -723,7 +723,7 @@ describe('Recipe Application', () => {
       });
 
       let queryCallCount = 0;
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         queryCallCount++;
         if (queryCallCount === 1) {
           yield { type: 'result', is_error: false };
@@ -1372,7 +1372,7 @@ describe('Recipe Application', () => {
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         yield {
           type: 'result',
           subtype: 'success',
@@ -1439,7 +1439,7 @@ describe('Recipe Application', () => {
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         yield {
           type: 'assistant',
           message: {
@@ -1510,7 +1510,7 @@ describe('Recipe Application', () => {
     it('should allow safe commands during recipe execution', async () => {
       setupStandardApplyScenario();
 
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         yield {
           type: 'assistant',
           message: {
@@ -2449,7 +2449,7 @@ describe('Recipe Application', () => {
           return '';
         });
 
-        mockQuery.mockImplementation(async function* () {
+        mockQuery.mockImplementation(function* () {
           yield {
             type: 'assistant',
             message: {
@@ -2533,7 +2533,7 @@ describe('Recipe Application', () => {
           return '';
         });
 
-        mockQuery.mockImplementation(async function* () {
+        mockQuery.mockImplementation(function* () {
           yield {
             type: 'assistant',
             message: {
@@ -2617,7 +2617,7 @@ describe('Recipe Application', () => {
           return '';
         });
 
-        mockQuery.mockImplementation(async function* () {
+        mockQuery.mockImplementation(function* () {
           yield {
             type: 'assistant',
             message: {

@@ -34,7 +34,7 @@ jest.unstable_mockModule('fs/promises', () => ({
 }));
 
 describe('Analysis Validate Command Integration Tests', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
   });

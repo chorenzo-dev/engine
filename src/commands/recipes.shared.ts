@@ -102,7 +102,7 @@ export async function loadRecipe(recipeName: string): Promise<Recipe> {
         await libraryManager.refreshLibrary(libraryName);
       }
 
-      return await parseRecipeFromDirectory(recipePath);
+      return parseRecipeFromDirectory(recipePath);
     }
 
     case InputType.RecipeFolder: {
@@ -122,7 +122,7 @@ export async function loadRecipe(recipeName: string): Promise<Recipe> {
         await libraryManager.refreshLibrary(libraryName);
       }
 
-      return await parseRecipeFromDirectory(resolvedTarget);
+      return parseRecipeFromDirectory(resolvedTarget);
     }
 
     default:

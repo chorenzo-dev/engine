@@ -539,7 +539,7 @@ export class LibraryManager {
 
       for (const recipePath of localRecipePaths) {
         try {
-          const recipe = await parseRecipeFromDirectory(recipePath);
+          const recipe = parseRecipeFromDirectory(recipePath);
           if (recipe.getCategory() === category) {
             recipes.push(recipe);
           }

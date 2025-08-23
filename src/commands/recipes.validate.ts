@@ -413,7 +413,7 @@ async function validateRecipeFolder(
   onProgress?.(`Validating recipe folder: ${recipePath}`);
 
   try {
-    const recipe = await parseRecipeFromDirectory(recipePath);
+    const recipe = parseRecipeFromDirectory(recipePath);
     const result = recipe.validate();
 
     const messages: ValidationMessage[] = [];

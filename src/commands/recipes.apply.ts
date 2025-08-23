@@ -2,6 +2,7 @@ import { query } from '@anthropic-ai/claude-code';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { icons } from '~/styles/icons';
 import { ProjectAnalysis, WorkspaceAnalysis } from '~/types/analysis';
 import { Recipe, RecipeDependency } from '~/types/recipe';
 import {
@@ -446,8 +447,10 @@ function formatDependencyError(
   if (validationResult.missing.length > 0) {
     lines.push('Missing requirements:');
     for (const dep of validationResult.missing) {
-      lines.push(`  • ${dep.key}: ${formatDependencyDescription(dep)}`);
-      lines.push(`    → ${formatActionSuggestion(dep)}`);
+      lines.push(
+        `  ${icons.bullet} ${dep.key}: ${formatDependencyDescription(dep)}`
+      );
+      lines.push(`    ${icons.arrow} ${formatActionSuggestion(dep)}`);
     }
   }
 
@@ -458,9 +461,9 @@ function formatDependencyError(
     lines.push('Mismatched values:');
     for (const conflict of validationResult.conflicting) {
       lines.push(
-        `  • ${conflict.key}: Recipe expects '${conflict.required}' but your workspace has '${conflict.current}'`
+        `  ${icons.bullet} ${conflict.key}: Recipe expects '${conflict.required}' but your workspace has '${conflict.current}'`
       );
-      lines.push(`    → ${formatConflictSuggestion(conflict)}`);
+      lines.push(`    ${icons.arrow} ${formatConflictSuggestion(conflict)}`);
     }
   }
 

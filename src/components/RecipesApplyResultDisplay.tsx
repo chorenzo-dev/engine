@@ -2,6 +2,7 @@ import { Box, Text } from 'ink';
 import React from 'react';
 
 import { colors } from '~/styles/colors';
+import { icons } from '~/styles/icons';
 import { RecipesApplyResult } from '~/types/recipes-apply';
 
 import { MetadataDisplay } from './MetadataDisplay';
@@ -54,7 +55,8 @@ export const RecipesApplyResultDisplay: React.FC<
             <Text bold>Projects Updated:</Text>
             {executionResults.map((result, i) => (
               <Text key={i}>
-                {result.success ? '✅' : '❌'} {result.projectPath}
+                {result.success ? icons.success : icons.error}{' '}
+                {result.projectPath}
                 {result.error && !result.success && (
                   <Text color={colors.muted}> ({result.error})</Text>
                 )}

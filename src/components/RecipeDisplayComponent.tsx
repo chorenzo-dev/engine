@@ -2,6 +2,7 @@ import { Box, Text } from 'ink';
 import React from 'react';
 
 import { colors } from '~/styles/colors';
+import { icons } from '~/styles/icons';
 import { Recipe, RecipeDependency, RecipeLevel } from '~/types/recipe';
 import { RecipesApplyDependencyValidationResult } from '~/types/recipes-apply';
 import { RecipeLocationInfo } from '~/types/recipes-show';
@@ -129,7 +130,7 @@ function getDependencyStatus(
 ): DependencyStatus {
   if (!validationResult) {
     return {
-      icon: '-',
+      icon: icons.dash,
       color: colors.muted,
     };
   }
@@ -145,7 +146,7 @@ function getDependencyStatus(
 
   if (isMissing) {
     return {
-      icon: '❌',
+      icon: icons.error,
       color: colors.error,
       message: 'missing',
     };
@@ -153,14 +154,14 @@ function getDependencyStatus(
 
   if (conflict) {
     return {
-      icon: '⚠️',
+      icon: icons.warning,
       color: colors.error,
       message: `found ${conflict.current}`,
     };
   }
 
   return {
-    icon: '✅',
+    icon: icons.success,
     color: colors.success,
     message: 'satisfied',
   };

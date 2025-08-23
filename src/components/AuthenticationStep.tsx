@@ -3,6 +3,7 @@ import SelectInput from 'ink-select-input';
 import TextInput from 'ink-text-input';
 import React, { useState } from 'react';
 
+import { icons } from '~/styles/icons';
 import { AuthConfig, AuthMethod } from '~/types/config';
 import {
   checkClaudeCodeAuth,
@@ -124,11 +125,11 @@ export const AuthenticationStep: React.FC<AuthenticationStepProps> = ({
           <Newline />
         </Text>
         <Text>2. Authenticate using one of these methods:</Text>
-        <Text> • Log in with your Claude subscription</Text>
-        <Text> • Connect through Anthropic Console</Text>
+        <Text> {icons.bullet} Log in with your Claude subscription</Text>
+        <Text> {icons.bullet} Connect through Anthropic Console</Text>
         <Text>
           {' '}
-          • Configure for enterprise (Bedrock/Vertex AI)
+          {icons.bullet} Configure for enterprise (Bedrock/Vertex AI)
           <Newline />
         </Text>
         <Text>
@@ -179,15 +180,15 @@ export const AuthenticationStep: React.FC<AuthenticationStepProps> = ({
           <Newline />
         </Text>
         <Text>1. Set up AWS credentials using your preferred method:</Text>
-        <Text> • AWS CLI: aws configure</Text>
+        <Text> {icons.bullet} AWS CLI: aws configure</Text>
         <Text>
           {' '}
-          • Environment variables: AWS_REGION, AWS_ACCESS_KEY_ID,
+          {icons.bullet} Environment variables: AWS_REGION, AWS_ACCESS_KEY_ID,
           AWS_SECRET_ACCESS_KEY
         </Text>
         <Text>
           {' '}
-          • IAM roles or AWS SSO
+          {icons.bullet} IAM roles or AWS SSO
           <Newline />
         </Text>
         <Text>2. Set required environment variables:</Text>
@@ -214,10 +215,10 @@ export const AuthenticationStep: React.FC<AuthenticationStepProps> = ({
           <Newline />
         </Text>
         <Text>1. Set up GCP authentication:</Text>
-        <Text> • gcloud auth application-default login</Text>
+        <Text> {icons.bullet} gcloud auth application-default login</Text>
         <Text>
           {' '}
-          • Service account key file
+          {icons.bullet} Service account key file
           <Newline />
         </Text>
         <Text>2. Set required environment variables:</Text>

@@ -1241,6 +1241,138 @@ requires: []
       ).toBe(true);
     });
 
+    it('should handle library validation where all recipes fail to parse', async () => {
+      const recipesValidateModule = await import('./recipes.validate');
+      const performRecipesValidate =
+        recipesValidateModule.performRecipesValidate;
+
+      mockExistsSync.mockImplementation((filePath: string) => {
+        if (filePath === '/path/to/broken-library') {
+          return true;
+        }
+        if (filePath === '/path/to/broken-library/metadata.yaml') {
+          return false;
+        }
+        if (
+          filePath.includes('broken-one') ||
+          filePath.includes('broken-two')
+        ) {
+          return true;
+        }
+        if (filePath.includes('metadata.yaml')) {
+          return true;
+        }
+        return false;
+      });
+
+      mockStatSync.mockImplementation(
+        (filePath: string) =>
+          ({
+            isDirectory: () => !filePath.includes('.'),
+            isFile: () => filePath.includes('.'),
+          }) as fs.Stats
+      );
+
+      mockReaddirSync.mockImplementation((dirPath: string) => {
+        if (dirPath === '/path/to/broken-library') {
+          return ['broken-one', 'broken-two'];
+        }
+        return [];
+      });
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('broken-one/metadata.yaml')) {
+          return 'invalid: yaml: content: [unclosed';
+        }
+        if (filePath.includes('broken-two/metadata.yaml')) {
+          return yamlStringify({
+            id: 'broken-two',
+            summary: 'Broken recipe two',
+          });
+        }
+        return '';
+      });
+
+      const result = await performRecipesValidate({
+        target: '/path/to/broken-library',
+      });
+
+      expect(result.context.target).toBe('/path/to/broken-library');
+      expect(result.context.inputType).toBe('library');
+      expect(result.context.recipesValidated).toEqual([
+        'broken-one',
+        'broken-two',
+      ]);
+      expect(result.summary).toBeDefined();
+      expect(result.summary?.total).toBe(2);
+      expect(result.summary?.valid).toBe(0);
+      expect(result.summary?.totalErrors).toBe(2);
+
+      expect(
+        result.messages.some(
+          (msg) => msg.type === 'error' && msg.text === 'broken-one:'
+        )
+      ).toBe(true);
+
+      expect(
+        result.messages.some(
+          (msg) => msg.type === 'error' && msg.text === 'broken-two:'
+        )
+      ).toBe(true);
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'error' && msg.text.includes('Recipe parsing failed')
+        )
+      ).toBe(true);
+    });
+
+    it('should handle empty library directory', async () => {
+      const recipesValidateModule = await import('./recipes.validate');
+      const performRecipesValidate =
+        recipesValidateModule.performRecipesValidate;
+
+      mockExistsSync.mockImplementation((filePath: string) => {
+        if (filePath === '/path/to/empty-library') {
+          return true;
+        }
+        if (filePath === '/path/to/empty-library/metadata.yaml') {
+          return false;
+        }
+        return false;
+      });
+
+      mockStatSync.mockImplementation(
+        (filePath: string) =>
+          ({
+            isDirectory: () => !filePath.includes('.'),
+            isFile: () => filePath.includes('.'),
+          }) as fs.Stats
+      );
+
+      mockReaddirSync.mockImplementation((dirPath: string) => {
+        if (dirPath === '/path/to/empty-library') {
+          return [];
+        }
+        return [];
+      });
+
+      const result = await performRecipesValidate({
+        target: '/path/to/empty-library',
+      });
+
+      expect(result.context.target).toBe('/path/to/empty-library');
+      expect(result.context.inputType).toBe('library');
+      expect(result.context.recipesValidated).toEqual([]);
+      expect(result.summary).toBeDefined();
+      expect(result.summary?.total).toBe(0);
+      expect(result.summary?.valid).toBe(0);
+      expect(result.summary?.totalErrors).toBe(0);
+
+      expect(result.messages).toEqual([]);
+    });
+
     it('should validate code samples for library validation', async () => {
       let callCount = 0;
       mockQuery.mockImplementation(async function* () {
@@ -1464,7 +1596,7 @@ requires: []
           return '## Goal\nTest goal\n## Investigation\nTest investigation\n## Expected Output\nTest output';
         }
         if (filePath === '/path/to/recipe-no-fixes/fix.md') {
-          return ''; // Empty fix file
+          return '';
         }
         if (filePath.includes('validation/code_sample_validation.md')) {
           return 'Validate code samples in: {{#each files}}{{this.path}}{{/each}}';

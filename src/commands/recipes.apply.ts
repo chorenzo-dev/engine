@@ -1027,6 +1027,7 @@ async function executeRecipe(
             'LS',
             'Glob',
             'Grep',
+            'Bash(npx chorenzo recipes validate-state*)',
           ],
           disallowedTools: [
             'Bash(git commit:*)',

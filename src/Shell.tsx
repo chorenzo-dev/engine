@@ -9,6 +9,7 @@ import { RecipesGenerateContainer } from '~/containers/RecipesGenerateContainer'
 import { RecipesListContainer } from '~/containers/RecipesListContainer';
 import { RecipesShowContainer } from '~/containers/RecipesShowContainer';
 import { RecipesValidateContainer } from '~/containers/RecipesValidateContainer';
+import { RecipesValidateStateContainer } from '~/containers/RecipesValidateStateContainer';
 
 import { ErrorExitComponent } from './components/ErrorExitComponent';
 
@@ -18,6 +19,7 @@ interface ShellProps {
     | 'analysis.validate'
     | 'init'
     | 'recipes-validate'
+    | 'recipes-validate-state'
     | 'recipes-apply'
     | 'recipes-generate'
     | 'recipes-list'
@@ -127,6 +129,30 @@ export const Shell: React.FC<ShellProps> = ({
       <RecipesValidateContainer
         options={{
           target: options.target,
+          debug: options.debug,
+        }}
+        onError={(error) => {
+          setError(error);
+        }}
+      />
+    );
+  }
+
+  if (command === 'recipes-validate-state') {
+    if (error) {
+      return <ErrorExitComponent error={error} />;
+    }
+
+    if (!options.recipe) {
+      return (
+        <ErrorExitComponent error={new Error('Recipe parameter is required')} />
+      );
+    }
+
+    return (
+      <RecipesValidateStateContainer
+        options={{
+          recipe: options.recipe,
           debug: options.debug,
         }}
         onError={(error) => {

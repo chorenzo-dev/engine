@@ -2863,7 +2863,7 @@ describe('Recipe Application', () => {
           performRecipesApply({
             recipe: 'project-framework-recipe',
           })
-        ).rejects.toThrow('No applicable projects found');
+        ).rejects.toThrow('cannot be applied due to unmet requirements');
       });
     });
   });

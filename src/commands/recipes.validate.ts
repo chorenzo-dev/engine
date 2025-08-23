@@ -20,8 +20,8 @@ import { libraryManager } from '~/utils/library-manager.utils';
 import { resolvePath } from '~/utils/path.utils';
 import { loadTemplate, renderPrompt } from '~/utils/prompts.utils';
 import {
+  findRecipeDirectories,
   parseRecipeFromDirectory,
-  parseRecipeLibraryFromDirectory,
 } from '~/utils/recipe.utils';
 
 import { extractErrorMessage, formatErrorMessage } from '../utils/error.utils';
@@ -424,12 +424,12 @@ async function validateRecipeFolder(
     try {
       codeSampleValidation = await performCodeSampleValidation(recipe);
     } catch (error) {
-      const warningMsg = formatErrorMessage(
+      const errorMsg = formatErrorMessage(
         'Code sample validation failed',
         error
       );
-      messages.push({ type: 'warning', text: warningMsg });
-      onValidation?.('warning', warningMsg);
+      messages.push({ type: 'warning', text: errorMsg });
+      onValidation?.('warning', errorMsg);
       totalWarnings++;
     }
 
@@ -524,26 +524,48 @@ async function validateLibrary(
   onProgress?.('This may take some time for large libraries.');
 
   try {
-    const library = await parseRecipeLibraryFromDirectory(libraryPath);
-    const results = library.validateAll();
+    const recipeDirectories = await findRecipeDirectories(libraryPath);
 
     const messages: ValidationMessage[] = [];
     let validCount = 0;
     let totalErrors = 0;
     let totalWarnings = 0;
+    const validatedRecipeIds: string[] = [];
 
-    for (const [recipeId, result] of results) {
-      const recipe = library.recipes.find((r) => r.getId() === recipeId);
+    for (const recipeDir of recipeDirectories) {
+      const recipeDirName = path.basename(recipeDir);
+      let recipe;
+
+      try {
+        recipe = await parseRecipeFromDirectory(recipeDir);
+      } catch (error) {
+        const recipeId = recipeDirName;
+        validatedRecipeIds.push(recipeId);
+
+        const headerMsg = `${recipeId}:`;
+        messages.push({ type: 'error', text: headerMsg });
+        onValidation?.('error', headerMsg);
+
+        const errorMsg = `  - Recipe parsing failed: ${extractErrorMessage(error)}`;
+        messages.push({ type: 'error', text: errorMsg });
+        onValidation?.('error', errorMsg);
+        totalErrors++;
+        continue;
+      }
+
+      const recipeId = recipe.getId();
+      validatedRecipeIds.push(recipeId);
+
+      const result = recipe.validate();
       let codeSampleValidation;
-      if (recipe) {
-        try {
-          codeSampleValidation = await performCodeSampleValidation(recipe);
-        } catch (error) {
-          const warningMsg = `${recipeId} code sample validation failed: ${extractErrorMessage(error)}`;
-          messages.push({ type: 'warning', text: warningMsg });
-          onValidation?.('warning', warningMsg);
-          totalWarnings++;
-        }
+
+      try {
+        codeSampleValidation = await performCodeSampleValidation(recipe);
+      } catch (error) {
+        const errorMsg = `${recipeId} code sample validation failed: ${extractErrorMessage(error)}`;
+        messages.push({ type: 'warning', text: errorMsg });
+        onValidation?.('warning', errorMsg);
+        totalWarnings++;
       }
 
       const hasCodeSampleViolations =
@@ -595,13 +617,11 @@ async function validateLibrary(
     }
 
     const summary: ValidationSummary = {
-      total: results.size,
+      total: recipeDirectories.length,
       valid: validCount,
       totalErrors,
       totalWarnings,
     };
-
-    const validatedRecipeIds = Array.from(results.keys());
 
     return {
       messages,

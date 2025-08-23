@@ -275,7 +275,9 @@ function parsePromptContent(content: string): RecipePrompt {
   };
 }
 
-async function findRecipeDirectories(libraryPath: string): Promise<string[]> {
+export async function findRecipeDirectories(
+  libraryPath: string
+): Promise<string[]> {
   const recipeDirectories: string[] = [];
 
   async function searchDirectory(dir: string): Promise<void> {

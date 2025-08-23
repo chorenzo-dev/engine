@@ -392,7 +392,20 @@ function validateDependencies(
 
     if (isReservedKeyword(dependency.key)) {
       if (isProjectKeyword(dependency.key) && !projectPath) {
-        continue;
+        if (!analysis) {
+          analysis = loadWorkspaceAnalysis();
+          if (!analysis) {
+            missing.push(dependency);
+            continue;
+          }
+        }
+        const firstProject = analysis.projects?.[0];
+        if (!firstProject) {
+          missing.push(dependency);
+          continue;
+        }
+        project = firstProject;
+        projectPath = firstProject.path;
       }
 
       if (!analysis) {

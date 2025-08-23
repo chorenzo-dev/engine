@@ -22,17 +22,21 @@ interface ActionItem {
 export const RecipeActionsMenu: React.FC<RecipeActionsMenuProps> = ({
   onApply,
   onExit,
+  validationResult,
 }) => {
-  const items: ActionItem[] = [
-    {
+  const items: ActionItem[] = [];
+
+  if (validationResult === undefined || validationResult.satisfied === true) {
+    items.push({
       label: 'Apply Recipe',
       value: 'apply',
-    },
-    {
-      label: 'Exit',
-      value: 'exit',
-    },
-  ];
+    });
+  }
+
+  items.push({
+    label: 'Exit',
+    value: 'exit',
+  });
 
   const handleSelect = async (item: ActionItem) => {
     if (item.value === 'apply') {

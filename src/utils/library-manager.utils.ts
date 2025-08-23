@@ -94,11 +94,36 @@ export class LibraryManager {
       return;
     }
 
-    Logger.info({ library: libraryName }, 'Refreshing library from remote');
-
     const git = simpleGit(libraryPath);
 
     try {
+      const status = await git.status();
+
+      Logger.info(
+        {
+          library: libraryName,
+          filesCount: status.files.length,
+          ahead: status.ahead,
+          behind: status.behind,
+          current: status.current,
+          tracking: status.tracking,
+        },
+        'Git status check for library refresh'
+      );
+
+      const hasLocalChanges =
+        status.files.length > 0 || status.ahead > 0 || status.behind > 0;
+
+      if (hasLocalChanges) {
+        Logger.info(
+          { library: libraryName },
+          'Skipping library refresh due to local changes'
+        );
+        return;
+      }
+
+      Logger.info({ library: libraryName }, 'Refreshing library from remote');
+
       await git.fetch('origin', libraryConfig.ref);
 
       await git.reset(['--hard', `origin/${libraryConfig.ref}`]);

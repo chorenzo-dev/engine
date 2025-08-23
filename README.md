@@ -117,7 +117,7 @@ npx chorenzo recipes apply testing --project frontend
 # Skip interactive confirmations
 npx chorenzo recipes apply eslint-config -y
 
-# Force re-application (bypass warnings)
+# Bypass validation requirements (advanced users only)
 npx chorenzo recipes apply linting --force
 
 # Show detailed debug output

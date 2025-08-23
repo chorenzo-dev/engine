@@ -255,6 +255,7 @@ export type ValidationCallback = (
 
 export interface ValidateOptions extends Record<string, unknown> {
   target: string;
+  static?: boolean;
 }
 
 export interface ValidationMessage {
@@ -405,7 +406,7 @@ async function validateRecipeByName(
 
 async function validateRecipeFolder(
   recipePath: string,
-  _options: Record<string, unknown>,
+  options: Record<string, unknown>,
   context: Omit<ValidationContext, 'recipesValidated'>,
   onProgress?: ProgressCallback,
   onValidation?: ValidationCallback
@@ -421,16 +422,18 @@ async function validateRecipeFolder(
     let totalWarnings = 0;
 
     let codeSampleValidation;
-    try {
-      codeSampleValidation = await performCodeSampleValidation(recipe);
-    } catch (error) {
-      const errorMsg = formatErrorMessage(
-        'Code sample validation failed',
-        error
-      );
-      messages.push({ type: 'warning', text: errorMsg });
-      onValidation?.('warning', errorMsg);
-      totalWarnings++;
+    if (!options['static']) {
+      try {
+        codeSampleValidation = await performCodeSampleValidation(recipe);
+      } catch (error) {
+        const errorMsg = formatErrorMessage(
+          'Code sample validation failed',
+          error
+        );
+        messages.push({ type: 'warning', text: errorMsg });
+        onValidation?.('warning', errorMsg);
+        totalWarnings++;
+      }
     }
 
     const hasCodeSampleViolations =
@@ -515,7 +518,7 @@ async function validateRecipeFolder(
 
 async function validateLibrary(
   libraryPath: string,
-  _options: Record<string, unknown>,
+  options: Record<string, unknown>,
   context: Omit<ValidationContext, 'recipesValidated'>,
   onProgress?: ProgressCallback,
   onValidation?: ValidationCallback
@@ -559,13 +562,15 @@ async function validateLibrary(
       const result = recipe.validate();
       let codeSampleValidation;
 
-      try {
-        codeSampleValidation = await performCodeSampleValidation(recipe);
-      } catch (error) {
-        const errorMsg = `${recipeId} code sample validation failed: ${extractErrorMessage(error)}`;
-        messages.push({ type: 'warning', text: errorMsg });
-        onValidation?.('warning', errorMsg);
-        totalWarnings++;
+      if (!options['static']) {
+        try {
+          codeSampleValidation = await performCodeSampleValidation(recipe);
+        } catch (error) {
+          const errorMsg = `${recipeId} code sample validation failed: ${extractErrorMessage(error)}`;
+          messages.push({ type: 'warning', text: errorMsg });
+          onValidation?.('warning', errorMsg);
+          totalWarnings++;
+        }
       }
 
       const hasCodeSampleViolations =

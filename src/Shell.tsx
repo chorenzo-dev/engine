@@ -42,6 +42,7 @@ interface ShellProps {
     additionalInstructions?: string;
     recipeName?: string;
     file?: string;
+    static?: boolean;
   };
 }
 
@@ -128,6 +129,7 @@ export const Shell: React.FC<ShellProps> = ({
         options={{
           target: options.target,
           debug: options.debug,
+          static: options.static,
         }}
         onError={(error) => {
           setError(error);

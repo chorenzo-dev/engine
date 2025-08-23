@@ -1153,6 +1153,8 @@ requires: []
             msg.text.includes('Code sample validation failed')
         )
       ).toBe(false);
+
+      expect(mockQuery).toHaveBeenCalled();
     });
 
     it('should handle code sample validation failures gracefully', async () => {
@@ -1550,6 +1552,8 @@ requires: []
             msg.text.includes('fix.md:1 (overly_simplistic)')
         )
       ).toBe(true);
+
+      expect(mockQuery).toHaveBeenCalled();
     });
 
     it('should skip code sample validation for recipes with no fix files', async () => {
@@ -1625,6 +1629,175 @@ requires: []
             msg.type === 'warning' && msg.text.includes('Code Sample Issues:')
         )
       ).toBe(false);
+    });
+
+    it('should skip AI validation when static flag is true for recipe folder', async () => {
+      mockExistsSync.mockImplementation((filePath: string) => {
+        if (filePath === '/path/to/static-test-recipe') {
+          return true;
+        }
+        if (filePath === '/path/to/static-test-recipe/metadata.yaml') {
+          return true;
+        }
+        if (filePath === '/path/to/static-test-recipe/prompt.md') {
+          return true;
+        }
+        if (filePath === '/path/to/static-test-recipe/fix.md') {
+          return true;
+        }
+        return false;
+      });
+
+      mockStatSync.mockImplementation(
+        (filePath: string) =>
+          ({
+            isDirectory: () => !filePath.includes('.'),
+            isFile: () => filePath.includes('.'),
+          }) as fs.Stats
+      );
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath === '/path/to/static-test-recipe/metadata.yaml') {
+          return yamlStringify({
+            id: 'static-test-recipe',
+            category: 'test',
+            summary: 'Static test recipe with code samples',
+            level: 'workspace-preferred',
+            ecosystems: [],
+            provides: [],
+            requires: [],
+          });
+        }
+        if (filePath === '/path/to/static-test-recipe/prompt.md') {
+          return '## Goal\nTest goal\n## Investigation\nTest investigation\n## Expected Output\nTest output';
+        }
+        if (filePath === '/path/to/static-test-recipe/fix.md') {
+          return '```javascript\nconst YOUR_API_KEY = "placeholder";\nconsole.log("TODO: implement this");\n```';
+        }
+        return '';
+      });
+
+      const options = { target: '/path/to/static-test-recipe', static: true };
+
+      const result = await performRecipesValidate(options);
+
+      expect(result.context.target).toBe('/path/to/static-test-recipe');
+      expect(result.context.recipesValidated).toEqual(['static-test-recipe']);
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'success' &&
+            msg.text.includes("Recipe 'static-test-recipe' is valid")
+        )
+      ).toBe(true);
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'warning' && msg.text.includes('Code Sample Issues:')
+        )
+      ).toBe(false);
+
+      expect(mockQuery).not.toHaveBeenCalled();
+    });
+
+    it('should skip AI validation when static flag is true for library validation', async () => {
+      mockExistsSync.mockImplementation((filePath: string) => {
+        if (filePath === '/path/to/static-library') {
+          return true;
+        }
+        if (filePath === '/path/to/static-library/metadata.yaml') {
+          return false;
+        }
+        if (filePath.includes('recipe1') || filePath.includes('recipe2')) {
+          return true;
+        }
+        if (
+          filePath.includes('metadata.yaml') ||
+          filePath.includes('prompt.md') ||
+          filePath.includes('fix.md')
+        ) {
+          return true;
+        }
+        return false;
+      });
+
+      mockReaddirSync.mockImplementation((dirPath: string) => {
+        if (dirPath === '/path/to/static-library') {
+          return ['recipe1', 'recipe2'];
+        }
+        return [];
+      });
+
+      mockStatSync.mockImplementation(
+        (filePath: string) =>
+          ({
+            isDirectory: () => !filePath.includes('.'),
+            isFile: () => filePath.includes('.'),
+          }) as fs.Stats
+      );
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('recipe1/metadata.yaml')) {
+          return yamlStringify({
+            id: 'recipe1',
+            category: 'test',
+            summary: 'First recipe',
+            level: 'workspace-preferred',
+            ecosystems: [],
+            provides: [],
+            requires: [],
+          });
+        }
+        if (filePath.includes('recipe2/metadata.yaml')) {
+          return yamlStringify({
+            id: 'recipe2',
+            category: 'test',
+            summary: 'Second recipe',
+            level: 'workspace-preferred',
+            ecosystems: [],
+            provides: [],
+            requires: [],
+          });
+        }
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest goal\n## Investigation\nTest investigation\n## Expected Output\nTest output';
+        }
+        if (filePath.includes('fix.md')) {
+          return '```javascript\nconst YOUR_API_KEY = "placeholder";\n```';
+        }
+        return '';
+      });
+
+      const options = { target: '/path/to/static-library', static: true };
+
+      const result = await performRecipesValidate(options);
+
+      expect(result.context.target).toBe('/path/to/static-library');
+      expect(result.context.recipesValidated).toEqual(['recipe1', 'recipe2']);
+      expect(result.summary?.total).toBe(2);
+      expect(result.summary?.valid).toBe(2);
+
+      expect(
+        result.messages.some(
+          (msg) => msg.type === 'success' && msg.text === 'recipe1'
+        )
+      ).toBe(true);
+      expect(
+        result.messages.some(
+          (msg) => msg.type === 'success' && msg.text === 'recipe2'
+        )
+      ).toBe(true);
+
+      expect(
+        result.messages.some(
+          (msg) =>
+            msg.type === 'warning' && msg.text.includes('code sample issues:')
+        )
+      ).toBe(false);
+
+      expect(mockQuery).not.toHaveBeenCalled();
     });
 
     it('should handle malicious project paths and prevent path traversal attacks', async () => {

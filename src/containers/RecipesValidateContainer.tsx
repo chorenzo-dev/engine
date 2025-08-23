@@ -13,6 +13,7 @@ import { extractErrorMessage } from '~/utils/error.utils';
 
 interface RecipesValidateContainerOptions extends BaseContainerOptions {
   target: string;
+  static?: boolean;
 }
 
 interface RecipesValidateContainerProps {
@@ -47,6 +48,7 @@ export const RecipesValidateContainer: React.FC<
               const result = await performRecipesValidate(
                 {
                   target: options.target,
+                  static: options.static,
                 },
                 (step, isThinking) => {
                   if (step) {

@@ -38,6 +38,10 @@ export const RecipeActionsMenu: React.FC<RecipeActionsMenuProps> = ({
     value: 'exit',
   });
 
+  if (items.length === 1) {
+    return null;
+  }
+
   const handleSelect = async (item: ActionItem) => {
     if (item.value === 'apply') {
       await onApply();

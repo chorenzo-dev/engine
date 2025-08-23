@@ -462,7 +462,7 @@ describe('Recipe Application', () => {
         performRecipesApply({
           recipe: 'test-recipe',
         })
-      ).rejects.toThrow('unsatisfied dependencies');
+      ).rejects.toThrow('cannot be applied due to unmet requirements');
     });
 
     it('should handle execution failures gracefully', async () => {
@@ -847,7 +847,7 @@ describe('Recipe Application', () => {
         performRecipesApply({
           recipe: 'test-recipe',
         })
-      ).rejects.toThrow('unsatisfied dependencies');
+      ).rejects.toThrow('cannot be applied due to unmet requirements');
     });
 
     it('should handle recipe not found', async () => {

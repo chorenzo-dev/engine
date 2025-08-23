@@ -79,11 +79,7 @@ async function setupRecipeApplication(
   );
 
   if (!dependencyCheck.satisfied) {
-    const errorMsg = formatDependencyError(
-      recipe.getId(),
-      dependencyCheck,
-      currentState
-    );
+    const errorMsg = formatDependencyError(recipe.getId(), dependencyCheck);
     throw new RecipesApplyError(errorMsg, 'DEPENDENCIES_NOT_SATISFIED');
   }
 
@@ -451,26 +447,124 @@ async function validateWorkspaceDependencies(
 
 function formatDependencyError(
   recipeId: string,
-  validationResult: RecipesApplyDependencyValidationResult,
-  currentState: RecipesApplyState
+  validationResult: RecipesApplyDependencyValidationResult
 ): string {
-  const lines = [`Recipe '${recipeId}' has unsatisfied dependencies:`];
-
-  for (const dep of validationResult.missing) {
-    const currentValue = currentState[dep.key] ?? 'undefined';
-    lines.push(`  - ${dep.key} = ${dep.equals} (currently: ${currentValue})`);
-  }
-
-  for (const conflict of validationResult.conflicting) {
-    lines.push(
-      `  - ${conflict.key} = ${conflict.required} (currently: ${conflict.current})`
-    );
-  }
-
+  const lines = [
+    `Recipe '${recipeId}' cannot be applied due to unmet requirements:`,
+  ];
   lines.push('');
-  lines.push('Consider running prerequisite recipes first.');
+
+  if (validationResult.missing.length > 0) {
+    lines.push('Missing requirements:');
+    for (const dep of validationResult.missing) {
+      lines.push(`  • ${dep.key}: ${formatDependencyDescription(dep)}`);
+      lines.push(`    → ${formatActionSuggestion(dep)}`);
+    }
+  }
+
+  if (validationResult.conflicting.length > 0) {
+    if (validationResult.missing.length > 0) {
+      lines.push('');
+    }
+    lines.push('Mismatched values:');
+    for (const conflict of validationResult.conflicting) {
+      lines.push(
+        `  • ${conflict.key}: Recipe expects '${conflict.required}' but your workspace has '${conflict.current}'`
+      );
+      lines.push(`    → ${formatConflictSuggestion(conflict)}`);
+    }
+  }
 
   return lines.join('\n');
+}
+
+function formatDependencyDescription(dep: RecipeDependency): string {
+  if (dep.key.startsWith('prerequisite.')) {
+    const feature = dep.key.replace('prerequisite.', '');
+    return `This recipe requires '${feature}' to be configured first`;
+  }
+
+  if (dep.key.startsWith('workspace.')) {
+    const characteristic = dep.key.replace('workspace.', '');
+    if (characteristic === 'is_monorepo') {
+      return dep.equals === 'true'
+        ? 'This recipe requires a monorepo workspace setup'
+        : 'This recipe requires a single-project workspace setup';
+    }
+    return `This recipe requires the workspace ${characteristic} to be '${dep.equals}'`;
+  }
+
+  if (dep.key.startsWith('project.')) {
+    const characteristic = dep.key.replace('project.', '');
+    if (characteristic === 'ecosystem') {
+      return `This recipe requires projects with '${dep.equals}' ecosystem`;
+    }
+    if (characteristic === 'type') {
+      return `This recipe requires projects of type '${dep.equals}'`;
+    }
+    if (characteristic === 'framework') {
+      return `This recipe requires projects using '${dep.equals}' framework`;
+    }
+    return `This recipe requires projects with ${characteristic} set to '${dep.equals}'`;
+  }
+
+  return `This recipe requires '${dep.key}' to be set to '${dep.equals}'`;
+}
+
+function formatActionSuggestion(dep: RecipeDependency): string {
+  if (dep.key.startsWith('prerequisite.')) {
+    const feature = dep.key.replace('prerequisite.', '');
+    return `Run 'chorenzo recipes apply ${feature}' to set this up`;
+  }
+
+  if (dep.key.startsWith('workspace.')) {
+    const characteristic = dep.key.replace('workspace.', '');
+    if (characteristic === 'is_monorepo') {
+      return dep.equals === 'true'
+        ? 'This recipe is designed for monorepo setups'
+        : 'This recipe is designed for single-project setups';
+    }
+    return `Check your workspace configuration for ${characteristic}`;
+  }
+
+  if (dep.key.startsWith('project.')) {
+    const characteristic = dep.key.replace('project.', '');
+    if (characteristic === 'ecosystem') {
+      return `Make sure you have projects using the '${dep.equals}' ecosystem`;
+    }
+    if (characteristic === 'type') {
+      return `This recipe only applies to '${dep.equals}' type projects`;
+    }
+    if (characteristic === 'framework') {
+      return `This recipe only applies to projects using '${dep.equals}' framework`;
+    }
+    return `Ensure your projects have the correct ${characteristic} configuration`;
+  }
+
+  return `Set up the required ${dep.key} configuration`;
+}
+
+function formatConflictSuggestion(conflict: {
+  key: string;
+  required: string;
+  current: string;
+}): string {
+  if (conflict.key.startsWith('workspace.')) {
+    const characteristic = conflict.key.replace('workspace.', '');
+    if (characteristic === 'is_monorepo') {
+      return conflict.required === 'true'
+        ? 'This recipe is designed for monorepo setups'
+        : 'This recipe is designed for single-project setups';
+    }
+    return `This recipe requires ${characteristic} to be '${conflict.required}'`;
+  }
+
+  if (conflict.key.startsWith('project.')) {
+    const characteristic = conflict.key.replace('project.', '');
+    return `This recipe requires ${characteristic} to be '${conflict.required}'`;
+  }
+
+  return `Update ${conflict.key} to '${conflict.required}' or use a different recipe variant`;
 }
 
 async function checkReApplication(

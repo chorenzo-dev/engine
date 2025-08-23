@@ -1,94 +1,36 @@
-# Updating README with CLI Documentation
+# Update README with CLI Documentation
 
-## Extract Command Documentation
+## Process
 
-Parse the main CLI file to extract all commands, options, and usage patterns:
+1. **Extract all commands from src/main.ts**
+   - Read Commander.js program definitions line by line
+   - For each `.option()` call, document the exact flag and description text
+   - Cross-reference every option in src/main.ts with existing README documentation
+   - CRITICAL: Ensure option descriptions in README exactly match the help text from src/main.ts
+   - Flag any missing parameters, mismatched descriptions, or outdated text
+   - Include help text and examples from source code
+   - Skip hidden commands (marked with `{ hidden: true }`)
 
-1. Read the primary CLI entry point file
-2. Extract command definitions including:
-   - Command names and aliases
-   - All options and flags with descriptions
-   - Required vs optional parameters
-   - Default values where applicable
-   - Usage examples from help text
+2. **Update README.md**
+   - Preserve existing structure and formatting
+   - Update command documentation sections with current information
+   - Ensure all examples use `npx chorenzo` format
+   - Add any missing commands not currently documented
 
-## Update README Structure - IMPORTANT GUIDELINES
+3. **Key rules**
+   - DO NOT add installation sections
+   - DO NOT duplicate existing content
+   - Keep all non-CLI content intact
+   - Use consistent markdown formatting
 
-**CRITICAL**: Preserve existing README structure and avoid redundancy:
+## Commands to document
 
-1. **DO NOT add Installation sections** - The README should focus on usage with `npx chorenzo`
-2. **DO NOT create duplicate CLI Reference sections** - Update existing Usage sections instead
-3. **DO NOT add redundant command overviews** - Work within existing structure
-4. **USE CONSISTENT command format**: Always use `npx chorenzo` (not `chorenzo` or global install)
-5. **Preserve existing content**: Keep all non-CLI documentation intact
-6. **Update CLI sections**: Replace outdated command documentation with current information from source code
-7. **Maintain formatting**: Use consistent markdown formatting throughout
-8. **Focus on existing sections**: Update the existing Usage section structure
+Scan src/main.ts and extract command definitions including:
 
-## Generate Documentation Updates
-
-Update existing command sections with:
-
-### Individual Command Documentation
-
-For each existing command section, update:
-
-- Full command syntax using `npx chorenzo` format
-- All available options and flags with accurate descriptions
-- Parameter descriptions and constraints
-- Usage examples showing common patterns
-- Ensure all examples use `npx chorenzo` consistently
-
-### Help System Documentation
-
-- Update existing help command examples
-- Ensure all help examples use `npx chorenzo` format
-- Show how to get detailed help for specific commands
-
-## Documentation Format
-
-Use clear, consistent formatting:
-
-````markdown
-## Commands
-
-### `command-name [options] [arguments]`
-
-Brief description of what this command does.
-
-**Options:**
-
-- `--option-name`: Description of the option
-- `--flag`: Description of the flag (no value)
-- `-s, --short`: Short and long form options
-
-**Examples:**
-
-```bash
-command-name --option value
-command-name --flag argument
-```
-````
-
-**Note:** Add any important usage notes or warnings
-
-```
-
-## Verification
-
-After updating the README:
-
-1. **Accuracy check**: Verify all documented commands match actual CLI behavior
-2. **Completeness check**: Ensure all available commands and options are documented
-3. **Format check**: Confirm markdown formatting is correct and consistent
-4. **Example validation**: Test that all provided examples work correctly
-
-## Maintenance Notes
-
-Document the update process for future maintenance:
-
-- Note the source file location for CLI definitions
-- Include instructions for regenerating documentation
-- Add comments about automated vs manual sections
-- Provide guidelines for keeping documentation synchronized with code changes
-```
+- Base commands and subcommands (skip hidden commands marked with `{ hidden: true }`)
+- Every single `.option()` call - verify none are missing from README
+- All options, flags, and arguments for each command
+- Required vs optional parameters
+- Help text and examples from the source code
+- CRITICAL: Verify each command in README has all options that exist in src/main.ts
+- CRITICAL: Use the exact same wording as the help menu descriptions in src/main.ts

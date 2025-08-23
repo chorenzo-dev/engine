@@ -15,6 +15,7 @@ interface RecipeDisplayComponentProps {
 export const RecipeDisplayComponent: React.FC<RecipeDisplayComponentProps> = ({
   recipe,
   location,
+  validationResult,
 }) => {
   const levelLabel = getLevelLabel(recipe.getLevel());
   const ecosystems = recipe.getEcosystems();
@@ -66,11 +67,21 @@ export const RecipeDisplayComponent: React.FC<RecipeDisplayComponentProps> = ({
           {requires.length > 0 && (
             <>
               <Text>Requires:</Text>
-              {requires.map((dep, index) => (
-                <Text key={index} color={colors.muted}>
-                  - {formatDependency(dep)}
-                </Text>
-              ))}
+              {requires.map((dep, index) => {
+                const status = getDependencyStatus(dep, validationResult);
+                return (
+                  <Box key={index} flexDirection="row">
+                    <Text color={status.color}>
+                      {status.icon} {formatDependency(dep)}
+                    </Text>
+                    {status.message && (
+                      <Box marginLeft={1}>
+                        <Text color={status.color}>({status.message})</Text>
+                      </Box>
+                    )}
+                  </Box>
+                );
+              })}
             </>
           )}
           {provides.length > 0 && (
@@ -104,4 +115,53 @@ function getLevelLabel(level: RecipeLevel): string {
 
 function formatDependency(dep: RecipeDependency): string {
   return `${dep.key} = ${dep.equals}`;
+}
+
+interface DependencyStatus {
+  icon: string;
+  color: string;
+  message?: string;
+}
+
+function getDependencyStatus(
+  dep: RecipeDependency,
+  validationResult?: RecipesApplyDependencyValidationResult
+): DependencyStatus {
+  if (!validationResult) {
+    return {
+      icon: '-',
+      color: colors.muted,
+    };
+  }
+
+  const isMissing = validationResult.missing.some(
+    (missing) => missing.key === dep.key && missing.equals === dep.equals
+  );
+
+  const conflict = validationResult.conflicting.find(
+    (conflicting) =>
+      conflicting.key === dep.key && conflicting.required === dep.equals
+  );
+
+  if (isMissing) {
+    return {
+      icon: '❌',
+      color: colors.error,
+      message: 'missing',
+    };
+  }
+
+  if (conflict) {
+    return {
+      icon: '⚠️',
+      color: colors.error,
+      message: `found ${conflict.current}`,
+    };
+  }
+
+  return {
+    icon: '✅',
+    color: colors.success,
+    message: 'satisfied',
+  };
 }

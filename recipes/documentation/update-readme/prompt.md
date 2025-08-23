@@ -1,32 +1,23 @@
 ## Goal
 
-Automatically update README.md with complete and accurate documentation of all CLI commands and their parameters, while preserving the existing structure and avoiding redundant sections.
+Update README.md with accurate CLI documentation by scanning src/main.ts for all commands, ensuring complete coverage while preserving existing structure.
 
 ## Investigation
 
-1. **Locate main CLI entry point**
-   - Find the primary CLI definition file (commonly main.js, main.ts, cli.js, or index.js in src/ or root)
-   - Search for Commander.js usage patterns or similar CLI framework imports
-   - Identify the file containing command definitions and argument parsing
+1. **Scan src/main.ts for all commands**
+   - Extract every command definition from the Commander.js program
+   - Include all subcommands (e.g., analysis validate, recipes apply, etc.)
+   - Document ALL options, flags, and arguments for each command - ensure no parameters are missing
+   - Note required vs optional parameters and default values
+   - Pay special attention to parameter mismatches between source and documentation
 
-2. **Extract CLI command structure**
-   - Parse all available commands from the main CLI file
-   - Identify command hierarchy (base commands, subcommands)
-   - Document all available options, flags, and arguments for each command
-   - Note default values, required parameters, and optional parameters
-
-3. **Analyze existing README structure**
-   - Check if README.md exists in the project root
-   - Identify existing CLI documentation sections
-   - Locate command examples and help text sections
-   - Determine the current documentation format and style
-   - **IMPORTANT**: Preserve existing structure - do NOT add installation sections or duplicate existing content
-
-4. **Identify CLI help system**
-   - Check if the CLI has built-in help commands
-   - Test help output format and structure
-   - Verify command usage patterns and examples
-   - Use `npx chorenzo` as the primary command format (not global install)
+2. **Validate completeness against existing README**
+   - Identify missing commands not documented in README
+   - Find missing or outdated command options/flags
+   - Verify every single option in src/main.ts is properly documented
+   - CRITICAL: Check that option descriptions match exactly between source code and README
+   - Preserve existing README structure and formatting
+   - Use `npx chorenzo` format consistently
 
 ## Expected Output
 

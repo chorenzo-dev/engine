@@ -1,3 +1,4 @@
+import { icons } from '../styles/icons';
 import {
   formatValidationErrors,
   getDefaultAnalysisPath,
@@ -36,7 +37,7 @@ export async function analysisValidate(
   const result = await validateAnalysisFile(filePath);
 
   if (result.valid) {
-    onProgress?.('✅ Analysis file is valid');
+    onProgress?.(`${icons.success} Analysis file is valid`);
     Logger.info('Schema validation passed successfully');
     if (options.debug) {
       onProgress?.(
@@ -56,7 +57,7 @@ export async function analysisValidate(
       }
     }
   } else {
-    onProgress?.(`❌ Validation failed`);
+    onProgress?.(`${icons.error} Validation failed`);
     const errorMessage = formatValidationErrors(result.errors);
     onProgress?.(errorMessage);
 

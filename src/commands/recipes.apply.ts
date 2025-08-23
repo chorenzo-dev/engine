@@ -2,6 +2,7 @@ import { query } from '@anthropic-ai/claude-code';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { icons } from '~/styles/icons';
 import { ProjectAnalysis, WorkspaceAnalysis } from '~/types/analysis';
 import { Recipe, RecipeDependency } from '~/types/recipe';
 import {
@@ -40,7 +41,7 @@ import { extractErrorMessage, formatErrorMessage } from '../utils/error.utils';
 import { performAnalysis } from './analyze';
 import { loadRecipe } from './recipes.shared';
 
-async function validateRecipeStructure(recipe: Recipe): Promise<void> {
+function validateRecipeStructure(recipe: Recipe): void {
   const validationResult = recipe.validate();
   if (!validationResult.valid) {
     const errors = validationResult.errors.map((e) => e.message).join(', ');
@@ -66,25 +67,33 @@ async function setupRecipeApplication(
   const recipe = await loadRecipe(options.recipe);
 
   onProgress?.('Validating recipe structure');
-  await validateRecipeStructure(recipe);
+  validateRecipeStructure(recipe);
 
   onProgress?.('Ensuring analysis data');
   const analysis = await ensureAnalysisData();
 
   onProgress?.('Checking recipe dependencies');
-  const currentState = await readCurrentState();
-  const dependencyCheck = await validateWorkspaceDependencies(
-    recipe,
-    currentState
-  );
+  const currentState = readCurrentState();
+  const dependencyCheck = validateWorkspaceDependencies(recipe, currentState);
 
-  if (!dependencyCheck.satisfied) {
-    const errorMsg = formatDependencyError(
-      recipe.getId(),
-      dependencyCheck,
-      currentState
-    );
+  if (!dependencyCheck.satisfied && !options.force) {
+    const errorMsg = formatDependencyError(recipe.getId(), dependencyCheck);
     throw new RecipesApplyError(errorMsg, 'DEPENDENCIES_NOT_SATISFIED');
+  }
+
+  if (!dependencyCheck.satisfied && options.force) {
+    Logger.warn(
+      {
+        event: 'force_flag_bypassed_validation',
+        recipeId: recipe.getId(),
+        unsatisfiedDependencies: {
+          missing: dependencyCheck.missing.length,
+          conflicting: dependencyCheck.conflicting.length,
+        },
+      },
+      'WARNING: --force flag is bypassing validation requirements. Recipe may not work as expected.'
+    );
+    onProgress?.('⚠️  Bypassing validation due to --force flag');
   }
 
   return { recipe, analysis, currentState, dependencyCheck };
@@ -100,11 +109,7 @@ export async function checkRecipeReApplication(
   );
 
   onProgress?.('Checking for previous recipe applications');
-  const reApplicationCheck = await checkReApplication(
-    recipe,
-    analysis,
-    options
-  );
+  const reApplicationCheck = checkReApplication(recipe, analysis, options);
 
   return {
     recipeId: recipe.getId(),
@@ -127,11 +132,7 @@ export async function performRecipesApply(
     );
 
     onProgress?.('Checking for previous recipe applications');
-    const reApplicationCheck = await checkReApplication(
-      recipe,
-      analysis,
-      options
-    );
+    const reApplicationCheck = checkReApplication(recipe, analysis, options);
 
     if (
       reApplicationCheck.hasAlreadyApplied &&
@@ -235,10 +236,11 @@ export async function performRecipesApply(
       }
     } else {
       onProgress?.('Filtering applicable projects');
-      const applicableProjects = await filterApplicableProjects(
+      const applicableProjects = filterApplicableProjects(
         analysis,
         recipe,
-        options.project
+        options.project,
+        options.force
       );
 
       if (applicableProjects.length === 0) {
@@ -361,7 +363,7 @@ async function ensureAnalysisData(): Promise<WorkspaceAnalysis> {
   return analysisResult.analysis;
 }
 
-async function readCurrentState(): Promise<RecipesApplyState> {
+export function readCurrentState(): RecipesApplyState {
   try {
     const workspaceState = stateManager.getWorkspaceState();
     return (workspaceState.workspace || {}) as RecipesApplyState;
@@ -373,11 +375,11 @@ async function readCurrentState(): Promise<RecipesApplyState> {
   }
 }
 
-async function validateDependencies(
+function validateDependencies(
   recipe: Recipe,
   currentState: RecipesApplyState,
   projectPath?: string
-): Promise<RecipesApplyDependencyValidationResult> {
+): RecipesApplyDependencyValidationResult {
   const missing: RecipeDependency[] = [];
   const conflicting: Array<{ key: string; required: string; current: string }> =
     [];
@@ -390,11 +392,24 @@ async function validateDependencies(
 
     if (isReservedKeyword(dependency.key)) {
       if (isProjectKeyword(dependency.key) && !projectPath) {
-        continue;
+        if (!analysis) {
+          analysis = loadWorkspaceAnalysis();
+          if (!analysis) {
+            missing.push(dependency);
+            continue;
+          }
+        }
+        const firstProject = analysis.projects?.[0];
+        if (!firstProject) {
+          missing.push(dependency);
+          continue;
+        }
+        project = firstProject;
+        projectPath = firstProject.path;
       }
 
       if (!analysis) {
-        analysis = await loadWorkspaceAnalysis();
+        analysis = loadWorkspaceAnalysis();
         if (!analysis) {
           missing.push(dependency);
           continue;
@@ -442,42 +457,142 @@ async function validateDependencies(
   };
 }
 
-async function validateWorkspaceDependencies(
+export function validateWorkspaceDependencies(
   recipe: Recipe,
   currentState: RecipesApplyState
-): Promise<RecipesApplyDependencyValidationResult> {
+): RecipesApplyDependencyValidationResult {
   return validateDependencies(recipe, currentState);
 }
 
 function formatDependencyError(
   recipeId: string,
-  validationResult: RecipesApplyDependencyValidationResult,
-  currentState: RecipesApplyState
+  validationResult: RecipesApplyDependencyValidationResult
 ): string {
-  const lines = [`Recipe '${recipeId}' has unsatisfied dependencies:`];
-
-  for (const dep of validationResult.missing) {
-    const currentValue = currentState[dep.key] ?? 'undefined';
-    lines.push(`  - ${dep.key} = ${dep.equals} (currently: ${currentValue})`);
-  }
-
-  for (const conflict of validationResult.conflicting) {
-    lines.push(
-      `  - ${conflict.key} = ${conflict.required} (currently: ${conflict.current})`
-    );
-  }
-
+  const lines = [
+    `Recipe '${recipeId}' cannot be applied due to unmet requirements:`,
+  ];
   lines.push('');
-  lines.push('Consider running prerequisite recipes first.');
+
+  if (validationResult.missing.length > 0) {
+    lines.push('Missing requirements:');
+    for (const dep of validationResult.missing) {
+      lines.push(
+        `  ${icons.bullet} ${dep.key}: ${formatDependencyDescription(dep)}`
+      );
+      lines.push(`    ${icons.arrow} ${formatActionSuggestion(dep)}`);
+    }
+  }
+
+  if (validationResult.conflicting.length > 0) {
+    if (validationResult.missing.length > 0) {
+      lines.push('');
+    }
+    lines.push('Mismatched values:');
+    for (const conflict of validationResult.conflicting) {
+      lines.push(
+        `  ${icons.bullet} ${conflict.key}: Recipe expects '${conflict.required}' but your workspace has '${conflict.current}'`
+      );
+      lines.push(`    ${icons.arrow} ${formatConflictSuggestion(conflict)}`);
+    }
+  }
 
   return lines.join('\n');
 }
 
-async function checkReApplication(
+function formatDependencyDescription(dep: RecipeDependency): string {
+  if (dep.key.startsWith('prerequisite.')) {
+    const feature = dep.key.replace('prerequisite.', '');
+    return `This recipe requires '${feature}' to be configured first`;
+  }
+
+  if (dep.key.startsWith('workspace.')) {
+    const characteristic = dep.key.replace('workspace.', '');
+    if (characteristic === 'is_monorepo') {
+      return dep.equals === 'true'
+        ? 'This recipe requires a monorepo workspace setup'
+        : 'This recipe requires a single-project workspace setup';
+    }
+    return `This recipe requires the workspace ${characteristic} to be '${dep.equals}'`;
+  }
+
+  if (dep.key.startsWith('project.')) {
+    const characteristic = dep.key.replace('project.', '');
+    if (characteristic === 'ecosystem') {
+      return `This recipe requires projects with '${dep.equals}' ecosystem`;
+    }
+    if (characteristic === 'type') {
+      return `This recipe requires projects of type '${dep.equals}'`;
+    }
+    if (characteristic === 'framework') {
+      return `This recipe requires projects using '${dep.equals}' framework`;
+    }
+    return `This recipe requires projects with ${characteristic} set to '${dep.equals}'`;
+  }
+
+  return `This recipe requires '${dep.key}' to be set to '${dep.equals}'`;
+}
+
+function formatActionSuggestion(dep: RecipeDependency): string {
+  if (dep.key.startsWith('prerequisite.')) {
+    const feature = dep.key.replace('prerequisite.', '');
+    return `Run 'chorenzo recipes apply ${feature}' to set this up`;
+  }
+
+  if (dep.key.startsWith('workspace.')) {
+    const characteristic = dep.key.replace('workspace.', '');
+    if (characteristic === 'is_monorepo') {
+      return dep.equals === 'true'
+        ? 'This recipe is designed for monorepo setups'
+        : 'This recipe is designed for single-project setups';
+    }
+    return `Check your workspace configuration for ${characteristic}`;
+  }
+
+  if (dep.key.startsWith('project.')) {
+    const characteristic = dep.key.replace('project.', '');
+    if (characteristic === 'ecosystem') {
+      return `Make sure you have projects using the '${dep.equals}' ecosystem`;
+    }
+    if (characteristic === 'type') {
+      return `This recipe only applies to '${dep.equals}' type projects`;
+    }
+    if (characteristic === 'framework') {
+      return `This recipe only applies to projects using '${dep.equals}' framework`;
+    }
+    return `Ensure your projects have the correct ${characteristic} configuration`;
+  }
+
+  return `Set up the required ${dep.key} configuration`;
+}
+
+function formatConflictSuggestion(conflict: {
+  key: string;
+  required: string;
+  current: string;
+}): string {
+  if (conflict.key.startsWith('workspace.')) {
+    const characteristic = conflict.key.replace('workspace.', '');
+    if (characteristic === 'is_monorepo') {
+      return conflict.required === 'true'
+        ? 'This recipe is designed for monorepo setups'
+        : 'This recipe is designed for single-project setups';
+    }
+    return `This recipe requires ${characteristic} to be '${conflict.required}'`;
+  }
+
+  if (conflict.key.startsWith('project.')) {
+    const characteristic = conflict.key.replace('project.', '');
+    return `This recipe requires ${characteristic} to be '${conflict.required}'`;
+  }
+
+  return `Update ${conflict.key} to '${conflict.required}' or use a different recipe variant`;
+}
+
+function checkReApplication(
   recipe: Recipe,
   analysis: WorkspaceAnalysis,
   options: RecipesApplyOptions
-): Promise<ReApplicationCheckResult> {
+): ReApplicationCheckResult {
   const targets: ReApplicationTarget[] = [];
   const recipeId = recipe.getId();
 
@@ -491,10 +606,11 @@ async function checkReApplication(
     const workspaceRecipesApplyState = (workspaceState.workspace ||
       {}) as RecipesApplyState;
 
-    const canApplyAtWorkspace = await canApplyRecipeAtWorkspace(
+    const canApplyAtWorkspace = canApplyRecipeAtWorkspace(
       recipe,
       analysis,
-      workspaceRecipesApplyState
+      workspaceRecipesApplyState,
+      options.force
     );
 
     if (
@@ -504,12 +620,13 @@ async function checkReApplication(
       targets.push({ level: 'workspace' });
     }
 
-    const applicableProjects = await getApplicableProjectsForWorkspacePreferred(
+    const applicableProjects = getApplicableProjectsForWorkspacePreferred(
       recipe,
       analysis,
       workspaceEcosystem,
       workspaceState,
-      options.project
+      options.project,
+      options.force
     );
 
     for (const project of applicableProjects) {
@@ -518,10 +635,11 @@ async function checkReApplication(
       }
     }
   } else {
-    const applicableProjects = await filterApplicableProjects(
+    const applicableProjects = filterApplicableProjects(
       analysis,
       recipe,
-      options.project
+      options.project,
+      options.force
     );
 
     for (const project of applicableProjects) {
@@ -536,7 +654,8 @@ async function checkReApplication(
   return {
     hasAlreadyApplied,
     targets,
-    userConfirmedProceed: !hasAlreadyApplied || Boolean(options.yes),
+    userConfirmedProceed:
+      !hasAlreadyApplied || Boolean(options.yes) || Boolean(options.force),
   };
 }
 
@@ -573,11 +692,12 @@ function shouldIncludeProject(
   return true;
 }
 
-async function filterApplicableProjects(
+function filterApplicableProjects(
   analysis: WorkspaceAnalysis,
   recipe: Recipe,
-  projectFilter?: string
-): Promise<ProjectAnalysis[]> {
+  projectFilter?: string,
+  force?: boolean
+): ProjectAnalysis[] {
   const projects = filterProjectsByName(analysis.projects, projectFilter);
   const applicableProjects: ProjectAnalysis[] = [];
   const workspaceState = stateManager.getWorkspaceState();
@@ -594,14 +714,29 @@ async function filterApplicableProjects(
     const projectState = (workspaceState.projects?.[relativePath] ||
       {}) as RecipesApplyState;
 
-    const dependencyCheck = await validateDependencies(
+    const dependencyCheck = validateDependencies(
       recipe,
       projectState,
       project.path
     );
 
-    if (dependencyCheck.satisfied) {
+    if (dependencyCheck.satisfied || force) {
       applicableProjects.push(project);
+
+      if (!dependencyCheck.satisfied && force) {
+        Logger.warn(
+          {
+            event: 'force_flag_bypassed_project_validation',
+            recipeId: recipe.getId(),
+            projectPath: project.path,
+            unsatisfiedDependencies: {
+              missing: dependencyCheck.missing.length,
+              conflicting: dependencyCheck.conflicting.length,
+            },
+          },
+          `WARNING: --force bypassing validation for project ${project.path}`
+        );
+      }
     }
   }
 
@@ -1014,19 +1149,21 @@ async function applyWorkspacePreferredRecipe(
   const workspaceRecipesApplyState = (workspaceState.workspace ||
     {}) as RecipesApplyState;
 
-  const workspaceApplicability = await getWorkspaceApplicabilityResult(
+  const workspaceApplicability = getWorkspaceApplicabilityResult(
     recipe,
     analysis,
-    workspaceRecipesApplyState
+    workspaceRecipesApplyState,
+    options.force
   );
   const canApplyAtWorkspace = workspaceApplicability.canApply;
 
-  const applicableProjects = await getApplicableProjectsForWorkspacePreferred(
+  const applicableProjects = getApplicableProjectsForWorkspacePreferred(
     recipe,
     analysis,
     workspaceEcosystem,
     workspaceState,
-    options.project
+    options.project,
+    options.force
   );
 
   Logger.info(
@@ -1116,24 +1253,27 @@ interface WorkspaceApplicabilityResult {
   reason: string;
 }
 
-async function canApplyRecipeAtWorkspace(
+function canApplyRecipeAtWorkspace(
   recipe: Recipe,
   analysis: WorkspaceAnalysis,
-  currentState: RecipesApplyState
-): Promise<boolean> {
-  const result = await getWorkspaceApplicabilityResult(
+  currentState: RecipesApplyState,
+  force?: boolean
+): boolean {
+  const result = getWorkspaceApplicabilityResult(
     recipe,
     analysis,
-    currentState
+    currentState,
+    force
   );
   return result.canApply;
 }
 
-async function getWorkspaceApplicabilityResult(
+function getWorkspaceApplicabilityResult(
   recipe: Recipe,
   analysis: WorkspaceAnalysis,
-  currentState: RecipesApplyState
-): Promise<WorkspaceApplicabilityResult> {
+  currentState: RecipesApplyState,
+  force?: boolean
+): WorkspaceApplicabilityResult {
   const workspaceEcosystem = analysis.workspaceEcosystem || 'unknown';
 
   if (!recipe.hasEcosystem(workspaceEcosystem)) {
@@ -1155,8 +1295,8 @@ async function getWorkspaceApplicabilityResult(
     return { canApply: false, reason };
   }
 
-  const dependencyCheck = await validateDependencies(recipe, currentState);
-  if (!dependencyCheck.satisfied) {
+  const dependencyCheck = validateDependencies(recipe, currentState);
+  if (!dependencyCheck.satisfied && !force) {
     const unsatisfiedDeps = dependencyCheck.missing.map((d) => d.key);
     const reason = `dependencies not satisfied: ${unsatisfiedDeps.join(', ')}`;
 
@@ -1172,6 +1312,21 @@ async function getWorkspaceApplicabilityResult(
     return { canApply: false, reason };
   }
 
+  if (!dependencyCheck.satisfied && force) {
+    Logger.warn(
+      {
+        event: 'force_flag_bypassed_workspace_validation',
+        recipeId: recipe.getId(),
+        workspaceEcosystem,
+        unsatisfiedDependencies: {
+          missing: dependencyCheck.missing.length,
+          conflicting: dependencyCheck.conflicting.length,
+        },
+      },
+      'WARNING: --force bypassing workspace-level validation requirements'
+    );
+  }
+
   Logger.info(
     {
       recipeId: recipe.getId(),
@@ -1182,13 +1337,14 @@ async function getWorkspaceApplicabilityResult(
   return { canApply: true, reason: 'applicable' };
 }
 
-async function getApplicableProjectsForWorkspacePreferred(
+function getApplicableProjectsForWorkspacePreferred(
   recipe: Recipe,
   analysis: WorkspaceAnalysis,
   workspaceEcosystem: string,
   workspaceState: WorkspaceState,
-  projectFilter?: string
-): Promise<ProjectAnalysis[]> {
+  projectFilter?: string,
+  force?: boolean
+): ProjectAnalysis[] {
   const workspaceRecipesApplyState = (workspaceState.workspace ||
     {}) as RecipesApplyState;
   const applicableProjects: ProjectAnalysis[] = [];
@@ -1206,14 +1362,29 @@ async function getApplicableProjectsForWorkspacePreferred(
       const projectState = (workspaceState.projects?.[relativePath] ||
         {}) as RecipesApplyState;
 
-      const dependencyCheck = await validateDependencies(
+      const dependencyCheck = validateDependencies(
         recipe,
         projectState,
         project.path
       );
 
-      if (dependencyCheck.satisfied) {
+      if (dependencyCheck.satisfied || force) {
         applicableProjects.push(project);
+
+        if (!dependencyCheck.satisfied && force) {
+          Logger.warn(
+            {
+              event: 'force_flag_bypassed_workspace_preferred_validation',
+              recipeId: recipe.getId(),
+              projectPath: project.path,
+              unsatisfiedDependencies: {
+                missing: dependencyCheck.missing.length,
+                conflicting: dependencyCheck.conflicting.length,
+              },
+            },
+            `WARNING: --force bypassing validation for workspace-preferred project ${project.path}`
+          );
+        }
       }
       continue;
     }
@@ -1230,13 +1401,30 @@ async function getApplicableProjectsForWorkspacePreferred(
 
     for (const requirement of requires) {
       if (isReservedKeyword(requirement.key)) {
-        const dependencyCheck = await validateDependencies(
+        const dependencyCheck = validateDependencies(
           recipe,
           projectState,
           project.path
         );
-        if (dependencyCheck.satisfied) {
+        if (dependencyCheck.satisfied || force) {
           shouldInclude = true;
+
+          if (!dependencyCheck.satisfied && force) {
+            Logger.warn(
+              {
+                event:
+                  'force_flag_bypassed_workspace_preferred_reserved_keyword_validation',
+                recipeId: recipe.getId(),
+                projectPath: project.path,
+                requirement: requirement.key,
+                unsatisfiedDependencies: {
+                  missing: dependencyCheck.missing.length,
+                  conflicting: dependencyCheck.conflicting.length,
+                },
+              },
+              `WARNING: --force bypassing reserved keyword validation for project ${project.path}`
+            );
+          }
           break;
         }
       } else {

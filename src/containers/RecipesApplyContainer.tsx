@@ -102,7 +102,7 @@ export const RecipesApplyContainer: React.FC<RecipesApplyContainerProps> = ({
             <ReApplicationPrompt
               recipeId={reApplicationData.recipeId}
               targets={reApplicationData.reApplicationCheck.targets}
-              onYes={async () => {
+              onYes={() => {
                 const updatedData = {
                   ...reApplicationData,
                   reApplicationCheck: {
@@ -114,7 +114,7 @@ export const RecipesApplyContainer: React.FC<RecipesApplyContainerProps> = ({
                 context.complete();
                 setShowPrompt(false);
               }}
-              onNo={async () => {
+              onNo={() => {
                 setUserCancelled(true);
               }}
             />

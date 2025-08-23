@@ -13,7 +13,7 @@ export class YamlError extends Error {
   }
 }
 
-export async function readYaml<T>(filePath: string): Promise<T> {
+export function readYaml<T>(filePath: string): T {
   try {
     const fileContent = fs.readFileSync(filePath, 'utf8');
     const data = yamlParse(fileContent) as T;
@@ -29,7 +29,7 @@ export async function readYaml<T>(filePath: string): Promise<T> {
   }
 }
 
-export async function writeYaml<T>(filePath: string, data: T): Promise<void> {
+export function writeYaml<T>(filePath: string, data: T): void {
   try {
     const yamlContent = yamlStringify(data);
     fs.writeFileSync(filePath, yamlContent, 'utf8');

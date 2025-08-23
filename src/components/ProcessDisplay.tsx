@@ -3,11 +3,12 @@ import Spinner from 'ink-spinner';
 import React from 'react';
 
 import { colors } from '~/styles/colors';
+import { icons } from '~/styles/icons';
 
 export const emojis = {
-  success: '✅',
-  error: '❌',
-  celebration: '🎉',
+  success: icons.success,
+  error: icons.error,
+  celebration: icons.celebration,
 } as const;
 
 interface CompletedStep {

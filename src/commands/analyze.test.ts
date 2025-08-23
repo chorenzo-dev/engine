@@ -159,18 +159,20 @@ describe('Analyze Command Integration Tests', () => {
       mtime: new Date(),
     }));
 
-    mockStat.mockImplementation(async (filePath: string) => ({
-      isDirectory: () => filePath.endsWith('/') || !filePath.includes('.'),
-      isFile: () => filePath.includes('.'),
-      size: 1024,
-      mtime: new Date(),
-    }));
+    mockStat.mockImplementation((filePath: string) =>
+      Promise.resolve({
+        isDirectory: () => filePath.endsWith('/') || !filePath.includes('.'),
+        isFile: () => filePath.includes('.'),
+        size: 1024,
+        mtime: new Date(),
+      })
+    );
 
-    mockReaddir.mockImplementation(async (dirPath: string) => {
+    mockReaddir.mockImplementation((dirPath: string) => {
       if (dirPath.includes('simple-express')) {
-        return ['package.json', 'src', 'index.js'];
+        return Promise.resolve(['package.json', 'src', 'index.js']);
       }
-      return ['file1.js', 'file2.js'];
+      return Promise.resolve(['file1.js', 'file2.js']);
     });
 
     mockAccess.mockImplementation(async () => {
@@ -190,6 +192,7 @@ describe('Analyze Command Integration Tests', () => {
     setupDefaultMocks();
 
     mockQuery.mockImplementation(async function* () {
+      await Promise.resolve();
       yield { type: 'result', is_error: false };
     });
 
@@ -244,6 +247,7 @@ describe('Analyze Command Integration Tests', () => {
     createAnalysisJsonMock(analysisJson);
 
     mockQuery.mockImplementation(async function* () {
+      await Promise.resolve();
       yield {
         type: 'result',
         subtype: 'success',
@@ -304,6 +308,7 @@ describe('Analyze Command Integration Tests', () => {
     createAnalysisJsonMock(analysisJson);
 
     mockQuery.mockImplementation(async function* () {
+      await Promise.resolve();
       yield {
         type: 'result',
         subtype: 'success',
@@ -324,6 +329,7 @@ describe('Analyze Command Integration Tests', () => {
   it('should handle Claude API failures', async () => {
     setupFixture('simple-express', { addGitRepo: true });
     mockQuery.mockImplementation(async function* () {
+      await Promise.resolve();
       yield {
         type: 'result',
         subtype: 'error',
@@ -372,6 +378,7 @@ describe('Analyze Command Integration Tests', () => {
     });
 
     mockQuery.mockImplementation(async function* () {
+      await Promise.resolve();
       yield {
         type: 'result',
         subtype: 'success',
@@ -415,6 +422,7 @@ describe('Analyze Command Integration Tests', () => {
     createAnalysisJsonMock(analysisJson);
 
     mockQuery.mockImplementation(async function* () {
+      await Promise.resolve();
       yield {
         type: 'assistant',
         message: {
@@ -553,6 +561,7 @@ describe('Analyze Command Integration Tests', () => {
     createAnalysisJsonMock(analysisJson);
 
     mockQuery.mockImplementation(async function* () {
+      await Promise.resolve();
       yield {
         type: 'result',
         subtype: 'success',
@@ -614,6 +623,7 @@ describe('Analyze Command Integration Tests', () => {
     createAnalysisJsonMock(analysisJson);
 
     mockQuery.mockImplementation(async function* () {
+      await Promise.resolve();
       yield {
         type: 'result',
         subtype: 'success',
@@ -660,6 +670,7 @@ describe('Analyze Command Integration Tests', () => {
     });
 
     mockQuery.mockImplementation(async function* () {
+      await Promise.resolve();
       yield {
         type: 'result',
         subtype: 'success',
@@ -703,6 +714,7 @@ describe('Analyze Command Integration Tests', () => {
     createAnalysisJsonMock(analysisJson);
 
     mockQuery.mockImplementation(async function* () {
+      await Promise.resolve();
       yield {
         type: 'assistant',
         message: {
@@ -766,6 +778,7 @@ describe('Analyze Command Integration Tests', () => {
     createAnalysisJsonMock(analysisJson);
 
     mockQuery.mockImplementation(async function* () {
+      await Promise.resolve();
       yield {
         type: 'result',
         subtype: 'success',
@@ -795,6 +808,7 @@ describe('Analyze Command Integration Tests', () => {
     createAnalysisJsonMock(analysisJson);
 
     mockQuery.mockImplementation(async function* () {
+      await Promise.resolve();
       yield {
         type: 'result',
         subtype: 'success',
@@ -836,6 +850,7 @@ describe('Analyze Command Integration Tests', () => {
     createAnalysisJsonMock(analysisJson);
 
     mockQuery.mockImplementation(async function* () {
+      await Promise.resolve();
       yield {
         type: 'assistant',
         message: {

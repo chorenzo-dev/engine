@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import { stringify as yamlStringify } from 'yaml';
 
 import { Ecosystem, ProjectType } from '~/types/analysis';
+import { RecipeDependency } from '~/types/recipe';
 
 import {
   createLibraryConfig,
@@ -90,7 +91,7 @@ describe('Recipe Application', () => {
     };
 
     const setupSuccessfulQueryMock = () => {
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         yield {
           type: 'result',
           subtype: 'success',
@@ -101,7 +102,7 @@ describe('Recipe Application', () => {
     };
 
     const setupErrorQueryMock = () => {
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         yield {
           type: 'result',
           subtype: 'error',
@@ -212,7 +213,7 @@ describe('Recipe Application', () => {
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         yield {
           type: 'assistant',
           message: {
@@ -462,7 +463,7 @@ describe('Recipe Application', () => {
         performRecipesApply({
           recipe: 'test-recipe',
         })
-      ).rejects.toThrow('unsatisfied dependencies');
+      ).rejects.toThrow('cannot be applied due to unmet requirements');
     });
 
     it('should handle execution failures gracefully', async () => {
@@ -723,7 +724,7 @@ describe('Recipe Application', () => {
       });
 
       let queryCallCount = 0;
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         queryCallCount++;
         if (queryCallCount === 1) {
           yield { type: 'result', is_error: false };
@@ -847,7 +848,7 @@ describe('Recipe Application', () => {
         performRecipesApply({
           recipe: 'test-recipe',
         })
-      ).rejects.toThrow('unsatisfied dependencies');
+      ).rejects.toThrow('cannot be applied due to unmet requirements');
     });
 
     it('should handle recipe not found', async () => {
@@ -1372,7 +1373,7 @@ describe('Recipe Application', () => {
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         yield {
           type: 'result',
           subtype: 'success',
@@ -1439,7 +1440,7 @@ describe('Recipe Application', () => {
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         yield {
           type: 'assistant',
           message: {
@@ -1510,7 +1511,7 @@ describe('Recipe Application', () => {
     it('should allow safe commands during recipe execution', async () => {
       setupStandardApplyScenario();
 
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         yield {
           type: 'assistant',
           message: {
@@ -1996,7 +1997,169 @@ describe('Recipe Application', () => {
 
         const result = await performRecipesApply({
           recipe: 'test-recipe',
-          yes: true,
+          force: true,
+        });
+
+        expect(result).toBeDefined();
+        expect(result.summary.successfulProjects).toBe(1);
+      });
+    });
+
+    describe('Force Flag Tests', () => {
+      const setupForceValidationTestScenario = (
+        dependencies: RecipeDependency[] = []
+      ) => {
+        setupStandardFileSystemMocks();
+        setupSuccessfulQueryMock();
+
+        const mockYamlData = createMockYamlData({
+          requires: dependencies,
+        });
+
+        mockReadFileSync.mockImplementation((filePath: string) => {
+          if (filePath.includes('analysis.json')) {
+            return JSON.stringify({
+              isMonorepo: false,
+              hasWorkspacePackageManager: false,
+              workspaceEcosystem: Ecosystem.Javascript,
+              projects: [
+                {
+                  path: '.',
+                  language: 'javascript',
+                  ecosystem: Ecosystem.Javascript,
+                  type: ProjectType.WebApp,
+                  dependencies: [],
+                  hasPackageManager: true,
+                },
+              ],
+            });
+          }
+          if (filePath.includes('config.yaml')) {
+            return yamlStringify(mockYamlData.config);
+          }
+          if (filePath.includes('metadata.yaml')) {
+            return yamlStringify(mockYamlData.metadata);
+          }
+          if (filePath.includes('prompt.md')) {
+            return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+          }
+          if (filePath.includes('fix.md')) {
+            return 'Test fix content';
+          }
+          if (filePath.includes('apply_recipe.md.hbs')) {
+            return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+          }
+          if (
+            filePath.includes(
+              'apply_recipe_workspace_application_instructions.md.hbs'
+            )
+          ) {
+            return 'workspace instructions';
+          }
+          if (
+            filePath.includes('apply_recipe_workspace_state_management.md.hbs')
+          ) {
+            return 'workspace state management';
+          }
+          if (filePath.includes('state.json')) {
+            return JSON.stringify({ workspace: {}, projects: {} });
+          }
+          return '';
+        });
+
+        createLibraryConfig('test-recipe');
+      };
+
+      it('should bypass validation with --force flag when dependencies not satisfied', async () => {
+        setupForceValidationTestScenario([
+          { key: 'prerequisite.missing_feature', equals: 'true' },
+        ]);
+
+        const result = await performRecipesApply({
+          recipe: 'test-recipe',
+          force: true,
+        });
+
+        expect(result).toBeDefined();
+        expect(result.summary.successfulProjects).toBe(1);
+      });
+
+      it('should fail validation without --force flag when dependencies not satisfied', async () => {
+        setupForceValidationTestScenario([
+          { key: 'prerequisite.missing_feature', equals: 'true' },
+        ]);
+
+        await expect(
+          performRecipesApply({
+            recipe: 'test-recipe',
+          })
+        ).rejects.toThrow('cannot be applied due to unmet requirements');
+      });
+
+      it('should bypass project-level validation with --force flag', async () => {
+        setupStandardFileSystemMocks();
+        setupSuccessfulQueryMock();
+
+        const mockYamlData = createMockYamlData({
+          requires: [{ key: 'project.type', equals: 'library' }],
+        });
+
+        mockReadFileSync.mockImplementation((filePath: string) => {
+          if (filePath.includes('analysis.json')) {
+            return JSON.stringify({
+              isMonorepo: false,
+              hasWorkspacePackageManager: false,
+              workspaceEcosystem: Ecosystem.Javascript,
+              projects: [
+                {
+                  path: '.',
+                  language: 'javascript',
+                  ecosystem: Ecosystem.Javascript,
+                  type: ProjectType.WebApp,
+                  dependencies: [],
+                  hasPackageManager: true,
+                },
+              ],
+            });
+          }
+          if (filePath.includes('config.yaml')) {
+            return yamlStringify(mockYamlData.config);
+          }
+          if (filePath.includes('metadata.yaml')) {
+            return yamlStringify(mockYamlData.metadata);
+          }
+          if (filePath.includes('prompt.md')) {
+            return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+          }
+          if (filePath.includes('fix.md')) {
+            return 'Test fix content';
+          }
+          if (filePath.includes('apply_recipe.md.hbs')) {
+            return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+          }
+          if (
+            filePath.includes(
+              'apply_recipe_project_application_instructions.md.hbs'
+            )
+          ) {
+            return 'project instructions for {{ project_path }}';
+          }
+          if (
+            filePath.includes('apply_recipe_project_state_management.md.hbs')
+          ) {
+            return 'project state management for {{ project_relative_path }}';
+          }
+          if (filePath.includes('state.json')) {
+            return JSON.stringify({ workspace: {}, projects: {} });
+          }
+          return '';
+        });
+
+        createLibraryConfig('test-recipe');
+
+        const result = await performRecipesApply({
+          recipe: 'test-recipe',
+          force: true,
         });
 
         expect(result).toBeDefined();
@@ -2449,7 +2612,7 @@ describe('Recipe Application', () => {
           return '';
         });
 
-        mockQuery.mockImplementation(async function* () {
+        mockQuery.mockImplementation(function* () {
           yield {
             type: 'assistant',
             message: {
@@ -2533,7 +2696,7 @@ describe('Recipe Application', () => {
           return '';
         });
 
-        mockQuery.mockImplementation(async function* () {
+        mockQuery.mockImplementation(function* () {
           yield {
             type: 'assistant',
             message: {
@@ -2617,7 +2780,7 @@ describe('Recipe Application', () => {
           return '';
         });
 
-        mockQuery.mockImplementation(async function* () {
+        mockQuery.mockImplementation(function* () {
           yield {
             type: 'assistant',
             message: {
@@ -2700,7 +2863,7 @@ describe('Recipe Application', () => {
           performRecipesApply({
             recipe: 'project-framework-recipe',
           })
-        ).rejects.toThrow('No applicable projects found');
+        ).rejects.toThrow('cannot be applied due to unmet requirements');
       });
     });
   });

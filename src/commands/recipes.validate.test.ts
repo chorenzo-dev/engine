@@ -980,7 +980,7 @@ requires: []
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         yield {
           type: 'result',
           subtype: 'success',
@@ -1100,7 +1100,7 @@ requires: []
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         yield {
           type: 'result',
           subtype: 'success',
@@ -1207,7 +1207,7 @@ requires: []
         return '';
       });
 
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         yield {
           type: 'result',
           subtype: 'error_api_response',
@@ -1375,7 +1375,7 @@ requires: []
 
     it('should validate code samples for library validation', async () => {
       let callCount = 0;
-      mockQuery.mockImplementation(async function* () {
+      mockQuery.mockImplementation(function* () {
         callCount++;
         if (callCount === 1) {
           yield {

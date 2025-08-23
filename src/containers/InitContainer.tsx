@@ -92,12 +92,12 @@ export const InitContainer: React.FC<InitContainerProps> = ({
       component: (context: StepContext) => {
         const [promptShown, setPromptShown] = useState(false);
 
-        const handleAnalysisYes = async () => {
+        const handleAnalysisYes = () => {
           context.complete();
           onComplete?.(true);
         };
 
-        const handleAnalysisNo = async () => {
+        const handleAnalysisNo = () => {
           context.complete();
           onComplete?.(false);
         };

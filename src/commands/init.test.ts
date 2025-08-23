@@ -89,6 +89,7 @@ describe('Init Command Integration Tests', () => {
     mockClone.mockImplementation(() => Promise.resolve());
     mockRaw.mockImplementation(() => Promise.resolve('git version 2.0.0'));
     mockQuery.mockImplementation(async function* () {
+      await Promise.resolve();
       yield { type: 'result', is_error: false };
     });
     mockSpawnSync.mockImplementation(() => ({

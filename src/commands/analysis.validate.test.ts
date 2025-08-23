@@ -9,6 +9,7 @@ import {
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { icons } from '~/styles/icons';
 import { setupFixture } from '~/test-utils/fixture-loader';
 
 const frameworksYamlPath = path.join(
@@ -34,7 +35,7 @@ jest.unstable_mockModule('fs/promises', () => ({
 }));
 
 describe('Analysis Validate Command Integration Tests', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
   });
@@ -96,7 +97,9 @@ describe('Analysis Validate Command Integration Tests', () => {
     );
     expect(mockProgress).toHaveBeenCalledWith('Reading analysis file');
     expect(mockProgress).toHaveBeenCalledWith('Validating file structure');
-    expect(mockProgress).toHaveBeenCalledWith('✅ Analysis file is valid');
+    expect(mockProgress).toHaveBeenCalledWith(
+      `${icons.success} Analysis file is valid`
+    );
   });
 
   it('should validate monorepo analysis structure', async () => {
@@ -156,7 +159,9 @@ describe('Analysis Validate Command Integration Tests', () => {
       analysisValidate({ file: '.chorenzo/analysis.json' }, mockProgress)
     ).resolves.not.toThrow();
 
-    expect(mockProgress).toHaveBeenCalledWith('✅ Analysis file is valid');
+    expect(mockProgress).toHaveBeenCalledWith(
+      `${icons.success} Analysis file is valid`
+    );
   });
 
   it('should handle validation errors for invalid analysis structure', async () => {
@@ -193,7 +198,9 @@ describe('Analysis Validate Command Integration Tests', () => {
       analysisValidate({ file: '.chorenzo/analysis.json' }, mockProgress)
     ).rejects.toThrow();
 
-    expect(mockProgress).toHaveBeenCalledWith('❌ Validation failed');
+    expect(mockProgress).toHaveBeenCalledWith(
+      `${icons.error} Validation failed`
+    );
     expect(mockProgress).toHaveBeenCalledWith(expect.stringContaining('Found'));
     expect(mockProgress).toHaveBeenCalledWith(
       expect.stringContaining('validation error')
@@ -213,7 +220,9 @@ describe('Analysis Validate Command Integration Tests', () => {
       analysisValidate({ file: '.chorenzo/analysis.json' }, mockProgress)
     ).rejects.toThrow('Analysis file not found');
 
-    expect(mockProgress).toHaveBeenCalledWith('❌ Validation failed');
+    expect(mockProgress).toHaveBeenCalledWith(
+      `${icons.error} Validation failed`
+    );
   });
 
   it('should handle invalid JSON in analysis file', async () => {
@@ -243,6 +252,8 @@ describe('Analysis Validate Command Integration Tests', () => {
       analysisValidate({ file: '.chorenzo/analysis.json' }, mockProgress)
     ).rejects.toThrow();
 
-    expect(mockProgress).toHaveBeenCalledWith('❌ Validation failed');
+    expect(mockProgress).toHaveBeenCalledWith(
+      `${icons.error} Validation failed`
+    );
   });
 });

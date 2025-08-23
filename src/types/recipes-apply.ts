@@ -6,6 +6,7 @@ export interface RecipesApplyOptions {
   variant?: string;
   project?: string;
   yes?: boolean;
+  force?: boolean;
 }
 
 export interface RecipesApplyState {

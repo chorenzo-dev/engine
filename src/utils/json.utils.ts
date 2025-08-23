@@ -12,7 +12,7 @@ export class JsonError extends Error {
   }
 }
 
-export async function readJson<T>(filePath: string): Promise<T> {
+export function readJson<T>(filePath: string): T {
   try {
     const fileContent = fs.readFileSync(filePath, 'utf8');
     const data = JSON.parse(fileContent) as T;
@@ -34,11 +34,7 @@ export async function readJson<T>(filePath: string): Promise<T> {
   }
 }
 
-export async function writeJson<T>(
-  filePath: string,
-  data: T,
-  pretty = true
-): Promise<void> {
+export function writeJson<T>(filePath: string, data: T, pretty = true): void {
   try {
     const jsonContent = pretty
       ? JSON.stringify(data, null, 2)

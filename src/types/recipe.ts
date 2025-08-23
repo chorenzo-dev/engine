@@ -97,7 +97,7 @@ export class Recipe {
     public readonly fixFiles: Map<string, string>
   ) {}
 
-  static async fromDirectory(recipePath: string): Promise<Recipe> {
+  static fromDirectory(recipePath: string): Recipe {
     return parseRecipeFromDirectory(recipePath);
   }
 

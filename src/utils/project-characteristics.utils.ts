@@ -22,7 +22,7 @@ export function isProjectKeyword(key: string): boolean {
   return key.startsWith('project.');
 }
 
-export async function loadWorkspaceAnalysis(): Promise<WorkspaceAnalysis | null> {
+export function loadWorkspaceAnalysis(): WorkspaceAnalysis | null {
   try {
     if (!fs.existsSync(ANALYSIS_PATH)) {
       return null;

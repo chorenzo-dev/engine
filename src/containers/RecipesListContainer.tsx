@@ -12,6 +12,7 @@ import {
 import { loadRecipeForShow } from '~/commands/recipes.show';
 import { RecipeDisplayComponent } from '~/components/RecipeDisplayComponent';
 import { colors } from '~/styles/colors';
+import { icons } from '~/styles/icons';
 import { Recipe } from '~/types/recipe';
 import { RecipeLocationInfo } from '~/types/recipes-show';
 
@@ -183,7 +184,7 @@ export const RecipesListContainer: React.FC<RecipesListContainerProps> = ({
 
     const backItem: RecipeItem = {
       key: 'back',
-      label: '← Back to categories',
+      label: `${icons.back} Back to categories`,
       value: 'back',
     };
     const itemsWithBack: RecipeItem[] = [...recipeItems, backItem];
@@ -230,7 +231,7 @@ export const RecipesListContainer: React.FC<RecipesListContainerProps> = ({
 
     const detailActions = [
       { label: 'Apply Recipe', value: 'apply' },
-      { label: '← Back to recipes', value: 'back' },
+      { label: `${icons.back} Back to recipes`, value: 'back' },
       { label: 'Exit', value: 'exit' },
     ];
 

@@ -51,6 +51,16 @@ jest.unstable_mockModule('write-file-atomic', () => ({
   sync: mockWriteFileAtomicSync,
 }));
 
+interface GitStatusResult {
+  files: Array<{ path: string; working_dir?: string }>;
+  ahead: number;
+  behind: number;
+  current: string;
+  tracking: string;
+}
+
+export const mockGitStatus = jest.fn<() => Promise<GitStatusResult>>();
+
 jest.unstable_mockModule('simple-git', () => ({
   simpleGit: jest.fn(() => ({
     fetch: jest
@@ -71,6 +81,7 @@ jest.unstable_mockModule('simple-git', () => ({
     raw: jest
       .fn<(args: string[]) => Promise<string>>()
       .mockResolvedValue('git version 2.0.0'),
+    status: mockGitStatus,
   })),
 }));
 
@@ -297,6 +308,13 @@ export const setupDefaultMocks = () => {
   mockHomedir.mockImplementation(() => '/test/home');
   mockTmpdir.mockImplementation(() => '/tmp');
   mockWriteFileAtomicSync.mockImplementation(() => {});
+  mockGitStatus.mockResolvedValue({
+    files: [],
+    ahead: 0,
+    behind: 0,
+    current: 'main',
+    tracking: 'origin/main',
+  });
   mockExistsSync.mockImplementation(() => {
     return true;
   });
@@ -360,7 +378,7 @@ export const setupDefaultMocks = () => {
     emit: jest.fn(),
   }));
   mockRmSync.mockImplementation(() => {});
-  mockQuery.mockImplementation(async function* () {
+  mockQuery.mockImplementation(function* () {
     const validationResult = {
       valid: true,
       violations: [],

@@ -5,8 +5,8 @@ import React from 'react';
 import { colors } from '~/styles/colors';
 
 interface AnalysisPromptProps {
-  onYes: () => Promise<void>;
-  onNo: () => Promise<void>;
+  onYes: () => void;
+  onNo: () => void;
 }
 
 export const AnalysisPrompt: React.FC<AnalysisPromptProps> = ({

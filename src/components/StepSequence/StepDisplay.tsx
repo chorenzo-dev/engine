@@ -3,6 +3,7 @@ import Spinner from 'ink-spinner';
 import React from 'react';
 
 import { colors } from '~/styles/colors';
+import { icons } from '~/styles/icons';
 
 interface StepDisplayProps {
   title: string;
@@ -28,9 +29,9 @@ export const StepDisplay: React.FC<StepDisplayProps> = ({
   const getIcon = () => {
     switch (status) {
       case 'completed':
-        return '✅';
+        return icons.success;
       case 'error':
-        return '❌';
+        return icons.error;
       default:
         return '';
     }

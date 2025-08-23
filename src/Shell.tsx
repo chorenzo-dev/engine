@@ -30,6 +30,7 @@ interface ShellProps {
     recipe?: string;
     variant?: string;
     project?: string;
+    force?: boolean;
     debug?: boolean;
     cost?: boolean;
     name?: string;
@@ -153,6 +154,7 @@ export const Shell: React.FC<ShellProps> = ({
           variant: options.variant,
           project: options.project,
           yes: options.yes,
+          force: options.force,
           debug: options.debug,
           cost: options.cost,
         }}

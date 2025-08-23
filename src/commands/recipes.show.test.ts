@@ -12,6 +12,7 @@ import { stringify as yamlStringify } from 'yaml';
 import {
   createMockYamlData,
   mockExistsSync,
+  mockGitStatus,
   mockReadFileSync,
   mockReaddirSync,
   mockStatSync,
@@ -164,6 +165,14 @@ describe('Recipes Show Command Integration', () => {
       ref: 'main',
     });
 
+    mockGitStatus.mockResolvedValue({
+      files: [],
+      ahead: 0,
+      behind: 0,
+      current: 'main',
+      tracking: 'origin/main',
+    });
+
     const result = await loadRecipeForShow('test-recipe');
 
     expect(result.recipe.getId()).toBe('test-recipe');
@@ -176,6 +185,7 @@ describe('Recipes Show Command Integration', () => {
     expect(result.webUrl).toBe(
       'https://github.com/test/test-recipes/tree/main/test-recipe'
     );
+    expect(mockGitStatus).toHaveBeenCalled();
   });
 
   it('should load recipe by local folder path', async () => {
@@ -415,5 +425,29 @@ describe('Recipes Show Command Integration', () => {
     expect(result.recipe.getId()).toBe('no-repo-recipe');
     expect(result.isRemote).toBe(true);
     expect(result.webUrl).toBeUndefined();
+  });
+
+  it('should preserve local changes and skip git refresh when files are modified', async () => {
+    setupShowMocks({
+      recipeName: 'local-changes-recipe',
+      isRemote: true,
+      libraryName: 'test-library',
+      repoUrl: 'https://github.com/test/test-recipes.git',
+      ref: 'main',
+    });
+
+    mockGitStatus.mockResolvedValue({
+      files: [{ path: 'metadata.yaml', working_dir: 'M' }],
+      ahead: 0,
+      behind: 0,
+      current: 'main',
+      tracking: 'origin/main',
+    });
+
+    const result = await loadRecipeForShow('local-changes-recipe');
+
+    expect(result.recipe.getId()).toBe('local-changes-recipe');
+    expect(result.isRemote).toBe(true);
+    expect(mockGitStatus).toHaveBeenCalled();
   });
 });

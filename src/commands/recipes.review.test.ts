@@ -110,7 +110,7 @@ describe('Recipes Review Integration Tests', () => {
             msg.type === 'success' &&
             msg.text.includes("Recipe 'recipe' passed code sample review")
         )
-      ).toBe(true);
+      ).toBeTruthy();
       expect(mockProgress).toHaveBeenCalledWith(
         'Loading recipe from: /path/to/recipe'
       );
@@ -233,7 +233,7 @@ describe('Recipes Review Integration Tests', () => {
           (msg) =>
             msg.type === 'warning' && msg.text.includes('Code Sample Issues:')
         )
-      ).toBe(true);
+      ).toBeTruthy();
 
       expect(
         result.messages.some(
@@ -243,7 +243,7 @@ describe('Recipes Review Integration Tests', () => {
               'fix.md:2 (generic_placeholder): Uses generic placeholder YOUR_API_KEY'
             )
         )
-      ).toBe(true);
+      ).toBeTruthy();
 
       expect(
         result.messages.some(
@@ -253,7 +253,7 @@ describe('Recipes Review Integration Tests', () => {
               'fix.md:3 (incomplete_fragment): Contains TODO comment'
             )
         )
-      ).toBe(true);
+      ).toBeTruthy();
     });
 
     it('should handle AI validation failures gracefully', async () => {
@@ -321,7 +321,7 @@ describe('Recipes Review Integration Tests', () => {
           (msg) =>
             msg.type === 'warning' && msg.text.includes('AI review failed for')
         )
-      ).toBe(true);
+      ).toBeTruthy();
     });
 
     it('should skip review for recipes with no fix files', async () => {
@@ -378,7 +378,7 @@ describe('Recipes Review Integration Tests', () => {
               "Recipe 'recipe-no-fixes' passed code sample review"
             )
         )
-      ).toBe(true);
+      ).toBeTruthy();
 
       expect(mockQuery).not.toHaveBeenCalled();
     });
@@ -530,7 +530,7 @@ describe('Recipes Review Integration Tests', () => {
         result.messages.some(
           (msg) => msg.type === 'success' && msg.text === 'recipe-one'
         )
-      ).toBe(true);
+      ).toBeTruthy();
 
       expect(
         result.messages.some(
@@ -538,7 +538,7 @@ describe('Recipes Review Integration Tests', () => {
             msg.type === 'warning' &&
             msg.text.includes('recipe-two code sample issues:')
         )
-      ).toBe(true);
+      ).toBeTruthy();
 
       expect(
         result.messages.some(
@@ -546,7 +546,7 @@ describe('Recipes Review Integration Tests', () => {
             msg.type === 'warning' &&
             msg.text.includes('fix.md:1 (overly_simplistic)')
         )
-      ).toBe(true);
+      ).toBeTruthy();
 
       expect(mockQuery).toHaveBeenCalled();
     });
@@ -638,7 +638,7 @@ describe('Recipes Review Integration Tests', () => {
           (msg) =>
             msg.type === 'error' && msg.text.includes('Failed to parse recipe')
         )
-      ).toBe(true);
+      ).toBeTruthy();
     });
 
     it('should handle git URL input type', async () => {
@@ -722,7 +722,9 @@ describe('Recipes Review Integration Tests', () => {
       expect(result.context.inputType).toBe('recipe-name');
       expect(result.context.target).toBe('test-recipe');
       expect(result.context.recipesReviewed).toEqual(['test-recipe']);
-      expect(result.messages.some((msg) => msg.type === 'success')).toBe(true);
+      expect(
+        result.messages.some((msg) => msg.type === 'success')
+      ).toBeTruthy();
       expect(mockProgress).toHaveBeenCalledWith(
         'Searching for recipe: test-recipe'
       );

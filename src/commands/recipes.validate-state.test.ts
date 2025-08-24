@@ -19,6 +19,56 @@ import {
 describe('Recipes Validate State Command Integration Tests', () => {
   let recipesValidateState: typeof import('./recipes.validate-state').recipesValidateState;
 
+  const createMockFileHandler = (
+    recipeData: unknown,
+    recipeName: string,
+    stateData: unknown,
+    errorOnStateRead?: boolean
+  ) => {
+    return (filePath: string) => {
+      if (filePath.includes('state.json')) {
+        if (errorOnStateRead) {
+          throw new Error('File read error');
+        }
+        return JSON.stringify(stateData);
+      }
+      if (filePath.includes('config.yaml')) {
+        return yamlStringify({
+          libraries: {
+            'test-library': {
+              repo: 'https://github.com/test/test-library.git',
+              ref: 'main',
+            },
+          },
+        });
+      }
+      if (
+        filePath.includes(`/test-library/testing/${recipeName}/metadata.yaml`)
+      ) {
+        return yamlStringify(recipeData);
+      }
+      if (filePath.includes('prompt.md')) {
+        return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+      }
+      if (
+        filePath.includes('fix.md') ||
+        filePath.includes('variants/basic.md')
+      ) {
+        return 'Basic fix prompt content';
+      }
+      if (filePath.includes('.json')) {
+        return '{}';
+      }
+      return '';
+    };
+  };
+
+  const createTestMessages = () => {
+    const messages: string[] = [];
+    const onProgress = (message: string) => messages.push(message);
+    return { messages, onProgress };
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
     setupDefaultMocks();
@@ -68,50 +118,19 @@ describe('Recipes Validate State Command Integration Tests', () => {
       },
     });
 
-    mockReadFileSync.mockImplementation((filePath: string) => {
-      if (filePath.includes('state.json')) {
-        return JSON.stringify({
-          workspace: {
-            'workspace.configured': true,
-            'workspace.feature.enabled': true,
-          },
-          projects: {},
-        });
-      }
-      if (filePath.includes('config.yaml')) {
-        return yamlStringify({
-          libraries: {
-            'test-library': {
-              repo: 'https://github.com/test/test-library.git',
-              ref: 'main',
-            },
-          },
-        });
-      }
-      if (
-        filePath.includes(
-          '/test-library/testing/workspace-recipe/metadata.yaml'
-        )
-      ) {
-        return yamlStringify(recipeData);
-      }
-      if (filePath.includes('prompt.md')) {
-        return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
-      }
-      if (
-        filePath.includes('fix.md') ||
-        filePath.includes('variants/basic.md')
-      ) {
-        return 'Basic fix prompt content';
-      }
-      if (filePath.includes('.json')) {
-        return '{}';
-      }
-      return '';
-    });
+    const stateData = {
+      workspace: {
+        'workspace.configured': true,
+        'workspace.feature.enabled': true,
+      },
+      projects: {},
+    };
 
-    const messages: string[] = [];
-    const onProgress = (message: string) => messages.push(message);
+    mockReadFileSync.mockImplementation(
+      createMockFileHandler(recipeData, 'workspace-recipe', stateData)
+    );
+
+    const { messages, onProgress } = createTestMessages();
 
     await expect(
       recipesValidateState({ recipe: 'workspace-recipe' }, onProgress)
@@ -160,54 +179,25 @@ describe('Recipes Validate State Command Integration Tests', () => {
       },
     });
 
-    mockReadFileSync.mockImplementation((filePath: string) => {
-      if (filePath.includes('state.json')) {
-        return JSON.stringify({
-          workspace: {},
-          projects: {
-            app: {
-              'project.configured': true,
-              'project.feature.enabled': true,
-            },
-            api: {
-              'project.configured': true,
-              'project.feature.enabled': true,
-            },
-          },
-        });
-      }
-      if (filePath.includes('config.yaml')) {
-        return yamlStringify({
-          libraries: {
-            'test-library': {
-              repo: 'https://github.com/test/test-library.git',
-              ref: 'main',
-            },
-          },
-        });
-      }
-      if (
-        filePath.includes('/test-library/testing/project-recipe/metadata.yaml')
-      ) {
-        return yamlStringify(recipeData);
-      }
-      if (filePath.includes('prompt.md')) {
-        return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
-      }
-      if (
-        filePath.includes('fix.md') ||
-        filePath.includes('variants/basic.md')
-      ) {
-        return 'Basic fix prompt content';
-      }
-      if (filePath.includes('.json')) {
-        return '{}';
-      }
-      return '';
-    });
+    const stateData = {
+      workspace: {},
+      projects: {
+        app: {
+          'project.configured': true,
+          'project.feature.enabled': true,
+        },
+        api: {
+          'project.configured': true,
+          'project.feature.enabled': true,
+        },
+      },
+    };
 
-    const messages: string[] = [];
-    const onProgress = (message: string) => messages.push(message);
+    mockReadFileSync.mockImplementation(
+      createMockFileHandler(recipeData, 'project-recipe', stateData)
+    );
+
+    const { messages, onProgress } = createTestMessages();
 
     await expect(
       recipesValidateState({ recipe: 'project-recipe' }, onProgress)
@@ -256,54 +246,23 @@ describe('Recipes Validate State Command Integration Tests', () => {
       },
     });
 
-    mockReadFileSync.mockImplementation((filePath: string) => {
-      if (filePath.includes('state.json')) {
-        return JSON.stringify({
-          workspace: {
-            'preferred.configured': true,
-            'preferred.feature.enabled': true,
-          },
-          projects: {
-            app: {
-              'other.setting': true,
-            },
-          },
-        });
-      }
-      if (filePath.includes('config.yaml')) {
-        return yamlStringify({
-          libraries: {
-            'test-library': {
-              repo: 'https://github.com/test/test-library.git',
-              ref: 'main',
-            },
-          },
-        });
-      }
-      if (
-        filePath.includes(
-          '/test-library/testing/preferred-recipe/metadata.yaml'
-        )
-      ) {
-        return yamlStringify(recipeData);
-      }
-      if (filePath.includes('prompt.md')) {
-        return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
-      }
-      if (
-        filePath.includes('fix.md') ||
-        filePath.includes('variants/basic.md')
-      ) {
-        return 'Basic fix prompt content';
-      }
-      if (filePath.includes('.json')) {
-        return '{}';
-      }
-      return '';
-    });
+    const stateData = {
+      workspace: {
+        'preferred.configured': true,
+        'preferred.feature.enabled': true,
+      },
+      projects: {
+        app: {
+          'other.setting': true,
+        },
+      },
+    };
 
-    const messages: string[] = [];
-    const onProgress = (message: string) => messages.push(message);
+    mockReadFileSync.mockImplementation(
+      createMockFileHandler(recipeData, 'preferred-recipe', stateData)
+    );
+
+    const { messages, onProgress } = createTestMessages();
 
     await expect(
       recipesValidateState({ recipe: 'preferred-recipe' }, onProgress)
@@ -393,8 +352,7 @@ describe('Recipes Validate State Command Integration Tests', () => {
       return '';
     });
 
-    const messages: string[] = [];
-    const onProgress = (message: string) => messages.push(message);
+    const { messages, onProgress } = createTestMessages();
 
     await expect(
       recipesValidateState({ recipe: 'workspace-missing-recipe' }, onProgress)
@@ -480,8 +438,7 @@ describe('Recipes Validate State Command Integration Tests', () => {
       return '';
     });
 
-    const messages: string[] = [];
-    const onProgress = (message: string) => messages.push(message);
+    const { messages, onProgress } = createTestMessages();
 
     await expect(
       recipesValidateState({ recipe: 'no-provides-recipe' }, onProgress)
@@ -495,8 +452,7 @@ describe('Recipes Validate State Command Integration Tests', () => {
   it('should handle recipe not found', async () => {
     setupMultiLibraryRecipes({});
 
-    const messages: string[] = [];
-    const onProgress = (message: string) => messages.push(message);
+    const { messages, onProgress } = createTestMessages();
 
     await expect(
       recipesValidateState({ recipe: 'nonexistent-recipe' }, onProgress)
@@ -543,42 +499,11 @@ describe('Recipes Validate State Command Integration Tests', () => {
       },
     });
 
-    mockReadFileSync.mockImplementation((filePath: string) => {
-      if (filePath.includes('state.json')) {
-        throw new Error('File read error');
-      }
-      if (filePath.includes('config.yaml')) {
-        return yamlStringify({
-          libraries: {
-            'test-library': {
-              repo: 'https://github.com/test/test-library.git',
-              ref: 'main',
-            },
-          },
-        });
-      }
-      if (
-        filePath.includes('/test-library/testing/error-recipe/metadata.yaml')
-      ) {
-        return yamlStringify(recipeData);
-      }
-      if (filePath.includes('prompt.md')) {
-        return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
-      }
-      if (
-        filePath.includes('fix.md') ||
-        filePath.includes('variants/basic.md')
-      ) {
-        return 'Basic fix prompt content';
-      }
-      if (filePath.includes('.json')) {
-        return '{}';
-      }
-      return '';
-    });
+    mockReadFileSync.mockImplementation(
+      createMockFileHandler(recipeData, 'error-recipe', null, true)
+    );
 
-    const messages: string[] = [];
-    const onProgress = (message: string) => messages.push(message);
+    const { messages, onProgress } = createTestMessages();
 
     await expect(
       recipesValidateState({ recipe: 'error-recipe' }, onProgress)
@@ -663,8 +588,7 @@ describe('Recipes Validate State Command Integration Tests', () => {
       return '';
     });
 
-    const messages: string[] = [];
-    const onProgress = (message: string) => messages.push(message);
+    const { messages, onProgress } = createTestMessages();
 
     await expect(
       recipesValidateState({ recipe: 'debug-recipe', debug: true }, onProgress)

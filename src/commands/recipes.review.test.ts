@@ -126,7 +126,7 @@ describe('Recipes Review Integration Tests', () => {
     });
   });
 
-  describe('AI Code Sample Validation Integration', () => {
+  describe('AI Code Sample Validation', () => {
     beforeEach(() => {
       mockExistsSync.mockImplementation((filePath: string) => {
         if (filePath === '/path/to/recipe-with-violations') {
@@ -382,9 +382,7 @@ describe('Recipes Review Integration Tests', () => {
 
       expect(mockQuery).not.toHaveBeenCalled();
     });
-  });
 
-  describe('Library Review Integration', () => {
     it('should review entire library with mixed results', async () => {
       let callCount = 0;
       mockQuery.mockImplementation(function* () {
@@ -642,9 +640,7 @@ describe('Recipes Review Integration Tests', () => {
         )
       ).toBe(true);
     });
-  });
 
-  describe('Git Repository Review', () => {
     it('should handle git URL input type', async () => {
       const options = { target: 'https://github.com/user/recipes.git' };
 
@@ -681,7 +677,7 @@ describe('Recipes Review Integration Tests', () => {
     });
   });
 
-  describe('Recipe Name Resolution', () => {
+  describe('Library and Error Handling', () => {
     it('should review recipe by name from library', async () => {
       const options = { target: 'test-recipe' };
 

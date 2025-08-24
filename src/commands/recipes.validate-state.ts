@@ -16,6 +16,7 @@ export interface RecipesValidateStateOptions {
 
 interface StateValidationResult extends ValidationResult {
   missingProvides: string[];
+  redundantKeys: string[];
 }
 
 interface StateFile {
@@ -71,6 +72,13 @@ export async function recipesValidateState(
     Logger.info('State validation passed successfully');
     if (options.debug) {
       onProgress?.(`All ${provides.length} provides found in state file`);
+      if (result.redundantKeys.length > 0) {
+        onProgress?.(
+          `Found ${result.redundantKeys.length} redundant keys: ${result.redundantKeys.join(', ')}`
+        );
+      } else {
+        onProgress?.(`No redundant keys found in state file`);
+      }
     }
   } else {
     onProgress?.(`${icons.error} Validation failed`);
@@ -89,6 +97,11 @@ export async function recipesValidateState(
           `Error ${index + 1}: ${error.path} - ${error.message} (${error.code})`
         );
       });
+      if (result.redundantKeys.length > 0) {
+        onProgress?.(
+          `Redundant keys found: ${result.redundantKeys.join(', ')}`
+        );
+      }
       onProgress?.(`Validation process completed with errors`);
     }
 
@@ -117,6 +130,7 @@ function validateStateFile(
           },
         ],
         missingProvides: provides,
+        redundantKeys: [],
       };
     }
     if (error instanceof JsonError && error.code === 'PARSE_ERROR') {
@@ -130,6 +144,7 @@ function validateStateFile(
           },
         ],
         missingProvides: provides,
+        redundantKeys: [],
       };
     }
     return {
@@ -144,6 +159,7 @@ function validateStateFile(
         },
       ],
       missingProvides: provides,
+      redundantKeys: [],
     };
   }
 
@@ -158,11 +174,13 @@ function validateStateFile(
         },
       ],
       missingProvides: provides,
+      redundantKeys: [],
     };
   }
 
   const errors: ValidationError[] = [];
   const missingProvides: string[] = [];
+  const redundantKeys: string[] = [];
 
   for (const provide of provides) {
     if (!isProvideInState(provide, stateData, recipeLevel)) {
@@ -178,11 +196,93 @@ function validateStateFile(
     });
   }
 
+  if (provides.length > 0) {
+    const recipePrefixes = getRecipePrefixes(provides);
+    const stateKeys = getAllKeysFromState(stateData);
+
+    for (const key of stateKeys) {
+      if (
+        isKeyRelatedToRecipe(key, recipePrefixes) &&
+        !provides.includes(key)
+      ) {
+        redundantKeys.push(key);
+      }
+    }
+
+    if (redundantKeys.length > 0) {
+      errors.push({
+        path: 'redundant',
+        message: `Redundant keys in state file: ${redundantKeys.join(', ')}`,
+        code: 'REDUNDANT_KEYS',
+      });
+    }
+  }
+
   return {
     valid: errors.length === 0,
     errors,
     missingProvides,
+    redundantKeys,
   };
+}
+
+function getRecipePrefixes(provides: string[]): Set<string> {
+  const prefixes = new Set<string>();
+
+  for (const provide of provides) {
+    const parts = provide.split('.');
+    for (let i = 1; i <= parts.length; i++) {
+      prefixes.add(parts.slice(0, i).join('.'));
+    }
+  }
+
+  return prefixes;
+}
+
+function isKeyRelatedToRecipe(
+  key: string,
+  recipePrefixes: Set<string>
+): boolean {
+  const keyParts = key.split('.');
+
+  for (let i = 1; i <= keyParts.length; i++) {
+    const keyPrefix = keyParts.slice(0, i).join('.');
+    if (recipePrefixes.has(keyPrefix)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function getAllKeysFromState(stateData: StateFile): string[] {
+  const keys = new Set<string>();
+
+  if (
+    stateData.workspace &&
+    typeof stateData.workspace === 'object' &&
+    stateData.workspace !== null
+  ) {
+    Object.keys(stateData.workspace).forEach((key) => keys.add(key));
+  }
+
+  if (
+    stateData.projects &&
+    typeof stateData.projects === 'object' &&
+    stateData.projects !== null
+  ) {
+    for (const projectState of Object.values(stateData.projects)) {
+      if (
+        projectState &&
+        typeof projectState === 'object' &&
+        projectState !== null
+      ) {
+        Object.keys(projectState).forEach((key) => keys.add(key));
+      }
+    }
+  }
+
+  return Array.from(keys);
 }
 
 function isProvideInState(

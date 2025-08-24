@@ -157,11 +157,7 @@ describe('Recipes Validate State Command Integration Tests', () => {
         'preferred.configured': true,
         'preferred.feature.enabled': true,
       },
-      projects: {
-        app: {
-          'other.setting': true,
-        },
-      },
+      projects: {},
     };
 
     setupStateValidationMocks(stateData);
@@ -389,6 +385,85 @@ describe('Recipes Validate State Command Integration Tests', () => {
     expect(messages).toContain(`${icons.error} Validation failed`);
   });
 
+  it('should detect redundant keys related to the specific recipe', async () => {
+    setupMultiLibraryRecipes({
+      'test-library': {
+        testing: {
+          'workspace-recipe': {
+            recipeId: 'workspace-recipe',
+            category: 'testing',
+            level: 'workspace-only',
+            provides: ['workspace.configured'],
+            requires: [],
+          },
+        },
+      },
+    });
+
+    const stateData = {
+      workspace: {
+        'workspace.configured': true,
+        'workspace.extra.setting': true,
+        'workspace.obsolete': true,
+        'unrelated.key': true,
+      },
+      projects: {
+        app: {
+          'other.recipe.setting': true,
+        },
+      },
+    };
+
+    setupStateValidationMocks(stateData);
+
+    const { messages, onProgress } = createTestMessages();
+
+    await expect(
+      recipesValidateState({ recipe: 'workspace-recipe' }, onProgress)
+    ).rejects.toThrow(
+      'Redundant keys in state file: workspace.extra.setting, workspace.obsolete'
+    );
+
+    expect(messages).toContain(`${icons.error} Validation failed`);
+  });
+
+  it('should not flag unrelated keys as redundant', async () => {
+    setupMultiLibraryRecipes({
+      'test-library': {
+        testing: {
+          'code-formatting': {
+            recipeId: 'code-formatting',
+            category: 'testing',
+            level: 'workspace-only',
+            provides: ['code-formatting.applied', 'code-formatting.configured'],
+            requires: [],
+          },
+        },
+      },
+    });
+
+    const stateData = {
+      workspace: {
+        'code-formatting.applied': true,
+        'code-formatting.configured': true,
+        'pre-commit-checks.applied': true,
+        'ci-pipeline.configured': true,
+        'other.recipe.setting': true,
+      },
+      projects: {},
+    };
+
+    setupStateValidationMocks(stateData);
+
+    const { messages, onProgress } = createTestMessages();
+
+    await expect(
+      recipesValidateState({ recipe: 'code-formatting' }, onProgress)
+    ).resolves.toBeUndefined();
+
+    expect(messages).toContain(`${icons.success} Recipe state is valid`);
+  });
+
   it('should show detailed debug information when debug mode is enabled', async () => {
     setupMultiLibraryRecipes({
       'test-library': {
@@ -476,6 +551,11 @@ describe('Recipes Validate State Command Integration Tests', () => {
     ).toBe(true);
     expect(
       messages.some((msg) => msg.includes('All 2 provides found in state file'))
+    ).toBe(true);
+    expect(
+      messages.some((msg) =>
+        msg.includes('No redundant keys found in state file')
+      )
     ).toBe(true);
     expect(messages).toContain(`${icons.success} Recipe state is valid`);
   });

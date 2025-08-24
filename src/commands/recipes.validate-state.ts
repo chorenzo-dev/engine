@@ -239,7 +239,11 @@ function validateStateFile(
     }
 
     const allExpectedKeys = [...provides, appliedKey];
-    const recipePrefixes = getRecipePrefixes(allExpectedKeys);
+    const recipePrefixes = getRecipePrefixes([
+      recipeName,
+      ...provides,
+      appliedKey,
+    ]);
     const stateKeys = getAllKeysFromState(stateData);
 
     for (const key of stateKeys) {

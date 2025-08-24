@@ -7,6 +7,7 @@ import { InitContainer } from '~/containers/InitContainer';
 import { RecipesApplyContainer } from '~/containers/RecipesApplyContainer';
 import { RecipesGenerateContainer } from '~/containers/RecipesGenerateContainer';
 import { RecipesListContainer } from '~/containers/RecipesListContainer';
+import { RecipesReviewContainer } from '~/containers/RecipesReviewContainer';
 import { RecipesShowContainer } from '~/containers/RecipesShowContainer';
 import { RecipesValidateContainer } from '~/containers/RecipesValidateContainer';
 
@@ -126,6 +127,30 @@ export const Shell: React.FC<ShellProps> = ({
 
     return (
       <RecipesValidateContainer
+        options={{
+          target: options.target,
+          debug: options.debug,
+        }}
+        onError={(error) => {
+          setError(error);
+        }}
+      />
+    );
+  }
+
+  if (command === 'recipes-review') {
+    if (error) {
+      return <ErrorExitComponent error={error} />;
+    }
+
+    if (!options.target) {
+      return (
+        <ErrorExitComponent error={new Error('Target parameter is required')} />
+      );
+    }
+
+    return (
+      <RecipesReviewContainer
         options={{
           target: options.target,
           debug: options.debug,

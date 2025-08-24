@@ -1,4 +1,9 @@
 import { icons } from '../styles/icons';
+import {
+  ValidationError,
+  ValidationResult,
+  formatValidationErrors,
+} from '../utils/analyze.utils';
 import { JsonError, readJson } from '../utils/json.utils';
 import { Logger } from '../utils/logger.utils';
 import { workspaceConfig } from '../utils/workspace-config.utils';
@@ -9,15 +14,7 @@ export interface RecipesValidateStateOptions {
   debug?: boolean;
 }
 
-interface StateValidationError {
-  path: string;
-  message: string;
-  code: string;
-}
-
-interface StateValidationResult {
-  valid: boolean;
-  errors: StateValidationError[];
+interface StateValidationResult extends ValidationResult {
   missingProvides: string[];
 }
 
@@ -77,10 +74,7 @@ export async function recipesValidateState(
     }
   } else {
     onProgress?.(`${icons.error} Recipe state validation failed`);
-    const errorMessage = formatStateValidationErrors(
-      result.errors,
-      result.missingProvides
-    );
+    const errorMessage = formatValidationErrors(result.errors);
     onProgress?.(errorMessage);
 
     Logger.error(
@@ -97,7 +91,7 @@ export async function recipesValidateState(
       });
     }
 
-    throw new Error(errorMessage);
+    throw new Error(`Missing provides: ${result.missingProvides.join(', ')}`);
   }
 }
 
@@ -166,7 +160,7 @@ function validateStateFile(
     };
   }
 
-  const errors: StateValidationError[] = [];
+  const errors: ValidationError[] = [];
   const missingProvides: string[] = [];
 
   for (const provide of provides) {
@@ -219,35 +213,4 @@ function isProvideInState(
   }
 
   return false;
-}
-
-function formatStateValidationErrors(
-  errors: StateValidationError[],
-  missingProvides: string[]
-): string {
-  if (errors.length === 0) {
-    return 'No validation errors';
-  }
-
-  const lines: string[] = [
-    `Found ${errors.length} validation error${errors.length === 1 ? '' : 's'}:`,
-  ];
-
-  errors.forEach((error, index) => {
-    if (error.code === 'MISSING_PROVIDES') {
-      lines.push(
-        `  ${index + 1}. Missing provides: ${missingProvides.join(', ')}`
-      );
-      lines.push(
-        `     Expected these provides to be present in the state file.`
-      );
-      lines.push(
-        `     This usually means the recipe has not been applied yet.`
-      );
-    } else {
-      lines.push(`  ${index + 1}. ${error.path}: ${error.message}`);
-    }
-  });
-
-  return lines.join('\n');
 }

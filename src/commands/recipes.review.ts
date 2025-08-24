@@ -33,6 +33,38 @@ import {
   detectInputType,
 } from './recipes.shared';
 
+interface ErrorHandlingStats {
+  totalErrors: number;
+  totalWarnings: number;
+  totalFailed: number;
+}
+
+function handleRecipeReviewError(
+  error: unknown,
+  recipeId: string,
+  messages: ReviewMessage[],
+  onReview: ReviewCallback | undefined,
+  stats: ErrorHandlingStats
+): void {
+  if (error instanceof CodeSampleValidationError) {
+    const errorMsg = recipeId.startsWith("'")
+      ? `AI review failed for ${recipeId}: ${extractErrorMessage(error)}`
+      : `${recipeId} AI review failed: ${extractErrorMessage(error)}`;
+    messages.push({ type: 'warning', text: errorMsg });
+    onReview?.('warning', errorMsg);
+    stats.totalWarnings++;
+    stats.totalFailed++;
+  } else {
+    const errorMsg = recipeId.startsWith("'")
+      ? `Review failed for ${recipeId}: ${extractErrorMessage(error)}`
+      : `${recipeId} review failed: ${extractErrorMessage(error)}`;
+    messages.push({ type: 'error', text: errorMsg });
+    onReview?.('error', errorMsg);
+    stats.totalErrors++;
+    stats.totalFailed++;
+  }
+}
+
 export type { ReviewResult } from '~/types/recipe-review';
 
 export async function performRecipesReview(
@@ -204,17 +236,16 @@ async function reviewRecipeFolder(
       onReview?.('success', successMsg);
     }
   } catch (error) {
-    if (error instanceof CodeSampleValidationError) {
-      const errorMsg = `AI review failed for '${recipe.metadata.id}': ${extractErrorMessage(error)}`;
-      messages.push({ type: 'warning', text: errorMsg });
-      onReview?.('warning', errorMsg);
-      totalWarnings++;
-    } else {
-      const errorMsg = `Review failed for '${recipe.metadata.id}': ${extractErrorMessage(error)}`;
-      messages.push({ type: 'error', text: errorMsg });
-      onReview?.('error', errorMsg);
-      totalErrors++;
-    }
+    const stats = { totalErrors, totalWarnings, totalFailed: 0 };
+    handleRecipeReviewError(
+      error,
+      `'${recipe.metadata.id}'`,
+      messages,
+      onReview,
+      stats
+    );
+    totalErrors = stats.totalErrors;
+    totalWarnings = stats.totalWarnings;
   }
 
   const passed =
@@ -304,18 +335,10 @@ async function reviewLibrary(
           onReview?.('success', recipeId);
         }
       } catch (error) {
-        if (error instanceof CodeSampleValidationError) {
-          const errorMsg = `${recipeId} AI review failed: ${extractErrorMessage(error)}`;
-          messages.push({ type: 'warning', text: errorMsg });
-          onReview?.('warning', errorMsg);
-          totalWarnings++;
-          totalFailed++;
-        } else {
-          const errorMsg = `${recipeId} review failed: ${extractErrorMessage(error)}`;
-          messages.push({ type: 'error', text: errorMsg });
-          onReview?.('error', errorMsg);
-          totalFailed++;
-        }
+        const stats = { totalErrors: 0, totalWarnings, totalFailed };
+        handleRecipeReviewError(error, recipeId, messages, onReview, stats);
+        totalWarnings = stats.totalWarnings;
+        totalFailed = stats.totalFailed;
       }
     } catch (parseError) {
       const errorMsg = `Failed to parse recipe '${recipeDir}': ${extractErrorMessage(parseError)}`;

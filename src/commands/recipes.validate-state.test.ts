@@ -19,48 +19,21 @@ import {
 describe('Recipes Validate State Command Integration Tests', () => {
   let recipesValidateState: typeof import('./recipes.validate-state').recipesValidateState;
 
-  const createMockFileHandler = (
-    recipeData: unknown,
-    recipeName: string,
+  const setupStateValidationMocks = (
     stateData: unknown,
     errorOnStateRead?: boolean
   ) => {
-    return (filePath: string) => {
+    const originalMock = mockReadFileSync.getMockImplementation();
+
+    mockReadFileSync.mockImplementation((filePath: string) => {
       if (filePath.includes('state.json')) {
         if (errorOnStateRead) {
           throw new Error('File read error');
         }
         return JSON.stringify(stateData);
       }
-      if (filePath.includes('config.yaml')) {
-        return yamlStringify({
-          libraries: {
-            'test-library': {
-              repo: 'https://github.com/test/test-library.git',
-              ref: 'main',
-            },
-          },
-        });
-      }
-      if (
-        filePath.includes(`/test-library/testing/${recipeName}/metadata.yaml`)
-      ) {
-        return yamlStringify(recipeData);
-      }
-      if (filePath.includes('prompt.md')) {
-        return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
-      }
-      if (
-        filePath.includes('fix.md') ||
-        filePath.includes('variants/basic.md')
-      ) {
-        return 'Basic fix prompt content';
-      }
-      if (filePath.includes('.json')) {
-        return '{}';
-      }
-      return '';
-    };
+      return originalMock?.(filePath) || '';
+    });
   };
 
   const createTestMessages = () => {
@@ -83,27 +56,6 @@ describe('Recipes Validate State Command Integration Tests', () => {
   });
 
   it('should validate successfully when all workspace provides are present', async () => {
-    const recipeData = {
-      id: 'workspace-recipe',
-      category: 'testing',
-      summary: 'Test workspace recipe',
-      level: 'workspace-only',
-      ecosystems: [
-        {
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [
-            {
-              id: 'basic',
-              fix_prompt: 'variants/basic.md',
-            },
-          ],
-        },
-      ],
-      provides: ['workspace.configured', 'workspace.feature.enabled'],
-      requires: [],
-    };
-
     setupMultiLibraryRecipes({
       'test-library': {
         testing: {
@@ -126,9 +78,7 @@ describe('Recipes Validate State Command Integration Tests', () => {
       projects: {},
     };
 
-    mockReadFileSync.mockImplementation(
-      createMockFileHandler(recipeData, 'workspace-recipe', stateData)
-    );
+    setupStateValidationMocks(stateData);
 
     const { messages, onProgress } = createTestMessages();
 
@@ -144,27 +94,6 @@ describe('Recipes Validate State Command Integration Tests', () => {
   });
 
   it('should validate successfully when all project provides are present', async () => {
-    const recipeData = {
-      id: 'project-recipe',
-      category: 'testing',
-      summary: 'Test project recipe',
-      level: 'project-only',
-      ecosystems: [
-        {
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [
-            {
-              id: 'basic',
-              fix_prompt: 'variants/basic.md',
-            },
-          ],
-        },
-      ],
-      provides: ['project.configured', 'project.feature.enabled'],
-      requires: [],
-    };
-
     setupMultiLibraryRecipes({
       'test-library': {
         testing: {
@@ -193,9 +122,7 @@ describe('Recipes Validate State Command Integration Tests', () => {
       },
     };
 
-    mockReadFileSync.mockImplementation(
-      createMockFileHandler(recipeData, 'project-recipe', stateData)
-    );
+    setupStateValidationMocks(stateData);
 
     const { messages, onProgress } = createTestMessages();
 
@@ -211,27 +138,6 @@ describe('Recipes Validate State Command Integration Tests', () => {
   });
 
   it('should validate successfully with workspace-preferred recipe when workspace provides are present', async () => {
-    const recipeData = {
-      id: 'preferred-recipe',
-      category: 'testing',
-      summary: 'Test workspace-preferred recipe',
-      level: 'workspace-preferred',
-      ecosystems: [
-        {
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [
-            {
-              id: 'basic',
-              fix_prompt: 'variants/basic.md',
-            },
-          ],
-        },
-      ],
-      provides: ['preferred.configured', 'preferred.feature.enabled'],
-      requires: [],
-    };
-
     setupMultiLibraryRecipes({
       'test-library': {
         testing: {
@@ -258,9 +164,7 @@ describe('Recipes Validate State Command Integration Tests', () => {
       },
     };
 
-    mockReadFileSync.mockImplementation(
-      createMockFileHandler(recipeData, 'preferred-recipe', stateData)
-    );
+    setupStateValidationMocks(stateData);
 
     const { messages, onProgress } = createTestMessages();
 
@@ -276,27 +180,6 @@ describe('Recipes Validate State Command Integration Tests', () => {
   });
 
   it('should fail validation when workspace provides are missing', async () => {
-    const recipeData = {
-      id: 'workspace-missing-recipe',
-      category: 'testing',
-      summary: 'Test workspace recipe with missing provides',
-      level: 'workspace-only',
-      ecosystems: [
-        {
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [
-            {
-              id: 'basic',
-              fix_prompt: 'variants/basic.md',
-            },
-          ],
-        },
-      ],
-      provides: ['workspace.configured', 'workspace.feature.enabled'],
-      requires: [],
-    };
-
     setupMultiLibraryRecipes({
       'test-library': {
         testing: {
@@ -335,7 +218,26 @@ describe('Recipes Validate State Command Integration Tests', () => {
           '/test-library/testing/workspace-missing-recipe/metadata.yaml'
         )
       ) {
-        return yamlStringify(recipeData);
+        return yamlStringify({
+          id: 'workspace-missing-recipe',
+          category: 'testing',
+          summary: 'Test workspace recipe with missing provides',
+          level: 'workspace-only',
+          ecosystems: [
+            {
+              id: 'javascript',
+              default_variant: 'basic',
+              variants: [
+                {
+                  id: 'basic',
+                  fix_prompt: 'variants/basic.md',
+                },
+              ],
+            },
+          ],
+          provides: ['workspace.configured', 'workspace.feature.enabled'],
+          requires: [],
+        });
       }
       if (filePath.includes('prompt.md')) {
         return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
@@ -364,27 +266,6 @@ describe('Recipes Validate State Command Integration Tests', () => {
   });
 
   it('should pass validation when workspace recipe has no provides', async () => {
-    const recipeData = {
-      id: 'no-provides-recipe',
-      category: 'testing',
-      summary: 'Test recipe with no provides',
-      level: 'workspace-only',
-      ecosystems: [
-        {
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [
-            {
-              id: 'basic',
-              fix_prompt: 'variants/basic.md',
-            },
-          ],
-        },
-      ],
-      provides: [],
-      requires: [],
-    };
-
     setupMultiLibraryRecipes({
       'test-library': {
         testing: {
@@ -421,7 +302,26 @@ describe('Recipes Validate State Command Integration Tests', () => {
           '/test-library/testing/no-provides-recipe/metadata.yaml'
         )
       ) {
-        return yamlStringify(recipeData);
+        return yamlStringify({
+          id: 'no-provides-recipe',
+          category: 'testing',
+          summary: 'Test recipe with no provides',
+          level: 'workspace-only',
+          ecosystems: [
+            {
+              id: 'javascript',
+              default_variant: 'basic',
+              variants: [
+                {
+                  id: 'basic',
+                  fix_prompt: 'variants/basic.md',
+                },
+              ],
+            },
+          ],
+          provides: [],
+          requires: [],
+        });
       }
       if (filePath.includes('prompt.md')) {
         return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
@@ -464,27 +364,6 @@ describe('Recipes Validate State Command Integration Tests', () => {
   });
 
   it('should handle state file read error', async () => {
-    const recipeData = {
-      id: 'error-recipe',
-      category: 'testing',
-      summary: 'Test error recipe',
-      level: 'workspace-only',
-      ecosystems: [
-        {
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [
-            {
-              id: 'basic',
-              fix_prompt: 'variants/basic.md',
-            },
-          ],
-        },
-      ],
-      provides: ['error.configured'],
-      requires: [],
-    };
-
     setupMultiLibraryRecipes({
       'test-library': {
         testing: {
@@ -499,9 +378,7 @@ describe('Recipes Validate State Command Integration Tests', () => {
       },
     });
 
-    mockReadFileSync.mockImplementation(
-      createMockFileHandler(recipeData, 'error-recipe', null, true)
-    );
+    setupStateValidationMocks(null, true);
 
     const { messages, onProgress } = createTestMessages();
 
@@ -513,27 +390,6 @@ describe('Recipes Validate State Command Integration Tests', () => {
   });
 
   it('should show detailed debug information when debug mode is enabled', async () => {
-    const recipeData = {
-      id: 'debug-recipe',
-      category: 'testing',
-      summary: 'Test debug recipe',
-      level: 'workspace-only',
-      ecosystems: [
-        {
-          id: 'javascript',
-          default_variant: 'basic',
-          variants: [
-            {
-              id: 'basic',
-              fix_prompt: 'variants/basic.md',
-            },
-          ],
-        },
-      ],
-      provides: ['debug.configured', 'debug.feature.enabled'],
-      requires: [],
-    };
-
     setupMultiLibraryRecipes({
       'test-library': {
         testing: {
@@ -571,7 +427,26 @@ describe('Recipes Validate State Command Integration Tests', () => {
       if (
         filePath.includes('/test-library/testing/debug-recipe/metadata.yaml')
       ) {
-        return yamlStringify(recipeData);
+        return yamlStringify({
+          id: 'debug-recipe',
+          category: 'testing',
+          summary: 'Test debug recipe',
+          level: 'workspace-only',
+          ecosystems: [
+            {
+              id: 'javascript',
+              default_variant: 'basic',
+              variants: [
+                {
+                  id: 'basic',
+                  fix_prompt: 'variants/basic.md',
+                },
+              ],
+            },
+          ],
+          provides: ['debug.configured', 'debug.feature.enabled'],
+          requires: [],
+        });
       }
       if (filePath.includes('prompt.md')) {
         return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';

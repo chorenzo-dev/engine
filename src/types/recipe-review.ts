@@ -1,5 +1,4 @@
-import { InputType, ProgressCallback } from '~/commands/recipes.shared';
-import { CodeSampleValidationResult } from '~/types/recipe';
+import { InputType } from '~/commands/recipes.shared';
 
 export interface ReviewOptions extends Record<string, unknown> {
   target: string;
@@ -30,18 +29,7 @@ export interface ReviewResult {
   summary?: ReviewSummary;
 }
 
-export interface RecipeReviewResult {
-  recipeId: string;
-  codeSampleValidation?: CodeSampleValidationResult;
-  passed: boolean;
-  messages: ReviewMessage[];
-  errors: number;
-  warnings: number;
-}
-
 export type ReviewCallback = (
   type: 'info' | 'success' | 'error' | 'warning',
   message: string
 ) => void;
-
-export type ReviewProgressCallback = ProgressCallback;

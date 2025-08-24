@@ -86,10 +86,7 @@ export const RecipesReviewContainer: React.FC<RecipesReviewContainerProps> = ({
         const reviewResult = context.getResult<ReviewResult>('review');
         if (reviewResult) {
           return (
-            <ProcessDisplay
-              title="Recipe content review complete!"
-              status="completed"
-            >
+            <ProcessDisplay title="Recipe review complete!" status="completed">
               <Box flexDirection="column">
                 {reviewResult.messages.map((msg, index) => {
                   let icon = '';
@@ -112,14 +109,10 @@ export const RecipesReviewContainer: React.FC<RecipesReviewContainerProps> = ({
                     </Text>
                   );
                 })}
-                {reviewResult.summary && (
+                {reviewResult.summary && reviewResult.summary.warnings > 0 && (
                   <Box marginTop={1} flexDirection="column">
                     <Text>Summary:</Text>
-                    <Text>{`  Recipes passed: ${reviewResult.summary.passed}/${reviewResult.summary.total}`}</Text>
-                    <Text>{`  Recipes failed: ${reviewResult.summary.failed}/${reviewResult.summary.total}`}</Text>
-                    {reviewResult.summary.warnings > 0 && (
-                      <Text>{`  Total warnings: ${reviewResult.summary.warnings}`}</Text>
-                    )}
+                    <Text>{`  Warnings: ${reviewResult.summary.warnings}`}</Text>
                   </Box>
                 )}
               </Box>
@@ -128,7 +121,7 @@ export const RecipesReviewContainer: React.FC<RecipesReviewContainerProps> = ({
         }
         return null;
       }}
-      errorTitle="Recipe content review failed!"
+      errorTitle="Recipe review failed!"
       options={options}
     />
   );

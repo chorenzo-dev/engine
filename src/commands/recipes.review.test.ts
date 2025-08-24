@@ -13,7 +13,6 @@ import {
   mockExistsSync,
   mockQuery,
   mockReadFileSync,
-  mockReaddirSync,
   mockStatSync,
   setupDefaultMocks,
   setupMultiLibraryRecipes,
@@ -122,6 +121,40 @@ describe('Recipes Review Integration Tests', () => {
 
       await expect(performRecipesReview(options)).rejects.toThrow(
         'Target parameter is required for review'
+      );
+    });
+
+    it('should throw error for library input (not supported)', async () => {
+      const options = { target: '/path/to/library' };
+
+      mockExistsSync.mockImplementation((filePath: string) => {
+        if (filePath === '/path/to/library') {
+          return true;
+        }
+        if (filePath === '/path/to/library/metadata.yaml') {
+          return false;
+        }
+        return false;
+      });
+
+      mockStatSync.mockImplementation(
+        (filePath: string) =>
+          ({
+            isDirectory: () => !filePath.includes('.'),
+            isFile: () => filePath.includes('.'),
+          }) as fs.Stats
+      );
+
+      await expect(performRecipesReview(options)).rejects.toThrow(
+        'Library review is not supported. Please specify a specific recipe name or path.'
+      );
+    });
+
+    it('should throw error for git URL input (not supported)', async () => {
+      const options = { target: 'https://github.com/user/recipes.git' };
+
+      await expect(performRecipesReview(options)).rejects.toThrow(
+        'Git repository review is not supported. Please specify a specific recipe name or path.'
       );
     });
   });
@@ -381,299 +414,6 @@ describe('Recipes Review Integration Tests', () => {
       ).toBeTruthy();
 
       expect(mockQuery).not.toHaveBeenCalled();
-    });
-
-    it('should review entire library with mixed results', async () => {
-      let callCount = 0;
-      mockQuery.mockImplementation(function* () {
-        callCount++;
-        if (callCount === 1) {
-          yield {
-            type: 'result',
-            subtype: 'success',
-            result: JSON.stringify({
-              valid: true,
-              violations: [],
-              summary: {
-                totalFiles: 1,
-                filesWithViolations: 0,
-                totalViolations: 0,
-                violationTypes: {
-                  generic_placeholder: 0,
-                  incomplete_fragment: 0,
-                  abstract_pseudocode: 0,
-                  overly_simplistic: 0,
-                },
-              },
-            }),
-          };
-        } else {
-          yield {
-            type: 'result',
-            subtype: 'success',
-            result: JSON.stringify({
-              valid: false,
-              violations: [
-                {
-                  file: 'fix.md',
-                  line: 1,
-                  type: 'overly_simplistic',
-                  description: 'Code is too basic',
-                  suggestion: 'Provide more detailed implementation',
-                  codeSnippet: 'Fix content',
-                },
-              ],
-              summary: {
-                totalFiles: 1,
-                filesWithViolations: 1,
-                totalViolations: 1,
-                violationTypes: {
-                  generic_placeholder: 0,
-                  incomplete_fragment: 0,
-                  abstract_pseudocode: 0,
-                  overly_simplistic: 1,
-                },
-              },
-            }),
-          };
-        }
-      });
-
-      mockExistsSync.mockImplementation((filePath: string) => {
-        if (filePath === '/path/to/test-library') {
-          return true;
-        }
-        if (filePath === '/path/to/test-library/metadata.yaml') {
-          return false;
-        }
-        if (
-          filePath.includes('recipe-one') ||
-          filePath.includes('recipe-two')
-        ) {
-          return true;
-        }
-        if (
-          filePath.includes('metadata.yaml') ||
-          filePath.includes('prompt.md') ||
-          filePath.includes('fix.md')
-        ) {
-          return true;
-        }
-        return false;
-      });
-
-      mockStatSync.mockImplementation(
-        (filePath: string) =>
-          ({
-            isDirectory: () => !filePath.includes('.'),
-            isFile: () => filePath.includes('.'),
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath: string) => {
-        if (dirPath === '/path/to/test-library') {
-          return ['recipe-one', 'recipe-two'];
-        }
-        return [];
-      });
-
-      mockReadFileSync.mockImplementation((filePath: string) => {
-        if (filePath.includes('recipe-one/metadata.yaml')) {
-          return yamlStringify({
-            id: 'recipe-one',
-            category: 'test',
-            summary: 'First recipe',
-            level: 'workspace-preferred',
-            ecosystems: [],
-            provides: [],
-            requires: [],
-          });
-        }
-        if (filePath.includes('recipe-two/metadata.yaml')) {
-          return yamlStringify({
-            id: 'recipe-two',
-            category: 'test',
-            summary: 'Second recipe',
-            level: 'workspace-preferred',
-            ecosystems: [],
-            provides: [],
-            requires: [],
-          });
-        }
-        if (filePath.includes('prompt.md')) {
-          return '## Goal\nTest goal\n## Investigation\nTest investigation\n## Expected Output\nTest output';
-        }
-        if (filePath.includes('fix.md')) {
-          return 'Fix content';
-        }
-        if (filePath.includes('validation/code_sample_validation.md')) {
-          return 'Validate code samples in: {{#each files}}{{this.path}}{{/each}}';
-        }
-        return '';
-      });
-
-      const result = await performRecipesReview({
-        target: '/path/to/test-library',
-      });
-
-      expect(result.context.target).toBe('/path/to/test-library');
-      expect(result.context.recipesReviewed).toEqual([
-        'recipe-one',
-        'recipe-two',
-      ]);
-      expect(result.summary).toBeDefined();
-      expect(result.summary?.total).toBe(2);
-      expect(result.summary?.passed).toBe(1);
-      expect(result.summary?.failed).toBe(1);
-
-      expect(
-        result.messages.some(
-          (msg) => msg.type === 'success' && msg.text === 'recipe-one'
-        )
-      ).toBeTruthy();
-
-      expect(
-        result.messages.some(
-          (msg) =>
-            msg.type === 'warning' &&
-            msg.text.includes('recipe-two code sample issues:')
-        )
-      ).toBeTruthy();
-
-      expect(
-        result.messages.some(
-          (msg) =>
-            msg.type === 'warning' &&
-            msg.text.includes('fix.md:1 (overly_simplistic)')
-        )
-      ).toBeTruthy();
-
-      expect(mockQuery).toHaveBeenCalled();
-    });
-
-    it('should handle empty library directory', async () => {
-      mockExistsSync.mockImplementation((filePath: string) => {
-        if (filePath === '/path/to/empty-library') {
-          return true;
-        }
-        if (filePath === '/path/to/empty-library/metadata.yaml') {
-          return false;
-        }
-        return false;
-      });
-
-      mockStatSync.mockImplementation(
-        (filePath: string) =>
-          ({
-            isDirectory: () => !filePath.includes('.'),
-            isFile: () => filePath.includes('.'),
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath: string) => {
-        if (dirPath === '/path/to/empty-library') {
-          return [];
-        }
-        return [];
-      });
-
-      await expect(
-        performRecipesReview({
-          target: '/path/to/empty-library',
-        })
-      ).rejects.toThrow('No recipes found in library');
-    });
-
-    it('should handle library with parsing failures', async () => {
-      mockExistsSync.mockImplementation((filePath: string) => {
-        if (filePath === '/path/to/broken-library') {
-          return true;
-        }
-        if (filePath === '/path/to/broken-library/metadata.yaml') {
-          return false;
-        }
-        if (filePath.includes('broken-recipe')) {
-          return true;
-        }
-        if (filePath.includes('metadata.yaml')) {
-          return true;
-        }
-        return false;
-      });
-
-      mockStatSync.mockImplementation(
-        (filePath: string) =>
-          ({
-            isDirectory: () => !filePath.includes('.'),
-            isFile: () => filePath.includes('.'),
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath: string) => {
-        if (dirPath === '/path/to/broken-library') {
-          return ['broken-recipe'];
-        }
-        return [];
-      });
-
-      mockReadFileSync.mockImplementation((filePath: string) => {
-        if (filePath.includes('broken-recipe/metadata.yaml')) {
-          return 'invalid: yaml: content: [unclosed';
-        }
-        return '';
-      });
-
-      const result = await performRecipesReview({
-        target: '/path/to/broken-library',
-      });
-
-      expect(result.context.target).toBe('/path/to/broken-library');
-      expect(result.context.recipesReviewed).toEqual([]);
-      expect(result.summary).toBeDefined();
-      expect(result.summary?.total).toBe(1);
-      expect(result.summary?.failed).toBe(1);
-
-      expect(
-        result.messages.some(
-          (msg) =>
-            msg.type === 'error' && msg.text.includes('Failed to parse recipe')
-        )
-      ).toBeTruthy();
-    });
-
-    it('should handle git URL input type', async () => {
-      const options = { target: 'https://github.com/user/recipes.git' };
-
-      mockExistsSync.mockImplementation((filePath: string) => {
-        if (filePath.includes('/tmp/test-temp-')) {
-          return true;
-        }
-        return false;
-      });
-
-      mockStatSync.mockImplementation(
-        (filePath: string) =>
-          ({
-            isDirectory: () => filePath.includes('/tmp/test-temp-'),
-            isFile: () => false,
-          }) as fs.Stats
-      );
-
-      mockReaddirSync.mockImplementation((dirPath: string) => {
-        if (dirPath.includes('/tmp/test-temp-')) {
-          return [];
-        }
-        return [];
-      });
-
-      const mockProgress = jest.fn();
-      await expect(performRecipesReview(options, mockProgress)).rejects.toThrow(
-        'No recipes found in library'
-      );
-
-      expect(mockProgress).toHaveBeenCalledWith(
-        'Cloning repository: https://github.com/user/recipes.git'
-      );
     });
   });
 

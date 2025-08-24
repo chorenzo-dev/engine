@@ -1,6 +1,4 @@
 import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
 
 import { Recipe } from '~/types/recipe';
 import {
@@ -16,14 +14,9 @@ import {
   performCodeSampleValidation,
 } from '~/utils/ai-validation.utils';
 import { chorenzoConfig } from '~/utils/config.utils';
-import { cloneRepository } from '~/utils/git-operations.utils';
-import { normalizeRepoIdentifier } from '~/utils/git.utils';
 import { libraryManager } from '~/utils/library-manager.utils';
 import { resolvePath } from '~/utils/path.utils';
-import {
-  findRecipeDirectories,
-  parseRecipeFromDirectory,
-} from '~/utils/recipe.utils';
+import { parseRecipeFromDirectory } from '~/utils/recipe.utils';
 
 import { extractErrorMessage } from '../utils/error.utils';
 import {
@@ -114,18 +107,14 @@ export async function performRecipesReview(
           handleReview
         );
       case InputType.Library:
-        return await reviewLibrary(
-          resolvedTarget,
-          baseContext,
-          onProgress,
-          handleReview
+        throw new RecipesError(
+          'Library review is not supported. Please specify a specific recipe name or path.',
+          'LIBRARY_NOT_SUPPORTED'
         );
       case InputType.GitUrl:
-        return await reviewGitRepository(
-          resolvedTarget,
-          baseContext,
-          onProgress,
-          handleReview
+        throw new RecipesError(
+          'Git repository review is not supported. Please specify a specific recipe name or path.',
+          'GIT_URL_NOT_SUPPORTED'
         );
       default:
         throw new RecipesError(
@@ -265,136 +254,4 @@ async function reviewRecipeFolder(
     messages,
     summary,
   };
-}
-
-async function reviewLibrary(
-  libraryPath: string,
-  context: Omit<ReviewContext, 'recipesReviewed'>,
-  onProgress?: ProgressCallback,
-  onReview?: ReviewCallback
-): Promise<ReviewResult> {
-  onProgress?.(`Scanning library: ${libraryPath}`);
-
-  if (!fs.existsSync(libraryPath)) {
-    throw new RecipesError(
-      `Library path does not exist: ${libraryPath}`,
-      'LIBRARY_NOT_FOUND'
-    );
-  }
-
-  const recipeDirectories = await findRecipeDirectories(libraryPath);
-  if (recipeDirectories.length === 0) {
-    throw new RecipesError(
-      `No recipes found in library: ${libraryPath}`,
-      'NO_RECIPES_FOUND'
-    );
-  }
-
-  onProgress?.(`Found ${recipeDirectories.length} recipes to review`);
-
-  const messages: ReviewMessage[] = [];
-  const reviewedRecipeIds: string[] = [];
-  let totalWarnings = 0;
-  let totalPassed = 0;
-  let totalFailed = 0;
-
-  for (const recipeDir of recipeDirectories) {
-    const recipePath = path.join(libraryPath, recipeDir);
-
-    try {
-      onProgress?.(`Reviewing recipe: ${recipeDir}`);
-
-      const recipe = parseRecipeFromDirectory(recipePath);
-      const recipeId = recipe.metadata.id;
-      reviewedRecipeIds.push(recipeId);
-
-      try {
-        const codeSampleValidation = await performCodeSampleValidation(recipe);
-
-        if (codeSampleValidation.violations.length > 0) {
-          const violationMessages = codeSampleValidation.violations.map(
-            (violation) => {
-              return `${violation.file}:${violation.line} (${violation.type}): ${violation.description}`;
-            }
-          );
-
-          const issuesText = `${recipeId} code sample issues:\n${violationMessages.map((v) => `  - ${v}`).join('\n')}`;
-
-          messages.push({
-            type: 'warning',
-            text: issuesText,
-          });
-          messages.push({ type: 'error', text: `${recipeId}:` });
-          totalWarnings++;
-          totalFailed++;
-          onReview?.('warning', issuesText);
-          onReview?.('error', recipeId);
-        } else {
-          messages.push({ type: 'success', text: recipeId });
-          totalPassed++;
-          onReview?.('success', recipeId);
-        }
-      } catch (error) {
-        const stats = { totalErrors: 0, totalWarnings, totalFailed };
-        handleRecipeReviewError(error, recipeId, messages, onReview, stats);
-        totalWarnings = stats.totalWarnings;
-        totalFailed = stats.totalFailed;
-      }
-    } catch (parseError) {
-      const errorMsg = `Failed to parse recipe '${recipeDir}': ${extractErrorMessage(parseError)}`;
-      messages.push({ type: 'error', text: errorMsg });
-      onReview?.('error', errorMsg);
-      totalFailed++;
-    }
-  }
-
-  const summary: ReviewSummary = {
-    total: recipeDirectories.length,
-    passed: totalPassed,
-    failed: totalFailed,
-    warnings: totalWarnings,
-  };
-
-  return {
-    context: {
-      ...context,
-      recipesReviewed: reviewedRecipeIds,
-    },
-    messages,
-    summary,
-  };
-}
-
-async function reviewGitRepository(
-  repoUrl: string,
-  context: Omit<ReviewContext, 'recipesReviewed'>,
-  onProgress?: ProgressCallback,
-  onReview?: ReviewCallback
-): Promise<ReviewResult> {
-  onProgress?.(`Cloning repository: ${repoUrl}`);
-
-  const repoIdentifier = normalizeRepoIdentifier(repoUrl);
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'chorenzo-review-'));
-  const clonePath = path.join(tempDir, repoIdentifier);
-
-  try {
-    await cloneRepository(repoUrl, clonePath, 'main');
-    onProgress?.('Repository cloned successfully');
-
-    const updatedContext = {
-      ...context,
-      resolvedPath: clonePath,
-    };
-
-    return await reviewLibrary(clonePath, updatedContext, onProgress, onReview);
-  } catch (error) {
-    throw new RecipesError(
-      `Failed to clone or review repository: ${extractErrorMessage(error)}`,
-      'GIT_CLONE_FAILED'
-    );
-  } finally {
-    if (fs.existsSync(tempDir)) {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    }
-  }
 }

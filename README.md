@@ -81,12 +81,6 @@ npx chorenzo recipes review code-formatting
 # Review a local recipe folder
 npx chorenzo recipes review ~/my-recipes/custom-recipe
 
-# Review an entire recipe library
-npx chorenzo recipes review ~/.chorenzo/recipes/core
-
-# Review recipes from a git repository
-npx chorenzo recipes review https://github.com/chorenzo-dev/recipes-core.git
-
 # Show detailed debug output
 npx chorenzo recipes review code-formatting --debug
 ```

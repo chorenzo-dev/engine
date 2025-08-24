@@ -162,13 +162,11 @@ recipesCommand
     'after',
     `
 Arguments:
-  target    Recipe name, local path, or git URL
+  target    Recipe name or local path
 
 Examples:
   $ chorenzo recipes review code-formatting
   $ chorenzo recipes review ~/my-recipes/custom-recipe
-  $ chorenzo recipes review ~/.chorenzo/recipes/core
-  $ chorenzo recipes review https://github.com/chorenzo-dev/recipes-core.git
 `
   )
   .action(async (target, options) => {

@@ -122,7 +122,6 @@ recipesCommand
   .command('validate <target>')
   .description('Validate recipes by name, path, library, or git repository')
   .option('--debug', 'Show all progress messages in list format')
-  .option('--static', 'Skip AI validation and only perform static validation')
   .addHelpText(
     'after',
     `
@@ -134,7 +133,6 @@ Examples:
   $ chorenzo recipes validate ~/my-recipes/custom-recipe
   $ chorenzo recipes validate ~/.chorenzo/recipes/core
   $ chorenzo recipes validate https://github.com/chorenzo-dev/recipes-core.git
-  $ chorenzo recipes validate code-formatting --static
 `
   )
   .action(async (target, options) => {
@@ -144,7 +142,6 @@ Examples:
         options: {
           target,
           debug: options.debug,
-          static: options.static,
         },
       })
     );

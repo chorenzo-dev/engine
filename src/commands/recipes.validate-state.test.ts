@@ -506,6 +506,43 @@ describe('Recipes Validate State Command Integration Tests', () => {
     expect(messages).toContain(`${icons.error} Validation failed`);
   });
 
+  it('should detect when recipe applied is false', async () => {
+    setupMultiLibraryRecipes({
+      'test-library': {
+        testing: {
+          'failed-recipe': {
+            recipeId: 'failed-recipe',
+            category: 'testing',
+            level: 'workspace-only',
+            provides: ['failed.configured'],
+            requires: [],
+          },
+        },
+      },
+    });
+
+    const stateData = {
+      workspace: {
+        'failed-recipe.applied': false,
+        'failed.configured': true,
+        'failed.extra.setting': true,
+      },
+      projects: {},
+    };
+
+    setupStateValidationMocks(stateData);
+
+    const { messages, onProgress } = createTestMessages();
+
+    await expect(
+      recipesValidateState({ recipe: 'failed-recipe' }, onProgress)
+    ).rejects.toThrow(
+      'Recipe marked as not applied (failed-recipe.applied: false)'
+    );
+
+    expect(messages).toContain(`${icons.error} Validation failed`);
+  });
+
   it('should show detailed debug information when debug mode is enabled', async () => {
     setupMultiLibraryRecipes({
       'test-library': {

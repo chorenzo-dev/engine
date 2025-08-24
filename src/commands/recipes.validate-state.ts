@@ -189,20 +189,29 @@ function validateStateFile(
   const redundantKeys: string[] = [];
 
   const appliedKey = `${recipeName}.applied`;
-  const isRecipeApplied = isProvideInState(appliedKey, stateData, recipeLevel);
+  const appliedKeyValue = getProvideValue(appliedKey, stateData, recipeLevel);
+  const isRecipeApplied = appliedKeyValue === true;
 
   if (!isRecipeApplied) {
-    errors.push({
-      path: 'applied',
-      message: `Recipe was not applied (missing ${appliedKey})`,
-      code: 'RECIPE_NOT_APPLIED',
-    });
+    if (appliedKeyValue === false) {
+      errors.push({
+        path: 'applied',
+        message: `Recipe marked as not applied (${appliedKey}: false)`,
+        code: 'RECIPE_NOT_APPLIED',
+      });
+    } else {
+      errors.push({
+        path: 'applied',
+        message: `Recipe was not applied (missing ${appliedKey})`,
+        code: 'RECIPE_NOT_APPLIED',
+      });
+    }
 
     const recipePrefixes = getRecipePrefixes([recipeName]);
     const stateKeys = getAllKeysFromState(stateData);
 
     for (const key of stateKeys) {
-      if (isKeyRelatedToRecipe(key, recipePrefixes)) {
+      if (isKeyRelatedToRecipe(key, recipePrefixes) && key !== appliedKey) {
         redundantKeys.push(key);
       }
     }
@@ -318,11 +327,11 @@ function getAllKeysFromState(stateData: StateFile): string[] {
   return Array.from(keys);
 }
 
-function isProvideInState(
+function getProvideValue(
   provide: string,
   stateData: StateFile,
   recipeLevel: string
-): boolean {
+): unknown {
   const isWorkspaceLevel =
     recipeLevel === 'workspace-only' || recipeLevel === 'workspace-preferred';
   const isProjectLevel =
@@ -335,7 +344,7 @@ function isProvideInState(
     stateData.workspace !== null
   ) {
     if (provide in stateData.workspace) {
-      return true;
+      return stateData.workspace[provide];
     }
   }
 
@@ -352,10 +361,18 @@ function isProvideInState(
         projectState !== null &&
         provide in projectState
       ) {
-        return true;
+        return projectState[provide];
       }
     }
   }
 
-  return false;
+  return undefined;
+}
+
+function isProvideInState(
+  provide: string,
+  stateData: StateFile,
+  recipeLevel: string
+): boolean {
+  return getProvideValue(provide, stateData, recipeLevel) !== undefined;
 }

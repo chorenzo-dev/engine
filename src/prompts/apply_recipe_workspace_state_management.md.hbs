@@ -12,6 +12,8 @@ After successfully completing the recipe application, you MUST update the state.
 
 3. Write the updated state back to state.json with keys in alphabetical order
 
+4. After updating state.json, you MUST run `npx chorenzo recipes validate-state {{ recipe_id }}` to validate the state file reflects the recipe's expected provides. If validation fails, fix the state.json and retry until validation passes.
+
 Example structure:
 
 ```json

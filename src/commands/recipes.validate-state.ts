@@ -193,13 +193,7 @@ function validateStateFile(
   const isRecipeApplied = appliedKeyValue === true;
 
   if (!isRecipeApplied) {
-    if (appliedKeyValue === false) {
-      errors.push({
-        path: 'applied',
-        message: `Recipe marked as not applied (${appliedKey}: false)`,
-        code: 'RECIPE_NOT_APPLIED',
-      });
-    } else {
+    if (appliedKeyValue === undefined) {
       errors.push({
         path: 'applied',
         message: `Recipe was not applied (missing ${appliedKey})`,
@@ -214,14 +208,6 @@ function validateStateFile(
       if (isKeyRelatedToRecipe(key, recipePrefixes) && key !== appliedKey) {
         redundantKeys.push(key);
       }
-    }
-
-    if (redundantKeys.length > 0) {
-      errors.push({
-        path: 'redundant',
-        message: `Redundant keys in state file (recipe not applied): ${redundantKeys.join(', ')}`,
-        code: 'REDUNDANT_KEYS',
-      });
     }
   } else {
     for (const provide of provides) {

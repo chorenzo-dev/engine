@@ -506,7 +506,7 @@ describe('Recipes Validate State Command Integration Tests', () => {
     expect(messages).toContain(`${icons.error} Validation failed`);
   });
 
-  it('should detect when recipe applied is false', async () => {
+  it('should pass validation when recipe applied is false (redundant keys expected)', async () => {
     setupMultiLibraryRecipes({
       'test-library': {
         testing: {
@@ -536,11 +536,9 @@ describe('Recipes Validate State Command Integration Tests', () => {
 
     await expect(
       recipesValidateState({ recipe: 'failed-recipe' }, onProgress)
-    ).rejects.toThrow(
-      'Recipe marked as not applied (failed-recipe.applied: false)'
-    );
+    ).resolves.toBeUndefined();
 
-    expect(messages).toContain(`${icons.error} Validation failed`);
+    expect(messages).toContain(`${icons.success} Recipe state is valid`);
   });
 
   it('should show detailed debug information when debug mode is enabled', async () => {

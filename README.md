@@ -70,6 +70,27 @@ npx chorenzo recipes validate https://github.com/chorenzo-dev/recipes-core.git
 npx chorenzo recipes validate code-formatting --debug
 ```
 
+#### Review Recipes
+
+Review recipe content quality using AI analysis:
+
+```bash
+# Review a recipe by name
+npx chorenzo recipes review code-formatting
+
+# Review a local recipe folder
+npx chorenzo recipes review ~/my-recipes/custom-recipe
+
+# Review an entire recipe library
+npx chorenzo recipes review ~/.chorenzo/recipes/core
+
+# Review recipes from a git repository
+npx chorenzo recipes review https://github.com/chorenzo-dev/recipes-core.git
+
+# Show detailed debug output
+npx chorenzo recipes review code-formatting --debug
+```
+
 #### List Available Recipes
 
 Browse all available recipes organized by category:
@@ -250,6 +271,7 @@ npx chorenzo recipes --help
 
 # Show help for recipe subcommands
 npx chorenzo recipes validate --help
+npx chorenzo recipes review --help
 npx chorenzo recipes show --help
 npx chorenzo recipes apply --help
 npx chorenzo recipes generate --help

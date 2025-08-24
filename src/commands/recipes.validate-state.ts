@@ -53,12 +53,6 @@ export async function recipesValidateState(
     onProgress?.(`Recipe provides: ${provides.join(', ')}`);
   }
 
-  if (provides.length === 0) {
-    onProgress?.(`${icons.success} Recipe has no provides to validate`);
-    Logger.info('Recipe has no provides, validation passed');
-    return;
-  }
-
   onProgress?.(`Reading state file`);
   const statePath = workspaceConfig.getStatePath();
   if (options.debug) {
@@ -71,6 +65,17 @@ export async function recipesValidateState(
     recipe.getLevel(),
     options.recipe
   );
+
+  if (provides.length === 0 && result.valid) {
+    onProgress?.(`${icons.success} Recipe has no provides to validate`);
+    Logger.info('Recipe has no provides, validation passed');
+    if (options.debug && result.redundantKeys.length > 0) {
+      onProgress?.(
+        `Found ${result.redundantKeys.length} redundant keys: ${result.redundantKeys.join(', ')}`
+      );
+    }
+    return;
+  }
 
   if (result.valid) {
     onProgress?.(`${icons.success} Recipe state is valid`);

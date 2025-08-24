@@ -284,7 +284,9 @@ describe('Recipes Validate State Command Integration Tests', () => {
     mockReadFileSync.mockImplementation((filePath: string) => {
       if (filePath.includes('state.json')) {
         return JSON.stringify({
-          workspace: {},
+          workspace: {
+            'no-provides-recipe.applied': true,
+          },
           projects: {},
         });
       }
@@ -636,5 +638,42 @@ describe('Recipes Validate State Command Integration Tests', () => {
       )
     ).toBe(true);
     expect(messages).toContain(`${icons.success} Recipe state is valid`);
+  });
+
+  it('should detect redundant keys even when recipe has no provides', async () => {
+    setupMultiLibraryRecipes({
+      'test-library': {
+        testing: {
+          'empty-provides-recipe': {
+            recipeId: 'empty-provides-recipe',
+            category: 'testing',
+            level: 'workspace-only',
+            provides: [],
+            requires: [],
+          },
+        },
+      },
+    });
+
+    const stateData = {
+      workspace: {
+        'empty-provides-recipe.applied': true,
+        'empty-provides-recipe.configured': true,
+        'empty-provides-recipe.extra.setting': true,
+      },
+      projects: {},
+    };
+
+    setupStateValidationMocks(stateData);
+
+    const { messages, onProgress } = createTestMessages();
+
+    await expect(
+      recipesValidateState({ recipe: 'empty-provides-recipe' }, onProgress)
+    ).rejects.toThrow(
+      'Redundant keys in state file: empty-provides-recipe.configured, empty-provides-recipe.extra.setting'
+    );
+
+    expect(messages).toContain(`${icons.error} Validation failed`);
   });
 });

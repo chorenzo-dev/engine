@@ -398,9 +398,11 @@ describe('Recipes Validate State Command Integration Tests', () => {
 
     await expect(
       recipesValidateState({ recipe: 'workspace-missing-recipe' }, onProgress)
-    ).rejects.toThrow('Missing provides: workspace.feature.enabled');
+    ).rejects.toThrow(
+      'Missing provides in state file: workspace.feature.enabled'
+    );
 
-    expect(messages).toContain(`${icons.error} Recipe state validation failed`);
+    expect(messages).toContain(`${icons.error} Validation failed`);
   });
 
   it('should pass validation when workspace recipe has no provides', async () => {
@@ -582,7 +584,7 @@ describe('Recipes Validate State Command Integration Tests', () => {
       recipesValidateState({ recipe: 'error-recipe' }, onProgress)
     ).rejects.toThrow();
 
-    expect(messages).toContain(`${icons.error} Recipe state validation failed`);
+    expect(messages).toContain(`${icons.error} Validation failed`);
   });
 
   it('should show detailed debug information when debug mode is enabled', async () => {

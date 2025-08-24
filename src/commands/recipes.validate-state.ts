@@ -73,7 +73,7 @@ export async function recipesValidateState(
       onProgress?.(`All ${provides.length} provides found in state file`);
     }
   } else {
-    onProgress?.(`${icons.error} Recipe state validation failed`);
+    onProgress?.(`${icons.error} Validation failed`);
     const errorMessage = formatValidationErrors(result.errors);
     onProgress?.(errorMessage);
 
@@ -83,15 +83,16 @@ export async function recipesValidateState(
       }`
     );
     if (options.debug) {
-      onProgress?.(`Missing provides: ${result.missingProvides.join(', ')}`);
+      onProgress?.(`Detailed error breakdown:`);
       result.errors.forEach((error, index) => {
         onProgress?.(
           `Error ${index + 1}: ${error.path} - ${error.message} (${error.code})`
         );
       });
+      onProgress?.(`Validation process completed with errors`);
     }
 
-    throw new Error(`Missing provides: ${result.missingProvides.join(', ')}`);
+    throw new Error(errorMessage);
   }
 }
 

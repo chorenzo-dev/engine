@@ -72,6 +72,7 @@ describe('Recipes Validate State Command Integration Tests', () => {
 
     const stateData = {
       workspace: {
+        'workspace-recipe.applied': true,
         'workspace.configured': true,
         'workspace.feature.enabled': true,
       },
@@ -112,10 +113,12 @@ describe('Recipes Validate State Command Integration Tests', () => {
       workspace: {},
       projects: {
         app: {
+          'project-recipe.applied': true,
           'project.configured': true,
           'project.feature.enabled': true,
         },
         api: {
+          'project-recipe.applied': true,
           'project.configured': true,
           'project.feature.enabled': true,
         },
@@ -154,6 +157,7 @@ describe('Recipes Validate State Command Integration Tests', () => {
 
     const stateData = {
       workspace: {
+        'preferred-recipe.applied': true,
         'preferred.configured': true,
         'preferred.feature.enabled': true,
       },
@@ -194,6 +198,7 @@ describe('Recipes Validate State Command Integration Tests', () => {
       if (filePath.includes('state.json')) {
         return JSON.stringify({
           workspace: {
+            'workspace-missing-recipe.applied': true,
             'workspace.configured': true,
           },
           projects: {},
@@ -402,6 +407,7 @@ describe('Recipes Validate State Command Integration Tests', () => {
 
     const stateData = {
       workspace: {
+        'workspace-recipe.applied': true,
         'workspace.configured': true,
         'workspace.extra.setting': true,
         'workspace.obsolete': true,
@@ -464,6 +470,42 @@ describe('Recipes Validate State Command Integration Tests', () => {
     expect(messages).toContain(`${icons.success} Recipe state is valid`);
   });
 
+  it('should detect when recipe was not applied', async () => {
+    setupMultiLibraryRecipes({
+      'test-library': {
+        testing: {
+          'unapplied-recipe': {
+            recipeId: 'unapplied-recipe',
+            category: 'testing',
+            level: 'workspace-only',
+            provides: ['unapplied.configured'],
+            requires: [],
+          },
+        },
+      },
+    });
+
+    const stateData = {
+      workspace: {
+        'unapplied.configured': true,
+        'unapplied.extra.setting': true,
+      },
+      projects: {},
+    };
+
+    setupStateValidationMocks(stateData);
+
+    const { messages, onProgress } = createTestMessages();
+
+    await expect(
+      recipesValidateState({ recipe: 'unapplied-recipe' }, onProgress)
+    ).rejects.toThrow(
+      'Recipe was not applied (missing unapplied-recipe.applied)'
+    );
+
+    expect(messages).toContain(`${icons.error} Validation failed`);
+  });
+
   it('should show detailed debug information when debug mode is enabled', async () => {
     setupMultiLibraryRecipes({
       'test-library': {
@@ -483,6 +525,7 @@ describe('Recipes Validate State Command Integration Tests', () => {
       if (filePath.includes('state.json')) {
         return JSON.stringify({
           workspace: {
+            'debug-recipe.applied': true,
             'debug.configured': true,
             'debug.feature.enabled': true,
           },

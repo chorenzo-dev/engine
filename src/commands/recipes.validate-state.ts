@@ -65,7 +65,12 @@ export async function recipesValidateState(
     onProgress?.(`State file path: ${statePath}`);
   }
 
-  const result = validateStateFile(statePath, provides, recipe.getLevel());
+  const result = validateStateFile(
+    statePath,
+    provides,
+    recipe.getLevel(),
+    options.recipe
+  );
 
   if (result.valid) {
     onProgress?.(`${icons.success} Recipe state is valid`);
@@ -112,7 +117,8 @@ export async function recipesValidateState(
 function validateStateFile(
   statePath: string,
   provides: string[],
-  recipeLevel: string
+  recipeLevel: string,
+  recipeName: string
 ): StateValidationResult {
   let stateData: StateFile;
 
@@ -182,28 +188,55 @@ function validateStateFile(
   const missingProvides: string[] = [];
   const redundantKeys: string[] = [];
 
-  for (const provide of provides) {
-    if (!isProvideInState(provide, stateData, recipeLevel)) {
-      missingProvides.push(provide);
-    }
-  }
+  const appliedKey = `${recipeName}.applied`;
+  const isRecipeApplied = isProvideInState(appliedKey, stateData, recipeLevel);
 
-  if (missingProvides.length > 0) {
+  if (!isRecipeApplied) {
     errors.push({
-      path: 'provides',
-      message: `Missing provides in state file: ${missingProvides.join(', ')}`,
-      code: 'MISSING_PROVIDES',
+      path: 'applied',
+      message: `Recipe was not applied (missing ${appliedKey})`,
+      code: 'RECIPE_NOT_APPLIED',
     });
-  }
 
-  if (provides.length > 0) {
-    const recipePrefixes = getRecipePrefixes(provides);
+    const recipePrefixes = getRecipePrefixes([recipeName]);
+    const stateKeys = getAllKeysFromState(stateData);
+
+    for (const key of stateKeys) {
+      if (isKeyRelatedToRecipe(key, recipePrefixes)) {
+        redundantKeys.push(key);
+      }
+    }
+
+    if (redundantKeys.length > 0) {
+      errors.push({
+        path: 'redundant',
+        message: `Redundant keys in state file (recipe not applied): ${redundantKeys.join(', ')}`,
+        code: 'REDUNDANT_KEYS',
+      });
+    }
+  } else {
+    for (const provide of provides) {
+      if (!isProvideInState(provide, stateData, recipeLevel)) {
+        missingProvides.push(provide);
+      }
+    }
+
+    if (missingProvides.length > 0) {
+      errors.push({
+        path: 'provides',
+        message: `Missing provides in state file: ${missingProvides.join(', ')}`,
+        code: 'MISSING_PROVIDES',
+      });
+    }
+
+    const allExpectedKeys = [...provides, appliedKey];
+    const recipePrefixes = getRecipePrefixes(allExpectedKeys);
     const stateKeys = getAllKeysFromState(stateData);
 
     for (const key of stateKeys) {
       if (
         isKeyRelatedToRecipe(key, recipePrefixes) &&
-        !provides.includes(key)
+        !allExpectedKeys.includes(key)
       ) {
         redundantKeys.push(key);
       }

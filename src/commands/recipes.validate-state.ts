@@ -194,17 +194,28 @@ function isProvideInState(
   const isProjectLevel =
     recipeLevel === 'project-only' || recipeLevel === 'workspace-preferred';
 
-  if (isWorkspaceLevel && stateData.workspace) {
+  if (
+    isWorkspaceLevel &&
+    stateData.workspace &&
+    typeof stateData.workspace === 'object' &&
+    stateData.workspace !== null
+  ) {
     if (provide in stateData.workspace) {
       return true;
     }
   }
 
-  if (isProjectLevel && stateData.projects) {
+  if (
+    isProjectLevel &&
+    stateData.projects &&
+    typeof stateData.projects === 'object' &&
+    stateData.projects !== null
+  ) {
     for (const projectState of Object.values(stateData.projects)) {
       if (
         projectState &&
         typeof projectState === 'object' &&
+        projectState !== null &&
         provide in projectState
       ) {
         return true;

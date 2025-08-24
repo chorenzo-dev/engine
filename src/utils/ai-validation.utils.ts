@@ -34,11 +34,13 @@ export async function performCodeSampleValidation(
     const filesToValidate: FileToValidate[] = [];
 
     for (const [filePath, content] of recipe.fixFiles.entries()) {
-      filesToValidate.push({
-        path: filePath,
-        content,
-        language: RECIPE_FIX_FILE_TYPE,
-      });
+      if (content.trim().length > 0) {
+        filesToValidate.push({
+          path: filePath,
+          content,
+          language: RECIPE_FIX_FILE_TYPE,
+        });
+      }
     }
 
     if (filesToValidate.length === 0) {

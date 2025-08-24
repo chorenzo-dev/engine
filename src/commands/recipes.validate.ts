@@ -27,7 +27,6 @@ export type ValidationCallback = (
 
 export interface ValidateOptions extends Record<string, unknown> {
   target: string;
-  static?: boolean;
 }
 
 export interface ValidationMessage {

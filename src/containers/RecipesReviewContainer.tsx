@@ -6,7 +6,6 @@ import {
   performRecipesReview,
 } from '~/commands/recipes.review';
 import { ProcessDisplay } from '~/components/ProcessDisplay';
-import { emojis } from '~/components/ProcessDisplay';
 import { Step, StepContext, StepSequence } from '~/components/StepSequence';
 import { BaseContainerOptions } from '~/types/common';
 import { extractErrorMessage } from '~/utils/error.utils';
@@ -88,33 +87,7 @@ export const RecipesReviewContainer: React.FC<RecipesReviewContainerProps> = ({
           return (
             <ProcessDisplay title="Recipe review complete!" status="completed">
               <Box flexDirection="column">
-                {reviewResult.messages.map((msg, index) => {
-                  let icon = '';
-                  switch (msg.type) {
-                    case 'success':
-                      icon = emojis.success;
-                      break;
-                    case 'error':
-                      icon = emojis.error;
-                      break;
-                    case 'warning':
-                    case 'info':
-                      icon = '';
-                      break;
-                  }
-                  return (
-                    <Text key={index}>
-                      {icon ? `${icon} ` : ''}
-                      {msg.text}
-                    </Text>
-                  );
-                })}
-                {reviewResult.summary && reviewResult.summary.warnings > 0 && (
-                  <Box marginTop={1} flexDirection="column">
-                    <Text>Summary:</Text>
-                    <Text>{`  Warnings: ${reviewResult.summary.warnings}`}</Text>
-                  </Box>
-                )}
+                <Text>{reviewResult.report}</Text>
               </Box>
             </ProcessDisplay>
           );

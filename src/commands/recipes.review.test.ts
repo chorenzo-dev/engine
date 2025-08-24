@@ -78,21 +78,20 @@ describe('Recipes Review Integration Tests', () => {
         yield {
           type: 'result',
           subtype: 'success',
-          result: JSON.stringify({
-            valid: true,
-            violations: [],
-            summary: {
-              totalFiles: 1,
-              filesWithViolations: 0,
-              totalViolations: 0,
-              violationTypes: {
-                generic_placeholder: 0,
-                incomplete_fragment: 0,
-                abstract_pseudocode: 0,
-                overly_simplistic: 0,
-              },
-            },
-          }),
+          result: `# Recipe Review: recipe
+
+## Status: PASS
+
+## Summary
+- Files reviewed: 1
+- Issues found: 0
+- Violations: None
+
+## Key Findings
+Recipe 'recipe' passed code sample review with no violations found.
+
+## Report Details
+Detailed analysis saved to: \`./.chorenzo/reviews/recipe.json\``,
         };
       });
 
@@ -102,14 +101,9 @@ describe('Recipes Review Integration Tests', () => {
       expect(result.context.inputType).toBe('recipe-folder');
       expect(result.context.target).toBe('/path/to/recipe');
       expect(result.context.recipesReviewed).toEqual(['recipe']);
-      expect(result.messages).toBeDefined();
-      expect(
-        result.messages.some(
-          (msg) =>
-            msg.type === 'success' &&
-            msg.text.includes("Recipe 'recipe' passed code sample review")
-        )
-      ).toBeTruthy();
+      expect(result.report).toBeDefined();
+      expect(result.report).toContain('Recipe Review: recipe');
+      expect(result.report).toContain('Status: PASS');
       expect(mockProgress).toHaveBeenCalledWith(
         'Loading recipe from: /path/to/recipe'
       );
@@ -215,39 +209,22 @@ describe('Recipes Review Integration Tests', () => {
         yield {
           type: 'result',
           subtype: 'success',
-          result: JSON.stringify({
-            valid: false,
-            violations: [
-              {
-                file: 'fix.md',
-                line: 2,
-                type: 'generic_placeholder',
-                description: 'Uses generic placeholder YOUR_API_KEY',
-                suggestion:
-                  'Use a specific example like process.env.OPENAI_API_KEY',
-                codeSnippet: 'const YOUR_API_KEY = "placeholder";',
-              },
-              {
-                file: 'fix.md',
-                line: 3,
-                type: 'incomplete_fragment',
-                description: 'Contains TODO comment indicating incomplete code',
-                suggestion: 'Provide complete implementation example',
-                codeSnippet: 'console.log("TODO: implement this");',
-              },
-            ],
-            summary: {
-              totalFiles: 1,
-              filesWithViolations: 1,
-              totalViolations: 2,
-              violationTypes: {
-                generic_placeholder: 1,
-                incomplete_fragment: 1,
-                abstract_pseudocode: 0,
-                overly_simplistic: 0,
-              },
-            },
-          }),
+          result: `# Recipe Review: recipe-with-violations
+
+## Status: FAIL
+
+## Summary
+- Files reviewed: 1
+- Issues found: 2
+- Violations: generic_placeholder (1), incomplete_fragment (1)
+
+## Key Findings
+Code Sample Issues:
+- fix.md:2 (generic_placeholder): Uses generic placeholder YOUR_API_KEY
+- fix.md:3 (incomplete_fragment): Contains TODO comment
+
+## Report Details
+Detailed analysis saved to: \`./.chorenzo/reviews/recipe-with-violations.json\``,
         };
       });
 
@@ -259,34 +236,16 @@ describe('Recipes Review Integration Tests', () => {
       expect(result.context.recipesReviewed).toEqual([
         'recipe-with-violations',
       ]);
-      expect(result.messages).toBeDefined();
-
-      expect(
-        result.messages.some(
-          (msg) =>
-            msg.type === 'warning' && msg.text.includes('Code Sample Issues:')
-        )
-      ).toBeTruthy();
-
-      expect(
-        result.messages.some(
-          (msg) =>
-            msg.type === 'warning' &&
-            msg.text.includes(
-              'fix.md:2 (generic_placeholder): Uses generic placeholder YOUR_API_KEY'
-            )
-        )
-      ).toBeTruthy();
-
-      expect(
-        result.messages.some(
-          (msg) =>
-            msg.type === 'warning' &&
-            msg.text.includes(
-              'fix.md:3 (incomplete_fragment): Contains TODO comment'
-            )
-        )
-      ).toBeTruthy();
+      expect(result.report).toBeDefined();
+      expect(result.report).toContain('Recipe Review: recipe-with-violations');
+      expect(result.report).toContain('Status: FAIL');
+      expect(result.report).toContain('Code Sample Issues:');
+      expect(result.report).toContain(
+        'fix.md:2 (generic_placeholder): Uses generic placeholder YOUR_API_KEY'
+      );
+      expect(result.report).toContain(
+        'fix.md:3 (incomplete_fragment): Contains TODO comment'
+      );
     });
 
     it('should handle AI validation failures gracefully', async () => {
@@ -340,24 +299,16 @@ describe('Recipes Review Integration Tests', () => {
         };
       });
 
-      const result = await performRecipesReview({
-        target: '/path/to/recipe-validation-error',
-      });
-
-      expect(result.context.target).toBe('/path/to/recipe-validation-error');
-      expect(result.context.recipesReviewed).toEqual([
-        'recipe-validation-error',
-      ]);
-
-      expect(
-        result.messages.some(
-          (msg) =>
-            msg.type === 'warning' && msg.text.includes('AI review failed for')
-        )
-      ).toBeTruthy();
+      await expect(
+        performRecipesReview({
+          target: '/path/to/recipe-validation-error',
+        })
+      ).rejects.toThrow(
+        "Review failed for 'recipe-validation-error': Code sample validation failed: AI validation failed: AI validation failed: AI validation failed: AI review failed"
+      );
     });
 
-    it('should skip review for recipes with no fix files', async () => {
+    it('should generate review for recipes with no fix files', async () => {
       mockExistsSync.mockImplementation((filePath: string) => {
         return (
           filePath === '/path/to/recipe-no-fixes' ||
@@ -393,7 +344,31 @@ describe('Recipes Review Integration Tests', () => {
         if (filePath === '/path/to/recipe-no-fixes/fix.md') {
           return '   \n  \n   ';
         }
+        if (filePath.includes('validation/code_sample_validation.md')) {
+          return 'Validate code samples in: {{#each files}}{{this.path}}{{/each}}';
+        }
         return '';
+      });
+
+      mockQuery.mockImplementation(function* () {
+        yield {
+          type: 'result',
+          subtype: 'success',
+          result: `# Recipe Review: recipe-no-fixes
+
+## Status: PASS
+
+## Summary
+- Files reviewed: 0
+- Issues found: 0
+- Violations: None
+
+## Key Findings
+Recipe 'recipe-no-fixes' passed code sample review. No fix files found with content to validate.
+
+## Report Details
+Detailed analysis saved to: \`./.chorenzo/reviews/recipe-no-fixes.json\``,
+        };
       });
 
       const result = await performRecipesReview({
@@ -402,18 +377,14 @@ describe('Recipes Review Integration Tests', () => {
 
       expect(result.context.target).toBe('/path/to/recipe-no-fixes');
       expect(result.context.recipesReviewed).toEqual(['recipe-no-fixes']);
+      expect(result.report).toBeDefined();
+      expect(result.report).toContain('Recipe Review: recipe-no-fixes');
+      expect(result.report).toContain('Status: PASS');
+      expect(result.report).toContain(
+        'No fix files found with content to validate'
+      );
 
-      expect(
-        result.messages.some(
-          (msg) =>
-            msg.type === 'success' &&
-            msg.text.includes(
-              "Recipe 'recipe-no-fixes' passed code sample review"
-            )
-        )
-      ).toBeTruthy();
-
-      expect(mockQuery).not.toHaveBeenCalled();
+      expect(mockQuery).toHaveBeenCalled();
     });
   });
 
@@ -438,21 +409,20 @@ describe('Recipes Review Integration Tests', () => {
         yield {
           type: 'result',
           subtype: 'success',
-          result: JSON.stringify({
-            valid: true,
-            violations: [],
-            summary: {
-              totalFiles: 1,
-              filesWithViolations: 0,
-              totalViolations: 0,
-              violationTypes: {
-                generic_placeholder: 0,
-                incomplete_fragment: 0,
-                abstract_pseudocode: 0,
-                overly_simplistic: 0,
-              },
-            },
-          }),
+          result: `# Recipe Review: test-recipe
+
+## Status: PASS
+
+## Summary
+- Files reviewed: 1
+- Issues found: 0
+- Violations: None
+
+## Key Findings
+Recipe 'test-recipe' passed code sample review with no violations found.
+
+## Report Details
+Detailed analysis saved to: \`./.chorenzo/reviews/test-recipe.json\``,
         };
       });
 
@@ -462,9 +432,9 @@ describe('Recipes Review Integration Tests', () => {
       expect(result.context.inputType).toBe('recipe-name');
       expect(result.context.target).toBe('test-recipe');
       expect(result.context.recipesReviewed).toEqual(['test-recipe']);
-      expect(
-        result.messages.some((msg) => msg.type === 'success')
-      ).toBeTruthy();
+      expect(result.report).toBeDefined();
+      expect(result.report).toContain('Recipe Review: test-recipe');
+      expect(result.report).toContain('Status: PASS');
       expect(mockProgress).toHaveBeenCalledWith(
         'Searching for recipe: test-recipe'
       );

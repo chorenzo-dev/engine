@@ -2,17 +2,11 @@ import * as fs from 'fs';
 
 import { Recipe } from '~/types/recipe';
 import {
-  ReviewCallback,
   ReviewContext,
-  ReviewMessage,
   ReviewOptions,
   ReviewResult,
-  ReviewSummary,
 } from '~/types/recipe-review';
-import {
-  CodeSampleValidationError,
-  performCodeSampleValidation,
-} from '~/utils/ai-validation.utils';
+import { performCodeSampleValidation } from '~/utils/ai-validation.utils';
 import { chorenzoConfig } from '~/utils/config.utils';
 import { libraryManager } from '~/utils/library-manager.utils';
 import { resolvePath } from '~/utils/path.utils';
@@ -25,38 +19,6 @@ import {
   RecipesError,
   detectInputType,
 } from './recipes.shared';
-
-interface ErrorHandlingStats {
-  totalErrors: number;
-  totalWarnings: number;
-  totalFailed: number;
-}
-
-function handleRecipeReviewError(
-  error: unknown,
-  recipeId: string,
-  messages: ReviewMessage[],
-  onReview: ReviewCallback | undefined,
-  stats: ErrorHandlingStats
-): void {
-  if (error instanceof CodeSampleValidationError) {
-    const errorMsg = recipeId.startsWith("'")
-      ? `AI review failed for ${recipeId}: ${extractErrorMessage(error)}`
-      : `${recipeId} AI review failed: ${extractErrorMessage(error)}`;
-    messages.push({ type: 'warning', text: errorMsg });
-    onReview?.('warning', errorMsg);
-    stats.totalWarnings++;
-    stats.totalFailed++;
-  } else {
-    const errorMsg = recipeId.startsWith("'")
-      ? `Review failed for ${recipeId}: ${extractErrorMessage(error)}`
-      : `${recipeId} review failed: ${extractErrorMessage(error)}`;
-    messages.push({ type: 'error', text: errorMsg });
-    onReview?.('error', errorMsg);
-    stats.totalErrors++;
-    stats.totalFailed++;
-  }
-}
 
 export type { ReviewResult } from '~/types/recipe-review';
 
@@ -78,12 +40,6 @@ export async function performRecipesReview(
       : resolvePath(options.target);
   onProgress?.(`Reviewing: ${resolvedTarget}`);
 
-  const messages: ReviewMessage[] = [];
-  const handleReview: ReviewCallback = (type, message) => {
-    messages.push({ type, text: message });
-    onProgress?.(message);
-  };
-
   try {
     const baseContext = {
       inputType,
@@ -96,15 +52,13 @@ export async function performRecipesReview(
         return await reviewRecipeByName(
           resolvedTarget,
           baseContext,
-          onProgress,
-          handleReview
+          onProgress
         );
       case InputType.RecipeFolder:
         return await reviewRecipeFolder(
           resolvedTarget,
           baseContext,
-          onProgress,
-          handleReview
+          onProgress
         );
       case InputType.Library:
         throw new RecipesError(
@@ -133,8 +87,7 @@ export async function performRecipesReview(
 async function reviewRecipeByName(
   recipeName: string,
   context: Omit<ReviewContext, 'recipesReviewed'>,
-  onProgress?: ProgressCallback,
-  onReview?: ReviewCallback
+  onProgress?: ProgressCallback
 ): Promise<ReviewResult> {
   onProgress?.(`Searching for recipe: ${recipeName}`);
 
@@ -163,14 +116,13 @@ async function reviewRecipeByName(
     );
   }
 
-  return reviewRecipeFolder(recipePath, context, onProgress, onReview);
+  return reviewRecipeFolder(recipePath, context, onProgress);
 }
 
 async function reviewRecipeFolder(
   recipePath: string,
   context: Omit<ReviewContext, 'recipesReviewed'>,
-  onProgress?: ProgressCallback,
-  onReview?: ReviewCallback
+  onProgress?: ProgressCallback
 ): Promise<ReviewResult> {
   onProgress?.(`Loading recipe from: ${recipePath}`);
 
@@ -193,65 +145,22 @@ async function reviewRecipeFolder(
 
   onProgress?.(`Reviewing recipe: ${recipe.metadata.id}`);
 
-  const messages: ReviewMessage[] = [];
-  let totalErrors = 0;
-  let totalWarnings = 0;
-  let codeSampleValidation;
+  let report: string;
 
   try {
-    codeSampleValidation = await performCodeSampleValidation(recipe);
-
-    if (codeSampleValidation.violations.length > 0) {
-      const violationMessages = codeSampleValidation.violations.map(
-        (violation) => {
-          return `${violation.file}:${violation.line} (${violation.type}): ${violation.description} - ${violation.suggestion}`;
-        }
-      );
-
-      const issuesText = `Code Sample Issues:\n${violationMessages.map((v) => `  - ${v}`).join('\n')}`;
-
-      messages.push({
-        type: 'warning',
-        text: issuesText,
-      });
-      totalWarnings++;
-      onReview?.('warning', issuesText);
-    } else {
-      const successMsg = `Recipe '${recipe.metadata.id}' passed code sample review`;
-      messages.push({
-        type: 'success',
-        text: successMsg,
-      });
-      onReview?.('success', successMsg);
-    }
+    report = await performCodeSampleValidation(recipe, recipePath, onProgress);
   } catch (error) {
-    const stats = { totalErrors, totalWarnings, totalFailed: 0 };
-    handleRecipeReviewError(
-      error,
-      `'${recipe.metadata.id}'`,
-      messages,
-      onReview,
-      stats
+    throw new RecipesError(
+      `Review failed for '${recipe.metadata.id}': ${extractErrorMessage(error)}`,
+      'REVIEW_FAILED'
     );
-    totalErrors = stats.totalErrors;
-    totalWarnings = stats.totalWarnings;
   }
-
-  const passed =
-    totalErrors === 0 && codeSampleValidation?.violations.length === 0;
-  const summary: ReviewSummary = {
-    total: 1,
-    passed: passed ? 1 : 0,
-    failed: passed ? 0 : 1,
-    warnings: totalWarnings,
-  };
 
   return {
     context: {
       ...context,
       recipesReviewed: [recipe.metadata.id],
     },
-    messages,
-    summary,
+    report,
   };
 }

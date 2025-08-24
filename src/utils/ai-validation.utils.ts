@@ -1,20 +1,15 @@
 import { query } from '@anthropic-ai/claude-code';
 
-import {
-  CodeSampleValidationResult,
-  CodeSampleViolationType,
-  FileToValidate,
-  Recipe,
-} from '~/types/recipe';
+import { Recipe } from '~/types/recipe';
 import {
   CodeChangesEventHandlers,
   executeCodeChangesOperation,
 } from '~/utils/code-changes-events.utils';
+import { Logger } from '~/utils/logger.utils';
 import { loadTemplate, renderPrompt } from '~/utils/prompts.utils';
 
 import { extractErrorMessage } from './error.utils';
 
-const RECIPE_FIX_FILE_TYPE = 'markdown';
 const DEFAULT_AI_MODEL = 'sonnet';
 
 export class CodeSampleValidationError extends Error {
@@ -28,41 +23,16 @@ export class CodeSampleValidationError extends Error {
 }
 
 export async function performCodeSampleValidation(
-  recipe: Recipe
-): Promise<CodeSampleValidationResult> {
+  recipe: Recipe,
+  recipePath: string,
+  onProgress?: (message: string | null, isThinking?: boolean) => void
+): Promise<string> {
   try {
-    const filesToValidate: FileToValidate[] = [];
-
-    for (const [filePath, content] of recipe.fixFiles.entries()) {
-      if (content.trim().length > 0) {
-        filesToValidate.push({
-          path: filePath,
-          content,
-          language: RECIPE_FIX_FILE_TYPE,
-        });
-      }
-    }
-
-    if (filesToValidate.length === 0) {
-      return {
-        valid: true,
-        violations: [],
-        summary: {
-          totalFiles: 0,
-          filesWithViolations: 0,
-          totalViolations: 0,
-          violationTypes: {
-            generic_placeholder: 0,
-            incomplete_fragment: 0,
-            abstract_pseudocode: 0,
-            overly_simplistic: 0,
-          },
-        },
-      };
-    }
-
-    const validationResult = await validateRecipeFixContent(filesToValidate);
-    return validationResult;
+    return await validateRecipeFixContent(
+      recipe.metadata.id,
+      recipePath,
+      onProgress
+    );
   } catch (error) {
     throw new CodeSampleValidationError(
       `Code sample validation failed: ${extractErrorMessage(error)}`,
@@ -72,30 +42,39 @@ export async function performCodeSampleValidation(
 }
 
 async function validateRecipeFixContent(
-  files: FileToValidate[]
-): Promise<CodeSampleValidationResult> {
+  recipeName: string,
+  recipePath: string,
+  onProgress?: (message: string | null, isThinking?: boolean) => void
+): Promise<string> {
   try {
+    onProgress?.('Analyzing code samples with AI', true);
     const template = loadTemplate('validation/code_sample_validation');
     const prompt = renderPrompt(template, {
-      files: files.map((file) => ({
-        path: file.path,
-        content: file.content,
-        language: RECIPE_FIX_FILE_TYPE,
-      })),
+      recipeName,
+      recipePath,
     });
+
+    Logger.info('AI validation prompt details');
 
     let responseText = '';
 
     const handlers: CodeChangesEventHandlers = {
-      onProgress: () => {},
-      onThinkingStateChange: () => {},
-      onComplete: () => {},
+      onProgress: (message) => {
+        onProgress?.(message || 'Processing AI validation', false);
+      },
+      onThinkingStateChange: (isThinking) => {
+        onProgress?.(null, isThinking);
+      },
+      onComplete: () => {
+        onProgress?.('AI validation complete', false);
+      },
       onError: (error) => {
         throw new CodeSampleValidationError(
           `AI validation failed: ${extractErrorMessage(error)}`,
           'AI_VALIDATION_FAILED'
         );
       },
+      showChorenzoOperations: true,
     };
 
     const operationStartTime = new Date();
@@ -104,8 +83,9 @@ async function validateRecipeFixContent(
         prompt,
         options: {
           model: DEFAULT_AI_MODEL,
-          allowedTools: [],
+          allowedTools: ['Read', 'LS'],
           permissionMode: 'bypassPermissions',
+          cwd: recipePath,
         },
       }),
       handlers,
@@ -113,6 +93,7 @@ async function validateRecipeFixContent(
     );
 
     if (!operationResult.success) {
+      Logger.error('AI validation operation failed');
       throw new CodeSampleValidationError(
         operationResult.error || 'AI validation failed',
         'AI_VALIDATION_FAILED'
@@ -120,114 +101,14 @@ async function validateRecipeFixContent(
     }
 
     responseText = String(operationResult.result || '');
-    const validationResult = parseFixContentValidationResponse(responseText);
 
-    return validationResult;
+    Logger.info('AI validation completed successfully');
+
+    return responseText;
   } catch (error) {
     throw new CodeSampleValidationError(
       `AI validation failed: ${extractErrorMessage(error)}`,
       'AI_VALIDATION_FAILED'
     );
   }
-}
-
-function parseFixContentValidationResponse(
-  response: string
-): CodeSampleValidationResult {
-  try {
-    let jsonString: string;
-
-    const codeBlockMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
-    if (codeBlockMatch?.[1]) {
-      jsonString = codeBlockMatch[1];
-    } else {
-      const objectMatch = response.match(/\{[\s\S]*\}/);
-      if (objectMatch) {
-        jsonString = objectMatch[0];
-      } else {
-        jsonString = response.trim();
-      }
-    }
-
-    const parsed = JSON.parse(jsonString);
-
-    if (!isValidFixContentValidationResponse(parsed)) {
-      throw new Error('Invalid response structure');
-    }
-
-    return parsed;
-  } catch (error) {
-    throw new CodeSampleValidationError(
-      `Failed to parse AI validation response: ${extractErrorMessage(error)}`,
-      'RESPONSE_PARSE_FAILED'
-    );
-  }
-}
-
-function isValidFixContentValidationResponse(
-  obj: unknown
-): obj is CodeSampleValidationResult {
-  const isObject = (value: unknown): value is Record<string, unknown> =>
-    value !== null && typeof value === 'object';
-
-  if (!isObject(obj)) {
-    return false;
-  }
-
-  if (typeof obj['valid'] !== 'boolean') {
-    return false;
-  }
-
-  if (!Array.isArray(obj['violations'])) {
-    return false;
-  }
-
-  if (!isObject(obj['summary'])) {
-    return false;
-  }
-
-  const summary = obj['summary'];
-  const requiredSummaryFields = [
-    'totalFiles',
-    'filesWithViolations',
-    'totalViolations',
-    'violationTypes',
-  ] as const;
-  if (!requiredSummaryFields.every((field) => field in summary)) {
-    return false;
-  }
-
-  const validTypes: Set<CodeSampleViolationType> = new Set([
-    'generic_placeholder',
-    'incomplete_fragment',
-    'abstract_pseudocode',
-    'overly_simplistic',
-  ]);
-
-  for (const violation of obj['violations']) {
-    if (!isObject(violation)) {
-      return false;
-    }
-
-    const requiredViolationFields = [
-      'file',
-      'line',
-      'type',
-      'description',
-      'suggestion',
-      'codeSnippet',
-    ] as const;
-    if (!requiredViolationFields.every((field) => field in violation)) {
-      return false;
-    }
-
-    if (
-      typeof violation['type'] !== 'string' ||
-      !validTypes.has(violation['type'] as CodeSampleViolationType)
-    ) {
-      return false;
-    }
-  }
-
-  return true;
 }

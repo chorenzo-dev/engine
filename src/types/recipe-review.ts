@@ -25,8 +25,7 @@ export interface ReviewSummary {
 
 export interface ReviewResult {
   context: ReviewContext;
-  messages: ReviewMessage[];
-  summary?: ReviewSummary;
+  report: string;
 }
 
 export type ReviewCallback = (

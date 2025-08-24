@@ -1027,6 +1027,7 @@ async function executeRecipe(
             'LS',
             'Glob',
             'Grep',
+            'Bash(npx chorenzo recipes validate-state*)',
           ],
           disallowedTools: [
             'Bash(git commit:*)',
@@ -1095,9 +1096,23 @@ async function executeRecipe(
       'Recipe application completed successfully'
     );
 
-    const level = projectPath === 'workspace' ? 'workspace' : 'project';
-    const actualProjectPath =
-      projectPath === 'workspace' ? undefined : projectPath;
+    const recipeLevel = recipe.getLevel();
+    let level: 'workspace' | 'project';
+    let actualProjectPath: string | undefined;
+
+    if (recipeLevel === 'workspace-only') {
+      level = 'workspace';
+      actualProjectPath = undefined;
+    } else if (recipeLevel === 'project-only') {
+      level = 'project';
+      actualProjectPath = projectPath === 'workspace' ? '' : projectPath;
+    } else if (recipeLevel === 'workspace-preferred') {
+      level = projectPath === 'workspace' ? 'workspace' : 'project';
+      actualProjectPath = projectPath === 'workspace' ? undefined : projectPath;
+    } else {
+      level = projectPath === 'workspace' ? 'workspace' : 'project';
+      actualProjectPath = projectPath === 'workspace' ? undefined : projectPath;
+    }
 
     stateManager.recordAppliedRecipe(recipe.getId(), level, actualProjectPath);
 

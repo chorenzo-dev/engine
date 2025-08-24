@@ -1,6 +1,7 @@
 {
   "projects": {
     "": {
+      "strict-typescript-config.applied": false,
       "strict-typescript-config.configured": true
     }
   },
@@ -13,11 +14,11 @@
     "code-formatting-sort-imports.exists": true,
     "code-formatting-sort-imports.variant": "prettier-plugin-sort-imports",
     "code-formatting.applied": true,
-    "code-formatting.exists": true,
     "code-formatting.variant": "prettier",
-    "code-linting.applied": false,
+    "code-linting.applied": true,
     "code-linting.exists": true,
     "code-linting.variant": "eslint",
+    "pre-commit-checks.applied": true,
     "pre-commit-checks.checks_found": true,
     "pre-commit-checks.hooks_configured": true,
     "update-readme.applied": true

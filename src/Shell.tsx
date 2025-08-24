@@ -18,6 +18,7 @@ interface ShellProps {
     | 'analysis.validate'
     | 'init'
     | 'recipes-validate'
+    | 'recipes-review'
     | 'recipes-apply'
     | 'recipes-generate'
     | 'recipes-list'

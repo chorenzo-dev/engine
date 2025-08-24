@@ -158,6 +158,42 @@ Examples:
   });
 
 recipesCommand
+  .command('review <target>')
+  .description('Review recipe content quality using AI analysis')
+  .option('--debug', 'Show all progress messages in list format')
+  .addHelpText(
+    'after',
+    `
+Arguments:
+  target    Recipe name, local path, or git URL
+
+Examples:
+  $ chorenzo recipes review code-formatting
+  $ chorenzo recipes review ~/my-recipes/custom-recipe
+  $ chorenzo recipes review ~/.chorenzo/recipes/core
+  $ chorenzo recipes review https://github.com/chorenzo-dev/recipes-core.git
+`
+  )
+  .action(async (target, options) => {
+    const { waitUntilExit } = render(
+      React.createElement(Shell, {
+        command: 'recipes-review',
+        options: {
+          target,
+          debug: options.debug,
+        },
+      })
+    );
+
+    try {
+      await waitUntilExit();
+    } catch (error) {
+      Logger.error(extractErrorMessage(error));
+      process.exit(1);
+    }
+  });
+
+recipesCommand
   .command('apply <recipe>')
   .description('Apply a recipe to the workspace')
   .option('--variant <id>', 'Specific variant to use')

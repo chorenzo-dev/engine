@@ -304,7 +304,7 @@ Detailed analysis saved to: \`./.chorenzo/reviews/recipe-with-violations.json\``
           target: '/path/to/recipe-validation-error',
         })
       ).rejects.toThrow(
-        "Review failed for 'recipe-validation-error': Code sample validation failed: AI validation failed: AI validation failed: AI validation failed: AI review failed"
+        "Review failed for 'recipe-validation-error': Code sample review failed: AI review failed: AI review failed: AI review failed: AI review failed"
       );
     });
 

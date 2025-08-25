@@ -261,7 +261,7 @@ export class WorkspaceStateManager {
 
     if (level === 'workspace') {
       this.setWorkspaceValue(appliedKey, true);
-    } else if (level === 'project' && projectPath) {
+    } else if (level === 'project' && projectPath !== undefined) {
       this.setProjectValue(projectPath, appliedKey, true);
     } else {
       throw new StateManagerError(

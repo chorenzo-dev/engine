@@ -189,6 +189,29 @@ Examples:
   });
 
 recipesCommand
+  .command('validate-state <recipe>', { hidden: true })
+  .description('Validate recipe state consistency')
+  .option('--debug', 'Show all progress messages in list format')
+  .action(async (recipe, options) => {
+    const { waitUntilExit } = render(
+      React.createElement(Shell, {
+        command: 'recipes-validate-state',
+        options: {
+          recipe,
+          debug: options.debug,
+        },
+      })
+    );
+
+    try {
+      await waitUntilExit();
+    } catch (error) {
+      Logger.error(extractErrorMessage(error));
+      process.exit(1);
+    }
+  });
+
+recipesCommand
   .command('apply <recipe>')
   .description('Apply a recipe to the workspace')
   .option('--variant <id>', 'Specific variant to use')

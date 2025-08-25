@@ -1,6 +1,6 @@
 {
   "name": "chorenzo",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Open-source CLI engine that automates your engineering workflow with AI-powered workspace analysis and recipe application",
   "main": "dist/main.js",
   "type": "module",

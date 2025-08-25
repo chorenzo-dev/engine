@@ -104,3 +104,13 @@ Choose the appropriate recipe level based on the recipe's scope and intended usa
    - If multiple tools exist, create multiple variant files
 
 Use the Write tool to create each file following these principles.
+
+**FINAL VALIDATION STEPS** (Required before completion):
+
+After creating all recipe files:
+
+1. Run `chorenzo recipes validate {{ recipe_path }} --debug`
+2. Run `chorenzo recipes review {{ recipe_id }} --debug`
+3. If issues found, fix them and run both commands again (once)
+4. If issues still persist after fixing, include them in your final report
+5. Report completion with any remaining validation warnings

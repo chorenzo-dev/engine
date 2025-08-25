@@ -6,7 +6,7 @@ import {
   ReviewOptions,
   ReviewResult,
 } from '~/types/recipe-review';
-import { performCodeSampleValidation } from '~/utils/ai-validation.utils';
+import { performCodeSampleReview } from '~/utils/ai-review.utils';
 import { chorenzoConfig } from '~/utils/config.utils';
 import { libraryManager } from '~/utils/library-manager.utils';
 import { resolvePath } from '~/utils/path.utils';
@@ -148,7 +148,7 @@ async function reviewRecipeFolder(
   let report: string;
 
   try {
-    report = await performCodeSampleValidation(recipe, recipePath, onProgress);
+    report = await performCodeSampleReview(recipe, recipePath, onProgress);
   } catch (error) {
     throw new RecipesError(
       `Review failed for '${recipe.metadata.id}': ${extractErrorMessage(error)}`,

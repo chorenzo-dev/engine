@@ -20,6 +20,7 @@ export const mockMkdirSync = jest.fn();
 export const mockWriteFileSync = jest.fn();
 export const mockAppendFileSync = jest.fn();
 export const mockCreateWriteStream = jest.fn();
+export const mockMkdtempSync = jest.fn<(prefix: string) => string>();
 export const mockWriteFileAtomicSync = jest.fn();
 
 jest.unstable_mockModule('os', () => ({
@@ -34,6 +35,7 @@ jest.unstable_mockModule('fs', () => ({
   readFileSync: mockReadFileSync,
   rmSync: mockRmSync,
   mkdirSync: mockMkdirSync,
+  mkdtempSync: mockMkdtempSync,
   writeFileSync: mockWriteFileSync,
   appendFileSync: mockAppendFileSync,
   createWriteStream: mockCreateWriteStream,
@@ -377,6 +379,7 @@ export const setupDefaultMocks = () => {
     once: jest.fn(),
     emit: jest.fn(),
   }));
+  mockMkdtempSync.mockImplementation(() => `/tmp/test-temp-${Date.now()}`);
   mockRmSync.mockImplementation(() => {});
   mockQuery.mockImplementation(function* () {
     const validationResult = {

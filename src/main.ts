@@ -155,6 +155,40 @@ Examples:
   });
 
 recipesCommand
+  .command('review <target>')
+  .description('Review recipe content quality using AI analysis')
+  .option('--debug', 'Show all progress messages in list format')
+  .addHelpText(
+    'after',
+    `
+Arguments:
+  target    Recipe name or local path
+
+Examples:
+  $ chorenzo recipes review code-formatting
+  $ chorenzo recipes review ~/my-recipes/custom-recipe
+`
+  )
+  .action(async (target, options) => {
+    const { waitUntilExit } = render(
+      React.createElement(Shell, {
+        command: 'recipes-review',
+        options: {
+          target,
+          debug: options.debug,
+        },
+      })
+    );
+
+    try {
+      await waitUntilExit();
+    } catch (error) {
+      Logger.error(extractErrorMessage(error));
+      process.exit(1);
+    }
+  });
+
+recipesCommand
   .command('validate-state <recipe>', { hidden: true })
   .description('Validate recipe state consistency')
   .option('--debug', 'Show all progress messages in list format')

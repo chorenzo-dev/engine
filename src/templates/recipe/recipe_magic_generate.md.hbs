@@ -84,14 +84,22 @@ Choose the appropriate recipe level based on the recipe's scope and intended usa
    - Conservative requires lists referencing only essential dependencies
    - Separate variants for each tool/approach you identified
 2. Create {{ recipe_path }}/prompt.md with:
-   - Generic investigation steps
-   - Ecosystem-agnostic guidance
+   - **WHAT and WHY only**: Goal statement and investigation steps to discover current state
+   - **NO implementation details**: Do not include HOW to fix, install, or configure
+   - Generic discovery/detection steps that identify what needs to be done
+   - **CRITICAL**: Include Expected Output descriptions for EVERY field you list in the "provides" section of metadata.yaml
+   - **CRITICAL**: Each provides field description should explain what the fact represents and how it's determined (through investigation or as result of application)
+   - Ecosystem-agnostic investigation logic
 3. Create {{ recipe_path }}/fix.md with:
+   - **HOW only**: Implementation instructions for achieving the desired state
+   - **NO investigation logic**: Do not include discovery or detection steps
    - Base instructions that work for all ecosystems
-   - Common setup and configuration steps
+   - Common setup and configuration steps that apply to all variants
 4. Create {{ recipe_path }}/variants/[ecosystem]\_[variant].md or {{ recipe_path }}/variants/[variant].md with:
+   - **ADDITIVE content only**: Additional steps that extend fix.md
+   - **NO duplication**: Do not repeat content from fix.md
    - ONE tool/approach per variant file
-   - Specific implementation for that ecosystem and variant
+   - Variant-specific implementation details only
    - Minimal, essential code examples only
    - If multiple tools exist, create multiple variant files
 

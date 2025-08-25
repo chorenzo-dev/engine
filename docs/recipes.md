@@ -89,33 +89,45 @@ requires: [] # Dependencies (array of {key: fact, equals: value}) or project cha
 
 ### prompt.md
 
-Single unified prompt file with three required sections:
+Single unified prompt file with three required sections that focuses on WHAT to investigate and WHY:
 
 ```markdown
 ## Goal
 
-One-sentence goal describing what this recipe accomplishes.
+One-sentence goal describing what this recipe accomplishes (the end state).
 
 ## Investigation
 
 1. **Step one**
-   - Specific, actionable instruction
-   - Tool-agnostic discovery commands
+   - Specific, actionable discovery instruction
+   - Tool-agnostic detection commands
 2. **Step two**
-   - Focus on detection, not analysis
+   - Focus on detection, not implementation
    - No vague instructions like "examine files"
 
 ## Expected Output
 
 - <recipe_id>.key1: Clear description of what this boolean/string represents
 - <recipe_id>.key2: Another fact this recipe will emit
+
+**CRITICAL**: Every field listed in metadata.yaml's "provides" section MUST have:
+
+1. A clear description here explaining what it represents
+2. An explanation of how it will be determined (either discovered through investigation OR set as a result of recipe application)
 ```
 
-**Important**: Investigation and fix prompts are consumed by machines, not humans. Use definitive, declarative language (e.g., "Install the package" not "You should install the package").
+**Content Rules for prompt.md**:
+
+- ✅ MUST contain: Goal statement, investigation steps to discover current state, expected output facts
+- ✅ MUST contain: Clear descriptions in Expected Output section for EVERY field listed in the "provides" section of metadata.yaml
+- ✅ MUST explain: How each provides field will be determined (through investigation or as result of recipe application)
+- ❌ MUST NOT contain: Implementation instructions, HOW to fix/install/configure, actual code samples or commands
+
+**Important**: Investigation prompts are consumed by machines, not humans. Use definitive, declarative language (e.g., "Check if package exists" not "You should check if package exists").
 
 ### fix.md
 
-Base implementation instructions that work for all ecosystems:
+Base implementation instructions that focus on HOW to achieve the desired state:
 
 ```markdown
 # Setting up [Recipe Name]
@@ -133,9 +145,18 @@ Base configuration that applies universally.
 How to verify the setup is working correctly.
 ```
 
+**Content Rules for fix.md**:
+
+- ✅ MUST contain: HOW to install, configure, and verify the setup
+- ✅ MUST contain: Base implementation that applies to all variants
+- ✅ MUST contain: Only single-line code samples when truly universal
+- ❌ MUST NOT contain: Investigation/discovery logic (belongs in prompt.md)
+- ❌ MUST NOT contain: Variant-specific details (belongs in variant files)
+- ❌ MUST NOT contain: Multi-line code blocks (explain verbally instead)
+
 ### variants/[variant].md
 
-Optional variant-specific additions for specific tools or ecosystems:
+Optional variant-specific ADDITIONS that extend the base fix.md:
 
 ```markdown
 # [Variant Name] specific additions
@@ -153,7 +174,17 @@ Configuration specific to this tool or ecosystem.
 Additional verification steps for this variant.
 ```
 
-**Content Concatenation**: When applying a recipe with a variant, the system automatically concatenates `fix.md` content with the variant content: `baseContent + '\n\n' + variantContent`. This allows for shared base instructions with variant-specific additions.
+**Content Rules for variant files**:
+
+- ✅ MUST contain: ONLY variant-specific additions that extend fix.md
+- ✅ MUST be: Additive content that complements the base implementation
+- ✅ MUST contain: Only single-line code samples specific to this variant
+- ❌ MUST NOT contain: Content duplicated from fix.md
+- ❌ MUST NOT contain: Investigation logic (belongs in prompt.md)
+- ❌ MUST NOT contain: Base instructions that apply to all variants (belongs in fix.md)
+- ❌ MUST NOT contain: Multi-line code blocks (explain verbally instead)
+
+**Content Concatenation**: When applying a recipe with a variant, the system automatically concatenates `fix.md` content with the variant content: `baseContent + '\n\n' + variantContent`. This ensures variant files only need to contain additional, variant-specific instructions.
 
 ## Recipe Design Principles
 

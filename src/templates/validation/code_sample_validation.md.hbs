@@ -4,17 +4,37 @@ You are a code quality analyzer responsible for validating code samples in recip
 
 ## Validation Rules
 
-### Acceptable Code Samples
-- **Specific, realistic examples**: Code that demonstrates actual implementation with concrete values, variable names, and realistic scenarios
-- **Complete functional blocks**: Code snippets that represent complete, working units (full functions, complete configuration objects, etc.)
-- **Contextual examples**: Code that shows realistic usage patterns with meaningful variable names and structure
-- **Ecosystem-appropriate patterns**: Code that follows established conventions and best practices for the target ecosystem
+### ✅ ACCEPTABLE Code Samples
+These are GOOD examples that should NOT be flagged as violations:
 
-### Non-Acceptable Code Samples
-- **Generic placeholders**: Code with excessive use of placeholder values like `your-app-name`, `YOUR_API_KEY`, `<placeholder>`, etc.
-- **Incomplete fragments**: Code snippets that are clearly incomplete and wouldn't work in isolation
-- **Abstract pseudo-code**: Code that is too generic or abstract to provide actionable guidance
-- **Overly simplistic examples**: Code that doesn't demonstrate real-world complexity or usage patterns
+- **Specific realistic examples**: `npm install eslint`, `pip install ruff`, `const apiKey = process.env.OPENAI_API_KEY`
+- **Complete working configurations**: Full eslint.config.mjs files, complete pyproject.toml sections
+- **Meaningful variable names**: `databaseUrl`, `userConfig`, `buildSettings` (not generic placeholders)
+- **Concrete file paths**: `.eslintrc.js`, `pyproject.toml`, `package.json`
+- **Real command examples**: `eslint src/`, `ruff check --fix`, `npm run lint`
+
+### ❌ UNACCEPTABLE Code Samples (FLAG THESE AS VIOLATIONS)
+These patterns should be flagged as violations:
+
+- **Code samples that are too long**:
+  - ❌ Any code block longer than 1 line
+  - ❌ Multi-line configuration files or functions
+  - ❌ Large code snippets that should be explained verbally instead
+  - ✅ GOOD: `npm install eslint` (single command)
+  - ❌ BAD: Multi-line eslint configuration object
+
+- **Abstract instructions instead of concrete examples**:
+  - ❌ "Add configuration to your config file" (which file? what config?)
+  - ❌ "Install the linter" (how? which command?)
+  - ❌ "Set up your environment" (what exactly?)
+
+**CRITICAL**: These are NOT violations (do NOT flag these):
+- ✅ Generic placeholders like `YOUR_API_KEY`, `your-app-name` are ACCEPTABLE
+- ✅ Incomplete code fragments or TODO comments are ACCEPTABLE  
+- ✅ Instructions that guide developers to make their own choices
+- ✅ References to "your project's package manager" when followed by specific examples
+
+**IMPORTANT**: Only flag clear violations that would genuinely confuse or mislead developers. When in doubt, do NOT flag as a violation. Be very conservative.
 
 ## Files to Validate
 
@@ -43,13 +63,15 @@ You are currently in the recipe directory `{{recipePath}}` for recipe `{{recipeN
 
 ## Analysis Guidelines
 
-Focus on violations that would significantly impact a developer's ability to implement the recipe. Examine each line for placeholder text, incomplete code, and abstract examples.
+- **Be conservative**: Only flag clear, obvious violations that would confuse developers
+- **Focus on actionability**: Does this code sample help a developer implement the recipe?
+- **Context matters**: Consider the surrounding documentation when evaluating code
+- **Quality over quantity**: Better to miss a minor issue than create false positives
 
-## Violation Types
+## Violation Types (Use Natural Language)
 
-- **generic_placeholder**: Usage of generic placeholder text that doesn't provide specific guidance
-- **incomplete_fragment**: Code that is incomplete and wouldn't function as shown
-- **abstract_pseudocode**: Code that is too abstract to be implementable
-- **overly_simplistic**: Code that oversimplifies complex scenarios or lacks real-world applicability
+- **Code Too Long**: Code samples longer than 1 line that should be explained verbally instead
+- **Abstract Instruction**: High-level directions without concrete implementation steps
+- **Confusing Example**: Code that would mislead or confuse developers trying to implement it
 
 Please analyze the provided files and return ONLY the markdown report.

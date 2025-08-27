@@ -1013,22 +1013,27 @@ async function executeRecipe(
       },
     };
 
+    const installCommands = ['npm', 'yarn', 'pnpm', 'pip', 'poetry', 'pipenv'];
+    const allowedTools = [
+      'Bash',
+      'Read',
+      'Write',
+      'Edit',
+      'MultiEdit',
+      'LS',
+      'Glob',
+      'Grep',
+      'Bash(npx chorenzo recipes validate-state*)',
+      ...installCommands.map((command) => `Bash(${command} install)`),
+      'Bash(pip install -e .)',
+    ];
+
     const operationResult = await executeCodeChangesOperation(
       query({
         prompt: applicationPrompt,
         options: {
           model: 'sonnet',
-          allowedTools: [
-            'Bash',
-            'Read',
-            'Write',
-            'Edit',
-            'MultiEdit',
-            'LS',
-            'Glob',
-            'Grep',
-            'Bash(npx chorenzo recipes validate-state*)',
-          ],
+          allowedTools,
           disallowedTools: [
             'Bash(git commit:*)',
             'Bash(git push:*)',

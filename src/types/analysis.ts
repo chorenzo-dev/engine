@@ -33,7 +33,7 @@ export enum Ecosystem {
   Javascript = 'javascript',
   Python = 'python',
   Java = 'java',
-  Csharp = 'csharp',
+  Dotnet = 'dotnet',
   Go = 'go',
   Rust = 'rust',
   Ruby = 'ruby',
@@ -49,11 +49,40 @@ export enum Ecosystem {
   Unknown = 'unknown',
 }
 
+export enum Language {
+  JavaScript = 'javascript',
+  TypeScript = 'typescript',
+  Python = 'python',
+  Java = 'java',
+  Scala = 'scala',
+  Kotlin = 'kotlin',
+  Groovy = 'groovy',
+  CSharp = 'csharp',
+  FSharp = 'fsharp',
+  VBNet = 'vbnet',
+  Go = 'go',
+  Rust = 'rust',
+  Ruby = 'ruby',
+  Php = 'php',
+  Swift = 'swift',
+  ObjectiveC = 'objective-c',
+  Dart = 'dart',
+  Elixir = 'elixir',
+  Haskell = 'haskell',
+  Perl = 'perl',
+  R = 'r',
+  Julia = 'julia',
+  Lua = 'lua',
+  C = 'c',
+  Cpp = 'cpp',
+  Unknown = 'unknown',
+}
+
 export interface ProjectAnalysis {
   path: string;
   language: string;
   type: ProjectType;
-  framework?: string;
+  framework?: string | null;
   dependencies: string[];
   hasPackageManager: boolean;
   ecosystem?: Ecosystem;

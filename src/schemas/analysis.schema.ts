@@ -1,17 +1,23 @@
 import { z } from 'zod';
 
-import { CiCdSystem, Ecosystem, ProjectType } from '../types/analysis';
+import {
+  CiCdSystem,
+  Ecosystem,
+  Language,
+  ProjectType,
+} from '../types/analysis';
 
 export const ProjectTypeSchema = z.nativeEnum(ProjectType);
 export const CiCdSystemSchema = z.nativeEnum(CiCdSystem);
 export const EcosystemSchema = z.nativeEnum(Ecosystem);
+export const LanguageSchema = z.nativeEnum(Language);
 
 export const ProjectAnalysisSchema = z
   .object({
     path: z.string().min(1, 'Project path cannot be empty'),
     language: z.string().min(1, 'Language cannot be empty'),
     type: ProjectTypeSchema,
-    framework: z.string().optional(),
+    framework: z.string().nullable().optional(),
     dependencies: z.array(z.string()).default([]),
     hasPackageManager: z.boolean(),
     ecosystem: EcosystemSchema.optional(),

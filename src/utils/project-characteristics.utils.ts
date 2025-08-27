@@ -66,7 +66,7 @@ export function getProjectCharacteristic(
     case 'type':
       return project.type;
     case 'framework':
-      return project.framework;
+      return project.framework ?? undefined;
     case 'ecosystem':
       return project.ecosystem;
     case 'has_package_manager':

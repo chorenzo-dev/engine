@@ -1540,6 +1540,31 @@ describe('Recipe Application', () => {
       expect(result.summary.successfulProjects).toBe(1);
     });
 
+    it('should include all package manager commands in allowedTools', async () => {
+      setupStandardApplyScenario();
+
+      const result = await performRecipesApply({
+        recipe: 'test-recipe',
+      });
+
+      expect(mockQuery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          options: expect.objectContaining({
+            allowedTools: expect.arrayContaining([
+              'Bash(npm install)',
+              'Bash(yarn install)',
+              'Bash(pnpm install)',
+              'Bash(pip install)',
+              'Bash(pip install -e .)',
+              'Bash(poetry install)',
+              'Bash(pipenv install)',
+            ]),
+          }),
+        })
+      );
+      expect(result.summary.successfulProjects).toBe(1);
+    });
+
     it('should apply workspace-level recipe successfully', async () => {
       mockExistsSync.mockImplementation((path) => {
         if (path.includes('analysis.json')) {

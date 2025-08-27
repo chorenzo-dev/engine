@@ -4,13 +4,20 @@ File structure: {files_structure_summary}
 
 ## Tool Budget
 
-You have a MAXIMUM of 2 tool rounds. Use them wisely - batch ALL file reads in the first round.
+You have a MAXIMUM of 3 tool rounds. Use them strategically:
+
+Round 1: Identify and list ALL files needed for analysis
+Round 2: Read ALL files in a single batch
+Round 3: Investigate findings from file contents (if needed)
+
+Optional 4th round only in rare cases when absolutely necessary.
 
 ## Efficiency Strategy
 
-1. Look at the file structure and identify ALL config files at once
+1. Look at the file structure and identify ALL files needed at once
 2. Read ALL of them in a SINGLE batch (Read tool supports multiple calls)
-3. Never use Grep or search - just read the files directly
+3. Use the third round to investigate any findings that need clarification
+4. Never use Grep or search - just read the files directly
 
 ## Penalties
 
@@ -38,7 +45,9 @@ Only analyze ACTUAL projects, not test data, examples, or fixtures:
 - **EXCLUDE**: test-fixtures/, examples/, sample/, templates/, demos/, **tests**/, spec/, test/
 - **EXCLUDE**: Any directory that appears to contain example/test code rather than production code
 - **INCLUDE**: Only directories that represent actual working projects or applications
-- **ROOT PROJECT**: Always analyze the root directory if it has a package manager config file
+- **ROOT PROJECT**: Only include root as a project if:
+  - It has actual application dependencies (not just build tools/dev dependencies), OR  
+  - It's a single project workspace (workspace has only one project)
 
 Look for indicators that distinguish real projects from test data:
 
@@ -46,6 +55,10 @@ Look for indicators that distinguish real projects from test data:
 - Test data: Minimal configs, example code, fixture data, sample applications
 
 IMPORTANT: Do NOT use `json` markdown blocks. Return raw JSON only.
+
+## Language Detection Rules:
+
+Detect the PRIMARY language for each project based on file extensions and patterns. Examples: `typescript` for .ts files or tsconfig.json, `python` for .py files, `java` for .java files, `csharp` for .cs files, `go` for .go files, etc. When multiple languages are present, choose the PRIMARY language that represents the main codebase.
 
 ## Project Type Detection Rules:
 
@@ -62,7 +75,15 @@ IMPORTANT: Do NOT use `json` markdown blocks. Return raw JSON only.
 
 ## Framework Detection:
 
-For each project, identify the PRIMARY framework that defines the project's architecture and runtime environment. Consider project type context and dependency relationships:
+For each project, identify the PRIMARY framework that defines the project's architecture and runtime environment. **IMPORTANT**: Verify the framework is actually used, not just listed as a dependency.
+
+**Validation Required:**
+- Don't assume framework presence in dependencies means it's used
+- Verify detected framework is actively used by checking:
+  - Project patterns correlate with framework patterns
+  - Framework is actively used in codebase, not just listed as dependency
+- Look for framework-specific files, configurations, or code patterns
+- If framework is listed but not actively used, set to null
 
 **General Principle:**
 Look for the main architectural framework that provides the application structure, routing, and runtime environment. Examples across ecosystems:
@@ -85,8 +106,9 @@ When multiple frameworks could apply, prioritize the one that defines the projec
 - Don't list utility libraries, build tools, or testing frameworks
 - Don't list databases, ORMs, or data access layers
 - Focus on what provides the application's core architecture and runtime
+- Never assume dependency presence equals active usage
 
-Set framework to null if no clear architectural framework is identified.
+Set framework to null if no clear architectural framework is identified OR if the framework is not actively used.
 
 ## Docker Detection:
 

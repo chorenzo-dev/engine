@@ -7,6 +7,27 @@ import { workspaceConfig } from '~/utils/workspace-config.utils';
 import { extractErrorMessage, formatErrorMessage } from './error.utils';
 import { Logger } from './logger.utils';
 
+const DEFAULT_TIMEOUT_MS = 300000;
+
+function setupClaudeEnvironment(): void {
+  const timeoutConfig = {
+    MCP_TIMEOUT: DEFAULT_TIMEOUT_MS,
+    MCP_TOOL_TIMEOUT: DEFAULT_TIMEOUT_MS,
+    BASH_DEFAULT_TIMEOUT_MS: DEFAULT_TIMEOUT_MS,
+    BASH_MAX_TIMEOUT_MS: DEFAULT_TIMEOUT_MS * 2,
+    ANTHROPIC_SDK_TIMEOUT: DEFAULT_TIMEOUT_MS,
+  };
+
+  Object.entries(timeoutConfig).forEach(([key, value]) => {
+    if (!process.env[key]) {
+      process.env[key] = String(value);
+      Logger.debug(`Setting ${key}=${value}ms for Claude SDK timeout`);
+    }
+  });
+
+  Logger.info('Claude environment configured with extended timeouts');
+}
+
 export interface CodeChangesOperation {
   id: string;
   type: 'analysis' | 'apply' | 'init' | 'validation' | 'generate';
@@ -90,6 +111,8 @@ export async function executeCodeChangesOperation(
   handlers: CodeChangesEventHandlers,
   startTime: Date = new Date()
 ): Promise<CodeChangesOperationResult> {
+  setupClaudeEnvironment();
+
   let sdkResultMetadata: SDKMessage | null = null;
   let result = null;
   let errorMessage: string | undefined;

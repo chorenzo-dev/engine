@@ -91,9 +91,15 @@ For each project, identify the PRIMARY framework that defines the project's arch
 **Validation Required:**
 - Don't assume framework presence in dependencies means it's used
 - Verify detected framework is actively used by checking:
-  - Project patterns correlate with framework patterns
-  - Framework is actively used in codebase, not just listed as dependency
-- Look for framework-specific files, configurations, or code patterns
+  - **Read main entry files** (index, main, app, server files) to check actual imports and usage
+  - **Check for framework initialization code** (instantiation, configuration, setup calls)
+  - **Look for framework-specific patterns** in the codebase structure and imports
+  - **Verify the framework is actually instantiated and used**, not just listed as dependency
+- Examples of verification across languages:
+  - JS/TS: Check imports and instantiation (`express()`, `fastify()`, `new Koa()`)
+  - Python: Check imports and app creation (`Flask(__name__)`, `FastAPI()`, `Django`)
+  - Go: Check imports and handler setup (`gin.Default()`, `echo.New()`)
+  - Java: Check annotations and configurations (`@SpringBootApplication`, servlet configs)
 - If framework is listed but not actively used, set to null
 
 **General Principle:**
@@ -116,8 +122,10 @@ When multiple frameworks could apply, prioritize the one that defines the projec
 - Don't list UI/component libraries as frameworks (react, vue, angular, etc.)
 - Don't list utility libraries, build tools, or testing frameworks
 - Don't list databases, ORMs, or data access layers
+- **Never assume dependency presence equals active usage** - always verify through code inspection
+- Don't choose a framework just because it's in package.json/requirements.txt/pom.xml without confirming it's used
+- When multiple frameworks appear in dependencies, prioritize the one actually instantiated and used in code
 - Focus on what provides the application's core architecture and runtime
-- Never assume dependency presence equals active usage
 
 Set framework to null if no clear architectural framework is identified OR if the framework is not actively used.
 

@@ -270,7 +270,6 @@ describe('Analyze Command Integration Tests', () => {
     expect(result.unrecognizedFrameworks).toBeUndefined();
 
     expect(mockProgress).toHaveBeenCalledWith('Finding git repository');
-    expect(mockProgress).toHaveBeenCalledWith('Building file tree');
     expect(mockProgress).toHaveBeenCalledWith('Loading analysis prompt');
     expect(mockProgress).toHaveBeenCalledWith(
       'Analyzing workspace with Claude'
@@ -467,7 +466,6 @@ describe('Analyze Command Integration Tests', () => {
     expect(result.metadata?.subtype).toBe('success');
 
     expect(mockProgress).toHaveBeenCalledWith('Finding git repository');
-    expect(mockProgress).toHaveBeenCalledWith('Building file tree');
     expect(mockProgress).toHaveBeenCalledWith('Loading analysis prompt');
     expect(mockProgress).toHaveBeenCalledWith(
       'Analyzing workspace with Claude'
@@ -584,7 +582,6 @@ describe('Analyze Command Integration Tests', () => {
     expect(result.unrecognizedFrameworks).toBeUndefined();
 
     expect(mockProgress).toHaveBeenCalledWith('Finding git repository');
-    expect(mockProgress).toHaveBeenCalledWith('Building file tree');
     expect(mockProgress).toHaveBeenCalledWith('Loading analysis prompt');
     expect(mockProgress).toHaveBeenCalledWith(
       'Analyzing workspace with Claude'

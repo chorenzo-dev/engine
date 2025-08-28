@@ -1015,7 +1015,6 @@ async function executeRecipe(
 
     const installCommands = ['npm', 'yarn', 'pnpm', 'pip', 'poetry', 'pipenv'];
     const allowedTools = [
-      'Bash',
       'Read',
       'Write',
       'Edit',

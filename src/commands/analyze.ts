@@ -8,7 +8,6 @@ import {
   CodeChangesEventHandlers,
   executeCodeChangesOperation,
 } from '~/utils/code-changes-events.utils';
-import { buildFileTree } from '~/utils/file-tree.utils';
 import { validateFrameworks } from '~/utils/framework-validation';
 import { findGitRoot } from '~/utils/git.utils';
 import { readJson, writeJson } from '~/utils/json.utils';
@@ -43,14 +42,10 @@ export async function performAnalysis(
   onProgress?.('Finding git repository');
   const workspaceRoot = findGitRoot();
 
-  onProgress?.('Building file tree');
-  const filesStructureSummary = await buildFileTree(workspaceRoot);
-
   onProgress?.('Loading analysis prompt');
   const promptTemplate = loadPrompt('analyze_workspace');
   const prompt = renderPrompt(promptTemplate, {
     workspace_root: workspaceRoot,
-    files_structure_summary: filesStructureSummary,
     project_types: Object.values(ProjectType)
       .map((v) => `"${v}"`)
       .join(' | '),
@@ -120,7 +115,7 @@ export async function performAnalysis(
       prompt,
       options: {
         model: 'sonnet',
-        maxTurns: 50,
+        maxTurns: 100,
         allowedTools: [
           'Read',
           'LS',

@@ -1,12 +1,22 @@
-Analyze workspace: {workspace_root}
+# Workspace Analysis Task
 
-File structure: {files_structure_summary}
+**Purpose**: Analyze the codebase at `{workspace_root}` and generate a comprehensive `analysis.json` file that identifies:
+- Monorepo structure and workspace configuration
+- CI/CD platform detection 
+- All projects with their languages, types, frameworks, and dependencies
+- Docker usage across projects
+
+**Method**: Update `.chorenzo/analysis.json` incrementally AFTER EVERY FINDING to prevent information loss in large codebases.
+
+**Output**: A complete analysis.json file that validates against the expected schema. You MUST run `npx chorenzo analysis validate` after completing the analysis. If validation fails, fix the issues and rewrite until validation passes.
+
+---
 
 ## Tool Budget
 
 You have a MAXIMUM of 3 tool rounds. Use them strategically:
 
-Round 1: Identify and list ALL files needed for analysis
+Round 1: Identify and list ALL files needed for analysis, identify CI/CD files
 Round 2: Read ALL files in a single batch
 Round 3: Investigate findings from file contents (if needed)
 
@@ -22,8 +32,9 @@ Optional 4th round only in rare cases when absolutely necessary.
 ## Penalties
 
 - 🚫 Do NOT read the same file multiple times
-- 🚫 Do NOT search for files - the file structure provided is complete
 - 🚫 Do NOT make separate tool calls for files in the same directory
+- 🚫 Do NOT use more than 3 tool rounds unless absolutely necessary
+- 🚫 Ensure all fields, especially ciCd, are thoroughly handled and not overlooked
 
 ## CRITICAL Rules
 
@@ -80,9 +91,15 @@ For each project, identify the PRIMARY framework that defines the project's arch
 **Validation Required:**
 - Don't assume framework presence in dependencies means it's used
 - Verify detected framework is actively used by checking:
-  - Project patterns correlate with framework patterns
-  - Framework is actively used in codebase, not just listed as dependency
-- Look for framework-specific files, configurations, or code patterns
+  - **Read main entry files** (index, main, app, server files) to check actual imports and usage
+  - **Check for framework initialization code** (instantiation, configuration, setup calls)
+  - **Look for framework-specific patterns** in the codebase structure and imports
+  - **Verify the framework is actually instantiated and used**, not just listed as dependency
+- Examples of verification across languages:
+  - JS/TS: Check imports and instantiation (`express()`, `fastify()`, `new Koa()`)
+  - Python: Check imports and app creation (`Flask(__name__)`, `FastAPI()`, `Django`)
+  - Go: Check imports and handler setup (`gin.Default()`, `echo.New()`)
+  - Java: Check annotations and configurations (`@SpringBootApplication`, servlet configs)
 - If framework is listed but not actively used, set to null
 
 **General Principle:**
@@ -105,8 +122,10 @@ When multiple frameworks could apply, prioritize the one that defines the projec
 - Don't list UI/component libraries as frameworks (react, vue, angular, etc.)
 - Don't list utility libraries, build tools, or testing frameworks
 - Don't list databases, ORMs, or data access layers
+- **Never assume dependency presence equals active usage** - always verify through code inspection
+- Don't choose a framework just because it's in package.json/requirements.txt/pom.xml without confirming it's used
+- When multiple frameworks appear in dependencies, prioritize the one actually instantiated and used in code
 - Focus on what provides the application's core architecture and runtime
-- Never assume dependency presence equals active usage
 
 Set framework to null if no clear architectural framework is identified OR if the framework is not actively used.
 
@@ -116,11 +135,17 @@ For each project, check if a Dockerfile exists. Set dockerized to true if presen
 
 ## CI/CD Detection:
 
-For the workspace, detect which CI/CD system is being used. Look for CI/CD configuration files in the workspace root (such as .github/workflows/, .gitlab-ci.yml, etc.). Set to "none" if no CI/CD configuration found.
+To populate the ciCd field, you need to check the workspace root for CI/CD configuration files:
 
-CRITICAL: After your analysis, write the results to `.chorenzo/analysis.json` using the Write tool. The file content must be ONLY this JSON structure with no other text.
+- **github_actions**: `.github/workflows/` with ANY .yml/.yaml files
+- **gitlab_ci**: `.gitlab-ci.yml` exists
+- **circleci**: `.circleci/config.yml` exists  
+- **jenkins**: `Jenkinsfile` exists
+- **travis_ci**: `.travis.yml` exists
+- **azure_devops**: `.azure-pipelines.yml` or `azure-pipelines.yml` exists
+- **none**: No CI/CD configuration files found
 
-After writing the analysis file, you MUST run `npx chorenzo analysis validate` to validate the analysis.json file structure. If validation fails, fix the issues and rewrite the file until validation passes.
+## Output:
 
 Expected JSON structure:
 {

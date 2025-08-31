@@ -433,6 +433,9 @@ function validateDependencies(
         }
 
         currentValue = getProjectCharacteristic(project, dependency.key);
+      } else {
+        const stateValue = currentState[dependency.key];
+        currentValue = stateValue ? String(stateValue) : undefined;
       }
     } else {
       const stateValue = currentState[dependency.key];

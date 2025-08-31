@@ -466,6 +466,117 @@ describe('Recipe Application', () => {
       ).rejects.toThrow('cannot be applied due to unmet requirements');
     });
 
+    it('should validate .applied reserved keywords in recipe dependencies', async () => {
+      mockExistsSync.mockImplementation((path) => {
+        if (path.includes('analysis.json')) {
+          return true;
+        }
+        if (path.includes('state.json')) {
+          return true;
+        }
+        if (path.includes('.chorenzo/recipes')) {
+          return true;
+        }
+        if (path.includes('test-recipe')) {
+          return true;
+        }
+        if (path.includes('metadata.yaml')) {
+          return true;
+        }
+        if (path.includes('prompt.md')) {
+          return true;
+        }
+        if (path.includes('apply_recipe.md')) {
+          return true;
+        }
+        if (path.includes('fix.md')) {
+          return true;
+        }
+        if (path.includes('variants')) {
+          return true;
+        }
+        return true;
+      });
+
+      mockStatSync.mockImplementation(
+        () =>
+          ({
+            isDirectory: () => true,
+            isFile: () => false,
+          }) as fs.Stats
+      );
+
+      mockReaddirSync.mockImplementation((dirPath) => {
+        if (dirPath.includes('.chorenzo/recipes')) {
+          return ['test-recipe'];
+        }
+        return [];
+      });
+
+      setupSuccessfulQueryMock();
+
+      const mockYamlData = createMockYamlData({
+        level: 'workspace-preferred',
+        provides: ['test-sort-imports.configured'],
+        requires: [{ key: 'code-formatting.applied', equals: 'true' }],
+      });
+
+      mockReadFileSync.mockImplementation((filePath: string) => {
+        if (filePath.includes('analysis.json')) {
+          return JSON.stringify({
+            isMonorepo: false,
+            hasWorkspacePackageManager: false,
+            workspaceEcosystem: Ecosystem.Javascript,
+            projects: [
+              {
+                path: '.',
+                language: 'javascript',
+                ecosystem: Ecosystem.Javascript,
+                type: ProjectType.WebApp,
+                dependencies: [],
+                hasPackageManager: true,
+              },
+            ],
+          });
+        }
+        if (filePath.includes('config.yaml')) {
+          return yamlStringify(mockYamlData.config);
+        }
+        if (filePath.includes('metadata.yaml')) {
+          return yamlStringify(mockYamlData.metadata);
+        }
+        if (filePath.includes('prompt.md')) {
+          return '## Goal\nTest goal\n\n## Investigation\nTest investigation\n\n## Expected Output\nTest output';
+        }
+        if (filePath.includes('apply_recipe.md')) {
+          return 'Apply the recipe {{ recipe_id }} to {{ project_path }}...';
+        }
+        if (filePath.includes('fix.md')) {
+          return 'Basic fix prompt content';
+        }
+        if (filePath.includes('variants/basic.md')) {
+          return 'Basic variant fix content';
+        }
+        if (filePath.includes('state.json')) {
+          return JSON.stringify({
+            workspace: {
+              'code-formatting.applied': true,
+              'code-formatting.variant': 'prettier',
+            },
+            projects: {},
+          });
+        }
+        return '';
+      });
+
+      const result = await performRecipesApply({
+        recipe: 'test-recipe',
+      });
+
+      expect(result.summary.successfulProjects).toBe(1);
+      expect(result.summary.failedProjects).toBe(0);
+    });
+
     it('should handle execution failures gracefully', async () => {
       setupStandardFileSystemMocks();
       setupErrorQueryMock();

@@ -43,15 +43,14 @@ These files should NOT contain:
 ❌ **Base instructions**: Common steps (belongs in fix.md)
 ❌ **Multi-line code blocks**: Any code sample longer than 1 line (explain verbally instead)
 
-## Files to Review
+## Review Process
 
-You are currently in the recipe directory `{{recipePath}}` for recipe `{{recipeName}}`. 
+You are analyzing recipe `{{recipeName}}` in directory `{{recipePath}}`.
 
-1. Use the LS tool to discover all recipe files (metadata.yaml, prompt.md, fix.md, and any files in variants/)
-2. Use the Read tool to examine each file's content
-3. **CRITICAL**: Read metadata.yaml first to identify all "provides" fields
-4. Verify that prompt.md contains Expected Output descriptions for EVERY provides field
-5. Analyze all content according to the rules above
+**Step 1**: Use LS to list all files in the recipe directory and variants subdirectory
+**Step 2**: Read metadata.yaml to identify all "provides" fields  
+**Step 3**: Read and analyze each recipe file according to the content rules
+**Step 4**: Generate the review report
 
 ## Content Violations to Identify
 
@@ -106,14 +105,13 @@ Return a markdown report with this structure:
 [Overall suggestions for improving content organization]
 ```
 
-## Analysis Guidelines
+## Instructions
 
-- Focus on content placement, not formatting or structure
-- Be specific about what content belongs where
-- **Flag any multi-line code blocks in fix.md or variant files as violations**
-- Provide actionable suggestions for fixing violations
-- Consider the recipe's purpose when evaluating content
-- Check for content duplication between fix.md and variants
-- Single-line commands are acceptable in fix.md only if universal; variant-specific commands belong in variant files
+Analyze each file's content placement according to the rules above. Focus on identifying:
+1. Implementation instructions in prompt.md (should be in fix.md)
+2. Investigation logic in fix.md or variants (should be in prompt.md)  
+3. Content duplication between fix.md and variants
+4. Multi-line code blocks in fix.md or variant files
+5. Missing Expected Output coverage for all metadata.yaml "provides" fields
 
-Please analyze the recipe files and return ONLY the markdown report.
+Return ONLY the markdown report in the specified format.

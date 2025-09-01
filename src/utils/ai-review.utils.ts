@@ -83,7 +83,8 @@ async function reviewRecipeContent(
         prompt,
         options: {
           model: DEFAULT_AI_MODEL,
-          allowedTools: ['Read', 'LS'],
+          allowedTools: ['Read', 'LS', 'Glob', 'Grep'],
+          disallowedTools: ['TodoWrite'],
           permissionMode: 'bypassPermissions',
           cwd: recipePath,
         },

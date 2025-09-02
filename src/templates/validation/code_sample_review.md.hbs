@@ -49,8 +49,28 @@ You are analyzing recipe `{{recipeName}}` in directory `{{recipePath}}`.
 
 **Step 1**: Use LS to list all files in the recipe directory and variants subdirectory
 **Step 2**: Read metadata.yaml to identify all "provides" fields  
-**Step 3**: Read and analyze each recipe file according to the content rules
-**Step 4**: Generate the review report
+**Step 3**: Analyze provides fields for redundancy - check if multiple fields represent the same logical state
+**Step 4**: Read and analyze each recipe file according to the content rules
+**Step 5**: Generate the review report
+
+### Provides Field Analysis
+Note: Every recipe automatically generates `<recipe-name>.applied` when executed. Additional provides fields should add meaningful state beyond this.
+
+Legitimate provides fields are those that other recipes can depend on:
+- Platform/tool choices that affect other recipes (e.g., "ci-pipeline.platform" = "github_actions")
+- Feature flags that change behavior (e.g., "auth.method" = "oauth2")
+- Discovered values other recipes need (e.g., "package-manager.type" = "npm")
+- Distinct capabilities that can exist independently (e.g., "supports_feature_x", "enables_mode_y")
+
+Check for redundancy when:
+- Multiple fields represent the same logical state
+- Fields describe implementation details rather than meaningful state for other recipes to depend on
+- The automatic `.applied` field would suffice
+
+Examples of redundant provides:
+- Having both "linter.enabled" and "linter.active" when they mean the same thing
+- Providing "tool.version" or "tool.options_list" that no other recipe would depend on
+- Sequential states like "installed", "setup", "ready" when the final state implies the others
 
 ## Content Violations to Identify
 
@@ -61,6 +81,7 @@ You are analyzing recipe `{{recipeName}}` in directory `{{recipePath}}`.
 - **Wrong File Purpose**: File contains primarily content meant for another file
 - **Multi-line Code Blocks**: Code samples longer than 1 line in fix.md or variant files
 - **Missing Provides Coverage**: prompt.md lacks Expected Output descriptions for fields listed in metadata.yaml's "provides" section
+- **Redundant Provides Fields**: Provides fields that don't add meaningful state beyond the automatic `<recipe-name>.applied` field
 
 ### Suggestions to Provide
 For each violation, suggest which file the content should be moved to and why.
@@ -113,5 +134,8 @@ Analyze each file's content placement according to the rules above. Focus on ide
 3. Content duplication between fix.md and variants
 4. Multi-line code blocks in fix.md or variant files
 5. Missing Expected Output coverage for all metadata.yaml "provides" fields
+6. **Redundant provides fields**: Critically evaluate if multiple provides fields represent the same state or if a single boolean would suffice. This is a common issue that should be flagged.
+
+**Important**: Only report violations you are confident about. Do not use uncertain language like "potentially", "may be", or "possibly". If you're not certain something is a violation, do not report it.
 
 Return ONLY the markdown report in the specified format.

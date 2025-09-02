@@ -68,8 +68,9 @@ Check for redundancy when:
 - The automatic `.applied` field would suffice
 
 Examples of redundant provides:
+- Basic status fields like "configured", "enabled", "setup" that just indicate the recipe ran successfully (same as `.applied`)
 - Having both "linter.enabled" and "linter.active" when they mean the same thing
-- Providing "tool.version" or "tool.options_list" that no other recipe would depend on
+- Implementation details like version numbers, detailed configuration lists, or internal settings that no other recipe would depend on
 - Sequential states like "installed", "setup", "ready" when the final state implies the others
 
 ## Content Violations to Identify

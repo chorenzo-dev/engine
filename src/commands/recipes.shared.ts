@@ -99,7 +99,31 @@ export async function loadRecipe(recipeName: string): Promise<Recipe> {
           { recipe: recipeName, library: libraryName },
           'Recipe is from remote library, refreshing'
         );
-        await libraryManager.refreshLibrary(libraryName);
+        let lastError: Error | undefined;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            await libraryManager.refreshLibrary(libraryName);
+            break;
+          } catch (error) {
+            lastError =
+              error instanceof Error ? error : new Error(String(error));
+            const errorMessage = lastError.message;
+
+            if (errorMessage.includes('REPOSITORY_LOCKED') && attempt < 3) {
+              Logger.info(
+                { library: libraryName, attempt, error: errorMessage },
+                `Git repository locked, retrying in ${attempt * 500}ms...`
+              );
+              await new Promise((resolve) =>
+                setTimeout(resolve, attempt * 500)
+              );
+            } else if (attempt === 3) {
+              throw lastError;
+            } else {
+              throw lastError;
+            }
+          }
+        }
       }
 
       return parseRecipeFromDirectory(recipePath);
@@ -119,7 +143,31 @@ export async function loadRecipe(recipeName: string): Promise<Recipe> {
           { recipe: recipeName, library: libraryName },
           'Recipe is from remote library, refreshing'
         );
-        await libraryManager.refreshLibrary(libraryName);
+        let lastError: Error | undefined;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            await libraryManager.refreshLibrary(libraryName);
+            break;
+          } catch (error) {
+            lastError =
+              error instanceof Error ? error : new Error(String(error));
+            const errorMessage = lastError.message;
+
+            if (errorMessage.includes('REPOSITORY_LOCKED') && attempt < 3) {
+              Logger.info(
+                { library: libraryName, attempt, error: errorMessage },
+                `Git repository locked, retrying in ${attempt * 500}ms...`
+              );
+              await new Promise((resolve) =>
+                setTimeout(resolve, attempt * 500)
+              );
+            } else if (attempt === 3) {
+              throw lastError;
+            } else {
+              throw lastError;
+            }
+          }
+        }
       }
 
       return parseRecipeFromDirectory(resolvedTarget);

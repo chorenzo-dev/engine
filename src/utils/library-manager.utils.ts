@@ -8,6 +8,7 @@ import type { Recipe } from '~/types/recipe';
 
 import { chorenzoConfig } from './config.utils';
 import { extractErrorMessage, formatErrorMessage } from './error.utils';
+import { GitLockManager } from './git-lock.utils';
 import {
   GitError,
   checkGitAvailable,
@@ -94,47 +95,57 @@ export class LibraryManager {
       return;
     }
 
-    const git = simpleGit(libraryPath);
+    await GitLockManager.withLock(libraryPath, async () => {
+      const git = simpleGit(libraryPath);
 
-    try {
-      const status = await git.status();
+      try {
+        const status = await git.status();
 
-      Logger.info(
-        {
-          library: libraryName,
-          filesCount: status.files.length,
-          ahead: status.ahead,
-          behind: status.behind,
-          current: status.current,
-          tracking: status.tracking,
-        },
-        'Git status check for library refresh'
-      );
-
-      const hasLocalChanges =
-        status.files.length > 0 || status.ahead > 0 || status.behind > 0;
-
-      if (hasLocalChanges) {
         Logger.info(
-          { library: libraryName },
-          'Skipping library refresh due to local changes'
+          {
+            library: libraryName,
+            filesCount: status.files.length,
+            ahead: status.ahead,
+            behind: status.behind,
+            current: status.current,
+            tracking: status.tracking,
+          },
+          'Git status check for library refresh'
         );
-        return;
+
+        const hasLocalChanges =
+          status.files.length > 0 || status.ahead > 0 || status.behind > 0;
+
+        if (hasLocalChanges) {
+          Logger.info(
+            { library: libraryName },
+            'Skipping library refresh due to local changes'
+          );
+          return;
+        }
+
+        Logger.info({ library: libraryName }, 'Refreshing library from remote');
+
+        await git.fetch('origin', libraryConfig.ref);
+
+        await git.reset(['--hard', `origin/${libraryConfig.ref}`]);
+
+        Logger.info({ library: libraryName }, 'Successfully refreshed library');
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('index.lock')) {
+          throw new GitError(
+            `Failed to refresh library: Repository is locked by another process. Please try again.`,
+            'REPOSITORY_LOCKED'
+          );
+        }
+        throw new GitError(
+          formatErrorMessage('Failed to refresh library', error),
+          'REFRESH_FAILED'
+        );
       }
-
-      Logger.info({ library: libraryName }, 'Refreshing library from remote');
-
-      await git.fetch('origin', libraryConfig.ref);
-
-      await git.reset(['--hard', `origin/${libraryConfig.ref}`]);
-
-      Logger.info({ library: libraryName }, 'Successfully refreshed library');
-    } catch (error) {
-      throw new GitError(
-        formatErrorMessage('Failed to refresh library', error),
-        'REFRESH_FAILED'
-      );
-    }
+    });
   }
 
   async refreshAllLibraries(): Promise<void> {
